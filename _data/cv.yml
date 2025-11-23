@@ -16,7 +16,8 @@
     - title: MSc. Data Science (Statistics)
       institution: University of Leeds, UK
       year: 2027 (Expected)
-      description: <p style="margin-top: 5px;">Part-time</p>
+      description: |
+        <p style="margin-top: 5px;">Part-time</p>
     - title: BSc. Applied Mathematics and Statistics
       institution: Khalifa University, UAE
       year: 2021
@@ -29,7 +30,7 @@
       institution: Khalifa University
       year: Jan 2025 - Present
       location: Abu Dhabi, UAE
-      description: >-
+      description: |
         <ul style="margin-top: 10px; padding-left: 20px;">
           <li>Partnered with Dubai Electricity & Water Authority (DEWA) on optimizing renewables, storage, and demand.</li>
           <li>Built large-scale Python optimization models (Gurobi) with minute-level discretization over a full-year horizon.</li>
@@ -43,7 +44,7 @@
       institution: Khalifa University
       year: Dec 2021 - Nov 2024
       location: Abu Dhabi, UAE
-      description: >-
+      description: |
         <ul style="margin-top: 10px; padding-left: 20px;">
           <li>Developed a stochastic VNS algorithm to solve the Delivery Territory Design problem to handle real-world variability and constraints.</li>
           <li>Created a new benchmark dataset enabling rigorous testing and comparison of algorithms.</li>
@@ -55,7 +56,7 @@
       institution: AHOY DMCC
       year: May 2022 - Mar 2023
       location: Dubai, UAE
-      description: >-
+      description: |
         <ul style="margin-top: 10px; padding-left: 20px;">
           <li>Led a cross-functional team as product manager for a flagship routing product.</li>
           <li>Built metaheuristics in Python (GRASP, Tabu Search, VNS) for VRPs, clustering, and facility location problems under time, capacity, and safety constraints.</li>
@@ -68,5 +69,5 @@
 - title: Skills
   type: list
   contents:
-    - Methodologies: Optimization, Machine Learning, Mathematical Modeling, Algorithm Design, Metaheuristics
-    - Languages & Tools: Python, Gurobi, Pyomo, R, SQL, NoSQL, Docker, APIs, Azure DevOps, AnyLogic
+    - "Methodologies: Optimization, Machine Learning, Mathematical Modeling, Algorithm Design, Metaheuristics"
+    - "Languages & Tools: Python, Gurobi, Pyomo, R, SQL, NoSQL, Docker, APIs, Azure DevOps, AnyLogic"
