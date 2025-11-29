@@ -750,6 +750,13 @@ footer.sticky-bottom {
       margin-bottom: 1rem;
 
       .preview {
+        margin-bottom: 0.35rem;
+
+        img {
+          max-width: 160px;
+          height: auto;
+          display: block;
+        }
       }
 
       .abbr {
