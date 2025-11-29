@@ -741,13 +741,15 @@ footer.sticky-bottom {
     text-align: right;
   }
 
-  ol.bibliography {
-    list-style: none;
-    padding: 0;
-    margin-top: 0;
+ol.bibliography {
+  list-style: none;
+  padding: 0;
+  margin-top: 0;
 
-    li {
-      margin-bottom: 1rem;
+  li {
+      margin-bottom: 1.2rem;
+      display: block;
+      line-height: 1.4;
 
       .preview {
         margin-bottom: 0.35rem;
@@ -1363,6 +1365,33 @@ ninja-keys::part(ninja-input-wrapper) {
   display: none;
   align-items: center;
   width: 100%;
+}
+
+.news {
+  a {
+    text-decoration: none;
+  }
+}
+
+.news-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.news-item {
+  padding: 0.25rem 0;
+  border-bottom: 1px solid var(--global-divider-color);
+}
+
+.news-date {
+  font-weight: 600;
+  color: var(--global-text-color-light);
+  margin-bottom: 0.15rem;
+}
+
+.news-body {
+  line-height: 1.5;
 }
 
 .newsletter-back-button {
