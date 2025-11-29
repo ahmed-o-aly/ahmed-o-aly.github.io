@@ -6,7 +6,7 @@ subtitle: Operations Research & Energy Systems · Research Assistant, Khalifa Un
 
 profile:
   align: right
-  image: coffee pic.jpeg
+  image: prof_pic.jpg
   image_circular: false # crops the image to make it circular
   more_info: >
     <p>I love making coffee :)</p>
