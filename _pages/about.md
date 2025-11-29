@@ -6,12 +6,10 @@ subtitle: Operations Research & Energy Systems · Research Assistant, Khalifa Un
 
 profile:
   align: right
-  image: prof_pic.jpg
+  image: coffee pic.jpeg
   image_circular: false # crops the image to make it circular
   more_info: >
-    <p>Abu Dhabi, UAE</p>
-    <p>ahmed.oss.aly@gmail.com</p>
-    <p>English · Arabic</p>
+    <p>I love making coffee :)</p>
 
 selected_papers: true # includes a list of papers marked as "selected={true}"
 social: true # includes social icons at the bottom of the page

@@ -1,7 +1,7 @@
 ---
 layout: post
-title: "TerritoryDesign: Probabilistic VNS for Delivery Territory Design"
-date: 2025-11-29
+title: "Explanation and Codebase of Probabilistic VNS for Delivery Territory Design"
+date: 2025-11-21
 description: A quick tour of the open-source BVNS + path-relinking toolkit released with our Computers & Operations Research paper on delivery territory design.
 tags: [optimization, territory-design, vns, python]
 categories: [blog]
