@@ -1,4 +1,1 @@
-User-agent: *
-Disallow:
-
-Sitemap: https://ahmed-o-aly.github.io/sitemap.xml
+User-agent: * Disallow: Sitemap: https://ahmed-o-aly.github.io/sitemap.xml
