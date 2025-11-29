@@ -8,6 +8,10 @@ categories: [blog]
 toc: true
 ---
 
+<div style="text-align: center; margin-bottom: 1rem;">
+  <img src="{{ 'assets/img/output.png' | relative_url }}" alt="Plotted BVNS districts" style="max-width: 420px; width: 80%; height: auto;" />
+</div>
+
 I open-sourced the code and datasets that accompany our paper *“An efficient probability-based VNS algorithm for delivery territory design”* (Computers & Operations Research, 2024). The repo lives at [github.com/ahmed-o-aly/TerritoryDesign](https://github.com/ahmed-o-aly/TerritoryDesign) and packages:
 
 - A probabilistic BVNS implementation with tailored shaking, merit functions, and path relinking.
@@ -74,8 +78,6 @@ def plot_districts(G, districts):
 districts = best_solution if isinstance(best_solution, dict) else best_solution["Districts"]
 plot_districts(G, districts)
 ```
-
-![Plotted BVNS districts]( {{ "assets/img/output.png" | relative_url }} )
 
 ## What’s inside
 - `DTDPAlgorithms.py`: construction heuristics, local search, BVNS, and path relinking.
