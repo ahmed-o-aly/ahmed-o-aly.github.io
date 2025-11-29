@@ -38,7 +38,7 @@ tdp = TerritoryDesignProblem(
     nr_districts=10
 )
 
-bvns = BVNS(tdp_instance=tdp, shaking_steps=25, fail_max=50, nrInitSolutions=50)
+bvns = BVNS(tdp_instance=tdp, shaking_steps=5, fail_max=4, nrInitSolutions=10)
 obj_hist, inf_hist, best_solution, timeline = bvns.performBVNS()
 print("Best objective:", obj_hist[-1], "Infeasibility:", inf_hist[-1])
 ```
@@ -75,10 +75,12 @@ districts = best_solution if isinstance(best_solution, dict) else best_solution[
 plot_districts(G, districts)
 ```
 
+![Plotted BVNS districts]( {{ "assets/img/output.png" | relative_url }} )
+
 ## What’s inside
 - `DTDPAlgorithms.py`: construction heuristics, local search, BVNS, and path relinking.
 - `TGraphInstances/` & `GGraphInstances/newGeneratedInstances/`: 120 benchmarks (500–726 nodes).
 - `Results/`: JSON timelines for VNS/PR/MIP experiments.
 - `generateGraphs.ipynb`: notebook to create new planar or grid instances.
 
-If you use the code or instances, cite the paper (doi:10.1016/j.cor.2024.106756) and the repository’s `CITATION.cff`. Feedback and PRs welcome!
+If you use the code or instances, cite the paper ([doi:10.1016/j.cor.2024.106756](https://doi.org/10.1016/j.cor.2024.106756)) and the repository’s `CITATION.cff`. Feedback welcome!
