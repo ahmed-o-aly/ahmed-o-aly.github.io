@@ -58,6 +58,20 @@
         - Containerized and automated builds with Docker and Azure DevOps; created ETL from REST APIs to Azure Blob Storage.
         - Used profiling tools (cProfile) to identify and optimize code bottlenecks, enhancing performance by over 20%.
 
+- title: Certifications
+  type: time_table
+  contents:
+    - title: Certification name here
+      institution: Issuing organization
+      year: Year
+      description:
+        - Optional: brief note about the focus or skills validated.
+    - title: Second certification
+      institution: Issuing organization
+      year: Year
+      description:
+        - Replace these placeholders with your real certifications, issuers, and dates.
+
 - title: Skills
   type: list
   contents:
