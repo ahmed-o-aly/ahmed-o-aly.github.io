@@ -929,6 +929,12 @@ pre {
   }
 }
 
+// Ensure nested code inside pre keeps hard line breaks
+pre code {
+  white-space: inherit;
+  word-break: normal;
+}
+
 code {
   color: var(--global-theme-color);
   background-color: var(--global-code-bg-color);
