@@ -72,7 +72,18 @@ ninja.data = [{
               handler: () => {
                 window.location.href = "/blog/";
               },
-            },{id: "post-a-post-with-plotly-js",
+            },{id: "post-territorydesign-probabilistic-vns-for-delivery-territory-design",
+        
+          title: "TerritoryDesign: Probabilistic VNS for Delivery Territory Design",
+        
+        description: "A quick tour of the open-source BVNS + path-relinking toolkit released with our Computers &amp; Operations Research paper on delivery territory design.",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2025/territory-design-bvns/";
+          
+        },
+      },{id: "post-a-post-with-plotly-js",
         
           title: "a post with plotly.js",
         
