@@ -84,8 +84,8 @@ bing_site_verification: # out your bing-site-verification ID (Bing Webmaster)
 # Blog
 # -----------------------------------------------------------------------------
 
-blog_name: al-folio # blog_name will be displayed in your blog page
-blog_description: a simple whitespace theme for academics
+blog_name: Ahmed Aly
+blog_description: Operations research, energy systems, and applied optimization
 permalink: /blog/:year/:title/
 lsi: false # produce an index for related posts
 
@@ -186,6 +186,7 @@ exclude:
   - package.json
   - package-lock.json
   - _pages/about_einstein.md
+  - _posts_archive/
   - purgecss.config.js
   - README.md
   - readme_preview/
