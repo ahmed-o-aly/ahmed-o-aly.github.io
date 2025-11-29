@@ -901,8 +901,9 @@ figure.highlight {
 
   pre {
     // Preserve author line breaks; allow horizontal scroll when long
-    white-space: pre;
+    white-space: pre !important;
     word-wrap: normal;
+    word-break: normal;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
   }
@@ -931,8 +932,9 @@ pre {
 
 // Ensure nested code inside pre keeps hard line breaks
 pre code {
-  white-space: inherit;
+  white-space: inherit !important;
   word-break: normal;
+  display: block;
 }
 
 code {
