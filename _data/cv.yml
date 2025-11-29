@@ -16,12 +16,10 @@
     - title: MSc. Data Science (Statistics)
       institution: University of Leeds, UK
       year: 2027 (Expected)
-      description: |
-        <p style="margin-top: 5px;">Part-time</p>
+      maindescription: Part-time program
     - title: BSc. Applied Mathematics and Statistics
       institution: Khalifa University, UAE
       year: 2021
-      description: 
 
 - title: Experience
   type: time_table
@@ -30,41 +28,35 @@
       institution: Khalifa University
       year: Jan 2025 - Present
       location: Abu Dhabi, UAE
-      description: |
-        <ul style="margin-top: 10px; padding-left: 20px;">
-          <li>Partnered with Dubai Electricity & Water Authority (DEWA) on optimizing renewables, storage, and demand.</li>
-          <li>Built large-scale Python optimization models (Gurobi) with minute-level discretization over a full-year horizon.</li>
-          <li>Modeled power asset operations incorporating ramp rates, spinning reserves, and non-linear efficiency curves.</li>
-          <li>Built a modular optimization library with Pytest, Sphinx documentation, and an interactive Streamlit/Plotly UI.</li>
-          <li>Developed renewables and chiller simulations (pvlib, oemof, EnergyPlus) to generate realistic time-series data.</li>
-          <li>Formulated levelized cost metrics, validated by DEWA experts, to trace energy costs from supply to demand.</li>
-        </ul>
+      description:
+        - Partnered with Dubai Electricity & Water Authority (DEWA) on optimizing renewables, storage, and demand.
+        - Built large-scale Python optimization models (Gurobi) with minute-level discretization over a full-year horizon.
+        - Modeled power asset operations incorporating ramp rates, spinning reserves, and non-linear efficiency curves.
+        - Built a modular optimization library with Pytest, Sphinx documentation, and an interactive Streamlit/Plotly UI.
+        - Developed renewables and chiller simulations (pvlib, oemof, EnergyPlus) to generate realistic time-series data.
+        - Formulated levelized cost metrics, validated by DEWA experts, to trace energy costs from supply to demand.
 
     - title: Undergraduate Researcher
       institution: Khalifa University
       year: Dec 2021 - Nov 2024
       location: Abu Dhabi, UAE
-      description: |
-        <ul style="margin-top: 10px; padding-left: 20px;">
-          <li>Developed a stochastic VNS algorithm to solve the Delivery Territory Design problem to handle real-world variability and constraints.</li>
-          <li>Created a new benchmark dataset enabling rigorous testing and comparison of algorithms.</li>
-          <li>Presented results at VNS 2022 and published in Lecture Notes in Computer Science (2023).</li>
-          <li>Ran sensitivity analyses and large-scale experiments; published in Computers & Operations Research (2024).</li>
-        </ul>
+      description:
+        - Developed a stochastic VNS algorithm to solve the Delivery Territory Design problem to handle real-world variability and constraints.
+        - Created a new benchmark dataset enabling rigorous testing and comparison of algorithms.
+        - Presented results at VNS 2022 and published in Lecture Notes in Computer Science (2023).
+        - Ran sensitivity analyses and large-scale experiments; published in Computers & Operations Research (2024).
 
     - title: Operations Research Scientist
       institution: AHOY DMCC
       year: May 2022 - Mar 2023
       location: Dubai, UAE
-      description: |
-        <ul style="margin-top: 10px; padding-left: 20px;">
-          <li>Led a cross-functional team as product manager for a flagship routing product.</li>
-          <li>Built metaheuristics in Python (GRASP, Tabu Search, VNS) for VRPs, clustering, and facility location problems under time, capacity, and safety constraints.</li>
-          <li>Integrated real-time traffic and weather data via asynchronous pipelines to improve routing decisions and government policy adherence.</li>
-          <li>Designed REST APIs (FastAPI, Node.js) to expose algorithms as services for internal clients.</li>
-          <li>Containerized and automated builds with Docker and Azure DevOps; created ETL from REST APIs to Azure Blob Storage.</li>
-          <li>Used profiling tools (cProfile) to identify and optimize code bottlenecks, enhancing performance by over 20%.</li>
-        </ul>
+      description:
+        - Led a cross-functional team as product manager for a flagship routing product.
+        - Built metaheuristics in Python (GRASP, Tabu Search, VNS) for VRPs, clustering, and facility location problems under time, capacity, and safety constraints.
+        - Integrated real-time traffic and weather data via asynchronous pipelines to improve routing decisions and government policy adherence.
+        - Designed REST APIs (FastAPI, Node.js) to expose algorithms as services for internal clients.
+        - Containerized and automated builds with Docker and Azure DevOps; created ETL from REST APIs to Azure Blob Storage.
+        - Used profiling tools (cProfile) to identify and optimize code bottlenecks, enhancing performance by over 20%.
 
 - title: Skills
   type: list
