@@ -900,9 +900,9 @@ figure.highlight {
   -webkit-overflow-scrolling: touch;
 
   pre {
-    // Ensure code blocks can scroll horizontally
-    white-space: pre;
-    word-wrap: normal;
+    // Allow wrapping on small screens while keeping horizontal scroll available
+    white-space: pre-wrap;
+    word-wrap: break-word;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
   }
@@ -917,8 +917,8 @@ pre {
   // Responsive behavior for code blocks
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
-  white-space: pre;
-  word-wrap: normal;
+  white-space: pre-wrap;
+  word-wrap: break-word;
 
   pre,
   code {

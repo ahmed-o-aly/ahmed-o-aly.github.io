@@ -17,11 +17,13 @@ I open-sourced the code and datasets that accompany our paper *“An efficient p
 
 ## Quick start
 The code runs on Python 3.9+ with light dependencies:
+
 ```bash
 pip install networkx numpy scipy pandas matplotlib jupyter
 ```
 
 Load an instance and run BVNS:
+
 ```python
 import networkx as nx
 from DTDPAlgorithms import TerritoryDesignProblem, BVNS
@@ -42,16 +44,29 @@ print("Best objective:", obj_hist[-1], "Infeasibility:", inf_hist[-1])
 ```
 
 To visualize districts:
+
 ```python
+import networkx as nx
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 
 def plot_districts(G, districts):
-    pos = {n: (float(G.nodes[n]['x']), float(G.nodes[n]['y'])) for n in G.nodes}
+    pos = {
+        n: (float(G.nodes[n]["x"]), float(G.nodes[n]["y"]))
+        for n in G.nodes
+    }
     palette = cm.get_cmap("tab20")
     plt.figure(figsize=(8, 8))
+
     for k, nodes in districts.items():
-        nx.draw_networkx_nodes(G, pos, nodelist=nodes, node_color=[palette(k % 20)], node_size=12)
+        nx.draw_networkx_nodes(
+            G,
+            pos,
+            nodelist=nodes,
+            node_color=[palette(k % 20)],
+            node_size=12,
+        )
+
     nx.draw_networkx_edges(G, pos, width=0.3, alpha=0.4)
     plt.axis("off")
     plt.show()
@@ -66,4 +81,4 @@ plot_districts(G, districts)
 - `Results/`: JSON timelines for VNS/PR/MIP experiments.
 - `generateGraphs.ipynb`: notebook to create new planar or grid instances.
 
-If you use the code or instances, cite the paper (doi:10.1016/j.cor.2024.106756) and the repository’s `CITATION.cff`. Feedback and PRs welcome!॥
+If you use the code or instances, cite the paper (doi:10.1016/j.cor.2024.106756) and the repository’s `CITATION.cff`. Feedback and PRs welcome!
