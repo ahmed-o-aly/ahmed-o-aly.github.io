@@ -4,7 +4,7 @@ permalink: /cv/
 title: cv
 nav: true
 nav_order: 5
-cv_pdf: example_pdf.pdf # you can also use external links here
+cv_pdf: "Ahmed Aly CV.pdf" # you can also use external links here
 description: Full CV covering my research, optimization work, and data science projects (PDF download available at the top).
 toc:
   sidebar: left
