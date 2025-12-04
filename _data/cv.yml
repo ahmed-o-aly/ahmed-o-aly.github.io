@@ -61,16 +61,17 @@
 - title: Certifications
   type: time_table
   contents:
-    - title: Certification name here
-      institution: Issuing organization
-      year: Year
+    - title: Six Sigma Yellow Belt Specialization
+      institution: Coursera / University System of Georgia
+      year: 2025
       description:
-        - Optional: brief note about the focus or skills validated.
-    - title: Second certification
-      institution: Issuing organization
-      year: Year
-      description:
-        - Replace these placeholders with your real certifications, issuers, and dates.
+        - Completed DMAIC, root-cause analysis, and control chart modules focused on process improvement.
+        - Verified credential covering yellow belt project tools and quality analytics fundamentals.
+      linkitems:
+        - linkname: Verify certificate
+          link: https://coursera.org/verify/specialization/OMF75NR8PBY4
+        - linkname: PDF copy
+          link: /assets/pdf/Coursera OMF75NR8PBY4.pdf
 
 - title: Skills
   type: list
