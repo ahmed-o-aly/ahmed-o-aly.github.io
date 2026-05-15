@@ -1,27 +1,31 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 220" role="img" aria-labelledby="title desc">
   <title id="title">Decision systems emblem</title>
-  <desc id="desc">An ink-style network of connected decision nodes with a red central mark.</desc>
-  <g fill="none" stroke="#2c251d" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M130 18c30 0 58 12 78 32s32 48 32 78-12 58-32 78" stroke-width="3"/>
-    <path d="M130 18c-30 0-58 12-78 32s-32 48-32 78 12 58 32 78" stroke-width="3"/>
-    <path d="M130 18c-18 24-28 60-28 110s10 86 28 74c18 12 28-24 28-74S148 42 130 18Z" stroke-width="2.5"/>
-    <path d="M42 78h176M32 128h196M42 178h176" stroke-width="1.8" opacity=".72"/>
-    <path d="M70 68l60 60 58-58M70 188l60-60 58 58M70 68l118 120M188 70L70 188" stroke-width="1.6" opacity=".66"/>
-    <path d="M130 46v164M50 128h160" stroke-width="1.4" opacity=".5"/>
-    <circle cx="130" cy="128" r="30" fill="#faf9f5" stroke-width="3"/>
-    <circle cx="70" cy="68" r="8" fill="#faf9f5" stroke-width="3"/>
-    <circle cx="188" cy="70" r="8" fill="#faf9f5" stroke-width="3"/>
-    <circle cx="70" cy="188" r="8" fill="#faf9f5" stroke-width="3"/>
-    <circle cx="188" cy="188" r="8" fill="#faf9f5" stroke-width="3"/>
-    <circle cx="50" cy="128" r="7" fill="#faf9f5" stroke-width="3"/>
-    <circle cx="210" cy="128" r="7" fill="#faf9f5" stroke-width="3"/>
+  <desc id="desc">An engraved monogram with decision nodes, compass lines, and a red seal.</desc>
+  <rect width="260" height="220" fill="none"/>
+  <g fill="none" stroke="#241f18" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M130 17c42 31 64 68 64 111 0 33-13 58-39 75" stroke-width="2.6"/>
+    <path d="M130 17c-42 31-64 68-64 111 0 33 13 58 39 75" stroke-width="2.6"/>
+    <path d="M130 26c-15 21-23 54-23 99 0 51 8 78 23 78s23-27 23-78c0-45-8-78-23-99Z" stroke-width="2"/>
+    <path d="M66 128h128M130 26v177" stroke-width="1.3" opacity=".72"/>
+    <path d="M84 81h92M84 175h92" stroke-width="1.4" opacity=".66"/>
+    <path d="M84 81l92 94M176 81l-92 94" stroke-width="1.2" opacity=".5"/>
+    <circle cx="80" cy="81" r="6" fill="#f8f6ef" stroke-width="2.4"/>
+    <circle cx="180" cy="81" r="6" fill="#f8f6ef" stroke-width="2.4"/>
+    <circle cx="80" cy="175" r="6" fill="#f8f6ef" stroke-width="2.4"/>
+    <circle cx="180" cy="175" r="6" fill="#f8f6ef" stroke-width="2.4"/>
+    <circle cx="66" cy="128" r="5.5" fill="#f8f6ef" stroke-width="2.4"/>
+    <circle cx="194" cy="128" r="5.5" fill="#f8f6ef" stroke-width="2.4"/>
   </g>
-  <g fill="#901714">
-    <circle cx="130" cy="128" r="11"/>
-    <path d="M130 102l7 18h19l-15 11 6 18-17-11-16 11 6-18-15-11h19z"/>
+  <g fill="#241f18">
+    <path d="M105 166h17l6-20h38l7 20h18L148 55h-17L105 166Zm28-35 13-40 14 40h-27Z"/>
+    <path d="M112 171h71v7h-71z"/>
   </g>
-  <g fill="none" stroke="#901714" stroke-linecap="round">
-    <path d="M117 142c-14 9-28 15-42 18M144 111c11-11 24-20 39-27" stroke-width="3"/>
-    <path d="M111 112c-12-12-26-20-43-25M150 143c12 10 26 17 43 21" stroke-width="2"/>
+  <g fill="#9b1d1b">
+    <circle cx="130" cy="128" r="13"/>
+    <path d="M130 101l7 18h19l-15 11 6 18-17-11-17 11 6-18-15-11h19z"/>
+  </g>
+  <g fill="none" stroke="#9b1d1b" stroke-linecap="round">
+    <path d="M116 141c-13 11-29 18-48 22M146 113c10-10 24-18 42-24" stroke-width="2.8"/>
+    <path d="M113 113c-13-10-27-16-44-20M147 142c12 9 27 15 45 18" stroke-width="1.8"/>
   </g>
 </svg>
