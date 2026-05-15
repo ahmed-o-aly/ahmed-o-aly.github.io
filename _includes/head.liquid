@@ -84,9 +84,9 @@
   </script>
 {% else %}
   <script>
-    function determineComputedTheme() {
+    window.determineComputedTheme = function () {
       return "light";
-    }
+    };
   </script>
 {% endif %}
 
