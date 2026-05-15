@@ -1,15 +1,21 @@
 name: Axe accessibility testing
 
 on:
-  # if you want to run this on every push uncomment the following lines
-  # push:
-  #   branches:
-  #     - master
-  #     - main
-  # pull_request:
-  #   branches:
-  #     - master
-  #     - main
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "assets/**"
+      - "_includes/**"
+      - "_layouts/**"
+      - "_pages/**"
+      - "_posts/**"
+      - "_projects/**"
+      - "_sass/**"
+      - "**.html"
+      - "**.liquid"
+      - "**/*.md"
+      - "**.yml"
   workflow_dispatch:
     inputs:
       url:
@@ -19,54 +25,63 @@ on:
 env:
   URL: ""
 
+permissions:
+  contents: read
+
 jobs:
   check:
-    # available images: https://github.com/actions/runner-images#available-images
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
-      - name: Checkout 🛎️
+      - name: Checkout
         uses: actions/checkout@v4
+
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: "3.2.2"
+          ruby-version: "3.3.5"
           bundler-cache: true
-      - name: Update _config.yml ⚙️
-        uses: fjogeleit/yaml-update-action@main
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
         with:
-          commitChange: false
-          valueFile: "_config.yml"
-          changes: |
-            {
-              "giscus.repo": "${{ github.repository }}",
-              "baseurl": ""
-            }
-      - name: Install and Build 🔧
+          python-version: "3.13"
+          cache: "pip"
+
+      - name: Prepare build config
         run: |
-          sudo apt-get update && sudo apt-get install -y imagemagick
-          pip3 install --upgrade jupyter
+          ruby -ryaml -e 'config = YAML.load_file("_config.yml"); config["giscus"] ||= {}; config["giscus"]["repo"] = ENV.fetch("GITHUB_REPOSITORY"); config["baseurl"] = ""; File.write("_config.yml", config.to_yaml)'
+
+      - name: Install and build
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y imagemagick
+          python -m pip install --upgrade pip
+          python -m pip install --upgrade nbconvert
           export JEKYLL_ENV=production
-          bundle exec jekyll build
-      - name: Purge unused CSS 🧹
+          bundle exec jekyll build --trace
+
+      - name: Purge unused CSS
         run: |
           npm install -g purgecss
           purgecss -c purgecss.config.js
-      - name: Get Chromium version 🌐
-        # https://github.com/GoogleChromeLabs/chrome-for-testing?tab=readme-ov-file#other-api-endpoints
+
+      - name: Get Chromium version
         run: |
           CHROMIUM_VERSION=$(wget -qO- https://googlechromelabs.github.io/chrome-for-testing/LATEST_RELEASE_STABLE | cut -d. -f1)
           echo "Chromium version: $CHROMIUM_VERSION"
           echo "CHROMIUM_VERSION=$CHROMIUM_VERSION" >> $GITHUB_ENV
-      - name: Setup Chrome 🌐
+
+      - name: Setup Chrome
         id: setup-chrome
         uses: browser-actions/setup-chrome@v1
         with:
           chrome-version: ${{ env.CHROMIUM_VERSION }}
-      - name: Install chromedriver 🚗
-        run: |
-          npm install -g chromedriver@$CHROMIUM_VERSION
-      - name: Run axe 🪓
-        # https://github.com/dequelabs/axe-core-npm/tree/develop/packages/cli
+
+      - name: Install chromedriver
+        run: npm install -g chromedriver@$CHROMIUM_VERSION
+
+      - name: Run axe
         run: |
           npm install -g @axe-core/cli
           npm install -g http-server

@@ -4,9 +4,15 @@ title: KU MetaHub AI/XR Lab
 description: Lab-specialist work turning an immersive AI/XR facility into a usable research and teaching environment.
 importance: 1
 category: current
+thread: immersive-labs
+image: /assets/img/projects/metahub.svg
 role: Lab operations, facility readiness, vendor coordination, adoption support
 methods: AI/XR systems, 360 projection, AR/VR, haptics, control-room workflows
 status: Current full-time responsibility
+signals:
+  - Operational readiness for immersive research and teaching workflows.
+  - Translation layer between vendors, researchers, educators, and facility users.
+  - Practical routines for making high-end lab systems dependable.
 ---
 
 The KU MetaHub is an immersive learning and research facility built around AI, XR, 360-degree projection, AR/VR, haptics, analytics, and control-room workflows.

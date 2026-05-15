@@ -5,6 +5,7 @@ date: 2025-11-21
 description: A quick tour of the open-source BVNS and path-relinking toolkit released with our Computers & Operations Research paper on delivery territory design.
 tags: [optimization, territory-design, vns, python]
 categories: [blog]
+thread: optimization-software
 toc: true
 ---
 

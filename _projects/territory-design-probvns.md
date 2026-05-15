@@ -4,9 +4,22 @@ title: Probabilistic VNS for Delivery Territory Design
 description: Open-source benchmark instances and algorithms for delivery territory design under uncertainty.
 importance: 5
 category: software
+thread: optimization-software
+image: /assets/img/projects/logistics-routing.svg
 role: Researcher, algorithm designer, benchmark author
 methods: Probabilistic VNS, path relinking, local search, benchmark generation, Python
 status: Published research and open-source code
+signals:
+  - Probability-based VNS for delivery territory design under operational variability.
+  - Benchmark instances, experiment tooling, and reproducible Python code.
+  - Direct connection between a publication, source code, and explanatory writing.
+artifacts:
+  - label: Code and data
+    url: https://github.com/ahmed-o-aly/TerritoryDesign
+  - label: Blog walkthrough
+    url: /blog/2025/territory-design-bvns/
+  - label: Published paper
+    url: https://doi.org/10.1016/j.cor.2024.106756
 ---
 
 This project contains the code and benchmark data behind my work on the Delivery Territory Design Problem, a districting problem motivated by last-mile delivery operations.

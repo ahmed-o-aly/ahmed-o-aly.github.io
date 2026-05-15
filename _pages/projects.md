@@ -13,29 +13,57 @@ nav_order: 3
   </p>
 </div>
 
+<div class="thread-list case-thread-list" aria-label="Project threads">
+  {% for thread in site.data.work_threads %}
+    {% if thread.key != "reading-systems" %}
+      <article class="thread-row">
+        <div class="thread-kicker">{{ thread.label }}</div>
+        <div>
+          <h2>{{ thread.title }}</h2>
+          <p>{{ thread.summary }}</p>
+        </div>
+      </article>
+    {% endif %}
+  {% endfor %}
+</div>
+
 <div class="case-index">
   {% assign sorted_projects = site.projects | sort: "importance" %}
   {% for project in sorted_projects %}
     <article class="case-row">
-      <a class="case-title" href="{{ project.url | relative_url }}">
-        <span>0{{ forloop.index }}</span>
-        <strong>{{ project.title }}</strong>
-      </a>
-      <p>{{ project.description }}</p>
-      <dl>
-        <div>
-          <dt>Role</dt>
-          <dd>{{ project.role }}</dd>
-        </div>
-        <div>
-          <dt>Methods</dt>
-          <dd>{{ project.methods }}</dd>
-        </div>
-        <div>
-          <dt>Status</dt>
-          <dd>{{ project.status }}</dd>
-        </div>
-      </dl>
+      {% if project.image %}
+        <a class="case-visual" href="{{ project.url | relative_url }}" aria-label="{{ project.title }}">
+          <img src="{{ project.image | relative_url }}" alt="" loading="lazy">
+        </a>
+      {% endif %}
+      <div class="case-main">
+        <a class="case-title" href="{{ project.url | relative_url }}">
+          <span>0{{ forloop.index }}</span>
+          <strong>{{ project.title }}</strong>
+        </a>
+        <p>{{ project.description }}</p>
+        <dl>
+          <div>
+            <dt>Role</dt>
+            <dd>{{ project.role }}</dd>
+          </div>
+          <div>
+            <dt>Methods</dt>
+            <dd>{{ project.methods }}</dd>
+          </div>
+          <div>
+            <dt>Status</dt>
+            <dd>{{ project.status }}</dd>
+          </div>
+        </dl>
+        {% if project.signals %}
+          <ul class="case-signals">
+            {% for signal in project.signals limit: 2 %}
+              <li>{{ signal }}</li>
+            {% endfor %}
+          </ul>
+        {% endif %}
+      </div>
     </article>
   {% endfor %}
 </div>

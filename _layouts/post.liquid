@@ -70,6 +70,17 @@ layout: default
     </div>
   </article>
 
+  {% if page.thread %}
+    {% assign matched_threads = site.data.work_threads | where: 'key', page.thread %}
+    {% if matched_threads.size > 0 %}
+      {% assign matched_thread = matched_threads | first %}
+      <aside class="post-thread-note">
+        <span>{{ matched_thread.label }}</span>
+        <p>This note belongs to the <a href="{{ '/blog/' | relative_url }}">{{ matched_thread.title }}</a> lane.</p>
+      </aside>
+    {% endif %}
+  {% endif %}
+
   {% if page.citation %}
     {% include citation.liquid %}
   {% endif %}

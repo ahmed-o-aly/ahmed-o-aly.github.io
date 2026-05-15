@@ -1,0 +1,39 @@
+- title: Immersive labs as decision infrastructure
+  key: immersive-labs
+  label: MetaHub
+  summary: Making AI/XR facilities reliable enough that researchers and educators can use them for real decisions, not just demonstrations.
+  links:
+    - label: KU MetaHub AI/XR Lab
+      url: /projects/metahub-ai-xr-lab/
+    - label: CV context
+      url: /cv/
+
+- title: Policy simulation before commitments
+  key: policy-simulation
+  label: ADSG
+  summary: Turning public-sector questions into scenarios, assumptions, and simulation prototypes that can be inspected before decisions harden.
+  links:
+    - label: ADSG Public Policy Simulations
+      url: /projects/adsg-policy-simulations/
+    - label: Field notes
+      url: /blog/
+
+- title: Optimization software for messy operations
+  key: optimization-software
+  label: Optimization
+  summary: Building models, heuristics, experiments, and interfaces that help logistics, energy, and territory-design work survive real constraints.
+  links:
+    - label: Logistics Routing and Facility Optimization
+      url: /projects/logistics-routing-optimization/
+    - label: Territory Design Research
+      url: /projects/territory-design-probvns/
+
+- title: Reading as systems practice
+  key: reading-systems
+  label: Books
+  summary: Tracking fiction, institutions, power, incentives, and design patterns that keep feeding the professional work from the side.
+  links:
+    - label: Reading shelf
+      url: /books/
+    - label: Writing archive
+      url: /blog/

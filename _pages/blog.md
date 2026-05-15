@@ -56,6 +56,21 @@ pagination:
   </div>
   {% endif %}
 
+<section class="blog-thread-map" aria-label="Writing threads">
+  <h2>Writing lanes</h2>
+  <div class="thread-list">
+    {% for thread in site.data.work_threads %}
+      <article class="thread-row">
+        <div class="thread-kicker">{{ thread.label }}</div>
+        <div>
+          <h3>{{ thread.title }}</h3>
+          <p>{{ thread.summary }}</p>
+        </div>
+      </article>
+    {% endfor %}
+  </div>
+</section>
+
 {% assign featured_posts = site.posts | where: "featured", "true" %}
 {% if featured_posts.size > 0 %}
 <br>

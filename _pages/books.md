@@ -16,6 +16,38 @@ nav_order: 2
   </p>
 </div>
 
+{% assign book_count = site.data.read_books | size %}
+{% assign five_star_books = site.data.read_books | where: "rating", 5 %}
+<div class="reading-dashboard" aria-label="Reading summary">
+  <div>
+    <span>{{ book_count }}</span>
+    <em>books logged</em>
+  </div>
+  <div>
+    <span>{{ five_star_books.size }}</span>
+    <em>five-star notes</em>
+  </div>
+  <div>
+    <span>{{ site.data.reading_threads.size }}</span>
+    <em>reading threads</em>
+  </div>
+</div>
+
+<section class="reading-trails" aria-label="Reading threads">
+  <h2>Reading threads</h2>
+  {% for thread in site.data.reading_threads %}
+    <article>
+      <h3>{{ thread.title }}</h3>
+      <p>{{ thread.summary }}</p>
+      <p class="reading-examples">
+        {% for example in thread.examples %}
+          <span>{{ example }}</span>
+        {% endfor %}
+      </p>
+    </article>
+  {% endfor %}
+</section>
+
 <div class="book-ledger">
   {% for book in site.data.read_books %}
     <article class="book-row">

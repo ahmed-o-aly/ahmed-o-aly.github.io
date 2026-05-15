@@ -42,6 +42,26 @@ description: Lab Specialist for MetaHub and the Abu Dhabi School of Government w
     </p>
   </article>
 
+  <section class="garden-section" aria-label="Working threads">
+    <h2>Working threads</h2>
+    <div class="thread-list">
+      {% for thread in site.data.work_threads %}
+        <article class="thread-row">
+          <div class="thread-kicker">{{ thread.label }}</div>
+          <div>
+            <h3>{{ thread.title }}</h3>
+            <p>{{ thread.summary }}</p>
+            <div class="thread-links">
+              {% for link in thread.links %}
+                <a href="{{ link.url | relative_url }}">{{ link.label }}</a>
+              {% endfor %}
+            </div>
+          </div>
+        </article>
+      {% endfor %}
+    </div>
+  </section>
+
   <section class="garden-section" aria-label="Selected projects">
     <h2>Selected schemes</h2>
     <div class="garden-link-list">

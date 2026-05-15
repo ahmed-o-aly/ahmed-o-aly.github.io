@@ -4,9 +4,15 @@ title: ADSG Public Policy Simulations
 description: Facility management, simulation prototypes, and research proposals for public-policy decision support.
 importance: 2
 category: current
+thread: policy-simulation
+image: /assets/img/projects/policy-simulation.svg
 role: Facilities, simulation design, proposal development
 methods: Scenario modeling, public-policy simulation, stakeholder workflows, research framing
 status: Current full-time responsibility
+signals:
+  - Scenario structures that expose assumptions and trade-offs.
+  - Facility and workflow support for a public-sector learning environment.
+  - Proposal framing around governance, analytics, and simulation.
 ---
 
 This work supports the Abu Dhabi School of Government department at Khalifa University. It combines operational responsibility for department facilities with public-policy simulation and proposal development.

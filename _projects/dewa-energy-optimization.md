@@ -4,9 +4,15 @@ title: Energy System Optimization with DEWA
 description: Large-scale optimization and simulation for renewables, storage, demand, operations, and cost tracing.
 importance: 3
 category: research
+thread: optimization-software
+image: /assets/img/projects/energy-optimization.svg
 role: Research software, optimization modeling, simulation support
 methods: Gurobi, Pyomo, pvlib, oemof, EnergyPlus, Streamlit, Plotly
 status: Prior research assistant work
+signals:
+  - Minute-level optimization models across long planning horizons.
+  - Simulation inputs for renewables, storage, demand, and asset operations.
+  - Cost and traceability metrics designed for expert review.
 ---
 
 At Khalifa University, I worked on optimization and simulation methods for large-scale energy systems in partnership with Dubai Electricity & Water Authority.

@@ -4,9 +4,15 @@ title: Logistics Routing and Facility Optimization
 description: Optimization products for routing, clustering, and facility-location problems under real traffic and capacity constraints.
 importance: 4
 category: software
+thread: optimization-software
+image: /assets/img/projects/logistics-routing.svg
 role: Operations research scientist and product lead
 methods: GRASP, Tabu Search, VNS, FastAPI, Node.js, Docker, Azure DevOps
 status: Prior industry role
+signals:
+  - Routing and clustering heuristics exposed through internal services.
+  - Real-time traffic and weather inputs for operational planning.
+  - Product ownership across algorithm design, APIs, and delivery workflows.
 ---
 
 At AHOY DMCC, I led optimization product work for routing, clustering, and facility-location problems. The work involved translating operational requirements into algorithmic services that could handle real traffic, capacity, safety, and policy constraints.

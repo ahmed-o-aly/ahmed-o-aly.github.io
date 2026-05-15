@@ -5,6 +5,7 @@ date: 2026-05-15
 description: A short note on using this site as a working notebook for MetaHub, ADSG, public-policy simulation, optimization, books, and research software.
 tags: [simulation, public-policy, optimization, books]
 categories: [blog]
+thread: publishing-system
 ---
 
 I want this site to be more than a static CV. The work I do sits between research, software, operations, and institutions, so it needs a place where the practical details can live.
