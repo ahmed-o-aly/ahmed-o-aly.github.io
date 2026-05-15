@@ -3,8 +3,9 @@ layout: page
 permalink: /repositories/
 title: repositories
 description: A snapshot of my GitHub work — profile stats and a couple of featured repositories.
-nav: true
+nav: false
 nav_order: 4
+sitemap: false
 ---
 
 {% if site.data.repositories.github_users %}

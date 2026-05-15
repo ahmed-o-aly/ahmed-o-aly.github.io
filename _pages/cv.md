@@ -5,7 +5,7 @@ title: cv
 nav: true
 nav_order: 5
 cv_pdf: "Ahmed Aly CV.pdf" # you can also use external links here
-description: Full CV covering my research, optimization work, and data science projects (PDF download available at the top).
+description: Research, lab operations, public-policy simulation, optimization software, and data science work.
 toc:
   sidebar: left
 ---

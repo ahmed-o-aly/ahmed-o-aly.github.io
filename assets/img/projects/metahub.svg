@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 420" role="img" aria-labelledby="title desc">
+  <title id="title">Immersive lab systems diagram</title>
+  <desc id="desc">Abstract immersive room with projection arcs, headset, sensor nodes, and control-room panel.</desc>
+  <rect width="640" height="420" fill="#101418"/>
+  <path d="M80 96h480v228H80z" fill="#171d24" stroke="#47c5d6" stroke-width="3"/>
+  <path d="M118 134h404v154H118z" fill="#0f2a31" stroke="#2d6d78" stroke-width="2"/>
+  <path d="M134 272c62-76 134-114 216-114s154 38 216 114" fill="none" stroke="#47c5d6" stroke-width="8" stroke-linecap="round" opacity=".85"/>
+  <path d="M168 270c50-51 110-77 182-77s132 26 182 77" fill="none" stroke="#f59e0b" stroke-width="4" stroke-linecap="round" opacity=".85"/>
+  <rect x="246" y="216" width="112" height="58" rx="18" fill="#e8edf2"/>
+  <rect x="264" y="229" width="32" height="22" rx="8" fill="#087f8c"/>
+  <rect x="308" y="229" width="32" height="22" rx="8" fill="#087f8c"/>
+  <path d="M246 246c-38 3-64 19-78 48" fill="none" stroke="#e8edf2" stroke-width="8" stroke-linecap="round"/>
+  <path d="M358 246c38 3 64 19 78 48" fill="none" stroke="#e8edf2" stroke-width="8" stroke-linecap="round"/>
+  <rect x="438" y="220" width="78" height="54" rx="6" fill="#1f2933" stroke="#9aa7b4" stroke-width="2"/>
+  <path d="M452 238h50M452 252h32" stroke="#47c5d6" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="148" cy="156" r="8" fill="#f59e0b"/>
+  <circle cx="492" cy="156" r="8" fill="#f59e0b"/>
+  <circle cx="320" cy="124" r="8" fill="#f59e0b"/>
+  <path d="M148 156l172-32 172 32" fill="none" stroke="#5e6a78" stroke-width="2" opacity=".7"/>
+</svg>

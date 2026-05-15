@@ -3,8 +3,8 @@
 # the socials will be displayed in the order they are defined here
 
 # academia_edu:  your organization and your username Ex. https://organization.academia.edu/UserName
-#  organization: princeton # your organization as appears in the subdomain
-#  username:  AlbertEinstein # your username
+#  organization: example # your organization as appears in the subdomain
+#  username: username # your username
 # acm_id: # your dl.acm.org/profile/id
 # arxiv_id: # your arXiv author ID
 # blogger_url: # your blogger URL
@@ -15,7 +15,7 @@ cv_pdf: "/assets/pdf/Ahmed Aly CV.pdf" # path to your CV PDF file
 email: ahmed.oss.aly@gmail.com # your email address
 # facebook_id: # your facebook id
 # flickr_id: # your flickr id
-# github_username: # your GitHub user name
+github_username: ahmed-o-aly # your GitHub user name
 # gitlab_username: # your GitLab user name
 # hal_id: # your HAL id (https://hal.science/)
 # ieee_id: # your ieeexplore.ieee.org/author/id

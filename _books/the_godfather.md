@@ -3,10 +3,10 @@ layout: book-review
 title: The Godfather
 author: Mario Puzo
 cover: assets/img/book_covers/the_godfather.jpg
-olid: OL43499941M # use Open Library ID to fetch cover (if no `cover` is provided)
-isbn: 7539967447 # use ISBN to fetch cover (if no `olid` is provided, dashes are optional)
-categories: classics crime historical-fiction mystery novels thriller
-tags: top-100
+olid: OL43499941M
+isbn: 7539967447
+categories: fiction crime institutions
+tags: systems power
 buy_link: https://www.amazon.com/Godfather-Deluxe-Mario-Puzo/dp/0593542592
 started: 2024-08-23
 finished: 2024-09-07
@@ -16,12 +16,8 @@ goodreads_review: 6318556633
 status: Finished
 ---
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras sollicitudin eros sit amet ante aliquet, sit amet vulputate lectus mattis. Aenean ullamcorper pretium nunc, sed egestas lorem elementum id. Nulla id mi id neque ultrices egestas ut in urna. Sed ac ultricies nunc. Nam convallis placerat urna id egestas. Nulla porta, est interdum vestibulum venenatis, lorem odio laoreet sapien, in pulvinar tellus eros a dolor. Vivamus sapien justo, ullamcorper a mi eget, scelerisque euismod nunc. In augue augue, ultrices a ornare non, tincidunt quis justo. Donec sit amet consectetur eros. Nullam neque leo, tincidunt id ipsum ac, volutpat lobortis mi. Phasellus consequat ultricies arcu, eu semper ligula ultrices eget. Ut in fringilla elit, ac tincidunt nisi.
+A sprawling crime-family novel about power, loyalty, incentives, and institutions. I am keeping books on the site because reading notes are useful raw material: they sharpen how I think about systems, people, and decisions.
 
-Nunc commodo elit nec turpis feugiat consectetur. Nullam in nisi egestas, fermentum ligula hendrerit, euismod enim. Nulla eu hendrerit eros. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin et velit ante. Vestibulum pretium vitae quam et sagittis. Proin eu nunc vel velit accumsan eleifend. Nulla facilisis, diam tempus imperdiet ultrices, massa ipsum consequat orci, sed efficitur eros mi a felis. Cras lobortis turpis sem, sed lobortis nunc ullamcorper tristique. Nam vehicula rhoncus ante, in faucibus sapien scelerisque et. Donec semper libero et tincidunt mattis. In vestibulum, nulla pretium dictum commodo, risus nulla vestibulum felis, at tincidunt massa mi in odio. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas.
+What stayed with me most is how much of the book is about structure rather than spectacle. Reputation, rules, favors, family obligations, and fear all become operating constraints. That is a useful lens even outside fiction: people rarely act inside clean mathematical abstractions, and systems are shaped by informal incentives as much as formal ones.
 
-Donec efficitur ultrices purus sit amet imperdiet. Nam consequat metus in erat sodales faucibus. Aliquam maximus fermentum nulla id finibus. Aliquam iaculis sed odio vel rutrum. Curabitur sed odio est. Praesent nec sollicitudin tortor. Praesent pharetra, turpis quis porttitor rhoncus, ante massa fringilla lacus, nec porttitor magna turpis vitae felis. Nullam tristique massa id odio imperdiet, nec sodales massa egestas. Proin nisi metus, euismod sed accumsan vitae, facilisis vel risus. Morbi suscipit auctor erat, nec viverra elit fringilla eu. Mauris congue, purus id tristique facilisis, felis nisi efficitur magna, eu consectetur augue sem vitae lacus. Aliquam erat volutpat. Cras at nibh ultricies, volutpat arcu vitae, dictum est. In ac dolor sagittis, egestas lectus et, semper nisl. Etiam consectetur purus vitae sapien porttitor auctor.
-
-Nulla sit amet venenatis odio. Suspendisse ac lacus quis augue mollis tempus vel in lorem. Donec augue turpis, eleifend nec nibh eu, elementum dictum metus. Proin ut est ligula. Etiam vehicula facilisis metus, sit amet consectetur risus ullamcorper porttitor. In congue nibh quis sollicitudin iaculis. Donec a mollis lorem, non mollis lacus. Nulla et leo ex. Aliquam erat volutpat. Nam sit amet tincidunt mauris. Vivamus vitae est sit amet nisi semper egestas. Donec in diam pharetra, commodo diam vitae, imperdiet ligula. Cras iaculis ac diam eget vehicula. Proin suscipit ante enim, quis vehicula mi porta bibendum. Aliquam a diam porttitor, sollicitudin justo vitae, tempor odio.
-
-Cras fermentum dignissim pretium. Donec quis turpis eu neque lacinia facilisis in sit amet nibh. Nulla non tortor ultricies, euismod est in, blandit nibh. Ut a neque metus. Sed convallis condimentum nibh quis finibus. Praesent aliquam sem iaculis eros maximus accumsan. Nulla venenatis mauris id aliquet maximus. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin at enim vitae ex porttitor vestibulum sed eget nibh. Suspendisse accumsan feugiat quam eget ultricies.
+This entry is also a small marker for the bookshelf itself. Future notes can be shorter, more technical, or more personal, but the goal is the same: make reading visible enough that it can compound.

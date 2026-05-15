@@ -2,7 +2,7 @@
 layout: post
 title: "Explanation and Codebase of Probabilistic VNS for Delivery Territory Design"
 date: 2025-11-21
-description: A quick tour of the open-source BVNS + path-relinking toolkit released with our Computers & Operations Research paper on delivery territory design.
+description: A quick tour of the open-source BVNS and path-relinking toolkit released with our Computers & Operations Research paper on delivery territory design.
 tags: [optimization, territory-design, vns, python]
 categories: [blog]
 toc: true
@@ -12,7 +12,7 @@ toc: true
   <img src="{{ 'assets/img/output.png' | relative_url }}" alt="Plotted BVNS districts" style="max-width: 420px; width: 80%; height: auto;" />
 </div>
 
-I open-sourced the code and datasets that accompany our paper *“An efficient probability-based VNS algorithm for delivery territory design”* (Computers & Operations Research, 2024). The repo lives at [github.com/ahmed-o-aly/TerritoryDesign](https://github.com/ahmed-o-aly/TerritoryDesign) and packages:
+I open-sourced the code and datasets that accompany our paper *"An efficient probability-based VNS algorithm for delivery territory design"* (Computers & Operations Research, 2024). The repo lives at [github.com/ahmed-o-aly/TerritoryDesign](https://github.com/ahmed-o-aly/TerritoryDesign) and packages:
 
 - A probabilistic BVNS implementation with tailored shaking, merit functions, and path relinking.
 - 120 graph instances (planar and grid-derived) in GraphML, matching the benchmarks from the paper.
@@ -50,9 +50,8 @@ print("Best objective:", obj_hist[-1], "Infeasibility:", inf_hist[-1])
 To visualize districts:
 
 ```python
-import networkx as nx
-import matplotlib.pyplot as plt
 import matplotlib.cm as cm
+import matplotlib.pyplot as plt
 
 def plot_districts(G, districts):
     pos = {
@@ -79,10 +78,11 @@ districts = best_solution if isinstance(best_solution, dict) else best_solution[
 plot_districts(G, districts)
 ```
 
-## What’s inside
+## What's inside
+
 - `DTDPAlgorithms.py`: construction heuristics, local search, BVNS, and path relinking.
-- `TGraphInstances/` & `GGraphInstances/newGeneratedInstances/`: 120 benchmarks (500–726 nodes).
+- `TGraphInstances/` and `GGraphInstances/newGeneratedInstances/`: 120 benchmarks (500-726 nodes).
 - `Results/`: JSON timelines for VNS/PR/MIP experiments.
 - `generateGraphs.ipynb`: notebook to create new planar or grid instances.
 
-If you use the code or instances, cite the paper ([doi:10.1016/j.cor.2024.106756](https://doi.org/10.1016/j.cor.2024.106756)) and the repository’s `CITATION.cff`. Feedback welcome!
+If you use the code or instances, cite the paper ([doi:10.1016/j.cor.2024.106756](https://doi.org/10.1016/j.cor.2024.106756)) and the repository's `CITATION.cff`. Feedback welcome.

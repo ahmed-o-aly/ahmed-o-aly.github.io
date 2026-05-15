@@ -24,7 +24,7 @@
 - title: Experience
   type: time_table
   contents:
-    - title: Research Assistant
+    - title: Research Assistant and Lab Specialist
       institution: Khalifa University
       year: 2025.01 - Present
       location: Abu Dhabi, UAE
@@ -35,6 +35,8 @@
         - Built a modular optimization library with Pytest, Sphinx documentation, and an interactive Streamlit/Plotly UI.
         - Developed renewables and chiller simulations (pvlib, oemof, EnergyPlus) to generate realistic time-series data.
         - Formulated levelized cost metrics, validated by DEWA experts, to trace energy costs from supply to demand.
+        - Serve as lab specialist for the KU MetaHub, coordinating facility readiness, vendor/system integration, and operational workflows for an AI/XR immersive learning and research environment.
+        - Support the Abu Dhabi School of Government department at Khalifa University by managing facilities, building public-policy simulation prototypes, and preparing research proposals.
 
     - title: Undergraduate Researcher
       institution: Khalifa University
@@ -76,5 +78,6 @@
 - title: Skills
   type: list
   contents:
-    - "Methodologies: Optimization, Machine Learning, Mathematical Modeling, Algorithm Design, Metaheuristics"
-    - "Languages & Tools: Python, Gurobi, Pyomo, R, SQL, NoSQL, Docker, APIs, Azure DevOps, AnyLogic"
+    - "Methodologies: Optimization, Simulation, Public Policy Modeling, Machine Learning, Mathematical Modeling, Algorithm Design, Metaheuristics"
+    - "Domains: Energy Systems, Logistics, AI/XR Research Labs, Public-Sector Decision Support, Facility Operations"
+    - "Languages & Tools: Python, Gurobi, Pyomo, R, SQL, NoSQL, Docker, APIs, Azure DevOps, AnyLogic, Streamlit, Plotly"

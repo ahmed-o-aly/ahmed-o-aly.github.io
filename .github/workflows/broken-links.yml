@@ -13,9 +13,6 @@ on:
       - "**/*.md"
       - "**.yml"
       - "!.github/workflows/axe.yml"
-      - "!.github/workflows/deploy-docker-tag.yml"
-      - "!.github/workflows/deploy-image.yml"
-      - "!.github/workflows/docker-slim.yml"
       - "!.github/workflows/lighthouse-badger.yml"
       - "!.github/workflows/prettier.yml"
       - "!lighthouse_results/**"
@@ -31,9 +28,6 @@ on:
       - "**/*.md"
       - "**.yml"
       - "!.github/workflows/axe.yml"
-      - "!.github/workflows/deploy-docker-tag.yml"
-      - "!.github/workflows/deploy-image.yml"
-      - "!.github/workflows/docker-slim.yml"
       - "!.github/workflows/lighthouse-badger.yml"
       - "!.github/workflows/prettier.yml"
       - "!lighthouse_results/**"
@@ -42,7 +36,7 @@ jobs:
   link-checker:
     runs-on: ubuntu-latest
     # only run on the main repo
-    if: github.repository == 'alshedivat/al-folio'
+    if: github.repository == 'ahmed-o-aly/ahmed-o-aly.github.io'
     steps:
       - uses: actions/checkout@v4
 
@@ -51,4 +45,4 @@ jobs:
         with:
           fail: true
           # removed md files that include liquid tags
-          args: --user-agent 'curl/7.54' --exclude-path README.md --exclude-path _pages/404.md --exclude-path _pages/blog.md --exclude-path _posts/2018-12-22-distill.md --exclude-path _posts/2023-04-24-videos.md --exclude-path _books/the_godfather.md --verbose --no-progress './**/*.md' './**/*.html'
+          args: --user-agent 'curl/7.54' --exclude-path README.md --exclude-path _pages/404.md --exclude-path _pages/blog.md --exclude-path _books/the_godfather.md --verbose --no-progress './**/*.md' './**/*.html'

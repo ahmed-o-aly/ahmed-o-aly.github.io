@@ -1,0 +1,39 @@
+name: Publish scheduled posts
+
+on:
+  schedule:
+    # Runs at 00:00 Asia/Dubai.
+    - cron: "0 20 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  publish-scheduled:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main branch
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Set publish date
+        run: echo "TODAY=$(TZ=Asia/Dubai date +'%Y-%m-%d')" >> "$GITHUB_ENV"
+
+      - name: Move scheduled posts into _posts
+        run: |
+          echo "Publishing scheduled posts for $TODAY"
+          shopt -s nullglob
+          for file in _scheduled/${TODAY}-*.md; do
+            echo "Found scheduled post: $file"
+            mv "$file" "_posts/"
+          done
+
+      - name: Commit and push changes
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add _posts/ _scheduled/
+          git commit -m "Publish scheduled posts for $TODAY" || echo "No scheduled posts to publish"
+          git push
