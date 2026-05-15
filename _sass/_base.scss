@@ -1801,8 +1801,8 @@ body {
 }
 
 .home-hero {
-  min-height: calc(100vh - 56px);
-  padding: 4.8rem 0 3rem;
+  min-height: auto;
+  padding: 3.4rem 0 2rem;
 }
 
 .hero-frame {
@@ -1909,7 +1909,7 @@ body {
 .system-map {
   align-self: center;
   border-left: 1px solid var(--global-divider-color);
-  min-height: 560px;
+  min-height: 480px;
   position: relative;
 }
 
@@ -1955,7 +1955,7 @@ body {
 
 .node-small {
   left: 2.2rem;
-  top: 13rem;
+  top: 10.8rem;
 }
 
 .node-wide {
@@ -1974,14 +1974,14 @@ body {
 
 .line-one {
   right: 13.5rem;
-  top: 10.5rem;
+  top: 9.6rem;
   transform: rotate(151deg);
   width: 230px;
 }
 
 .line-two {
   left: 13.5rem;
-  top: 23rem;
+  top: 20.5rem;
   transform: rotate(32deg);
   width: 190px;
 }
