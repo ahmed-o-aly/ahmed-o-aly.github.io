@@ -5,121 +5,104 @@ permalink: /
 description: Lab Specialist for MetaHub and the Abu Dhabi School of Government workstream at Khalifa University.
 ---
 
-<section class="home-hero" aria-label="Introduction">
-  <div class="home-frame hero-frame">
-    <div class="hero-copy">
+<div class="garden-home" aria-label="Homepage">
+  <header class="garden-masthead" aria-label="Introduction">
+    <img
+      src="{{ '/assets/img/ahmed-emblem.svg' | relative_url }}"
+      alt="Decision systems emblem"
+      class="garden-mark"
+      loading="eager"
+    >
+    <div class="garden-title-block">
       <h1>Ahmed Aly</h1>
-      <div class="role-stack" aria-label="Current role">
-        <strong>Lab Specialist</strong>
-        <span>MetaHub AI/XR lab operations</span>
-        <span>Abu Dhabi School of Government public-policy simulations</span>
-      </div>
-      <p class="hero-lede">
-        I run immersive research operations and build policy simulations that help institutions reason with evidence.
-      </p>
-      <div class="hero-actions" aria-label="Primary links">
-        <a href="{{ '/projects/' | relative_url }}">Selected work</a>
-        <a href="{{ '/blog/' | relative_url }}">Writing</a>
-        <a href="{{ '/cv/' | relative_url }}">CV</a>
+      <p class="garden-line garden-line-primary">Systems &amp; simulations</p>
+      <p class="garden-line">And other useful apparatus</p>
+      <p class="garden-line garden-line-small">For decisions that should not be guessed</p>
+      <p class="garden-byline">kept by: ahmed aly</p>
+      <div class="garden-rating" aria-label="Site motto">
+        <span aria-hidden="true">* * * * *</span>
+        <p>"Making institutional decisions easier to inspect before they harden."</p>
       </div>
     </div>
+  </header>
 
-    <div class="system-map" aria-label="Current work split">
-      <div class="map-node node-large">
-        <span>70%</span>
-        <strong>ADSG</strong>
-        <small>Facilities, policy simulations, proposals</small>
-      </div>
-      <div class="map-line line-one"></div>
-      <div class="map-node node-small">
-        <span>30%</span>
-        <strong>MetaHub</strong>
-        <small>AI/XR lab operations</small>
-      </div>
-      <div class="map-line line-two"></div>
-      <div class="map-node node-wide">
-        <span>CORE</span>
-        <strong>Decision support</strong>
-        <small>Optimization, simulation, research software</small>
-      </div>
-    </div>
-  </div>
-</section>
+  <article class="garden-intro">
+    <p>
+      <span class="garden-dropcap" aria-hidden="true">I</span><span class="sr-only">I</span> build decision-support
+      systems for labs, policy teams, and operations problems where the real work is hidden in assumptions. At Khalifa
+      University, my current work lives between the MetaHub AI/XR lab and the Abu Dhabi School of Government workstream:
+      facilities, simulation prototypes, proposals, vendor coordination, research software, and the routines that make
+      expensive systems usable.
+    </p>
+    <p>
+      This site is both a portfolio and a notebook. You can read the
+      <a href="{{ '/projects/' | relative_url }}">selected work</a>, browse
+      <a href="{{ '/blog/' | relative_url }}">field notes</a>, inspect the
+      <a href="{{ '/cv/' | relative_url }}">CV</a>, or send a note through the links below.
+    </p>
+  </article>
 
-<section class="home-band">
-  <div class="home-frame split-ledger" aria-label="Current responsibilities">
-    <div>
-      <p class="quiet-line">Current mandate</p>
-      <h2>Operational enough to run. Analytical enough to matter.</h2>
+  <section class="garden-section" aria-label="Selected projects">
+    <h2>Selected schemes</h2>
+    <div class="garden-link-list">
+      {% assign sorted_projects = site.projects | sort: "importance" %}
+      {% for project in sorted_projects limit: 5 %}
+        <a href="{{ project.url | relative_url }}" class="garden-feature-link">
+          <span>{{ project.title }}</span>
+          <em>{{ project.description }}</em>
+        </a>
+      {% endfor %}
     </div>
-    <dl>
+  </section>
+
+  <section class="garden-section" aria-label="Current practice">
+    <h2>Current plots</h2>
+    <dl class="garden-briefs">
       <div>
         <dt>MetaHub</dt>
-        <dd>Facility readiness, immersive AI/XR workflows, projection, AR/VR, haptics, control-room operations, vendor coordination, and training adoption.</dd>
+        <dd>AI/XR lab readiness, immersive facility workflows, AR/VR, haptics, projection, control-room operations.</dd>
       </div>
       <div>
         <dt>ADSG</dt>
-        <dd>Department facilities, public-policy simulation prototypes, structured scenarios, stakeholder-ready proposals, and research planning.</dd>
+        <dd>Public-policy simulation prototypes, department facilities, proposal development, and stakeholder framing.</dd>
       </div>
       <div>
-        <dt>Research foundation</dt>
-        <dd>Energy-system optimization, logistics algorithms, stochastic VNS, Gurobi/Pyomo models, simulation pipelines, and reproducible Python tools.</dd>
+        <dt>Optimization</dt>
+        <dd>Python models for logistics, energy systems, territory design, search heuristics, and scenario planning.</dd>
       </div>
     </dl>
-  </div>
-</section>
+  </section>
 
-<section class="home-frame home-section" aria-label="Selected work">
-  <div class="section-heading">
-    <p class="quiet-line">Selected work</p>
-    <h2>Projects as operating systems, not thumbnails.</h2>
-  </div>
-  <div class="work-ledger">
-    {% assign sorted_projects = site.projects | sort: "importance" %}
-    {% for project in sorted_projects limit: 5 %}
-      <a class="work-row" href="{{ project.url | relative_url }}">
-        <span class="work-index">0{{ forloop.index }}</span>
-        <span class="work-title">
-          <strong>{{ project.title }}</strong>
-          <em>{{ project.description }}</em>
-        </span>
-        <span class="work-domain">{{ project.role }}</span>
-      </a>
-    {% endfor %}
-  </div>
-</section>
-
-<section class="home-band reading-band">
-  <div class="home-frame reading-split">
-    <div>
-      <p class="quiet-line">Reading and writing</p>
-      <h2>A living shelf for books, work notes, and the ideas that keep showing up.</h2>
-      <p>
-        This site is also a blog. I will use it for project notes, public-policy simulation ideas, optimization walkthroughs, and reading reviews.
-      </p>
-      <a class="text-link" href="{{ '/books/' | relative_url }}">Open the reading log</a>
-    </div>
-    <ol class="mini-shelf" aria-label="Recent read books">
-      {% for book in site.data.read_books limit: 6 %}
-        <li>
-          <span>{{ book.rating }}/5</span>
-          <strong>{{ book.title }}</strong>
-          <em>{{ book.author }}</em>
-        </li>
+  <section class="garden-section" aria-label="Latest posts">
+    <h2>Latest notebook entries</h2>
+    <div class="garden-post-list">
+      {% for post in site.posts limit: 5 %}
+        <a href="{{ post.url | relative_url }}" class="garden-post-row">
+          <time datetime="{{ post.date | date_to_xmlschema }}">{{ post.date | date: "%b" }}</time>
+          <span>{{ post.title }}</span>
+        </a>
       {% endfor %}
-    </ol>
-  </div>
-</section>
+    </div>
+    <p class="garden-note">
+      More notes can be found in <a href="{{ '/blog/' | relative_url }}">the writing archive</a>.
+    </p>
+  </section>
 
-<section class="home-frame home-section closing-grid" aria-label="Connect">
-  <div>
-    <p class="quiet-line">What I am useful for</p>
-    <h2>Simulation rooms, research proposals, optimization code, and the bridge between them.</h2>
-  </div>
-  <div class="closing-links">
-    <a href="{{ '/cv/' | relative_url }}">Experience and CV</a>
-    <a href="{{ '/publications/' | relative_url }}">Publications</a>
-    <a href="{{ '/projects/' | relative_url }}">Case studies</a>
-    <a href="{{ '/blog/' | relative_url }}">Blog</a>
-  </div>
-</section>
+  <section class="garden-section" aria-label="More links">
+    <h2>More, other, and additional</h2>
+    <div class="garden-link-list">
+      <a href="{{ '/books/' | relative_url }}" class="garden-feature-link">
+        <span>Books</span>
+        <em>A reading shelf for institutions, incentives, systems, and useful trouble.</em>
+      </a>
+      <a href="{{ '/publications/' | relative_url }}" class="garden-feature-link">
+        <span>Publications</span>
+        <em>Research artifacts, papers, and the more formal side of the work.</em>
+      </a>
+      <a href="{{ '/cv/' | relative_url }}" class="garden-feature-link">
+        <span>Curriculum vitae</span>
+        <em>Experience, tools, roles, and the longer professional record.</em>
+      </a>
+    </div>
+  </section>
+</div>

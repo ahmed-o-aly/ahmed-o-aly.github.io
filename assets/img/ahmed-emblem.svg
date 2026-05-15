@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 220" role="img" aria-labelledby="title desc">
+  <title id="title">Decision systems emblem</title>
+  <desc id="desc">An ink-style network of connected decision nodes with a red central mark.</desc>
+  <g fill="none" stroke="#2c251d" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M130 18c30 0 58 12 78 32s32 48 32 78-12 58-32 78" stroke-width="3"/>
+    <path d="M130 18c-30 0-58 12-78 32s-32 48-32 78 12 58 32 78" stroke-width="3"/>
+    <path d="M130 18c-18 24-28 60-28 110s10 86 28 74c18 12 28-24 28-74S148 42 130 18Z" stroke-width="2.5"/>
+    <path d="M42 78h176M32 128h196M42 178h176" stroke-width="1.8" opacity=".72"/>
+    <path d="M70 68l60 60 58-58M70 188l60-60 58 58M70 68l118 120M188 70L70 188" stroke-width="1.6" opacity=".66"/>
+    <path d="M130 46v164M50 128h160" stroke-width="1.4" opacity=".5"/>
+    <circle cx="130" cy="128" r="30" fill="#faf9f5" stroke-width="3"/>
+    <circle cx="70" cy="68" r="8" fill="#faf9f5" stroke-width="3"/>
+    <circle cx="188" cy="70" r="8" fill="#faf9f5" stroke-width="3"/>
+    <circle cx="70" cy="188" r="8" fill="#faf9f5" stroke-width="3"/>
+    <circle cx="188" cy="188" r="8" fill="#faf9f5" stroke-width="3"/>
+    <circle cx="50" cy="128" r="7" fill="#faf9f5" stroke-width="3"/>
+    <circle cx="210" cy="128" r="7" fill="#faf9f5" stroke-width="3"/>
+  </g>
+  <g fill="#901714">
+    <circle cx="130" cy="128" r="11"/>
+    <path d="M130 102l7 18h19l-15 11 6 18-17-11-16 11 6-18-15-11h19z"/>
+  </g>
+  <g fill="none" stroke="#901714" stroke-linecap="round">
+    <path d="M117 142c-14 9-28 15-42 18M144 111c11-11 24-20 39-27" stroke-width="3"/>
+    <path d="M111 112c-12-12-26-20-43-25M150 143c12 10 26 17 43 21" stroke-width="2"/>
+  </g>
+</svg>
