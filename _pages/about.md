@@ -15,7 +15,7 @@ description: Lab Specialist for MetaHub and the Abu Dhabi School of Government w
         <span>Abu Dhabi School of Government public-policy simulations</span>
       </div>
       <p class="hero-lede">
-        I design and run the operational backbone for immersive research environments and build decision simulations that help public institutions reason with evidence, not intuition.
+        I run immersive research operations and build policy simulations that help institutions reason with evidence.
       </p>
       <div class="hero-actions" aria-label="Primary links">
         <a href="{{ '/projects/' | relative_url }}">Selected work</a>

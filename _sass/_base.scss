@@ -2396,10 +2396,12 @@ html[data-theme="dark"] .reading-band {
   .hero-lede {
     font-size: 1rem;
     max-width: 100%;
+    word-break: break-word;
   }
 
   .role-stack span {
     font-size: 0.88rem;
+    word-break: break-word;
   }
 
   .system-map {
