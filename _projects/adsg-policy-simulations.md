@@ -1,19 +1,25 @@
 ---
 layout: page
 title: ADSG Public Policy Simulations
-description: Simulation, facilities, and proposal support for public policy work with the Abu Dhabi School of Government department at Khalifa University.
-img: assets/img/projects/policy-simulation.svg
+description: Facility management, simulation prototypes, and research proposals for public-policy decision support.
 importance: 2
 category: current
+role: Facilities, simulation design, proposal development
+methods: Scenario modeling, public-policy simulation, stakeholder workflows, research framing
+status: Current full-time responsibility
 ---
 
-This work supports the Abu Dhabi School of Government department at Khalifa University. It combines operational responsibility for department facilities with simulation work for public policy making and research proposal development.
+This work supports the Abu Dhabi School of Government department at Khalifa University. It combines operational responsibility for department facilities with public-policy simulation and proposal development.
 
-The goal is to make policy questions easier to reason about: turn a complex situation into a scenario model, expose the assumptions, test interventions, and communicate trade-offs clearly enough for discussion and decision-making.
+The goal is simple to state and difficult to do well: turn policy questions into scenarios people can reason through. That means exposing assumptions, testing interventions, mapping trade-offs, and presenting outputs clearly enough for discussion and decision-making.
 
-## Focus areas
+## What I Own
 
-- Managing facilities and operational readiness for the department.
-- Building simulation prototypes for policy scenarios and decision support.
+- Managing department facilities and operational readiness.
+- Designing simulation prototypes for public-policy scenarios.
+- Structuring assumptions, variables, data needs, and experiment plans.
 - Developing research proposals around governance, public-sector innovation, and applied analytics.
-- Translating qualitative policy questions into structured models, data needs, and experiment plans.
+
+## Why It Matters
+
+Policy teams often work with messy systems where the feedback is delayed and the costs of poor assumptions are high. Simulation gives those assumptions somewhere to live, be tested, and be challenged before decisions harden.

@@ -1,19 +1,25 @@
 ---
 layout: page
 title: KU MetaHub AI/XR Lab
-description: Lab-specialist work for an immersive AI/XR learning and research environment at Khalifa University.
-img: assets/img/projects/metahub.svg
+description: Lab-specialist work turning an immersive AI/XR facility into a usable research and teaching environment.
 importance: 1
 category: current
+role: Lab operations, facility readiness, vendor coordination, adoption support
+methods: AI/XR systems, 360 projection, AR/VR, haptics, control-room workflows
+status: Current full-time responsibility
 ---
 
-The KU MetaHub is an interdisciplinary immersive learning and research facility built around AI, XR, 360-degree projection, AR/VR, haptics, control-room workflows, analytics, and faculty/student adoption.
+The KU MetaHub is an immersive learning and research facility built around AI, XR, 360-degree projection, AR/VR, haptics, analytics, and control-room workflows.
 
-My role as lab specialist is to help translate the facility scope into an operational research environment: coordinating requirements, facilities readiness, technical handover, equipment integration, vendor communication, training needs, and day-to-day usability for researchers and educators.
+My role is to make the facility operationally real. That means translating scope into usable practice: readiness checks, equipment coordination, vendor follow-up, training needs, scheduling patterns, technical handover, and the routines researchers and educators need before a lab becomes dependable.
 
-## Focus areas
+## What I Own
 
 - Facility readiness for immersive research and teaching workflows.
-- Coordination across projection, AR/VR, haptic, display, control-room, and analytics systems.
-- Support for adoption, training, scheduling, and operating procedures.
-- Research-facing use cases that connect immersive environments with simulation, learning, and decision support.
+- Coordination across projection, AR/VR, haptic, display, control-room, analytics, and support systems.
+- Vendor and stakeholder communication around technical handover and day-to-day usability.
+- Adoption support so researchers, faculty, and students can use the lab without the technology becoming the main friction point.
+
+## Why It Matters
+
+High-end lab infrastructure only matters when people can trust it. The MetaHub work is about reliability, translation, and adoption: making sure a technically complex facility becomes a research environment rather than a showroom.

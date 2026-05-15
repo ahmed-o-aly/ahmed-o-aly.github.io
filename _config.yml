@@ -9,9 +9,9 @@ last_name: Aly
 contact_note: >
   You can reach out to me via email or linkedin for any inquiries or collaborations.
 description: > # the ">" symbol means to ignore newlines until "footer_text:"
-  Optimization, simulation, energy systems, immersive research labs, and public policy decision support.
+  Ahmed Aly is a Khalifa University Lab Specialist working across MetaHub, Abu Dhabi School of Government public-policy simulations, optimization, and research software.
 # footer_text: >
-keywords: optimization, operations-research, simulation, public-policy, energy-systems, xr, ai, logistics # add your own keywords or leave empty
+keywords: metahub, adsg, khalifa-university, public-policy-simulation, optimization, operations-research, energy-systems, xr, ai, logistics # add your own keywords or leave empty
 lang: en # the language of your site (for example: en, fr, cn, ru, etc.)
 icon: A # image placed in assets/img/, or a short text favicon
 
@@ -51,7 +51,7 @@ posts_in_search: true
 bib_search: true
 
 # Dimensions
-max_width: 1080px
+max_width: 1160px
 
 # TODO: add layout settings (single page vs. multi-page)
 
@@ -84,7 +84,7 @@ bing_site_verification: # out your bing-site-verification ID (Bing Webmaster)
 # -----------------------------------------------------------------------------
 
 blog_name: Writing
-blog_description: Notes on optimization, simulation, public policy, books, and building useful research software.
+blog_description: Notes on public-policy simulation, lab operations, optimization, research software, books, and whatever else keeps the work alive.
 permalink: /blog/:year/:title/
 lsi: false # produce an index for related posts
 

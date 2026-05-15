@@ -2,38 +2,40 @@
 layout: page
 title: projects
 permalink: /projects/
-description: Selected work across energy optimization, public policy simulation, immersive research infrastructure, and open-source optimization software.
+description: Case-study rows across MetaHub, ADSG policy simulations, energy optimization, logistics, and delivery-territory design.
 nav: true
 nav_order: 3
-display_categories: [current, research, software]
-horizontal: true
 ---
 
-<!-- pages/projects.md -->
-<div class="projects">
-{% if site.enable_project_categories and page.display_categories %}
-  {% for category in page.display_categories %}
-  <a id="{{ category }}" href=".#{{ category }}">
-    <h2 class="category">{{ category }}</h2>
-  </a>
-  {% assign categorized_projects = site.projects | where: "category", category %}
-  {% assign sorted_projects = categorized_projects | sort: "importance" %}
-  <div class="container">
-    <div class="row row-cols-1 row-cols-md-2">
-    {% for project in sorted_projects %}
-      {% include projects_horizontal.liquid %}
-    {% endfor %}
-    </div>
-  </div>
-  {% endfor %}
-{% else %}
+<div class="case-intro">
+  <p>
+    The work sits between operations, simulation, optimization, and public-sector decision support. The useful details are role, methods, status, and why each system matters.
+  </p>
+</div>
+
+<div class="case-index">
   {% assign sorted_projects = site.projects | sort: "importance" %}
-  <div class="container">
-    <div class="row row-cols-1 row-cols-md-2">
-    {% for project in sorted_projects %}
-      {% include projects_horizontal.liquid %}
-    {% endfor %}
-    </div>
-  </div>
-{% endif %}
+  {% for project in sorted_projects %}
+    <article class="case-row">
+      <a class="case-title" href="{{ project.url | relative_url }}">
+        <span>0{{ forloop.index }}</span>
+        <strong>{{ project.title }}</strong>
+      </a>
+      <p>{{ project.description }}</p>
+      <dl>
+        <div>
+          <dt>Role</dt>
+          <dd>{{ project.role }}</dd>
+        </div>
+        <div>
+          <dt>Methods</dt>
+          <dd>{{ project.methods }}</dd>
+        </div>
+        <div>
+          <dt>Status</dt>
+          <dd>{{ project.status }}</dd>
+        </div>
+      </dl>
+    </article>
+  {% endfor %}
 </div>

@@ -1,20 +1,26 @@
 ---
 layout: page
 title: Energy System Optimization with DEWA
-description: Large-scale optimization and simulation for renewables, storage, demand, and cost tracing in power systems.
-img: assets/img/projects/energy-optimization.svg
-importance: 1
+description: Large-scale optimization and simulation for renewables, storage, demand, operations, and cost tracing.
+importance: 3
 category: research
+role: Research software, optimization modeling, simulation support
+methods: Gurobi, Pyomo, pvlib, oemof, EnergyPlus, Streamlit, Plotly
+status: Prior research assistant work
 ---
 
-At Khalifa University, I work on optimization and simulation methods for large-scale energy systems in partnership with Dubai Electricity & Water Authority (DEWA).
+At Khalifa University, I worked on optimization and simulation methods for large-scale energy systems in partnership with Dubai Electricity & Water Authority.
 
-The work blends mathematical programming, realistic time-series simulation, and software engineering. Models consider renewable generation, storage, demand, asset operations, reserves, ramping, and cost allocation across supply and demand.
+The work blended mathematical programming, realistic time-series simulation, and software engineering. Models considered renewable generation, storage, demand, asset operations, reserves, ramping, non-linear efficiency behavior, and cost allocation across supply and demand.
 
-## Focus areas
+## What I Built
 
-- Large-scale Python optimization with Gurobi and Pyomo.
-- Simulation inputs from tools such as pvlib, oemof, and EnergyPlus.
+- Large-scale Python optimization models with Gurobi and Pyomo.
+- Simulation inputs from pvlib, oemof, and EnergyPlus.
 - Minute-level operational modeling across long planning horizons.
 - Modular research software with tests, documentation, and interactive interfaces.
 - Levelized-cost and traceability metrics validated with domain experts.
+
+## Why It Matters
+
+Energy-system decisions sit at the intersection of physics, economics, operations, and policy. The useful model is not just the one that solves; it is the one stakeholders can inspect, stress-test, and trust.
