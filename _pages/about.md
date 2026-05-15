@@ -1,4 +1,4 @@
-﻿---
+---
 layout: home
 title: Ahmed Aly
 permalink: /
