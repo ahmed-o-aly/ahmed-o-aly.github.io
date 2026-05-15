@@ -5,7 +5,6 @@ description: Open-source benchmark instances and algorithms for delivery territo
 importance: 5
 category: software
 thread: optimization-software
-image: /assets/img/projects/logistics-routing.svg
 role: Researcher, algorithm designer, benchmark author
 methods: Probabilistic VNS, path relinking, local search, benchmark generation, Python
 status: Published research and open-source code

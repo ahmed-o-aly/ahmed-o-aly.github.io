@@ -42,8 +42,12 @@ description: Lab Specialist for MetaHub and the Abu Dhabi School of Government w
     </p>
   </article>
 
+  <div class="garden-ornament" aria-hidden="true">
+    <span></span>
+  </div>
+
   <section class="garden-section" aria-label="Working threads">
-    <h2>Working threads</h2>
+    <h2>Plots underway</h2>
     <div class="thread-list">
       {% for thread in site.data.work_threads %}
         <article class="thread-row">

@@ -5,7 +5,6 @@ description: Large-scale optimization and simulation for renewables, storage, de
 importance: 3
 category: research
 thread: optimization-software
-image: /assets/img/projects/energy-optimization.svg
 role: Research software, optimization modeling, simulation support
 methods: Gurobi, Pyomo, pvlib, oemof, EnergyPlus, Streamlit, Plotly
 status: Prior research assistant work

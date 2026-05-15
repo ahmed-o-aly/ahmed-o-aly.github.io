@@ -1,7 +1,7 @@
 ---
 layout: page
 permalink: /publications/
-title: publications
+title: papers
 description: Peer-reviewed work on delivery territory design, variable neighborhood search, and applied optimization.
 nav: true
 nav_order: 4

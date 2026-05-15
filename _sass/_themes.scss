@@ -6,19 +6,19 @@
 
 :root {
   color-scheme: light;
-  --global-bg-color: #faf9f5;
-  --global-code-bg-color: #f3f1e8;
-  --global-text-color: #2c251d;
-  --global-text-color-light: #736b63;
-  --global-theme-color: #901714;
-  --global-hover-color: #733331;
+  --global-bg-color: #f8f6ef;
+  --global-code-bg-color: #efeadf;
+  --global-text-color: #241f18;
+  --global-text-color-light: #685f55;
+  --global-theme-color: #9b1d1b;
+  --global-hover-color: #6f2b29;
   --global-hover-text-color: #{$white-color};
-  --global-footer-bg-color: #faf9f5;
-  --global-footer-text-color: #736b63;
-  --global-footer-link-color: #2c251d;
+  --global-footer-bg-color: #f8f6ef;
+  --global-footer-text-color: #685f55;
+  --global-footer-link-color: #241f18;
   --global-distill-app-color: #{$grey-color};
-  --global-divider-color: #968d85;
-  --global-card-bg-color: #fffdf8;
+  --global-divider-color: #8f867b;
+  --global-card-bg-color: #fbfaf6;
   --global-highlight-color: #{$red-color-dark};
   --global-back-to-top-bg-color: rgba(
     #{color.channel($black-color, "red", $space: rgb)},

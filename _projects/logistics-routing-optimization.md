@@ -5,7 +5,6 @@ description: Optimization products for routing, clustering, and facility-locatio
 importance: 4
 category: software
 thread: optimization-software
-image: /assets/img/projects/logistics-routing.svg
 role: Operations research scientist and product lead
 methods: GRASP, Tabu Search, VNS, FastAPI, Node.js, Docker, Azure DevOps
 status: Prior industry role

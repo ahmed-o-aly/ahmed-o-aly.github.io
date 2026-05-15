@@ -1,6 +1,6 @@
 ---
 layout: page
-title: projects
+title: schemes
 permalink: /projects/
 description: Case-study rows across MetaHub, ADSG policy simulations, energy optimization, logistics, and delivery-territory design.
 nav: true
@@ -13,7 +13,7 @@ nav_order: 3
   </p>
 </div>
 
-<div class="thread-list case-thread-list" aria-label="Project threads">
+<div class="thread-list case-thread-list" aria-label="Scheme threads">
   {% for thread in site.data.work_threads %}
     {% if thread.key != "reading-systems" %}
       <article class="thread-row">
@@ -31,14 +31,9 @@ nav_order: 3
   {% assign sorted_projects = site.projects | sort: "importance" %}
   {% for project in sorted_projects %}
     <article class="case-row">
-      {% if project.image %}
-        <a class="case-visual" href="{{ project.url | relative_url }}" aria-label="{{ project.title }}">
-          <img src="{{ project.image | relative_url }}" alt="" loading="lazy">
-        </a>
-      {% endif %}
+      <div class="case-indexmark" aria-hidden="true">0{{ forloop.index }}</div>
       <div class="case-main">
         <a class="case-title" href="{{ project.url | relative_url }}">
-          <span>0{{ forloop.index }}</span>
           <strong>{{ project.title }}</strong>
         </a>
         <p>{{ project.description }}</p>

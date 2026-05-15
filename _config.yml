@@ -83,7 +83,7 @@ bing_site_verification: # out your bing-site-verification ID (Bing Webmaster)
 # Blog
 # -----------------------------------------------------------------------------
 
-blog_name: Writing
+blog_name: Notebook
 blog_description: Notes on public-policy simulation, lab operations, optimization, research software, books, and whatever else keeps the work alive.
 permalink: /blog/:year/:title/
 lsi: false # produce an index for related posts

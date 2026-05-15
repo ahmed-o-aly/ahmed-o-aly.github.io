@@ -16,9 +16,10 @@ layout: default
 
   {% if page.collection == 'projects' %}
     <section class="project-brief" aria-label="Project brief">
-      {% if page.image %}
-        <img class="project-brief-image" src="{{ page.image | relative_url }}" alt="" loading="lazy">
-      {% endif %}
+      <div class="project-brief-mark" aria-hidden="true">
+        <span>{{ page.category }}</span>
+        <strong>{{ page.importance | prepend: '0' }}</strong>
+      </div>
       <div class="project-brief-copy">
         <dl>
           {% if page.role %}

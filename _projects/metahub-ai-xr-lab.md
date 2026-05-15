@@ -5,7 +5,6 @@ description: Lab-specialist work turning an immersive AI/XR facility into a usab
 importance: 1
 category: current
 thread: immersive-labs
-image: /assets/img/projects/metahub.svg
 role: Lab operations, facility readiness, vendor coordination, adoption support
 methods: AI/XR systems, 360 projection, AR/VR, haptics, control-room workflows
 status: Current full-time responsibility

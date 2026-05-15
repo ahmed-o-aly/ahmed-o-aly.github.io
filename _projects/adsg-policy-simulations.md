@@ -5,7 +5,6 @@ description: Facility management, simulation prototypes, and research proposals 
 importance: 2
 category: current
 thread: policy-simulation
-image: /assets/img/projects/policy-simulation.svg
 role: Facilities, simulation design, proposal development
 methods: Scenario modeling, public-policy simulation, stakeholder workflows, research framing
 status: Current full-time responsibility

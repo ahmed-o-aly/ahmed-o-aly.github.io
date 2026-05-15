@@ -1776,6 +1776,26 @@ body {
   font-family: var(--garden-serif);
   font-size: 19px;
   line-height: 1.55;
+  position: relative;
+}
+
+body::before {
+  background:
+    linear-gradient(rgba(36, 31, 24, 0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(36, 31, 24, 0.014) 1px, transparent 1px);
+  background-size: 18px 18px, 22px 22px;
+  content: "";
+  inset: 0;
+  pointer-events: none;
+  position: fixed;
+  z-index: 0;
+}
+
+body > header,
+body > main,
+body > footer {
+  position: relative;
+  z-index: 1;
 }
 
 .navbar {
@@ -1853,8 +1873,10 @@ body {
 }
 
 .home-main {
+  margin: 0 auto;
   max-width: 650px;
   padding: 0 0.8rem 4rem;
+  width: 100%;
 }
 
 .garden-home {
@@ -1867,25 +1889,26 @@ body {
   align-items: center;
   display: flex;
   flex-direction: column;
-  padding-top: 1.35rem;
+  min-height: 620px;
+  padding-top: 2.25rem;
   text-align: center;
 }
 
 .garden-mark {
   display: block;
-  height: 168px;
-  margin: 0 auto 2.05rem;
+  height: 188px;
+  margin: 0 auto 2.25rem;
   object-fit: contain;
-  width: 168px;
+  width: 210px;
 }
 
 .garden-title-block h1 {
   color: var(--global-theme-color);
   font-family: var(--garden-serif);
-  font-size: 3.05rem;
+  font-size: 3.2rem;
   font-weight: 800;
   letter-spacing: 0;
-  line-height: 0.95;
+  line-height: 0.9;
   margin: 0;
   text-transform: uppercase;
 }
@@ -1893,17 +1916,17 @@ body {
 .garden-line {
   color: var(--global-text-color);
   font-family: var(--garden-serif);
-  font-size: 1.45rem;
+  font-size: 1.5rem;
   font-weight: 800;
   letter-spacing: 0;
   line-height: 1.05;
-  margin: 0.35rem 0 0;
+  margin: 0.42rem 0 0;
   text-transform: uppercase;
 }
 
 .garden-line-primary {
-  font-size: 1.75rem;
-  margin-top: 0.55rem;
+  font-size: 1.9rem;
+  margin-top: 0.65rem;
 }
 
 .garden-line-small {
@@ -1919,13 +1942,14 @@ body {
   font-weight: 800;
   letter-spacing: 0;
   line-height: 1.2;
-  margin: 1.5rem 0 0;
-  padding: 0.45rem 0.35rem;
+  margin: 1.65rem 0 0;
+  min-width: 19rem;
+  padding: 0.52rem 0.8rem;
   text-transform: uppercase;
 }
 
 .garden-rating {
-  margin-top: 1.55rem;
+  margin-top: 1.75rem;
 }
 
 .garden-rating span {
@@ -1947,8 +1971,9 @@ body {
 }
 
 .garden-intro {
-  font-size: 1rem;
-  margin-top: 2.65rem;
+  font-size: 1.04rem;
+  margin: 1rem auto 0;
+  max-width: 37rem;
   overflow: hidden;
 }
 
@@ -1984,22 +2009,72 @@ body {
 
 .garden-dropcap {
   align-items: center;
-  border: 3px double var(--global-text-color);
+  background:
+    linear-gradient(135deg, transparent 0 42%, rgba(36, 31, 24, 0.12) 42% 48%, transparent 48% 100%),
+    var(--global-bg-color);
+  border: 4px double var(--global-text-color);
   color: var(--global-text-color);
   display: inline-flex;
   float: left;
   font-family: var(--garden-serif);
-  font-size: 3.3rem;
+  font-size: 3.55rem;
   font-weight: 800;
-  height: 3.6rem;
+  height: 3.8rem;
   justify-content: center;
   line-height: 1;
-  margin: 0.22rem 0.75rem 0.05rem 0;
-  width: 3.6rem;
+  margin: 0.18rem 0.8rem 0.05rem 0;
+  width: 3.8rem;
+}
+
+.garden-ornament {
+  align-items: center;
+  display: flex;
+  justify-content: center;
+  margin: 4.7rem auto 0;
+  max-width: 22rem;
+}
+
+.garden-ornament::before,
+.garden-ornament::after {
+  background: var(--global-divider-color);
+  content: "";
+  display: block;
+  height: 1px;
+  width: 7rem;
+}
+
+.garden-ornament span {
+  border: 2px solid var(--global-text-color);
+  border-left: 0;
+  border-right: 0;
+  display: block;
+  height: 0.9rem;
+  margin: 0 1rem;
+  position: relative;
+  width: 4.2rem;
+}
+
+.garden-ornament span::before,
+.garden-ornament span::after {
+  background: var(--global-theme-color);
+  content: "";
+  height: 0.42rem;
+  position: absolute;
+  top: 0.12rem;
+  transform: rotate(45deg);
+  width: 0.42rem;
+}
+
+.garden-ornament span::before {
+  left: 1.25rem;
+}
+
+.garden-ornament span::after {
+  right: 1.25rem;
 }
 
 .garden-section {
-  margin-top: 4rem;
+  margin-top: 4.35rem;
 }
 
 .garden-section h2 {
@@ -2194,24 +2269,45 @@ body {
 .case-row {
   border-top: 1px solid var(--global-divider-color);
   display: grid;
-  gap: 1.25rem;
-  grid-template-columns: 7rem minmax(0, 1fr);
-  padding-top: 1.35rem;
+  gap: 1.1rem;
+  grid-template-columns: 4.5rem minmax(0, 1fr);
+  padding-top: 1.45rem;
 }
 
-.case-visual {
-  display: block;
+.case-indexmark,
+.project-brief-mark {
+  align-items: center;
+  border-bottom: 2px solid var(--global-divider-color);
+  border-top: 2px solid var(--global-divider-color);
+  color: var(--global-theme-color);
+  display: flex;
+  flex-direction: column;
+  font-family: var(--garden-serif);
+  font-weight: 800;
+  justify-content: center;
+  min-height: 3.9rem;
+  text-align: center;
+  text-transform: uppercase;
 }
 
-.case-visual img,
-.project-brief-image {
-  aspect-ratio: 1;
-  background: var(--global-card-bg-color);
-  border: 1px solid var(--global-divider-color);
-  display: block;
-  object-fit: contain;
-  padding: 0.75rem;
-  width: 100%;
+.case-indexmark {
+  font-size: 1.35rem;
+}
+
+.project-brief-mark span {
+  color: var(--global-text-color-light);
+  font-family: var(--garden-sans);
+  font-size: 0.68rem;
+  font-weight: 800;
+  line-height: 1;
+  text-transform: lowercase;
+}
+
+.project-brief-mark strong {
+  color: var(--global-theme-color);
+  font-size: 2.4rem;
+  line-height: 1;
+  margin-top: 0.25rem;
 }
 
 .case-title {
@@ -2231,7 +2327,7 @@ body {
 
 .case-title strong {
   color: var(--global-text-color);
-  font-size: 1.17rem;
+  font-size: 1.22rem;
   line-height: 1.25;
   text-decoration: underline;
   text-decoration-thickness: 1px;
@@ -2291,7 +2387,7 @@ body {
   border-bottom: 1px solid var(--global-divider-color);
   display: grid;
   gap: 1.2rem;
-  grid-template-columns: 9rem minmax(0, 1fr);
+  grid-template-columns: 5.5rem minmax(0, 1fr);
   margin: -0.35rem 0 2rem;
   padding-bottom: 1.5rem;
 }
@@ -2486,6 +2582,157 @@ body {
   text-transform: lowercase;
 }
 
+.post-header::after {
+  background: var(--global-divider-color);
+  content: "";
+  display: block;
+  height: 1px;
+  margin: 1.25rem auto 0;
+  max-width: 25rem;
+  width: 70%;
+}
+
+.header-bar {
+  border-bottom: 2px solid var(--global-divider-color);
+  margin-bottom: 1rem;
+  padding-bottom: 1.25rem;
+  text-align: center;
+}
+
+.header-bar h1 {
+  color: var(--global-theme-color);
+  font-family: var(--garden-serif);
+  font-size: 2.55rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  line-height: 0.95;
+  margin-bottom: 0.65rem;
+  text-transform: uppercase;
+}
+
+.header-bar h2 {
+  color: var(--global-text-color-light);
+  font-family: var(--garden-sans);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1.45;
+  margin: 0 auto;
+  max-width: 40rem;
+  text-transform: lowercase;
+}
+
+.tag-category-list {
+  border-bottom: 1px solid var(--global-divider-color);
+  border-top: 1px solid var(--global-divider-color);
+  margin: 1.35rem 0 0;
+  padding: 0.2rem 0;
+  text-align: center;
+}
+
+.tag-category-list ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem 0.75rem;
+  justify-content: center;
+}
+
+.tag-category-list ul p,
+.tag-category-list ul li {
+  color: var(--global-text-color-light);
+  font-family: var(--garden-sans);
+  font-size: 0.74rem;
+  font-weight: 800;
+  list-style: none;
+  margin: 0;
+  padding: 0.45rem 0;
+  text-transform: lowercase;
+}
+
+.post-list li {
+  border-bottom: 1px solid var(--global-divider-color);
+  padding: 1.55rem 0;
+}
+
+.post-list h3 {
+  font-size: 1.35rem;
+  line-height: 1.2;
+  margin-bottom: 0.45rem;
+}
+
+.post-list h3 .post-title {
+  color: var(--global-text-color);
+  font-size: inherit;
+  line-height: inherit;
+  text-transform: none;
+}
+
+.post-list h3 .post-title:hover {
+  color: var(--global-theme-color);
+}
+
+.post-list > li > p:not(.post-meta):not(.post-tags) {
+  font-size: 0.95rem;
+  line-height: 1.42;
+  margin-bottom: 0.65rem;
+}
+
+.publications ol.bibliography li {
+  border-bottom: 1px solid var(--global-divider-color);
+  padding: 1.25rem 0;
+}
+
+.publications ol.bibliography .title {
+  color: var(--global-text-color);
+  font-family: var(--garden-serif);
+  font-size: 1.15rem;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.publications ol.bibliography .author,
+.publications ol.bibliography .periodical {
+  color: var(--global-text-color-light);
+  font-size: 0.88rem;
+  line-height: 1.4;
+}
+
+.publications ol.bibliography .links .btn {
+  border: 1px solid var(--global-theme-color);
+  border-radius: 0;
+  color: var(--global-theme-color);
+  font-family: var(--garden-sans);
+  font-size: 0.68rem;
+  font-weight: 800;
+  margin-top: 0.45rem;
+  text-transform: uppercase;
+}
+
+.cv .card {
+  background: transparent;
+  border: 0;
+  border-top: 1px solid var(--global-divider-color);
+  border-radius: 0;
+  padding: 1.15rem 0 !important;
+}
+
+.cv .card-title {
+  color: var(--global-theme-color);
+  font-family: var(--garden-serif);
+  font-size: 1.25rem;
+  font-weight: 800;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.cv table,
+.cv td,
+.cv th {
+  color: var(--global-text-color);
+  font-size: 0.92rem;
+  line-height: 1.4;
+}
+
 footer.sticky-bottom {
   border-top: 0;
   color: var(--global-text-color-light);
@@ -2555,6 +2802,7 @@ footer.sticky-bottom {
   }
 
   .garden-masthead {
+    min-height: auto;
     padding-top: 1rem;
   }
 
@@ -2582,6 +2830,7 @@ footer.sticky-bottom {
 
   .garden-byline {
     font-size: 0.86rem;
+    min-width: 0;
   }
 
   .garden-rating p {
@@ -2591,6 +2840,10 @@ footer.sticky-bottom {
   .garden-intro,
   .garden-section {
     margin-top: 3rem;
+  }
+
+  .garden-ornament {
+    margin-top: 3.4rem;
   }
 
   .garden-briefs div {
@@ -2605,9 +2858,9 @@ footer.sticky-bottom {
     grid-template-columns: 1fr;
   }
 
-  .case-visual,
-  .project-brief-image {
-    max-width: 9rem;
+  .case-indexmark,
+  .project-brief-mark {
+    max-width: 5.5rem;
   }
 
   .case-row dl div,
