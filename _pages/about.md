@@ -25,7 +25,7 @@ description: Lab Specialist for MetaHub and the Abu Dhabi School of Government w
     </button>
   </header>
 
-  <nav class="ii-primary-nav" data-menu-panel aria-hidden="true" aria-label="Primary navigation">
+  <nav class="ii-primary-nav" data-menu-panel aria-hidden="true" inert aria-label="Primary navigation">
     <button class="ii-nav-overlay" type="button" data-menu-close aria-label="Close navigation"></button>
     <ul>
       <li><a href="#/hello/" data-route-link data-route-name="hello"><span>He</span><em>hello</em></a></li>

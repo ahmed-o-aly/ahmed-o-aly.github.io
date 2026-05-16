@@ -20,6 +20,7 @@
   function closeMenu() {
     navPanel.classList.remove("is-open");
     navPanel.setAttribute("aria-hidden", "true");
+    navPanel.inert = true;
     menuToggle.classList.remove("is-active");
     menuToggle.setAttribute("aria-expanded", "false");
     menuToggle.setAttribute("aria-label", "Open navigation");
@@ -29,6 +30,7 @@
   function openMenu() {
     navPanel.classList.add("is-open");
     navPanel.setAttribute("aria-hidden", "false");
+    navPanel.inert = false;
     menuToggle.classList.add("is-active");
     menuToggle.setAttribute("aria-expanded", "true");
     menuToggle.setAttribute("aria-label", "Close navigation");
