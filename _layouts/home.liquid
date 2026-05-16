@@ -4,14 +4,8 @@
     {% include head.liquid %}
   </head>
 
-  <body class="{% if site.navbar_fixed %}fixed-top-nav{% endif %} {% unless site.footer_fixed %}sticky-bottom-footer{% endunless %} home-body">
-    {% include header.liquid %}
-
-    <main class="home-main" role="main">
-      {{ content }}
-    </main>
-
-    {% include footer.liquid %}
-    {% include scripts.liquid %}
+  <body class="portfolio-body">
+    {{ content }}
+    <script defer src="{{ '/assets/js/portfolio-home.js' | relative_url | bust_file_cache }}"></script>
   </body>
 </html>
