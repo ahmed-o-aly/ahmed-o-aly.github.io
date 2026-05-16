@@ -3,7 +3,7 @@
 
   if (!app) return;
 
-  const routes = ["hello", "about", "work", "notebook", "books", "papers", "cv", "contact"];
+  const routes = ["hello", "about", "achievements", "coding", "design", "contact"];
   const sections = Array.from(app.querySelectorAll("[data-route]"));
   const routeLinks = Array.from(app.querySelectorAll("[data-route-link]"));
   const navPanel = app.querySelector("[data-menu-panel]");
