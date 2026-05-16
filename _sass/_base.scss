@@ -4869,3 +4869,392 @@ body.portfolio-body {
     gap: 30px;
   }
 }
+
+/*******************************************************************************
+ * Portfolio subpages.
+ ******************************************************************************/
+
+.portfolio-subpage-body {
+  padding: 0 !important;
+}
+
+.portfolio-subpage-body .ii-page-main {
+  margin-top: 75px;
+  min-height: calc(100vh - 75px);
+  padding: 100px 0 80px;
+}
+
+.portfolio-subpage-body .ii-page-container {
+  margin: 0 auto;
+  max-width: 980px;
+  padding: 0;
+  width: 980px;
+}
+
+.portfolio-subpage-body .post {
+  margin: 0;
+}
+
+.portfolio-subpage-body .post-header {
+  margin: 0 0 40px;
+}
+
+.portfolio-subpage-body .post-title {
+  background: #2b2c33;
+  border-left: 15px solid #2196f3;
+  color: #fff;
+  display: block;
+  font-family: HelveticaNeue, "Helvetica Neue", Arial, sans-serif;
+  font-size: 42px;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1.08;
+  margin: 0 0 22px;
+  min-height: 62px;
+  overflow-wrap: anywhere;
+  padding: 16px 25px;
+  width: 100%;
+}
+
+.portfolio-subpage-body .post-title *,
+.portfolio-subpage-body .post-title a {
+  color: #fff;
+}
+
+.portfolio-subpage-body .post-title a.float-right {
+  background: transparent;
+  border: 2px solid #fff;
+  float: none !important;
+  font-size: 22px;
+  margin-left: 14px;
+  padding: 7px 9px;
+  vertical-align: middle;
+}
+
+.portfolio-subpage-body .post-description,
+.portfolio-subpage-body .post-meta,
+.portfolio-subpage-body .post-tags {
+  color: #2b2c33;
+  font-family: "EB Garamond", EBGaramond-Regular, Georgia, "Times New Roman", serif;
+  font-size: 20px;
+  line-height: 1.45;
+  margin: 0 0 10px;
+}
+
+.portfolio-subpage-body .post-tags a,
+.portfolio-subpage-body .post-meta a {
+  color: #2b2c33;
+  text-decoration: underline;
+}
+
+.portfolio-subpage-body article,
+.portfolio-subpage-body .post-content,
+.portfolio-subpage-body #markdown-content,
+.portfolio-subpage-body .clearfix,
+.portfolio-subpage-body .publications,
+.portfolio-subpage-body .cv {
+  color: #2b2c33;
+  font-family: "EB Garamond", EBGaramond-Regular, Georgia, "Times New Roman", serif;
+  font-size: 19px;
+  line-height: 1.62;
+}
+
+.portfolio-subpage-body article p,
+.portfolio-subpage-body .post article > p,
+.portfolio-subpage-body .post-content p,
+.portfolio-subpage-body #markdown-content p,
+.portfolio-subpage-body article li,
+.portfolio-subpage-body .cv li {
+  color: #2b2c33;
+  font-size: inherit;
+  line-height: inherit;
+}
+
+.portfolio-subpage-body article > p,
+.portfolio-subpage-body .post article > p,
+.portfolio-subpage-body #markdown-content > p {
+  max-width: 810px;
+}
+
+.portfolio-subpage-body article a,
+.portfolio-subpage-body .post-content a,
+.portfolio-subpage-body .clearfix a,
+.portfolio-subpage-body .cv a {
+  color: #111;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+.portfolio-subpage-body article a:hover,
+.portfolio-subpage-body .post-content a:hover,
+.portfolio-subpage-body .clearfix a:hover,
+.portfolio-subpage-body .cv a:hover {
+  background: #2b2c33;
+  color: #fff;
+  text-decoration: none;
+}
+
+.portfolio-subpage-body article h2,
+.portfolio-subpage-body article h3,
+.portfolio-subpage-body article h4,
+.portfolio-subpage-body .post h2,
+.portfolio-subpage-body .post h3,
+.portfolio-subpage-body .cv h3,
+.portfolio-subpage-body .publications h2 {
+  color: #000;
+  font-family: HelveticaNeue, "Helvetica Neue", Arial, sans-serif;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1.08;
+}
+
+.portfolio-subpage-body article h2,
+.portfolio-subpage-body .post h2 {
+  border-top: 4px solid #2b2c33;
+  font-size: 30px;
+  margin: 42px 0 18px;
+  padding-top: 22px;
+}
+
+.portfolio-subpage-body article h3,
+.portfolio-subpage-body .post h3,
+.portfolio-subpage-body .cv h3 {
+  font-size: 24px;
+  margin: 28px 0 12px;
+}
+
+.portfolio-subpage-body hr {
+  border: 0;
+  border-top: 4px solid #2b2c33;
+  margin: 34px 0;
+}
+
+.portfolio-subpage-body blockquote {
+  background: #fff;
+  border-left: 15px solid #2196f3;
+  color: #2b2c33;
+  font-family: "EB Garamond", EBGaramond-Regular, Georgia, "Times New Roman", serif;
+  font-size: 20px;
+  padding: 18px 24px;
+}
+
+.portfolio-subpage-body img,
+.portfolio-subpage-body video,
+.portfolio-subpage-body iframe {
+  max-width: 100%;
+}
+
+.portfolio-subpage-body .project-brief {
+  align-items: stretch;
+  border-bottom: 4px solid #2b2c33;
+  border-top: 4px solid #2b2c33;
+  display: grid;
+  gap: 34px;
+  grid-template-columns: 180px minmax(0, 1fr);
+  margin: 0 0 38px;
+  padding: 28px 0;
+}
+
+.portfolio-subpage-body .project-brief-mark {
+  align-items: center;
+  background: #2b2c33;
+  border-left: 15px solid #2196f3;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 160px;
+  padding: 18px;
+  text-align: center;
+}
+
+.portfolio-subpage-body .project-brief-mark span,
+.portfolio-subpage-body .project-brief-mark strong {
+  color: #fff;
+  font-family: HelveticaNeue, "Helvetica Neue", Arial, sans-serif;
+}
+
+.portfolio-subpage-body .project-brief-mark span {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1.1;
+  text-transform: lowercase;
+}
+
+.portfolio-subpage-body .project-brief-mark strong {
+  font-size: 62px;
+  line-height: 0.9;
+  margin-top: 12px;
+}
+
+.portfolio-subpage-body .project-brief dl {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+}
+
+.portfolio-subpage-body .project-brief dl div {
+  background: #2b2c33;
+  color: #fff;
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr);
+  margin: 0;
+  padding: 9px 12px;
+}
+
+.portfolio-subpage-body .project-brief dt,
+.portfolio-subpage-body .project-brief dd {
+  color: #fff;
+  font-family: HelveticaNeue, "Helvetica Neue", Arial, sans-serif;
+  font-size: 15px;
+  line-height: 1.25;
+  margin: 0;
+}
+
+.portfolio-subpage-body .project-brief dt {
+  font-weight: 700;
+}
+
+.portfolio-subpage-body .project-brief h2 {
+  border: 0;
+  font-size: 24px;
+  margin: 24px 0 10px;
+  padding: 0;
+}
+
+.portfolio-subpage-body .project-brief ul {
+  margin: 0;
+  padding-left: 24px;
+}
+
+.portfolio-subpage-body .project-artifacts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.portfolio-subpage-body .project-artifacts a {
+  background: #2b2c33;
+  color: #fff;
+  display: inline-block;
+  font-family: HelveticaNeue, "Helvetica Neue", Arial, sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  padding: 10px 14px;
+  text-decoration: none;
+}
+
+.portfolio-subpage-body .project-artifacts a:hover {
+  background: #2196f3;
+}
+
+.portfolio-subpage-body .card,
+.portfolio-subpage-body .cv .card {
+  background: #fff;
+  border: 3px solid #2b2c33;
+  border-radius: 0;
+  box-shadow: none;
+  color: #2b2c33;
+}
+
+.portfolio-subpage-body .cv .card-title {
+  background: #2b2c33;
+  color: #fff;
+  display: inline-block;
+  font-size: 24px;
+  margin: 0 0 18px;
+  padding: 8px 12px;
+}
+
+.portfolio-subpage-body table {
+  color: #2b2c33;
+  font-family: "EB Garamond", EBGaramond-Regular, Georgia, "Times New Roman", serif;
+  font-size: 18px;
+  width: 100%;
+}
+
+.portfolio-subpage-body table th {
+  color: #111;
+  font-family: HelveticaNeue, "Helvetica Neue", Arial, sans-serif;
+  font-weight: 700;
+}
+
+.portfolio-subpage-body table td,
+.portfolio-subpage-body table th {
+  border-top: 2px solid #2b2c33;
+  padding: 10px 12px 10px 0;
+}
+
+.portfolio-subpage-body ol.bibliography li,
+.portfolio-subpage-body .publications ol.bibliography li {
+  border-bottom: 3px solid #2b2c33;
+  margin-bottom: 22px;
+  padding-bottom: 22px;
+}
+
+.portfolio-subpage-body .post-thread-note {
+  border-top: 4px solid #2b2c33;
+  margin-top: 42px;
+  padding-top: 18px;
+}
+
+.portfolio-subpage-body .post-thread-note span {
+  background: #2b2c33;
+  color: #fff;
+  display: inline-block;
+  font-family: HelveticaNeue, "Helvetica Neue", Arial, sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  padding: 6px 10px;
+}
+
+@media (max-width: 1100px) {
+  .portfolio-subpage-body .ii-page-container {
+    max-width: calc(100vw - 40px);
+    width: calc(100vw - 40px);
+  }
+}
+
+@media (max-width: 760px) {
+  .portfolio-subpage-body .ii-page-main {
+    padding: 105px 0 54px;
+  }
+
+  .portfolio-subpage-body .post-title {
+    font-size: 30px;
+    line-height: 1.12;
+    padding: 16px 20px;
+  }
+
+  .portfolio-subpage-body .post-description,
+  .portfolio-subpage-body .post-meta,
+  .portfolio-subpage-body .post-tags,
+  .portfolio-subpage-body article,
+  .portfolio-subpage-body .post-content,
+  .portfolio-subpage-body #markdown-content,
+  .portfolio-subpage-body .clearfix,
+  .portfolio-subpage-body .publications,
+  .portfolio-subpage-body .cv {
+    font-size: 19px;
+  }
+
+  .portfolio-subpage-body .project-brief {
+    gap: 22px;
+    grid-template-columns: 1fr;
+  }
+
+  .portfolio-subpage-body .project-brief-mark {
+    min-height: 120px;
+  }
+
+  .portfolio-subpage-body .project-brief dl div {
+    grid-template-columns: 1fr;
+  }
+
+  .portfolio-subpage-body article h2,
+  .portfolio-subpage-body .post h2 {
+    font-size: 26px;
+  }
+}

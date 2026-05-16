@@ -13,44 +13,86 @@
       <meta http-equiv="refresh" content="3; url={{ redirect }}">
     {% endif %}
     {% include head.liquid %}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=EB+Garamond:wght@400;700&display=swap">
   </head>
 
   <!-- Body -->
-  <body class="{% if site.navbar_fixed %}fixed-top-nav{% endif %} {% unless site.footer_fixed %}sticky-bottom-footer{% endunless %}">
-    <!-- Header -->
-    {% include header.liquid %}
+  <body class="portfolio-body portfolio-subpage-body">
+    <div class="ii-site ii-subpage-site" data-portfolio-app>
+      <header class="ii-header" aria-label="Site header">
+        <a class="ii-logo" href="{{ '/' | relative_url }}#/hello/" data-route-link aria-label="Ahmed Aly home">
+          <span class="ii-logo-mark" aria-hidden="true">
+            <svg viewBox="0 0 54 40" role="img">
+              <polygon points="49.7 20 42.6 4.7 35.5 4.7 42.6 20 35.5 35.3 42.6 35.3"></polygon>
+              <polygon points="0.2 20 7.3 4.7 14.4 4.7 7.3 20 14.4 35.3 7.3 35.3"></polygon>
+              <polygon points="15.5 40 27.3 0 34.4 0 22.6 40"></polygon>
+            </svg>
+          </span>
+          <span class="ii-logo-wordmark">
+            <strong>Ahmed</strong>
+            <strong>Aly</strong>
+          </span>
+        </a>
 
-    <!-- Content -->
-    <div class="container mt-5" role="main">
-      {% if page.toc and page.toc.sidebar %}
-        {% if page.toc.sidebar == 'right' %}
-          <div class="row">
-            <!-- main content area -->
-            <div class="col-sm-9">{{ content }}</div>
-            <!-- sidebar, which will move to the top on a small screen -->
-            <div class="col-sm-3">
-              <nav id="toc-sidebar" class="sticky-top"></nav>
-            </div>
-          </div>
-        {% else %}
-          <div class="row">
-            <!-- sidebar, which will move to the top on a small screen -->
-            <div class="col-sm-3">
-              <nav id="toc-sidebar" class="sticky-top"></nav>
-            </div>
-            <!-- main content area -->
-            <div class="col-sm-9">{{ content }}</div>
-          </div>
-        {% endif %}
-      {% else %}
-        {{ content }}
-      {% endif %}
+        <button class="ii-menu" type="button" data-menu-toggle aria-label="Open navigation" aria-expanded="false">
+          <span class="sr-only">Menu</span>
+          <span></span><span></span><span></span><span></span>
+        </button>
+      </header>
+
+      <nav class="ii-primary-nav" data-menu-panel aria-hidden="true" inert aria-label="Primary navigation">
+        <button class="ii-nav-overlay" type="button" data-menu-close aria-label="Close navigation"></button>
+        <ul>
+          <li><a href="{{ '/' | relative_url }}#/hello/" data-route-link data-route-name="hello"><span>Ho</span><em>home</em></a></li>
+          <li><a href="{{ '/' | relative_url }}#/about/" data-route-link data-route-name="about"><span>Ab</span><em>about</em></a></li>
+          <li><a href="{{ '/' | relative_url }}#/achievements/" data-route-link data-route-name="achievements"><span>Ac</span><em>achievements</em></a></li>
+          <li><a href="{{ '/' | relative_url }}#/coding/" data-route-link data-route-name="coding"><span>Co</span><em>coding</em></a></li>
+          <li><a href="{{ '/' | relative_url }}#/design/" data-route-link data-route-name="design"><span>De</span><em>design</em></a></li>
+          <li><a href="{{ '/' | relative_url }}#/contact/" data-route-link data-route-name="contact"><span>Ct</span><em>contact</em></a></li>
+        </ul>
+        <div class="ii-social-row" aria-label="Social links">
+          <a href="https://www.linkedin.com/in/ahmed-aly-76a56b182/" aria-label="LinkedIn" data-social="in"><i class="fa-brands fa-linkedin-in" aria-hidden="true"></i></a>
+          <a href="https://github.com/ahmed-o-aly" aria-label="GitHub" data-social="gh"><i class="fa-brands fa-github" aria-hidden="true"></i></a>
+          <a href="{{ '/assets/pdf/Ahmed Aly CV.pdf' | relative_url }}" aria-label="CV" data-social="cv"><i class="fa-solid fa-file-alt" aria-hidden="true"></i></a>
+          <a href="{{ '/blog/' | relative_url }}" aria-label="Blog" data-social="M"><i class="fa-solid fa-book-open" aria-hidden="true"></i></a>
+          <a href="mailto:ahmed.oss.aly@gmail.com" aria-label="Email" data-social=">"><i class="fa-solid fa-paper-plane" aria-hidden="true"></i></a>
+        </div>
+      </nav>
+
+      <!-- Content -->
+      <main class="ii-main ii-page-main" role="main">
+        <div class="ii-container ii-page-container">
+          {% if page.toc and page.toc.sidebar %}
+            {% if page.toc.sidebar == 'right' %}
+              <div class="row">
+                <!-- main content area -->
+                <div class="col-sm-9">{{ content }}</div>
+                <!-- sidebar, which will move to the top on a small screen -->
+                <div class="col-sm-3">
+                  <nav id="toc-sidebar" class="sticky-top"></nav>
+                </div>
+              </div>
+            {% else %}
+              <div class="row">
+                <!-- sidebar, which will move to the top on a small screen -->
+                <div class="col-sm-3">
+                  <nav id="toc-sidebar" class="sticky-top"></nav>
+                </div>
+                <!-- main content area -->
+                <div class="col-sm-9">{{ content }}</div>
+              </div>
+            {% endif %}
+          {% else %}
+            {{ content }}
+          {% endif %}
+        </div>
+      </main>
     </div>
-
-    <!-- Footer -->
-    {% include footer.liquid %}
 
     <!-- JavaScripts -->
     {% include scripts.liquid %}
+    <script defer src="{{ '/assets/js/portfolio-home.js' | relative_url | bust_file_cache }}"></script>
   </body>
 </html>

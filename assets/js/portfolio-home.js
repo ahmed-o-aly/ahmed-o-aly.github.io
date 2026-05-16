@@ -5,6 +5,7 @@
 
   const routes = ["hello", "about", "achievements", "coding", "design", "contact"];
   const sections = Array.from(app.querySelectorAll("[data-route]"));
+  const hasRoutedSections = sections.length > 0;
   const routeLinks = Array.from(app.querySelectorAll("[data-route-link]"));
   const navPanel = app.querySelector("[data-menu-panel]");
   const menuToggle = app.querySelector("[data-menu-toggle]");
@@ -18,6 +19,7 @@
   }
 
   function closeMenu() {
+    if (!navPanel || !menuToggle) return;
     navPanel.classList.remove("is-open");
     navPanel.setAttribute("aria-hidden", "true");
     navPanel.inert = true;
@@ -28,6 +30,7 @@
   }
 
   function openMenu() {
+    if (!navPanel || !menuToggle) return;
     navPanel.classList.add("is-open");
     navPanel.setAttribute("aria-hidden", "false");
     navPanel.inert = false;
@@ -38,6 +41,7 @@
   }
 
   function toggleMenu() {
+    if (!navPanel) return;
     if (navPanel.classList.contains("is-open")) {
       closeMenu();
     } else {
@@ -74,6 +78,11 @@
   }
 
   function setActiveRoute(route) {
+    if (!hasRoutedSections) {
+      closeMenu();
+      return;
+    }
+
     const nextRoute = routes.includes(route) ? route : "hello";
     const isInitialRender = activeRoute === "";
     activeRoute = nextRoute;
@@ -122,20 +131,26 @@
     });
   });
 
-  menuToggle.addEventListener("click", toggleMenu);
-  menuClose.addEventListener("click", closeMenu);
+  if (menuToggle) menuToggle.addEventListener("click", toggleMenu);
+  if (menuClose) menuClose.addEventListener("click", closeMenu);
 
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") closeMenu();
   });
 
-  window.addEventListener("hashchange", () => {
-    setActiveRoute(routeFromHash());
-  });
+  if (hasRoutedSections) {
+    window.addEventListener("hashchange", () => {
+      setActiveRoute(routeFromHash());
+    });
+  }
 
-  if (!window.location.hash) {
+  if (hasRoutedSections && !window.location.hash) {
     window.history.replaceState(null, "", "#/hello/");
   }
 
-  setActiveRoute(routeFromHash());
+  if (hasRoutedSections) {
+    setActiveRoute(routeFromHash());
+  } else {
+    closeMenu();
+  }
 })();
