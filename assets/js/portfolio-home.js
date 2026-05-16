@@ -3,7 +3,7 @@
 
   if (!app) return;
 
-  const routes = ["hello", "about", "achievements", "coding", "design", "contact"];
+  const routes = ["hello", "about", "projects", "achievements", "contact"];
   const sections = Array.from(app.querySelectorAll("[data-route]"));
   const hasRoutedSections = sections.length > 0;
   const routeLinks = Array.from(app.querySelectorAll("[data-route-link]"));
@@ -12,6 +12,7 @@
   const menuClose = app.querySelector("[data-menu-close]");
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   let activeRoute = "";
+  let ambientFlickerTimer;
 
   function routeFromHash() {
     const match = window.location.hash.match(/^#\/([^/]+)\/?$/);
@@ -77,6 +78,42 @@
     }, 32);
   }
 
+  function getActiveSection() {
+    return sections.find((section) => section.dataset.route === activeRoute);
+  }
+
+  function triggerGlitch(element, duration = 620) {
+    if (!element || reduceMotion) return;
+
+    window.clearTimeout(element._glitchTimer);
+    element.classList.remove("is-glitching");
+    void element.offsetWidth;
+    element.classList.add("is-glitching");
+
+    element._glitchTimer = window.setTimeout(() => {
+      element.classList.remove("is-glitching");
+    }, duration);
+  }
+
+  function triggerAmbientFlicker() {
+    if (reduceMotion || !hasRoutedSections) return;
+
+    const section = getActiveSection();
+    if (!section || section.hidden || section.dataset.route !== "hello") return;
+
+    triggerGlitch(section.querySelector(".ii-title-slab"), 680);
+  }
+
+  function scheduleAmbientFlicker(delay) {
+    if (reduceMotion || !hasRoutedSections) return;
+
+    window.clearTimeout(ambientFlickerTimer);
+    ambientFlickerTimer = window.setTimeout(() => {
+      triggerAmbientFlicker();
+      scheduleAmbientFlicker(2600 + Math.random() * 3600);
+    }, typeof delay === "number" ? delay : 2600 + Math.random() * 3600);
+  }
+
   function setActiveRoute(route) {
     if (!hasRoutedSections) {
       closeMenu();
@@ -105,6 +142,9 @@
       window.requestAnimationFrame(() => {
         section.classList.add("is-revealed");
         scrambleTitle(section);
+        if (section.dataset.route === "hello") {
+          triggerGlitch(section.querySelector(".ii-title-slab"), 680);
+        }
       });
     });
 
@@ -121,6 +161,7 @@
 
     document.documentElement.dataset.portfolioRoute = nextRoute;
     closeMenu();
+    scheduleAmbientFlicker(isInitialRender ? 850 : 1350);
   }
 
   routeLinks.forEach((link) => {

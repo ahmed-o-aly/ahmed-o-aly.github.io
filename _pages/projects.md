@@ -1,6 +1,6 @@
 ---
 layout: page
-title: schemes
+title: projects
 permalink: /projects/
 description: Case-study rows across MetaHub, ADSG policy simulations, energy optimization, logistics, and delivery-territory design.
 nav: true
@@ -13,7 +13,7 @@ nav_order: 3
   </p>
 </div>
 
-<div class="thread-list case-thread-list" aria-label="Scheme threads">
+<div class="thread-list case-thread-list" aria-label="Project threads">
   {% for thread in site.data.work_threads %}
     {% if thread.key != "reading-systems" %}
       <article class="thread-row">

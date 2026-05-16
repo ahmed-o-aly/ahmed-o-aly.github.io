@@ -45,12 +45,13 @@
       <nav class="ii-primary-nav" data-menu-panel aria-hidden="true" inert aria-label="Primary navigation">
         <button class="ii-nav-overlay" type="button" data-menu-close aria-label="Close navigation"></button>
         <ul>
-          <li><a href="{{ '/' | relative_url }}#/hello/" data-route-link data-route-name="hello"><span>Ho</span><em>home</em></a></li>
-          <li><a href="{{ '/' | relative_url }}#/about/" data-route-link data-route-name="about"><span>Ab</span><em>about</em></a></li>
-          <li><a href="{{ '/' | relative_url }}#/achievements/" data-route-link data-route-name="achievements"><span>Ac</span><em>achievements</em></a></li>
-          <li><a href="{{ '/' | relative_url }}#/coding/" data-route-link data-route-name="coding"><span>Co</span><em>coding</em></a></li>
-          <li><a href="{{ '/' | relative_url }}#/design/" data-route-link data-route-name="design"><span>De</span><em>design</em></a></li>
-          <li><a href="{{ '/' | relative_url }}#/contact/" data-route-link data-route-name="contact"><span>Ct</span><em>contact</em></a></li>
+          <li><a href="{{ '/' | relative_url }}#/hello/" class="{% if page.permalink == '/' %}is-active{% endif %}" data-route-link data-route-name="hello"><span data-flicker="Ho">Ho</span><em>home</em><i class="fa-solid fa-code ii-nav-icon" aria-hidden="true"></i></a></li>
+          <li><a href="{{ '/' | relative_url }}#/about/" data-route-link data-route-name="about"><span data-flicker="Ab">Ab</span><em>about</em><i class="fa-solid fa-user ii-nav-icon" aria-hidden="true"></i></a></li>
+          <li><a href="{{ '/' | relative_url }}#/projects/" class="{% if page.url contains '/projects/' %}is-active{% endif %}" data-route-link data-route-name="projects"><span data-flicker="Pr">Pr</span><em>projects</em><i class="fa-solid fa-diagram-project ii-nav-icon" aria-hidden="true"></i></a></li>
+          <li><a href="{{ '/' | relative_url }}#/achievements/" data-route-link data-route-name="achievements"><span data-flicker="Ac">Ac</span><em>achievements</em><i class="fa-solid fa-award ii-nav-icon" aria-hidden="true"></i></a></li>
+          <li><a href="{{ '/blog/' | relative_url }}" class="{% if page.url contains '/blog/' %}is-active{% endif %}" data-route-name="blog"><span data-flicker="Bl">Bl</span><em>blog</em><i class="fa-solid fa-pen-nib ii-nav-icon" aria-hidden="true"></i></a></li>
+          <li><a href="{{ '/books/' | relative_url }}" class="{% if page.url contains '/books/' %}is-active{% endif %}" data-route-name="books"><span data-flicker="Bo">Bo</span><em>books</em><i class="fa-solid fa-book-open ii-nav-icon" aria-hidden="true"></i></a></li>
+          <li><a href="{{ '/' | relative_url }}#/contact/" data-route-link data-route-name="contact"><span data-flicker="Ct">Ct</span><em>contact</em><i class="fa-solid fa-paper-plane ii-nav-icon" aria-hidden="true"></i></a></li>
         </ul>
         <div class="ii-social-row" aria-label="Social links">
           <a href="https://www.linkedin.com/in/ahmed-aly-76a56b182/" aria-label="LinkedIn" data-social="in"><i class="fa-brands fa-linkedin-in" aria-hidden="true"></i></a>
