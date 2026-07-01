@@ -49,6 +49,7 @@
           <li><a href="{{ '/' | relative_url }}#/about/" data-route-link data-route-name="about"><span data-flicker="Ab">Ab</span><em>about</em><i class="fa-solid fa-user ii-nav-icon" aria-hidden="true"></i></a></li>
           <li><a href="{{ '/' | relative_url }}#/projects/" class="{% if page.url contains '/projects/' %}is-active{% endif %}" data-route-link data-route-name="projects"><span data-flicker="Pr">Pr</span><em>projects</em><i class="fa-solid fa-diagram-project ii-nav-icon" aria-hidden="true"></i></a></li>
           <li><a href="{{ '/' | relative_url }}#/achievements/" data-route-link data-route-name="achievements"><span data-flicker="Ac">Ac</span><em>achievements</em><i class="fa-solid fa-award ii-nav-icon" aria-hidden="true"></i></a></li>
+          <li><a href="{{ '/cv/' | relative_url }}" class="{% if page.url contains '/cv/' %}is-active{% endif %}" data-route-name="cv"><span data-flicker="Cv">Cv</span><em>cv</em><i class="fa-solid fa-id-card-clip ii-nav-icon" aria-hidden="true"></i></a></li>
           <li><a href="{{ '/blog/' | relative_url }}" class="{% if page.url contains '/blog/' %}is-active{% endif %}" data-route-name="blog"><span data-flicker="Bl">Bl</span><em>blog</em><i class="fa-solid fa-pen-nib ii-nav-icon" aria-hidden="true"></i></a></li>
           <li><a href="{{ '/books/' | relative_url }}" class="{% if page.url contains '/books/' %}is-active{% endif %}" data-route-name="books"><span data-flicker="Bo">Bo</span><em>books</em><i class="fa-solid fa-book-open ii-nav-icon" aria-hidden="true"></i></a></li>
           <li><a href="{{ '/' | relative_url }}#/contact/" data-route-link data-route-name="contact"><span data-flicker="Ct">Ct</span><em>contact</em><i class="fa-solid fa-paper-plane ii-nav-icon" aria-hidden="true"></i></a></li>
@@ -56,7 +57,7 @@
         <div class="ii-social-row" aria-label="Social links">
           <a href="https://www.linkedin.com/in/ahmed-aly-76a56b182/" aria-label="LinkedIn" data-social="in"><i class="fa-brands fa-linkedin-in" aria-hidden="true"></i></a>
           <a href="https://github.com/ahmed-o-aly" aria-label="GitHub" data-social="gh"><i class="fa-brands fa-github" aria-hidden="true"></i></a>
-          <a href="{{ '/assets/pdf/Ahmed Aly CV.pdf' | relative_url }}" aria-label="CV" data-social="cv"><i class="fa-solid fa-file-alt" aria-hidden="true"></i></a>
+          <a href="{{ '/cv/' | relative_url }}" aria-label="CV" data-social="cv"><i class="fa-solid fa-id-card-clip" aria-hidden="true"></i></a>
           <a href="{{ '/blog/' | relative_url }}" aria-label="Blog" data-social="M"><i class="fa-solid fa-book-open" aria-hidden="true"></i></a>
           <a href="mailto:ahmed.oss.aly@gmail.com" aria-label="Email" data-social=">"><i class="fa-solid fa-paper-plane" aria-hidden="true"></i></a>
         </div>

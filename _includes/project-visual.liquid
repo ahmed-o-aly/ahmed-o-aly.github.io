@@ -1,0 +1,36 @@
+{% assign project = include.project | default: page %}
+{% assign visual = project.visual %}
+{% assign visual_key = visual.key | default: project.thread | default: 'system' | slugify %}
+{% assign visual_label = visual.label | default: project.category %}
+{% assign visual_icon = visual.icon | default: 'fa-solid fa-diagram-project' %}
+{% assign visual_headline = visual.headline | default: project.title %}
+{% assign visual_summary = visual.summary | default: project.description %}
+
+<figure class="project-visual project-visual-{{ visual_key }}{% if include.compact %} project-visual-compact{% endif %}" {% if include.compact %}aria-hidden="true"{% else %}aria-label="{{ project.title }} visual summary"{% endif %}>
+  <div class="project-visual-pattern" aria-hidden="true">
+    <span></span>
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+
+  <div class="project-visual-top">
+    <span>{{ visual_label }}</span>
+    <i class="{{ visual_icon }}" aria-hidden="true"></i>
+  </div>
+
+  <div class="project-visual-body">
+    <strong>{{ visual_headline }}</strong>
+    {% unless include.compact %}
+      <p>{{ visual_summary }}</p>
+    {% endunless %}
+  </div>
+
+  {% if visual.chips %}
+    <div class="project-visual-chips">
+      {% for chip in visual.chips limit: 4 %}
+        <span>{{ chip }}</span>
+      {% endfor %}
+    </div>
+  {% endif %}
+</figure>

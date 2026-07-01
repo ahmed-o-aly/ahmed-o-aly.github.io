@@ -18,6 +18,24 @@ nav_order: 4
   </p>
 </div>
 
+<section class="paper-impact-strip" aria-label="Publication impact trail">
+  <article>
+    <span>paper</span>
+    <strong>Peer-reviewed method</strong>
+    <p>Probability-based VNS for delivery territory design, published in Computers & Operations Research.</p>
+  </article>
+  <article>
+    <span>code</span>
+    <strong>Reusable artifact</strong>
+    <p>Open repository with algorithms, benchmark instances, experiment logs, notebooks, and citation metadata.</p>
+  </article>
+  <article>
+    <span>bridge</span>
+    <strong>Readable walkthrough</strong>
+    <p>Blog notes connect the formal result to the codebase, plotting workflow, and practical reuse path.</p>
+  </article>
+</section>
+
 <!-- Bibsearch Feature -->
 
 {% include bib_search.liquid %}

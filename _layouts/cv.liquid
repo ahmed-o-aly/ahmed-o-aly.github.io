@@ -1,127 +1,286 @@
 ---
 layout: default
 ---
-{% unless site.data.resume %}
-  <div class="post">
-    <header class="post-header">
-      <h1 class="post-title">
-        {{ page.title }}
-        {% if page.cv_pdf %}
-          <a
-            {% if page.cv_pdf contains '://' %}
-              href="{{ page.cv_pdf }}"
-            {% else %}
-              href="{{ page.cv_pdf | prepend: 'assets/pdf/' | relative_url }}"
-            {% endif %}
-            target="_blank"
-            rel="noopener noreferrer"
-            class="float-right"
-          >
-            <i class="fa-solid fa-file-pdf"></i>
-          </a>
-        {% endif %}
-      </h1>
-      {% if page.description %}
-        <p class="post-description">{{ page.description }}</p>
-      {% endif %}
-    </header>
+{% assign cv_general = site.data.cv | where: "title", "General Information" | first %}
+{% assign cv_education = site.data.cv | where: "title", "Education" | first %}
+{% assign cv_experience = site.data.cv | where: "title", "Experience" | first %}
+{% assign cv_certifications = site.data.cv | where: "title", "Certifications" | first %}
+{% assign cv_skills = site.data.cv | where: "title", "Skills" | first %}
+{% assign cv_name = "Ahmed Aly" %}
+{% assign cv_location = "Abu Dhabi, UAE" %}
+{% assign cv_email = "ahmed.oss.aly@gmail.com" %}
+{% assign cv_languages = "English, Arabic" %}
+{% if cv_general %}
+  {% for item in cv_general.contents %}
+    {% if item.name == "Full Name" %}
+      {% assign cv_name = item.value %}
+    {% elsif item.name == "Location" %}
+      {% assign cv_location = item.value %}
+    {% elsif item.name == "Email" %}
+      {% assign cv_email = item.value %}
+    {% elsif item.name == "Languages" %}
+      {% assign cv_languages = item.value %}
+    {% endif %}
+  {% endfor %}
+{% endif %}
+{% assign cv_pdf_url = page.cv_pdf | default: "/assets/pdf/Ahmed Aly CV.pdf" | relative_url %}
 
-    <article>
-      <div class="cv">
-        {% for entry in site.data.cv %}
-          <a class="anchor" id="{{ entry.title }}"></a>
-          <div class="card mt-3 p-3">
-            <h3 class="card-title font-weight-medium">{{ entry.title }}</h3>
+<article class="post cv-web">
+  <header class="cv-hero" aria-labelledby="cv-title">
+    <div class="cv-hero-copy">
+      <p class="cv-kicker">web cv</p>
+      <h1 id="cv-title">{{ cv_name }}</h1>
+      <p class="cv-hero-summary">
+        Lab specialist and research-software builder working across immersive AI/XR labs, public-policy simulation,
+        optimization models, and data-science workflows that need to become reliable decision environments.
+      </p>
+      <div class="cv-hero-actions" aria-label="CV actions">
+        <a class="cv-action cv-action-primary" href="{{ cv_pdf_url }}" target="_blank" rel="noopener noreferrer">
+          <i class="fa-solid fa-file-pdf" aria-hidden="true"></i>
+          <span>Download PDF</span>
+        </a>
+        <a class="cv-action" href="mailto:{{ cv_email }}">
+          <i class="fa-solid fa-paper-plane" aria-hidden="true"></i>
+          <span>Email</span>
+        </a>
+        <a class="cv-action" href="https://www.linkedin.com/in/ahmed-aly-76a56b182/" target="_blank" rel="noopener noreferrer">
+          <i class="fa-brands fa-linkedin-in" aria-hidden="true"></i>
+          <span>LinkedIn</span>
+        </a>
+      </div>
+    </div>
+
+    <aside class="cv-contact-panel" aria-label="CV snapshot">
+      <span class="cv-panel-label">current signal</span>
+      <strong>MetaHub + ADSG</strong>
+      <p>AI/XR lab readiness, public-sector simulation support, proposal work, and stakeholder-facing research systems.</p>
+      <dl>
+        <div>
+          <dt>Location</dt>
+          <dd>{{ cv_location }}</dd>
+        </div>
+        <div>
+          <dt>Email</dt>
+          <dd><a href="mailto:{{ cv_email }}">{{ cv_email }}</a></dd>
+        </div>
+        <div>
+          <dt>Languages</dt>
+          <dd>{{ cv_languages }}</dd>
+        </div>
+      </dl>
+    </aside>
+  </header>
+
+  <section class="cv-thin-ribbon" aria-label="Working stack highlights">
+    <div class="cv-ribbon-label">
+      <i class="fa-solid fa-wave-square" aria-hidden="true"></i>
+      <span>stack</span>
+    </div>
+    <div class="cv-ribbon-window">
+      <div class="cv-ribbon-track" aria-hidden="true">
+        <span><i class="fa-brands fa-python"></i>Python</span>
+        <span><i class="fa-solid fa-cubes"></i>Gurobi</span>
+        <span><i class="fa-solid fa-diagram-project"></i>Pyomo</span>
+        <span><i class="fa-solid fa-database"></i>SQL</span>
+        <span><i class="fa-brands fa-docker"></i>Docker</span>
+        <span><i class="fa-solid fa-plug"></i>APIs</span>
+        <span><i class="fa-solid fa-chart-line"></i>Plotly</span>
+        <span><i class="fa-solid fa-sliders"></i>Streamlit</span>
+        <span><i class="fa-solid fa-vr-cardboard"></i>AI/XR</span>
+        <span><i class="fa-solid fa-brain"></i>Simulation</span>
+        <span><i class="fa-solid fa-route"></i>Routing</span>
+        <span><i class="fa-solid fa-scale-balanced"></i>Policy models</span>
+        <span><i class="fa-brands fa-python"></i>Python</span>
+        <span><i class="fa-solid fa-cubes"></i>Gurobi</span>
+        <span><i class="fa-solid fa-diagram-project"></i>Pyomo</span>
+        <span><i class="fa-solid fa-database"></i>SQL</span>
+        <span><i class="fa-brands fa-docker"></i>Docker</span>
+        <span><i class="fa-solid fa-plug"></i>APIs</span>
+        <span><i class="fa-solid fa-chart-line"></i>Plotly</span>
+        <span><i class="fa-solid fa-sliders"></i>Streamlit</span>
+        <span><i class="fa-solid fa-vr-cardboard"></i>AI/XR</span>
+        <span><i class="fa-solid fa-brain"></i>Simulation</span>
+        <span><i class="fa-solid fa-route"></i>Routing</span>
+        <span><i class="fa-solid fa-scale-balanced"></i>Policy models</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="cv-section cv-experience" aria-labelledby="cv-experience-title">
+    <div class="cv-section-heading">
+      <span>career thread</span>
+      <h2 id="cv-experience-title">From Lab Systems To Optimization Software</h2>
+      <p>A through-line across the roles: make technical infrastructure, models, and research workflows usable for teams that need decisions, not just outputs.</p>
+    </div>
+
+    <div class="cv-timeline">
+      {% for role in cv_experience.contents %}
+        <article class="cv-timeline-item">
+          <div class="cv-time">
+            <span>{{ role.year }}</span>
+            {% if role.location %}
+              <em>{{ role.location }}</em>
+            {% endif %}
+          </div>
+          <div class="cv-role">
+            <h3>{{ role.title }}</h3>
+            <p class="cv-institution">{{ role.institution }}</p>
+            {% if role.description %}
+              <ul>
+                {% for point in role.description %}
+                  <li>{{ point }}</li>
+                {% endfor %}
+              </ul>
+            {% endif %}
+          </div>
+        </article>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="cv-section cv-split-section" aria-labelledby="cv-credentials-title">
+    <div class="cv-section-heading">
+      <span>credentials</span>
+      <h2 id="cv-credentials-title">Training And Credentials</h2>
+      <p>The formal base behind the applied modeling, lab operations, and stakeholder-facing systems work.</p>
+    </div>
+
+    <div class="cv-credential-flow">
+      <section class="cv-credential-group">
+        <h3>Education</h3>
+        {% for item in cv_education.contents %}
+          <article class="cv-mini-entry">
+            <span>{{ item.year }}</span>
+            <strong>{{ item.title }}</strong>
+            <em>{{ item.institution }}</em>
+            {% if item.maindescription %}
+              <p>{{ item.maindescription }}</p>
+            {% endif %}
+          </article>
+        {% endfor %}
+      </section>
+
+      <section class="cv-credential-group">
+        <h3>Certifications</h3>
+        {% for item in cv_certifications.contents %}
+          <article class="cv-mini-entry">
+            <span>{{ item.year }}</span>
+            <strong>{{ item.title }}</strong>
+            <em>{{ item.institution }}</em>
+            {% if item.description %}
+              <ul>
+                {% for point in item.description %}
+                  <li>{{ point }}</li>
+                {% endfor %}
+              </ul>
+            {% endif %}
+            {% if item.linkitems %}
+              <div class="cv-link-row">
+                {% for linkitem in item.linkitems %}
+                  {% assign link_url = linkitem.link %}
+                  {% unless link_url contains "://" %}
+                    {% assign link_url = link_url | relative_url %}
+                  {% endunless %}
+                  <a href="{{ link_url }}" target="_blank" rel="noopener noreferrer">{{ linkitem.linkname }}</a>
+                {% endfor %}
+              </div>
+            {% endif %}
+          </article>
+        {% endfor %}
+      </section>
+    </div>
+  </section>
+
+  <section class="cv-section cv-skills-section" aria-labelledby="cv-skills-title">
+    <div class="cv-section-heading">
+      <span>working vocabulary</span>
+      <h2 id="cv-skills-title">Methods, Contexts, Tools</h2>
+      <p>One compact map of the recurring moves behind the case studies.</p>
+    </div>
+
+    <div class="cv-stack-map">
+      <aside class="cv-stack-map-label">
+        <span>system map</span>
+        <strong>How The Work Gets Built</strong>
+        <p>Methods, operating contexts, and tools grouped once so the stack reads like a workflow instead of a badge collection.</p>
+      </aside>
+
+      <div class="cv-stack-lanes">
+        <article class="cv-stack-lane" data-stack="methods">
+          <div class="cv-stack-lane-head">
+            <i class="fa-solid fa-compass-drafting" aria-hidden="true"></i>
             <div>
-              {% if entry.type == 'list' %}
-                {% include cv/list.liquid %}
-              {% elsif entry.type == 'map' %}
-                {% include cv/map.liquid %}
-              {% elsif entry.type == 'nested_list' %}
-                {% include cv/nested_list.liquid %}
-              {% elsif entry.type == 'time_table' %}
-                {% include cv/time_table.liquid %}
-              {% elsif entry.type == 'list_groups' %}
-                {% include cv/list_groups.liquid %}
-              {% else %}
-                {{ entry.contents }}
-              {% endif %}
+              <span>01 methods</span>
+              <h3>Modeling Moves</h3>
             </div>
           </div>
-        {% endfor %}
-      </div>
-    </article>
-  </div>
-{% else %}
-  <div class="post">
-    <header class="post-header">
-      <h1 class="post-title">
-        {{ page.title }}
-        {% if page.cv_pdf %}
-          <a
-            {% if page.cv_pdf contains '://' %}
-              href="{{ page.cv_pdf }}"
-            {% else %}
-              href="{{ page.cv_pdf | prepend: 'assets/pdf/' | relative_url }}"
-            {% endif %}
-            target="_blank"
-            rel="noopener noreferrer"
-            class="float-right"
-          >
-            <i class="fa-solid fa-file-pdf"></i>
-          </a>
-        {% endif %}
-      </h1>
-      {% if page.description %}
-        <p class="post-description">{{ page.description }}</p>
-      {% endif %}
-    </header>
+          <div class="cv-chip-flow" aria-label="Methods">
+            <span><i class="fa-solid fa-chart-line" aria-hidden="true"></i>Optimization</span>
+            <span><i class="fa-solid fa-brain" aria-hidden="true"></i>Simulation</span>
+            <span><i class="fa-solid fa-scale-balanced" aria-hidden="true"></i>Policy modeling</span>
+            <span><i class="fa-solid fa-square-root-variable" aria-hidden="true"></i>Mathematical modeling</span>
+            <span><i class="fa-solid fa-code-branch" aria-hidden="true"></i>Algorithm design</span>
+            <span><i class="fa-solid fa-shuffle" aria-hidden="true"></i>Metaheuristics</span>
+            <span><i class="fa-solid fa-file-signature" aria-hidden="true"></i>Research proposals</span>
+          </div>
+        </article>
 
-    <article>
-      <div class="cv">
-        {% for data in site.data.resume %}
-          {% if site.jsonresume and site.jsonresume.size > 0 %}
-            {% unless site.jsonresume contains data[0] %}
-              {% continue %}
-            {% endunless %}
-          {% endif %}
-          {% if data[0] == 'meta' or data[1].size == 0 %} {% continue %} {% endif %}
-          <a class="anchor" id="{{ data[0] }}"></a>
-          <div class="card mt-3 p-3">
-            <h3 class="card-title font-weight-medium">{{ data[0] | capitalize }}</h3>
+        <article class="cv-stack-lane" data-stack="domains">
+          <div class="cv-stack-lane-head">
+            <i class="fa-solid fa-layer-group" aria-hidden="true"></i>
             <div>
-              {% case data[0] %}
-                {% when 'basics' %}
-                  {% include resume/basics.liquid %}
-                {% when 'education' %}
-                  {% include resume/education.liquid %}
-                {% when 'work' %}
-                  {% include resume/work.liquid %}
-                {% when 'volunteer' %}
-                  {% include resume/volunteer.liquid %}
-                {% when 'projects' %}
-                  {% include resume/projects.liquid %}
-                {% when 'awards' %}
-                  {% include resume/awards.liquid %}
-                {% when 'skills' %}
-                  {% include resume/skills.liquid %}
-                {% when 'publications' %}
-                  {% include resume/publications.liquid %}
-                {% when 'languages' %}
-                  {% include resume/languages.liquid %}
-                {% when 'interests' %}
-                  {% include resume/interests.liquid %}
-                {% when 'certificates' %}
-                  {% include resume/certificates.liquid %}
-                {% when 'references' %}
-                  {% include resume/references.liquid %}
-                {% else %}
-
-              {% endcase %}
+              <span>02 domains</span>
+              <h3>Operating Contexts</h3>
             </div>
           </div>
-        {% endfor %}
+          <div class="cv-chip-flow" aria-label="Domains">
+            <span><i class="fa-solid fa-vr-cardboard" aria-hidden="true"></i>AI/XR labs</span>
+            <span><i class="fa-solid fa-landmark" aria-hidden="true"></i>Public-sector support</span>
+            <span><i class="fa-solid fa-bolt" aria-hidden="true"></i>Energy systems</span>
+            <span><i class="fa-solid fa-route" aria-hidden="true"></i>Logistics</span>
+            <span><i class="fa-solid fa-building-circle-check" aria-hidden="true"></i>Facility operations</span>
+            <span><i class="fa-solid fa-chalkboard-user" aria-hidden="true"></i>Immersive learning</span>
+          </div>
+        </article>
+
+        <article class="cv-stack-lane" data-stack="tools">
+          <div class="cv-stack-lane-head">
+            <i class="fa-solid fa-screwdriver-wrench" aria-hidden="true"></i>
+            <div>
+              <span>03 tools</span>
+              <h3>Build Stack</h3>
+            </div>
+          </div>
+          <div class="cv-chip-flow cv-chip-flow-dense" aria-label="Tools">
+            <span><i class="fa-brands fa-python" aria-hidden="true"></i>Python</span>
+            <span><i class="fa-solid fa-cubes" aria-hidden="true"></i>Gurobi</span>
+            <span><i class="fa-solid fa-diagram-project" aria-hidden="true"></i>Pyomo</span>
+            <span><i class="fa-solid fa-chart-simple" aria-hidden="true"></i>R</span>
+            <span><i class="fa-solid fa-database" aria-hidden="true"></i>SQL / NoSQL</span>
+            <span><i class="fa-brands fa-docker" aria-hidden="true"></i>Docker</span>
+            <span><i class="fa-solid fa-plug" aria-hidden="true"></i>APIs</span>
+            <span><i class="fa-solid fa-code-branch" aria-hidden="true"></i>Azure DevOps</span>
+            <span><i class="fa-solid fa-cube" aria-hidden="true"></i>AnyLogic</span>
+            <span><i class="fa-solid fa-sliders" aria-hidden="true"></i>Streamlit</span>
+            <span><i class="fa-solid fa-chart-line" aria-hidden="true"></i>Plotly</span>
+          </div>
+        </article>
       </div>
-    </article>
-  </div>
-{% endunless %}
+    </div>
+  </section>
+
+  <footer class="cv-finish" aria-labelledby="cv-next-title">
+    <div class="cv-finish-copy">
+      <span>continue</span>
+      <h2 id="cv-next-title">Want The Detail Behind A Bullet?</h2>
+      <p>Move from the CV into the supporting work, or take the compact print version.</p>
+    </div>
+    <div class="cv-finish-actions">
+      <a href="{{ '/projects/' | relative_url }}"><i class="fa-solid fa-diagram-project" aria-hidden="true"></i>Projects</a>
+      <a href="{{ '/publications/' | relative_url }}"><i class="fa-solid fa-book-open-reader" aria-hidden="true"></i>Publications</a>
+      <a href="https://github.com/ahmed-o-aly" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-github" aria-hidden="true"></i>GitHub</a>
+      <a href="{{ cv_pdf_url }}" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-file-pdf" aria-hidden="true"></i>PDF CV</a>
+    </div>
+  </footer>
+
+</article>

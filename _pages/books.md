@@ -33,6 +33,24 @@ nav_order: 2
   </div>
 </div>
 
+<section class="reading-bridge" aria-label="How reading connects to the work">
+  <h2>How the shelf feeds the work</h2>
+  <div>
+    <article>
+      <span>institutions</span>
+      <p>Stories about hierarchy, legitimacy, and informal power make stakeholder systems easier to notice.</p>
+    </article>
+    <article>
+      <span>training</span>
+      <p>Apprenticeship and craft narratives sharpen how I think about competence, handover, and operating routines.</p>
+    </article>
+    <article>
+      <span>failure modes</span>
+      <p>Systems-under-stress books are useful reminders that plans fail through incentives, not only mechanics.</p>
+    </article>
+  </div>
+</section>
+
 <section class="reading-trails" aria-label="Reading threads">
   <h2>Reading threads</h2>
   {% for thread in site.data.reading_threads %}

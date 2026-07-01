@@ -2,7 +2,7 @@
 layout: page
 permalink: /repositories/
 title: repositories
-description: A snapshot of my GitHub work — profile stats and a couple of featured repositories.
+description: "A snapshot of my GitHub work: profile stats and a couple of featured repositories."
 nav: false
 nav_order: 4
 sitemap: false

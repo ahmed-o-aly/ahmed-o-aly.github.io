@@ -71,6 +71,27 @@ pagination:
   </div>
 </section>
 
+<section class="notebook-agenda" aria-label="Notebook agenda">
+  <h2>Start Here</h2>
+  <div>
+    <article>
+      <span>lab operations</span>
+      <h3>How immersive labs become useful</h3>
+      <p>Notes on readiness checks, handover gaps, training paths, and the difference between a demo room and an operating environment.</p>
+    </article>
+    <article>
+      <span>policy simulation</span>
+      <h3>Assumptions before commitments</h3>
+      <p>Field notes on turning public-sector questions into scenarios, variables, trade-offs, and decision conversations.</p>
+    </article>
+    <article>
+      <span>research software</span>
+      <h3>Models people can inspect</h3>
+      <p>Practical writing on optimization code, dashboards, experiments, documentation, and the trail from paper to reusable artifact.</p>
+    </article>
+  </div>
+</section>
+
 {% assign featured_posts = site.posts | where: "featured", "true" %}
 {% if featured_posts.size > 0 %}
 <br>

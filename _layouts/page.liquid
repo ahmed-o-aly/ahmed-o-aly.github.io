@@ -15,6 +15,22 @@ layout: default
   </header>
 
   {% if page.collection == 'projects' %}
+    <section class="project-showcase project-showcase-{{ page.visual.key | default: page.thread | default: 'system' | slugify }}" aria-label="Project overview">
+      {% include project-visual.liquid project=page %}
+      <div class="project-showcase-copy">
+        <span>{{ page.category }}</span>
+        <h2>{{ page.visual.headline | default: page.title }}</h2>
+        <p>{{ page.visual.summary | default: page.description }}</p>
+        {% if page.signals %}
+          <ul>
+            {% for signal in page.signals limit: 3 %}
+              <li>{{ signal }}</li>
+            {% endfor %}
+          </ul>
+        {% endif %}
+      </div>
+    </section>
+
     <section class="project-brief" aria-label="Project brief">
       <div class="project-brief-mark" aria-hidden="true">
         <span>{{ page.category }}</span>
@@ -41,14 +57,6 @@ layout: default
             </div>
           {% endif %}
         </dl>
-        {% if page.signals %}
-          <h2>Useful signals</h2>
-          <ul>
-            {% for signal in page.signals %}
-              <li>{{ signal }}</li>
-            {% endfor %}
-          </ul>
-        {% endif %}
         {% if page.artifacts %}
           <h2>Artifacts</h2>
           <div class="project-artifacts">
@@ -61,6 +69,80 @@ layout: default
         {% endif %}
       </div>
     </section>
+
+    {% if page.problem or page.constraints or page.system_map or page.proof or page.outcomes or page.decisions %}
+      <section class="case-study-modules" aria-label="Case study details">
+        {% if page.problem or page.constraints %}
+          <article class="case-module case-module-problem">
+            <span class="case-module-kicker">framing</span>
+            {% if page.problem %}
+              <h2>Problem</h2>
+              <p>{{ page.problem }}</p>
+            {% endif %}
+            {% if page.constraints %}
+              <h2>Constraints</h2>
+              <ul>
+                {% for constraint in page.constraints %}
+                  <li>{{ constraint }}</li>
+                {% endfor %}
+              </ul>
+            {% endif %}
+          </article>
+        {% endif %}
+
+        {% if page.system_map %}
+          <article class="case-module case-module-map">
+            <span class="case-module-kicker">system map</span>
+            <h2>{{ page.system_map.title | default: "How the work moves" }}</h2>
+            <ol>
+              {% for step in page.system_map.steps %}
+                <li>
+                  <strong>{{ step.title }}</strong>
+                  <span>{{ step.detail }}</span>
+                </li>
+              {% endfor %}
+            </ol>
+          </article>
+        {% endif %}
+
+        {% if page.proof %}
+          <article class="case-module case-module-proof">
+            <span class="case-module-kicker">proof to inspect</span>
+            <h2>Artifacts</h2>
+            <div class="proof-card-grid">
+              {% for item in page.proof %}
+                <div class="proof-card">
+                  <span>{{ item.label }}</span>
+                  <p>{{ item.detail }}</p>
+                </div>
+              {% endfor %}
+            </div>
+          </article>
+        {% endif %}
+
+        {% if page.decisions or page.outcomes %}
+          <article class="case-module case-module-outcomes">
+            <span class="case-module-kicker">judgment</span>
+            {% if page.decisions %}
+              <h2>Key Decisions</h2>
+              <ul>
+                {% for decision in page.decisions %}
+                  <li>{{ decision }}</li>
+                {% endfor %}
+              </ul>
+            {% endif %}
+            {% if page.outcomes %}
+              <h2>Signals And Outcomes</h2>
+              <ul>
+                {% for outcome in page.outcomes %}
+                  <li>{{ outcome }}</li>
+                {% endfor %}
+              </ul>
+            {% endif %}
+          </article>
+        {% endif %}
+      </section>
+    {% endif %}
   {% endif %}
 
   <article>
