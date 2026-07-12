@@ -1,1 +1,264 @@
-// Garden content rules are added by the focused content task.
+.garden-page-content,
+.garden-case {
+  padding-block: clamp(24px, 5vw, 64px);
+}
+
+.garden-intro {
+  width: min(100%, 720px);
+  margin: 0 auto clamp(40px, 8vw, 88px);
+}
+
+.garden-intro__eyebrow {
+  margin: 0 0 12px;
+  color: var(--garden-muted);
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.garden-intro h1 {
+  max-width: 19ch;
+  margin: 0;
+  font: 300 clamp(40px, 7vw, 68px) / 1 var(--garden-serif);
+  letter-spacing: -0.045em;
+}
+
+.garden-intro__description {
+  max-width: 62ch;
+  margin: 24px 0 0;
+  color: var(--garden-muted);
+  font-size: clamp(17px, 2vw, 20px);
+  line-height: 1.55;
+}
+
+.garden-prose {
+  width: 100%;
+  color: var(--garden-ink);
+  font-size: 17px;
+  line-height: 1.72;
+}
+
+.garden-prose > * {
+  width: min(100%, 720px);
+  margin-inline: auto;
+}
+
+.garden-prose > .garden-project-grid {
+  width: 100%;
+}
+
+.garden-prose h2 {
+  margin-top: 56px;
+  font: 300 clamp(28px, 4vw, 38px) / 1.12 var(--garden-serif);
+  letter-spacing: -0.025em;
+}
+
+.garden-prose a {
+  text-decoration-color: var(--garden-accent);
+  text-underline-offset: 3px;
+}
+
+.garden-project-grid {
+  align-items: stretch;
+}
+
+.garden-case > .garden-intro,
+.garden-case > .garden-case__meta,
+.garden-case > section,
+.garden-case > .garden-prose,
+.garden-case > .garden-related {
+  width: min(100%, 720px);
+  margin-inline: auto;
+}
+
+.garden-case > .garden-intro {
+  margin-bottom: clamp(32px, 6vw, 64px);
+}
+
+.garden-case__meta {
+  display: grid;
+  margin-block: 0;
+  border-block: 1px solid var(--garden-line);
+}
+
+.garden-case__meta div {
+  padding: 18px 0;
+}
+
+.garden-case__meta dt {
+  margin-bottom: 6px;
+  color: var(--garden-quiet);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.garden-case__meta dd {
+  margin: 0;
+  line-height: 1.5;
+}
+
+.garden-case > section {
+  padding-top: clamp(48px, 8vw, 80px);
+  scroll-margin-top: 88px;
+}
+
+.garden-case > section h2,
+.garden-related h2 {
+  margin: 0 0 22px;
+  font: 300 clamp(30px, 4vw, 42px) / 1.1 var(--garden-serif);
+  letter-spacing: -0.025em;
+}
+
+.garden-case > section p,
+.garden-case > section li {
+  line-height: 1.68;
+}
+
+.garden-case > section > p {
+  margin: 0;
+  font-size: 18px;
+}
+
+.garden-case > section > ul {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+.garden-case > section > ul li + li {
+  margin-top: 12px;
+}
+
+.garden-case #system ol {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: garden-system;
+}
+
+.garden-case #system li {
+  position: relative;
+  padding: 22px 22px 22px 64px;
+  background: var(--garden-surface);
+  counter-increment: garden-system;
+}
+
+.garden-case #system li::before {
+  position: absolute;
+  top: 22px;
+  left: 22px;
+  color: var(--garden-quiet);
+  content: counter(garden-system, decimal-leading-zero);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+}
+
+.garden-case #system strong {
+  font-weight: 500;
+}
+
+.garden-case #system p {
+  margin: 6px 0 0;
+  color: var(--garden-muted);
+}
+
+.garden-case > #proof {
+  width: 100%;
+}
+
+.garden-case > #proof > h2,
+.garden-case > #proof > .garden-artifacts {
+  width: min(100%, 720px);
+  margin-inline: auto;
+}
+
+.garden-proof {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  gap: var(--garden-gap);
+}
+
+.garden-proof article {
+  min-height: 190px;
+  padding: 22px;
+  border-top: 1px solid var(--garden-line);
+  background: var(--garden-surface);
+}
+
+.garden-proof h3,
+.garden-artifacts h3 {
+  margin: 0;
+  font: 300 24px / 1.2 var(--garden-serif);
+}
+
+.garden-proof p {
+  margin: 32px 0 0;
+  color: var(--garden-muted);
+}
+
+.garden-artifacts {
+  padding-top: 32px;
+}
+
+.garden-artifacts > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  margin-top: 12px;
+}
+
+.garden-artifacts a {
+  display: inline-flex;
+  min-width: 44px;
+  min-height: 44px;
+  align-items: center;
+  text-decoration-color: var(--garden-accent);
+  text-underline-offset: 3px;
+}
+
+.garden-case > .garden-prose {
+  padding-top: clamp(48px, 8vw, 80px);
+}
+
+.garden-related {
+  margin-top: clamp(56px, 10vw, 104px);
+  padding-top: 32px;
+  border-top: 1px solid var(--garden-line);
+}
+
+.garden-related > div {
+  display: grid;
+  gap: 0;
+}
+
+.garden-related a {
+  display: inline-flex;
+  min-width: 44px;
+  min-height: 44px;
+  align-items: center;
+  padding-block: 12px;
+  border-bottom: 1px solid var(--garden-line);
+  text-decoration: none;
+}
+
+.garden-related a:hover {
+  color: var(--garden-muted);
+}
+
+@media (min-width: 640px) {
+  .garden-case__meta {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .garden-case__meta div {
+    padding-inline: 18px;
+    border-left: 1px solid var(--garden-line);
+  }
+
+  .garden-case__meta div:first-child {
+    padding-left: 0;
+    border-left: 0;
+  }
+}
