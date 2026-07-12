@@ -3,24 +3,24 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .garden-home__intro,
-  .garden-card--wide {
-    grid-column: span 2;
-  }
-
   .garden-home__intro {
+    grid-column: span 2;
     grid-row: span 2;
     min-height: 520px;
-  }
-
-  .garden-card--tall {
-    grid-row: span 2;
   }
 }
 
 @media (min-width: 1024px) {
   .garden-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .garden-card--wide {
+    grid-column: span 2;
+  }
+
+  .garden-card--tall {
+    grid-row: span 2;
   }
 }
 
