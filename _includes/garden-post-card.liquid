@@ -1,3 +1,10 @@
 {% assign post = include.post %}
 {% assign label = post.date | date: '%B %Y' | prepend: 'Writing &middot; ' %}
-{% include garden-card.liquid kind='post' size=include.size url=post.url label=label title=post.title summary=post.description media=post.thumbnail alt=post.thumbnail_alt fit='cover' %}
+{% if post.external_source %}
+  {% capture label %}{{ label }} &middot; {{ post.external_source }}{% endcapture %}
+{% endif %}
+{% assign post_url = post.url %}
+{% unless post.redirect == blank %}
+  {% assign post_url = post.redirect %}
+{% endunless %}
+{% include garden-card.liquid kind='post' size=include.size url=post_url label=label title=post.title summary=post.description media=post.thumbnail alt=post.thumbnail_alt fit='cover' %}
