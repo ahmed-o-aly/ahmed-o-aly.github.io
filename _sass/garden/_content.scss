@@ -1119,6 +1119,37 @@
   text-transform: none;
 }
 
+.garden-publication-disclosure {
+  margin-top: 12px;
+  border-top: 1px solid var(--garden-line);
+  background: var(--garden-surface);
+}
+
+.garden-publication-disclosure__summary {
+  display: inline-flex;
+  min-width: 44px;
+  min-height: 44px;
+  align-items: center;
+  padding: 6px 8px;
+  color: var(--garden-ink);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.garden-publication-disclosure__summary::marker {
+  color: var(--garden-accent);
+}
+
+.garden-publication-disclosure__content {
+  padding: 0 16px 16px;
+}
+
+.garden-publication-disclosure__content p,
+.garden-publication-disclosure__content figure {
+  margin: 0;
+}
+
 .garden-publications .hidden {
   margin-top: 12px;
   padding: 16px;

@@ -40,6 +40,12 @@ assertContains(
   /<aside class="garden-article__thread"[\s\S]*?<span>\s*Optimization\s*<\/span>/,
   "matched thread renders its authored label"
 );
+assert.equal(
+  (matchedThreadArticle.match(/id="table-of-contents"/g) || []).length,
+  1,
+  "scalar toc true renders exactly one article table of contents"
+);
+assert.equal((matchedThreadArticle.match(/href="#quick-start"/g) || []).length, 1, "generated article TOC links each authored section once");
 assert.doesNotMatch(article, /<div class="garden-article__support">\s*<\/div>/, "post omits an empty optional-support wrapper");
 assert.doesNotMatch(
   postLayoutAnnouncement,
@@ -92,7 +98,7 @@ assertContains(archiveTemplate, /document\.redirect\s+contains\s+'?:\/\//, "arch
 
 const retainedPostHooks = [
   [/page\._styles/, "page-local styles"],
-  [/page\.toc\s+and\s+page\.toc\.beginning/, "inline table of contents"],
+  [/page\.toc\s*==\s*true\s+or\s+page\.toc\.beginning/, "scalar and structured inline table of contents"],
   [/{%\s*toc\s*%}/, "TOC generator"],
   [/id=["']markdown-content["']/, "specialist markdown content hook"],
   [/page\.citation[\s\S]*include citation\.liquid/, "citation block"],

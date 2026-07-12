@@ -136,11 +136,49 @@ assertContains(
 assertContains(bibTemplate, /alt="\{\{\s*preview_alt\s*\}\}"/, "remote publication previews use the shared alternative");
 assertContains(bibTemplate, /include\s+figure\.liquid[\s\S]*?alt=preview_alt/, "local publication preview figures receive the shared alternative");
 assert.doesNotMatch(bibTemplate, /alt=entry\.preview/, "local publication previews never expose filenames as alternatives");
-const bibtexPreviews = [...publications.matchAll(/<div class="bibtex hidden">[\s\S]*?<pre\b[^>]*>/gi)].map(([preview]) => preview);
-assert.ok(bibtexPreviews.length > 0, "publications render BibTeX preview regions");
+const nativeDisclosures = [...publications.matchAll(/<details class="garden-publication-disclosure">[\s\S]*?<\/details>/gi)].map(
+  ([disclosure]) => disclosure
+);
+assert.ok(nativeDisclosures.length > 0, "publications render native disclosure controls");
+assert.ok(
+  nativeDisclosures.some((disclosure) => /<summary class="garden-publication-disclosure__summary">\s*Abstract\s*<\/summary>/i.test(disclosure)),
+  "publications expose Abstract through a native summary"
+);
+const bibtexPreviews = nativeDisclosures.filter((disclosure) =>
+  /<summary class="garden-publication-disclosure__summary">\s*BibTeX\s*<\/summary>/i.test(disclosure)
+);
+assert.ok(bibtexPreviews.length > 0, "publications expose BibTeX through native summaries");
 for (const preview of bibtexPreviews) {
   assert.match(preview, /<pre\b[^>]*tabindex="0"/i, "each scrollable BibTeX preview is keyboard focusable");
 }
+for (const disclosure of nativeDisclosures) {
+  assert.match(
+    disclosure,
+    /<div class="garden-publication-disclosure__content">[\s\S]*\S[\s\S]*<\/div>/i,
+    "native disclosure content remains in the no-JavaScript document"
+  );
+  assert.doesNotMatch(disclosure, /\bhidden\b/i, "native disclosure content is not CSS-hidden behind a JavaScript class");
+}
+assert.doesNotMatch(
+  publications,
+  /<a\b(?=[^>]*class="[^"]*\b(?:abstract|bibtex)\b)[^>]*role="button"/i,
+  "generated publications contain no Abstract or BibTeX role-button anchors"
+);
+assertContains(
+  bibTemplate,
+  /<details class="garden-publication-disclosure">[\s\S]*?<summary class="garden-publication-disclosure__summary">Abstract<\/summary>[\s\S]*?\{\{ entry\.abstract \}\}[\s\S]*?<\/details>/,
+  "publication source nests Abstract content inside a native disclosure"
+);
+assertContains(
+  bibTemplate,
+  /<details class="garden-publication-disclosure">[\s\S]*?<summary class="garden-publication-disclosure__summary">BibTeX<\/summary>[\s\S]*?highlighted_bibtex[\s\S]*?<\/details>/,
+  "publication source nests BibTeX content inside a native disclosure"
+);
+assert.doesNotMatch(
+  bibTemplate,
+  /<a\b(?=[^>]*class="[^"]*\b(?:abstract|bibtex)\b)[^>]*role="button"/i,
+  "publication source contains no Abstract or BibTeX role-button anchors"
+);
 assert.doesNotMatch(publications, /class="[^"]*\bpreview\b[^"]*\bz-depth-/i, "publication previews do not inherit glossy elevation effects");
 assert.equal((publications.match(/<h1\b/g) || []).length, 1, "publications do not duplicate the page intro");
 
@@ -187,6 +225,7 @@ for (const [selector, label] of [
   [".garden-cv a", "CV links"],
   [".publication-bridge a", "publication bridge links"],
   [".garden-publications a", "publication bibliography links"],
+  [".garden-publication-disclosure__summary", "publication disclosure summaries"],
   [".garden-not-found a", "404 links"],
   [".garden-redirect a", "repository fallback links"],
 ]) {

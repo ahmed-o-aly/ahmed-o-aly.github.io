@@ -26,7 +26,15 @@ layout: default
 <article class="garden-book-review">
   <header class="garden-book-review__header">
     <figure class="garden-book-review__cover">
-      {% include garden-media.liquid src=review_cover alt=review_cover_alt title=page.title fit='contain' %}
+      {%
+        include garden-media.liquid
+        src=review_cover
+        alt=review_cover_alt
+        title=page.title
+        fit='contain'
+        loading='eager'
+        fetchpriority='high'
+      %}
       {% if review_cover %}
         <figcaption>
           Cover of <cite>{{ page.title }}</cite>

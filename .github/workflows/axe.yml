@@ -5,7 +5,9 @@ on:
     branches:
       - main
     paths:
+      - ".github/scripts/run-axe.mjs"
       - "assets/**"
+      - "_bibliography/**"
       - "_includes/**"
       - "_layouts/**"
       - "_pages/**"
@@ -18,13 +20,6 @@ on:
       - "**.yml"
       - "tests/**"
   workflow_dispatch:
-    inputs:
-      url:
-        description: "URL to be checked (e.g.: blog/)"
-        required: false
-
-env:
-  URL: ""
 
 permissions:
   contents: read

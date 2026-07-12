@@ -12,8 +12,6 @@ const focusedContracts = [
   "./garden-enhancement-contract.mjs",
 ];
 
-for (const contract of focusedContracts) await import(contract);
-
 const projectFile = (path) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
 const packageJson = JSON.parse(projectFile("package.json"));
 const deployWorkflow = projectFile(".github/workflows/deploy.yml");
@@ -33,8 +31,26 @@ const formatTargets = [
 ];
 const expectedFormatCommand = `prettier --check ${formatTargets.map((target) => JSON.stringify(target)).join(" ")}`;
 
-assert.equal((deployWorkflow.match(/^\s+- "tests\/\*\*"$/gm) || []).length, 2, "deploy watches tests for push and pull requests");
-assert.equal((axeWorkflow.match(/^\s+- "tests\/\*\*"$/gm) || []).length, 1, "axe watches contract changes");
+function workflowEventBlock(workflow, eventName) {
+  const match = workflow.match(new RegExp(`^  ${eventName}:\\s*\\r?\\n([\\s\\S]*?)(?=^  [A-Za-z_][\\w-]*:\\s*(?:\\r?\\n|$)|^\\S)`, "m"));
+  assert.ok(match, `${eventName} event block is present`);
+  return match[1];
+}
+
+function assertEventWatches(workflow, eventName, path, label) {
+  const block = workflowEventBlock(workflow, eventName);
+  const escapedPath = path.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  assert.equal((block.match(new RegExp(`^\\s+- "${escapedPath}"$`, "gm")) || []).length, 1, label);
+}
+
+assertEventWatches(deployWorkflow, "push", "tests/**", "deploy push watches test changes");
+assertEventWatches(deployWorkflow, "pull_request", "tests/**", "deploy pull requests watch test changes");
+assertEventWatches(axeWorkflow, "pull_request", "tests/**", "axe pull requests watch contract changes");
+assertEventWatches(axeWorkflow, "pull_request", "_bibliography/**", "axe pull requests watch bibliography changes");
+assertEventWatches(axeWorkflow, "pull_request", ".github/scripts/run-axe.mjs", "axe pull requests watch their accessibility runner");
+assert.match(axeWorkflow, /^  workflow_dispatch:\s*$/m, "axe retains manual dispatch without obsolete inputs");
+assert.doesNotMatch(axeWorkflow, /^\s+inputs:\s*$/m, "axe manual dispatch has no unused input map");
+assert.doesNotMatch(axeWorkflow, /^\s*URL:\s*/m, "axe has no unused global URL variable");
 assert.match(
   deployWorkflow,
   /- name: Verify generated site\s+run: \|\s+test -f _site\/index\.html\s+node tests\/site-contract\.mjs/,
@@ -71,5 +87,7 @@ assert.deepEqual(
 
 assert.equal(packageJson.scripts?.["format:check"], expectedFormatCommand, "format:check covers the redesigned source surface");
 assert.equal(packageJson.scripts?.["test:site"], "node tests/site-contract.mjs", "test:site runs the aggregate contract");
+
+for (const contract of focusedContracts) await import(contract);
 
 console.log("all site contracts passed");

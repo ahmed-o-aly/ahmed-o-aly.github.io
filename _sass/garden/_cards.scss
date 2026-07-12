@@ -5,7 +5,7 @@
 .garden-grid {
   display: grid;
   grid-template-columns: 1fr;
-  grid-auto-flow: dense;
+  grid-auto-flow: row;
   gap: var(--garden-gap);
 }
 
@@ -57,7 +57,7 @@
   margin-top: auto;
 }
 
-.garden-card__copy h2 {
+.garden-card__title {
   margin: 16px 0 6px;
   font: 300 28px / 1.08 var(--garden-serif);
 }

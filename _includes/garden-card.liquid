@@ -1,5 +1,9 @@
 {% assign card_size = include.size | default: 'standard' %}
 {% assign card_kind = include.kind | default: 'note' %}
+{% assign card_heading_tag = include.heading_tag | default: 'h2' %}
+{% unless card_heading_tag == 'h3' %}
+  {% assign card_heading_tag = 'h2' %}
+{% endunless %}
 {% assign card_url = include.url %}
 {% unless card_url contains '://' %}{% assign card_url = card_url | relative_url %}{% endunless %}
 <article class="garden-card garden-card--{{ card_kind }} garden-card--{{ card_size }}" data-reveal>
@@ -10,7 +14,7 @@
     </div>
     {% include garden-media.liquid src=include.media alt=include.alt fit=include.fit title=include.title %}
     <div class="garden-card__copy">
-      <h2>{{ include.title }}</h2>
+      <{{ card_heading_tag }} class="garden-card__title">{{ include.title }}</{{ card_heading_tag }}>
       {% if include.summary %}
         <p>{{ include.summary }}</p>
       {% endif %}

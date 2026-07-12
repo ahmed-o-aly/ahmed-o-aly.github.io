@@ -37,7 +37,7 @@ nav_order: 2
       {% assign canonical_book_key = canonical_book_title | append: '::' | append: canonical_book_author %}
       {% assign canonical_book_marker = '|' | append: canonical_book_key | append: '|' %}
       {% assign collection_book_keys = collection_book_keys | append: canonical_book_marker %}
-      {% include garden-book-card.liquid book=book size='standard' %}
+      {% include garden-book-card.liquid book=book size='standard' heading_tag='h3' %}
     {% endfor %}
   </div>
 </section>
@@ -51,7 +51,7 @@ nav_order: 2
       {% assign canonical_book_key = canonical_book_title | append: '::' | append: canonical_book_author %}
       {% assign canonical_book_marker = '|' | append: canonical_book_key | append: '|' %}
       {% unless collection_book_keys contains canonical_book_marker %}
-        {% include garden-book-card.liquid book=book size='standard' %}
+        {% include garden-book-card.liquid book=book size='standard' heading_tag='h3' %}
       {% endunless %}
     {% endfor %}
   </div>

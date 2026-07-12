@@ -8,6 +8,8 @@ const css = readFileSync(new URL("../_site/assets/css/garden.css", import.meta.u
 const readBooksSource = readFileSync(new URL("../_data/read_books.yml", import.meta.url), "utf8");
 const booksTemplate = readFileSync(new URL("../_pages/books.md", import.meta.url), "utf8");
 const cardTemplate = readFileSync(new URL("../_includes/garden-book-card.liquid", import.meta.url), "utf8");
+const baseCardTemplate = readFileSync(new URL("../_includes/garden-card.liquid", import.meta.url), "utf8");
+const mediaTemplate = readFileSync(new URL("../_includes/garden-media.liquid", import.meta.url), "utf8");
 const reviewTemplate = readFileSync(new URL("../_layouts/book-review.liquid", import.meta.url), "utf8");
 const cardStyles = readFileSync(new URL("../_sass/garden/_cards.scss", import.meta.url), "utf8");
 const contentStyles = readFileSync(new URL("../_sass/garden/_content.scss", import.meta.url), "utf8");
@@ -46,6 +48,31 @@ assertContains(index, /Read Oct 1, 2025/, "YAML read date remains visible on its
 assertContains(index, /A compact story about ambition meeting contingency/, "YAML review note remains visible on its card");
 assert.equal((index.match(/<h1\b/g) || []).length, 1, "reading index has one h1");
 
+assertContains(
+  baseCardTemplate,
+  /assign card_heading_tag = include\.heading_tag \| default: 'h2'/,
+  "shared cards default their internal title to h2"
+);
+assertContains(
+  baseCardTemplate,
+  /unless card_heading_tag == 'h3'[\s\S]*assign card_heading_tag = 'h2'[\s\S]*endunless/,
+  "shared cards allow only the internal h3 override"
+);
+assertContains(cardTemplate, /heading_tag=include\.heading_tag/, "book cards forward the internal heading level");
+assert.equal((booksTemplate.match(/heading_tag='h3'/g) || []).length, 2, "both Reading shelves request h3 card titles");
+const readingShelves = [...index.matchAll(/<section class="garden-reading-shelf"[\s\S]*?<\/section>/g)].map(([section]) => section);
+assert.equal(readingShelves.length, 2, "reading index renders both semantic shelves");
+for (const shelf of readingShelves) {
+  const headingLevels = [...shelf.matchAll(/<h([1-6])\b/g)].map(([, level]) => Number(level));
+  assert.equal(headingLevels[0], 2, "each Reading shelf starts with its h2 label");
+  assert.ok(headingLevels.length > 1, "each Reading shelf contains card headings");
+  assert.ok(
+    headingLevels.slice(1).every((level) => level === 3),
+    "Reading card titles descend from shelf h2 to h3"
+  );
+  assertContains(shelf, /<h3 class="garden-card__title">/, "Reading cards expose the stable title class on h3");
+}
+
 const renderedBookCards = index.match(/class="[^"]*garden-card--book/g) || [];
 assert.equal(renderedBookCards.length, yamlEntries.length + 1, "all real YAML and collection book records remain visible");
 assert.equal((index.match(/href="\/books\/the_godfather\/"/g) || []).length, 1, "the collection review appears once on the shelf");
@@ -62,6 +89,16 @@ assertContains(review, /the_godfather\.jpg/, "local cover remains natural color"
 assert.doesNotMatch(review, /covers\.openlibrary\.org/, "local review cover wins over its OLID and ISBN fallbacks");
 assertContains(review, /alt="The Godfather book cover"/, "cover media has informative alternative text");
 assertContains(review, /class="[^"]*garden-media--contain/, "review cover uses contain sizing inside its matte well");
+assertContains(
+  review,
+  /class="garden-book-review__cover"[\s\S]*?<img\b(?=[^>]*loading="eager")(?=[^>]*fetchpriority="high")[^>]*>/,
+  "above-the-fold review cover requests eager high-priority loading"
+);
+const readingCardImages = [...index.matchAll(/<article class="[^"]*\bgarden-card\b[^"]*"[\s\S]*?<img\b[^>]*>/g)].map(([card]) => card);
+assert.ok(readingCardImages.length > 0, "reading shelves render card images");
+for (const card of readingCardImages) {
+  assert.match(card, /<img\b(?=[^>]*loading="lazy")(?=[^>]*fetchpriority="auto")[^>]*>/, "card media retains lazy automatic-priority loading");
+}
 assert.equal((review.match(/<h1\b/g) || []).length, 1, "book review has one h1");
 assertContains(review, /<article class="garden-book-review"/, "review is a semantic article");
 assertContains(review, /<header class="garden-book-review__header"/, "review has a semantic header");
@@ -105,6 +142,27 @@ for (const field of [
 }
 assertContains(reviewTemplate, /page\._styles/, "review retains page-local style support");
 assertContains(reviewTemplate, /page\.giscus_comments[\s\S]*include giscus\.liquid/, "review retains Giscus support");
+assertContains(
+  reviewTemplate,
+  /include garden-media\.liquid[\s\S]*?loading='eager'[\s\S]*?fetchpriority='high'/,
+  "book-review hero explicitly requests eager high-priority media"
+);
+assertContains(mediaTemplate, /assign media_loading = include\.loading \| default: 'lazy'/, "shared media defaults to lazy loading");
+assertContains(
+  mediaTemplate,
+  /unless media_loading == 'eager'[\s\S]*assign media_loading = 'lazy'/,
+  "shared media only accepts the eager loading override"
+);
+assertContains(
+  mediaTemplate,
+  /assign media_fetchpriority = include\.fetchpriority \| default: 'auto'/,
+  "shared media defaults to automatic fetch priority"
+);
+assertContains(
+  mediaTemplate,
+  /unless media_fetchpriority == 'high' or media_fetchpriority == 'low'[\s\S]*assign media_fetchpriority = 'auto'/,
+  "shared media accepts only safe fetch-priority overrides"
+);
 
 assertContains(
   css,
