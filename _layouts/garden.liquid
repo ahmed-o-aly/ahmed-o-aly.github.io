@@ -1,0 +1,19 @@
+---
+# _layouts/garden.liquid
+---
+<!doctype html>
+<html lang="{{ site.lang | default: 'en' }}">
+  <head>
+    {% include head.liquid %}
+  </head>
+  <body class="garden-body garden-body--{{ page.layout | default: 'page' }}" data-baseurl="{{ site.baseurl }}">
+    <a class="garden-skip" href="#main-content">Skip to content</a>
+    <div class="garden-site">
+      {% include garden-nav.liquid %}
+      {{ content }}
+      {% include garden-footer.liquid %}
+    </div>
+    {% include scripts.liquid %}
+    <script defer src="{{ '/assets/js/garden.js' | relative_url | bust_file_cache }}"></script>
+  </body>
+</html>

@@ -1,0 +1,29 @@
+{% assign active_path = page.url | default: '/' %}
+<header class="garden-header">
+  <nav class="garden-nav garden-container" aria-label="Primary navigation">
+    <a class="garden-nav__name" href="{{ '/' | relative_url }}">Ahmed Aly</a>
+    <div class="garden-nav__segments">
+      {% assign items = 'Home|/;Projects|/projects/;Writing|/blog/;Reading|/books/;About|/about/' | split: ';' %}
+      {% for item in items %}
+        {% assign parts = item | split: '|' %}
+        {% assign label = parts[0] %}
+        {% assign destination = parts[1] %}
+        {% assign current = false %}
+        {% if destination == '/' and active_path == '/' %}{% assign current = true %}{% endif %}
+        {% if destination != '/' and active_path contains destination %}{% assign current = true %}{% endif %}
+        <a
+          href="{{ destination | relative_url }}"
+          {% if current %}
+            aria-current="page"
+          {% endif %}
+        >
+          {{- label -}}
+        </a>
+      {% endfor %}
+    </div>
+    <div class="garden-nav__utility">
+      <a href="https://github.com/ahmed-o-aly">GitHub</a>
+      <a href="{{ '/cv/' | relative_url }}">CV</a>
+    </div>
+  </nav>
+</header>
