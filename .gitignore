@@ -13,3 +13,4 @@ vendor
 .idea
 .venv
 .superpowers/
+.worktrees/
