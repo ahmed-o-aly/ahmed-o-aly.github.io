@@ -4,10 +4,12 @@ import { assertContains, readRoute } from "./helpers/site.mjs";
 
 const index = readRoute("/blog/");
 const article = readRoute("/blog/2026/what-i-am-building-this-site-for/");
+const matchedThreadArticle = readRoute("/blog/2025/territory-design-bvns/");
 const postLayoutAnnouncement = readRoute("/news/announcement_1/");
 const yearArchive = readRoute("/blog/2026/");
 const tagArchive = readRoute("/blog/tag/optimization/");
 const categoryArchive = readRoute("/blog/category/blog/");
+const booksYearArchive = readRoute("/books/2026/");
 const css = readFileSync(new URL("../_site/assets/css/garden.css", import.meta.url), "utf8");
 const blogTemplate = readFileSync(new URL("../_pages/blog.md", import.meta.url), "utf8");
 const postTemplate = readFileSync(new URL("../_layouts/post.liquid", import.meta.url), "utf8");
@@ -28,6 +30,11 @@ assert.equal((article.match(/<h1\b/g) || []).length, 1, "post has one h1");
 assertContains(article, /href="\/blog\/tag\/optimization\/"/, "post exposes tag archives");
 assertContains(article, /href="\/blog\/category\/blog\/"/, "post exposes category archives");
 assertContains(article, /publishing-system/, "post exposes an unmatched thread key without inventing content");
+assertContains(
+  matchedThreadArticle,
+  /<aside class="garden-article__thread"[\s\S]*?<span>\s*Optimization\s*<\/span>/,
+  "matched thread renders its authored label"
+);
 assert.doesNotMatch(article, /<div class="garden-article__support">\s*<\/div>/, "post omits an empty optional-support wrapper");
 assert.doesNotMatch(
   postLayoutAnnouncement,
@@ -45,12 +52,23 @@ for (const [html, label] of [
   assertContains(html, /What I Am Building This Site For/i, `${label} archive links a current post`);
 }
 
+assertContains(booksYearArchive, /class="[^"]*garden-archive/, "books year archive uses garden archive pattern");
+assertContains(
+  booksYearArchive,
+  /class="garden-intro__eyebrow">\s*Books archive\s*<\/p>/,
+  "books year archive keeps collection-appropriate labeling"
+);
+assertContains(booksYearArchive, /<time\b[^>]*datetime=/, "books year archive publishes a semantic date");
+assertContains(booksYearArchive, /<a href="\/books\/the_godfather\/">\s*The Godfather\s*<\/a>/, "books year archive links the real book fixture");
+
 for (const [source, label] of [
   [index, "writing index"],
   [article, "article"],
+  [matchedThreadArticle, "matched-thread article"],
   [yearArchive, "year archive"],
   [tagArchive, "tag archive"],
   [categoryArchive, "category archive"],
+  [booksYearArchive, "books year archive"],
 ]) {
   assert.doesNotMatch(
     source,
@@ -78,6 +96,7 @@ const retainedPostHooks = [
   [/site\.disqus_shortname\s+and\s+page\.disqus_comments[\s\S]*include disqus\.liquid/, "Disqus comments"],
   [/site\.giscus\s+and\s+page\.giscus_comments[\s\S]*include giscus\.liquid/, "Giscus comments"],
   [/page\.thread[\s\S]*site\.data\.work_threads/, "writing thread metadata"],
+  [/matched_thread\.label\s*\|\s*default:\s*'Writing thread'/, "authored writing thread labels"],
   [/for tag in page\.tags/, "tag metadata"],
   [/for category in page\.categories/, "category metadata"],
   [/page\.last_updated/, "last-updated metadata"],

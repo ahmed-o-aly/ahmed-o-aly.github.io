@@ -76,7 +76,7 @@ layout: default
     {% assign matched_threads = site.data.work_threads | where: 'key', page.thread %}
     {% assign matched_thread = matched_threads | first %}
     <aside class="garden-article__thread" aria-label="Writing thread">
-      <span>Writing thread</span>
+      <span>{{ matched_thread.label | default: 'Writing thread' }}</span>
       {% if matched_thread %}
         <p>
           <a href="{{ '/blog/' | relative_url }}">{{ matched_thread.title }}</a>
