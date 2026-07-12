@@ -9,11 +9,18 @@ display_title: Systems become useful when people can inspect and operate them.
 
 <section class="garden-prose">
   <p>I work across lab operations, public-policy simulation, optimization, research software, and decision support.</p>
-  <p>My current focus combines KU MetaHub AI/XR lab readiness with simulation work for public-sector teams.</p>
+  <p>My current focus combines KU MetaHub AI/XR lab readiness with simulation support for public-sector teams.</p>
 </section>
-
-<section id="credentials" class="garden-section">
-  <h2>Credentials and publications</h2>
-  <p>Selected learning and formal research that supports the practical work.</p>
-  <p><a href="{{ '/cv/' | relative_url }}">View the CV</a> &middot; <a href="{{ '/publications/' | relative_url }}">View publications</a></p>
+<section class="garden-section" aria-labelledby="themes-title">
+  <h2 id="themes-title">Recurring themes</h2>
+  <ul>
+    <li>Make assumptions visible before teams commit to a decision.</li>
+    <li>Turn complex infrastructure into routines people can trust.</li>
+    <li>Keep models, artifacts, and documentation inspectable.</li>
+  </ul>
+</section>
+<section id="credentials" class="garden-section" aria-labelledby="credentials-title">
+  <h2 id="credentials-title">Credentials and publications</h2>
+  <p>Six Sigma Yellow Belt Specialization &middot; University System of Georgia / Coursera, 2025.</p>
+  <p><a href="{{ '/assets/pdf/Coursera OMF75NR8PBY4.pdf' | relative_url }}">Open certificate</a> &middot; <a href="{{ '/publications/' | relative_url }}">View publications</a> &middot; <a href="{{ '/cv/' | relative_url }}">View the full CV</a></p>
 </section>

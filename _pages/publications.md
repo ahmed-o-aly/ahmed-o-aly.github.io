@@ -3,6 +3,8 @@ layout: page
 permalink: /publications/
 title: papers
 description: Peer-reviewed work on delivery territory design, variable neighborhood search, and applied optimization.
+eyebrow: Publications
+display_title: Formal work and the artifacts around it.
 nav: true
 nav_order: 4
 ---
@@ -36,12 +38,7 @@ nav_order: 4
   </article>
 </section>
 
-<!-- Bibsearch Feature -->
-
-{% include bib_search.liquid %}
-
-<div class="publications">
-
-{% bibliography %}
-
-</div>
+<section class="garden-publications">
+  {% include bib_search.liquid %}
+  <div class="publications">{% bibliography %}</div>
+</section>

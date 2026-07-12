@@ -5,6 +5,14 @@
 <html lang="{{ site.lang | default: 'en' }}">
   <head>
     {% include head.liquid %}
+    {% if page.redirect and page.redirect != true %}
+      {% if page.redirect contains '://' %}
+        {% assign redirect_url = page.redirect %}
+      {% else %}
+        {% assign redirect_url = page.redirect | relative_url %}
+      {% endif %}
+      <meta http-equiv="refresh" content="0; url={{ redirect_url | escape }}">
+    {% endif %}
   </head>
   <body class="garden-body garden-body--{{ page.layout | default: 'page' }}" data-baseurl="{{ site.baseurl }}">
     <a class="garden-skip" href="#main-content">Skip to content</a>
