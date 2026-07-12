@@ -1,1 +1,49 @@
-// Garden responsive rules are added by the focused responsive task.
+@media (min-width: 640px) {
+  .garden-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .garden-home__intro,
+  .garden-card--wide {
+    grid-column: span 2;
+  }
+
+  .garden-home__intro {
+    grid-row: span 2;
+    min-height: 520px;
+  }
+
+  .garden-card--tall {
+    grid-row: span 2;
+  }
+}
+
+@media (min-width: 1024px) {
+  .garden-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1280px) {
+  :root {
+    --garden-max: 1200px;
+  }
+}
+
+@media (max-width: 767px) {
+  .garden-nav__name {
+    display: none;
+  }
+
+  .garden-nav__segments {
+    width: 100%;
+  }
+
+  .garden-nav__utility {
+    display: none;
+  }
+
+  .garden-footer__inner {
+    flex-direction: column;
+  }
+}

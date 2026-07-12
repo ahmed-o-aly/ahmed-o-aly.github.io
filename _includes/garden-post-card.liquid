@@ -1,0 +1,3 @@
+{% assign post = include.post %}
+{% assign label = post.date | date: '%B %Y' | prepend: 'Writing &middot; ' %}
+{% include garden-card.liquid kind='post' size=include.size url=post.url label=label title=post.title summary=post.description media=post.thumbnail alt=post.thumbnail_alt fit='cover' %}

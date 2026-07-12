@@ -1,1 +1,24 @@
-// Garden motion rules are added by the focused motion task.
+.garden-reveal-ready [data-reveal] {
+  opacity: 0;
+  transform: translateY(-10px);
+  transition:
+    opacity 300ms ease,
+    transform 300ms ease;
+}
+
+.garden-reveal-ready [data-reveal].is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .garden-reveal-ready [data-reveal] {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  .garden-media img {
+    transition: none;
+  }
+}

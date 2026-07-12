@@ -1,0 +1,3 @@
+{% assign book = include.book %}
+{% assign book_url = book.url | default: include.url %}
+{% include garden-card.liquid kind='book' size=include.size url=book_url label='Reading &middot; Books' title=book.title summary=book.author media=book.cover alt=book.cover_alt fit='contain' %}

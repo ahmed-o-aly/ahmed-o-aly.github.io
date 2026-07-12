@@ -1,0 +1,11 @@
+{% if include.src %}
+  {% assign media_url = include.src %}
+  {% unless media_url contains '://' %}{% assign media_url = media_url | relative_url %}{% endunless %}
+  <div class="garden-media garden-media--{{ include.fit | default: 'cover' }}">
+    <img src="{{ media_url }}" alt="{{ include.alt | default: include.title }}" loading="lazy">
+  </div>
+{% else %}
+  <div class="garden-media garden-media--fallback" aria-hidden="true">
+    <span>{{ include.title | truncate: 48 }}</span>
+  </div>
+{% endif %}

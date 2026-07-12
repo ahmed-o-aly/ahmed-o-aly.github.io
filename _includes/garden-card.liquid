@@ -1,0 +1,19 @@
+{% assign card_size = include.size | default: 'standard' %}
+{% assign card_kind = include.kind | default: 'note' %}
+{% assign card_url = include.url %}
+{% unless card_url contains '://' %}{% assign card_url = card_url | relative_url %}{% endunless %}
+<article class="garden-card garden-card--{{ card_kind }} garden-card--{{ card_size }}" data-reveal>
+  <a class="garden-card__link" href="{{ card_url }}">
+    <div class="garden-card__meta">
+      <span>{{ include.label }}</span>
+      <span aria-hidden="true">&nearr;</span>
+    </div>
+    {% include garden-media.liquid src=include.media alt=include.alt fit=include.fit title=include.title %}
+    <div class="garden-card__copy">
+      <h2>{{ include.title }}</h2>
+      {% if include.summary %}
+        <p>{{ include.summary }}</p>
+      {% endif %}
+    </div>
+  </a>
+</article>

@@ -1,0 +1,10 @@
+{% assign eyebrow = include.eyebrow %}
+<header class="garden-intro">
+  {% if eyebrow %}
+    <p class="garden-intro__eyebrow">{{ eyebrow }}</p>
+  {% endif %}
+  <h1>{{ include.title }}</h1>
+  {% if include.description %}
+    <p class="garden-intro__description">{{ include.description }}</p>
+  {% endif %}
+</header>
