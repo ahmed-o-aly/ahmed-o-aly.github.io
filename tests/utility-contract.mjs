@@ -9,6 +9,8 @@ const missing = readRoute("/404.html");
 const repositories = readRoute("/repositories/");
 const css = readFileSync(new URL("../_site/assets/css/garden.css", import.meta.url), "utf8");
 const cvTemplate = readFileSync(new URL("../_layouts/cv.liquid", import.meta.url), "utf8");
+const cvTimeTableTemplate = readFileSync(new URL("../_includes/cv/time_table.liquid", import.meta.url), "utf8");
+const cvNestedListTemplate = readFileSync(new URL("../_includes/cv/nested_list.liquid", import.meta.url), "utf8");
 const gardenLayout = readFileSync(new URL("../_layouts/garden.liquid", import.meta.url), "utf8");
 const contentStyles = readFileSync(new URL("../_sass/garden/_content.scss", import.meta.url), "utf8");
 const utilitySources = ["about.md", "publications.md", "repositories.md", "404.md"].map((file) =>
@@ -38,12 +40,51 @@ assertContains(cv, /href="https:\/\/github\.com\/ahmed-o-aly\/?"/, "CV retains a
 assertContains(cv, /href="\/assets\/pdf\/Ahmed(?:%20| )Aly(?:%20| )CV\.pdf"/, "CV retains its PDF action");
 assert.equal((cv.match(/<h1\b/g) || []).length, 1, "CV has exactly one h1");
 
+const cvHeadingOutline = [...cv.matchAll(/<h([1-6])\b[^>]*>([\s\S]*?)<\/h\1>/gi)].map((match) => ({
+  level: Number(match[1]),
+  text: match[2]
+    .replace(/<[^>]+>/g, "")
+    .replace(/\s+/g, " ")
+    .trim(),
+}));
+for (let index = 1; index < cvHeadingOutline.length; index += 1) {
+  const previous = cvHeadingOutline[index - 1];
+  const current = cvHeadingOutline[index];
+  assert.ok(
+    current.level <= previous.level + 1,
+    `CV heading outline does not jump from h${previous.level} to h${current.level} at "${current.text}"`
+  );
+}
+const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+for (const title of [
+  "MSc. Data Science (Statistics)",
+  "BSc. Applied Mathematics and Statistics",
+  "Lab Specialist, MetaHub and Abu Dhabi School of Government",
+  "Research Assistant, Energy Systems Optimization",
+  "Undergraduate Researcher",
+  "Operations Research Scientist",
+  "Six Sigma Yellow Belt Specialization",
+]) {
+  assertContains(cv, new RegExp(`<h3\\b[^>]*>\\s*${escapeRegExp(title)}\\s*<\\/h3>`, "i"), `CV renders ${title} as an h3 item heading`);
+}
+
 assertContains(cvTemplate, /for entry in site\.data\.cv/, "CV treats cv.yml as its section source");
 for (const type of ["time_table", "list", "map", "nested_list", "list_groups"]) {
   assertContains(cvTemplate, new RegExp(`when ['"]${type}['"][\\s\\S]*include cv\\/${type}\\.liquid`), `CV preserves the ${type} include contract`);
 }
 for (const key of ["email", "linkedin_username", "github_username", "cv_pdf"]) {
   assertContains(cvTemplate, new RegExp(`site\\.data\\.socials\\.${key}`), `CV reads ${key} from socials.yml`);
+}
+assertContains(cvTemplate, /include\s+cv\/time_table\.liquid\s+heading_tag=['"]h3['"]/, "CV requests h3 time-table item headings");
+assertContains(cvTemplate, /include\s+cv\/nested_list\.liquid\s+heading_tag=['"]h3['"]/, "CV requests h3 nested-list item headings");
+assertContains(cvTimeTableTemplate, /include\.heading_tag\s*\|\s*default:\s*['"]h6['"]/, "time-table headings retain the legacy h6 default");
+assertContains(cvNestedListTemplate, /include\.heading_tag\s*\|\s*default:\s*['"]h5['"]/, "nested-list headings retain the legacy h5 default");
+for (const [template, label] of [
+  [cvTimeTableTemplate, "time-table"],
+  [cvNestedListTemplate, "nested-list"],
+]) {
+  assertContains(template, /<\{\{\s*heading_tag\s*\}\}(?:\s|>)/, `${label} opens its configured heading tag`);
+  assertContains(template, /<\/\{\{\s*heading_tag\s*\}\}>/, `${label} closes its configured heading tag`);
 }
 assert.doesNotMatch(
   cvTemplate,

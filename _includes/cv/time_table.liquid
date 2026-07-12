@@ -1,3 +1,4 @@
+{% assign heading_tag = include.heading_tag | default: 'h6' %}
 <ul class="card-text font-weight-light list-group list-group-flush">
   {% for content in entry.contents %}
     <li class="list-group-item">
@@ -29,7 +30,7 @@
         {% endif %}
         <div class="col-xs-10 cl-sm-10 col-md-10 mt-2 mt-md-0">
           {% if content.title %}
-            <h6 class="title font-weight-bold ml-1 ml-md-4">{{ content.title }}</h6>
+            <{{ heading_tag }} class="title font-weight-bold ml-1 ml-md-4">{{ content.title }}</{{ heading_tag }}>
           {% endif %}
           {% if content.department or content.institution %}
             <table class="table-cv ml-1 ml-md-4 institution">
