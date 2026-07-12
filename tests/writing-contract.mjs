@@ -139,7 +139,7 @@ assertTouchTarget(".garden-article__taxonomy a", "article taxonomy links");
 assertTouchTarget(".garden-archive a", "archive post links");
 assertTouchTarget(".garden-page .pagination .page-link", "pagination links");
 assertContains(css, /\.garden-body :focus-visible\{[^}]*outline:/, "writing links inherit a visible keyboard focus state");
-assert.doesNotMatch(contentStyles, /gradient|box-shadow/i, "writing surfaces remain matte and gradient-free");
+assert.doesNotMatch(contentStyles, /gradient|box-shadow:(?!\s*none\b)/i, "writing surfaces remain matte and gradient-free");
 assert.doesNotMatch(
   `${blogTemplate}\n${postTemplate}\n${archiveTemplate}\n${postCardTemplate}`,
   /\u00c2\u00b7/,

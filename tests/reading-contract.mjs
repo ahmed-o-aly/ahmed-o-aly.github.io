@@ -114,7 +114,7 @@ assertContains(
 const readingStyles = contentStyles.slice(sourcePosition(contentStyles, ".garden-reading-threads", "reading styles"));
 assert.doesNotMatch(
   `${cardStyles}\n${readingStyles}`,
-  /gradient|box-shadow|backdrop-filter|filter\s*:|mix-blend-mode|saturate\s*\(/i,
+  /gradient|box-shadow:(?!\s*none\b)|backdrop-filter|filter\s*:|mix-blend-mode|saturate\s*\(/i,
   "book wells keep natural cover color on matte surfaces without optical effects"
 );
 assertContains(cardStyles, /\.garden-media--contain img\s*\{[\s\S]*?object-fit:\s*contain/, "cover art uses contain sizing");

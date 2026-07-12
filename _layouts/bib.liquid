@@ -26,11 +26,12 @@
         {% endif %}
       {% endif %}
       {% if entry.preview %}
+        {% assign preview_alt = entry.title | strip_html | append: ' publication preview' | escape %}
         {% if entry.preview contains '://' %}
           <img
             class="preview rounded"
             src="{{ entry.preview }}"
-            alt="{{ entry.title | strip_html | escape }} publication preview"
+            alt="{{ preview_alt }}"
             style="max-width: 140px; height: auto; display: block;"
           >
         {% else %}
@@ -43,7 +44,7 @@
             class="preview rounded"
             zoomable=true
             avoid_scaling=true
-            alt=entry.preview
+            alt=preview_alt
           %}
         {% endif %}
       {% endif %}

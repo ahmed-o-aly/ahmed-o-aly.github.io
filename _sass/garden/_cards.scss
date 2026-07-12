@@ -1,3 +1,7 @@
+.garden-home.garden-container {
+  max-width: var(--garden-max);
+}
+
 .garden-grid {
   display: grid;
   grid-template-columns: 1fr;

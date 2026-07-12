@@ -881,8 +881,10 @@
   align-items: center;
   padding: 4px 8px;
   border-radius: 0;
-  background: var(--garden-surface);
-  color: var(--garden-muted);
+  background: var(--garden-surface) !important;
+  border: 1px solid var(--garden-line);
+  color: var(--garden-ink) !important;
+  box-shadow: none !important;
   font-size: 12px;
   font-weight: 500;
   letter-spacing: 0.04em;
@@ -894,6 +896,11 @@
   color: var(--garden-muted);
   font-size: 13px;
   line-height: 1.45;
+}
+
+.garden-cv .iconinstitution,
+.garden-cv .iconlocation {
+  color: var(--garden-accent);
 }
 
 .garden-cv h3.title,

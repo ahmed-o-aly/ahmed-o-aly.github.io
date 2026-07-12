@@ -12,6 +12,8 @@ const cvTemplate = readFileSync(new URL("../_layouts/cv.liquid", import.meta.url
 const cvTimeTableTemplate = readFileSync(new URL("../_includes/cv/time_table.liquid", import.meta.url), "utf8");
 const cvNestedListTemplate = readFileSync(new URL("../_includes/cv/nested_list.liquid", import.meta.url), "utf8");
 const gardenLayout = readFileSync(new URL("../_layouts/garden.liquid", import.meta.url), "utf8");
+const bibTemplate = readFileSync(new URL("../_layouts/bib.liquid", import.meta.url), "utf8");
+const cvPageSource = readFileSync(new URL("../_pages/cv.md", import.meta.url), "utf8");
 const contentStyles = readFileSync(new URL("../_sass/garden/_content.scss", import.meta.url), "utf8");
 const tokenStyles = readFileSync(new URL("../_sass/garden/_tokens.scss", import.meta.url), "utf8");
 const utilitySources = ["about.md", "publications.md", "repositories.md", "404.md"].map((file) =>
@@ -40,6 +42,8 @@ assertContains(cv, /href="https:\/\/www\.linkedin\.com\/in\/ahmed-aly-76a56b182\
 assertContains(cv, /href="https:\/\/github\.com\/ahmed-o-aly\/?"/, "CV retains a data-backed GitHub action");
 assertContains(cv, /href="\/assets\/pdf\/Ahmed(?:%20| )Aly(?:%20| )CV\.pdf"/, "CV retains its PDF action");
 assert.equal((cv.match(/<h1\b/g) || []).length, 1, "CV has exactly one h1");
+assertContains(cv, /<h1>\s*Ahmed Aly\s*<\/h1>/, "CV intro uses the data-authored full name");
+assertContains(cvPageSource, /^title:\s*CV$/m, "CV metadata uses normalized capitalization");
 
 const cvHeadingOutline = [...cv.matchAll(/<h([1-6])\b[^>]*>([\s\S]*?)<\/h\1>/gi)].map((match) => ({
   level: Number(match[1]),
@@ -78,6 +82,17 @@ for (const key of ["email", "linkedin_username", "github_username", "cv_pdf"]) {
 }
 assertContains(cvTemplate, /include\s+cv\/time_table\.liquid\s+heading_tag=['"]h3['"]/, "CV requests h3 time-table item headings");
 assertContains(cvTemplate, /include\s+cv\/nested_list\.liquid\s+heading_tag=['"]h3['"]/, "CV requests h3 nested-list item headings");
+assertContains(
+  cvTemplate,
+  /assign\s+cv_general_information\s*=\s*site\.data\.cv\s*\|\s*where:\s*['"]title['"],\s*['"]General Information['"]\s*\|\s*first/,
+  "CV resolves its general-information record from cv.yml"
+);
+assertContains(
+  cvTemplate,
+  /assign\s+cv_full_name\s*=\s*cv_general_information\.contents\s*\|\s*where:\s*['"]name['"],\s*['"]Full Name['"]\s*\|\s*first/,
+  "CV resolves its authored full-name field"
+);
+assertContains(cvTemplate, /title=cv_title/, "CV intro receives the data-derived title");
 assertContains(cvTimeTableTemplate, /include\.heading_tag\s*\|\s*default:\s*['"]h6['"]/, "time-table headings retain the legacy h6 default");
 assertContains(cvNestedListTemplate, /include\.heading_tag\s*\|\s*default:\s*['"]h5['"]/, "nested-list headings retain the legacy h5 default");
 for (const [template, label] of [
@@ -113,6 +128,14 @@ assert.ok(remotePreviewImages.length > 0, "publications render remote preview fi
 for (const image of remotePreviewImages) {
   assert.match(image, /alt="[^"]+ publication preview"/i, "each remote publication preview has informative alternative text");
 }
+assertContains(
+  bibTemplate,
+  /assign\s+preview_alt\s*=\s*entry\.title\s*\|\s*strip_html\s*\|\s*append:\s*['"] publication preview['"]\s*\|\s*escape/,
+  "publication previews compute one escaped title-derived alternative"
+);
+assertContains(bibTemplate, /alt="\{\{\s*preview_alt\s*\}\}"/, "remote publication previews use the shared alternative");
+assertContains(bibTemplate, /include\s+figure\.liquid[\s\S]*?alt=preview_alt/, "local publication preview figures receive the shared alternative");
+assert.doesNotMatch(bibTemplate, /alt=entry\.preview/, "local publication previews never expose filenames as alternatives");
 const bibtexPreviews = [...publications.matchAll(/<div class="bibtex hidden">[\s\S]*?<pre\b[^>]*>/gi)].map(([preview]) => preview);
 assert.ok(bibtexPreviews.length > 0, "publications render BibTeX preview regions");
 for (const preview of bibtexPreviews) {
@@ -170,6 +193,21 @@ for (const [selector, label] of [
   assertTouchTarget(selector, label);
 }
 assertContains(css, /\.garden-body :focus-visible\{[^}]*outline:/, "utility links inherit a visible keyboard focus state");
+assertContains(
+  contentStyles,
+  /\.garden-cv \.badge\s*\{[^}]*background:\s*var\(--garden-surface\)\s*!important;[^}]*border:\s*1px solid var\(--garden-line\);[^}]*color:\s*var\(--garden-ink\)\s*!important;[^}]*box-shadow:\s*none\s*!important;/,
+  "CV badges explicitly neutralize inherited MDB chrome"
+);
+assertContains(
+  css,
+  /\.garden-cv \.badge\{[^}]*background:var\(--garden-surface\)!important;[^}]*border:1px solid var\(--garden-line\);[^}]*color:var\(--garden-ink\)!important;[^}]*box-shadow:none!important/,
+  "compiled CV badges stay flat and neutral"
+);
+assertContains(
+  contentStyles,
+  /\.garden-cv \.iconinstitution,\s*\.garden-cv \.iconlocation\s*\{[^}]*color:\s*var\(--garden-accent\);/,
+  "CV institution and location icons use the garden accent"
+);
 assertContains(tokenStyles, /--garden-quiet:\s*#6f6b63;/i, "quiet text uses the approved secondary ink");
 assertContains(css, /--garden-quiet:#6f6b63/i, "compiled quiet text keeps accessible contrast on garden surfaces");
 assertContains(

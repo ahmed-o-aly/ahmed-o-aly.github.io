@@ -5,8 +5,11 @@ layout: default
 {% assign cv_email = site.data.socials.email %}
 {% assign cv_linkedin = site.data.socials.linkedin_username %}
 {% assign cv_github = site.data.socials.github_username %}
+{% assign cv_general_information = site.data.cv | where: 'title', 'General Information' | first %}
+{% assign cv_full_name = cv_general_information.contents | where: 'name', 'Full Name' | first %}
+{% assign cv_title = cv_full_name.value | default: page.title %}
 <article class="garden-cv">
-  {% include garden-intro.liquid eyebrow='Curriculum vitae' title=page.title description=page.description %}
+  {% include garden-intro.liquid eyebrow='Curriculum vitae' title=cv_title description=page.description %}
   <nav class="garden-cv__actions" aria-label="CV contact and download actions">
     {% if cv_pdf -%}
       <a class="garden-button" href="{{ cv_pdf | relative_url }}">Download PDF</a>
