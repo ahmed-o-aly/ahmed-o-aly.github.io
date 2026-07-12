@@ -170,6 +170,7 @@ kramdown:
 # Includes & excludes
 include: ["_pages", "_scripts"]
 exclude:
+  - docs/
   - Gemfile
   - Gemfile.lock
   - LICENSE
@@ -181,6 +182,7 @@ exclude:
   - purgecss.config.js
   - readme_preview/
   - README.md
+  - tests/
   - vendor
 keep_files:
   - CNAME
