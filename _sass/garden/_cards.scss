@@ -96,7 +96,8 @@
   text-align: center;
 }
 
-.garden-card:hover {
+.garden-card:hover,
+.garden-card:focus-within {
   background: var(--garden-surface-hover);
 }
 
