@@ -1,0 +1,44 @@
+{% assign book = include.book %}
+{% assign cover = book.cover %}
+{% if cover == blank and book.olid != blank %}
+  {% assign cover = 'https://covers.openlibrary.org/b/olid/' | append: book.olid | append: '-L.jpg' %}
+{% elsif cover == blank and book.isbn != blank %}
+  {% assign cover = 'https://covers.openlibrary.org/b/isbn/' | append: book.isbn | append: '-L.jpg' %}
+{% endif %}
+
+{% assign destination = book.url | default: include.url %}
+{% if destination == blank %}
+  {% assign destination = '/books/' %}
+{% endif %}
+{% unless destination contains '://' %}
+  {% assign destination = destination | relative_url %}
+{% endunless %}
+
+{% assign rating = book.rating | default: book.stars %}
+{% assign read_at = book.read_at | default: book.finished %}
+{% capture label %}
+  {% if rating != blank %}{{ rating }}/5{% else %}Reading &middot; Books{% endif %}
+{% endcapture %}
+{% capture summary %}
+  {% if book.author %}{{ book.author }}{% endif %}
+  {% if read_at %} &middot; Read {{ read_at | date: '%b %-d, %Y' }}{% endif %}
+  {% if book.review %} &middot; {{ book.review | strip_html | strip_newlines | truncatewords: 24 }}{% endif %}
+{% endcapture %}
+{% assign label = label | strip %}
+{% assign summary = summary | strip %}
+{% capture generated_cover_alt %}{{ book.title }} book cover{% endcapture %}
+{% assign cover_alt = book.cover_alt | default: generated_cover_alt | strip %}
+
+{%
+  include garden-card.liquid
+  kind='book'
+  size=include.size
+  heading_tag=include.heading_tag
+  url=destination
+  label=label
+  title=book.title
+  summary=summary
+  media=cover
+  alt=cover_alt
+  fit='contain'
+%}

@@ -1,0 +1,106 @@
+.garden-body {
+  margin: 0;
+  padding: 0;
+  background: var(--garden-canvas);
+  color: var(--garden-ink);
+  font-family: var(--garden-sans);
+}
+.garden-body *,
+.garden-body *::before,
+.garden-body *::after {
+  box-sizing: border-box;
+}
+.garden-body a {
+  color: inherit;
+}
+.garden-body :focus-visible {
+  outline: 2px solid var(--garden-focus);
+  outline-offset: 3px;
+}
+.garden-container {
+  width: min(calc(100% - 32px), var(--garden-max));
+  margin-inline: auto;
+}
+.garden-skip {
+  position: fixed;
+  left: 16px;
+  top: -80px;
+  z-index: 100;
+  padding: 10px 14px;
+  background: var(--garden-ink);
+  color: var(--garden-canvas);
+}
+.garden-skip:focus {
+  top: 16px;
+}
+.garden-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  padding: 16px 0 8px;
+  pointer-events: none;
+}
+.garden-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  font-size: 14px;
+  pointer-events: auto;
+}
+.garden-nav__segments {
+  display: flex;
+  overflow-x: auto;
+  padding: 4px;
+  border: 1px solid var(--garden-line);
+  border-radius: var(--garden-radius);
+  background: var(--garden-surface);
+}
+.garden-nav__segments a,
+.garden-nav__name,
+.garden-nav__utility a {
+  display: inline-flex;
+  min-width: 44px;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 9px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.garden-nav__segments a[aria-current="page"] {
+  border-radius: 5px;
+  background: var(--garden-line);
+}
+.garden-nav__utility {
+  display: flex;
+  color: var(--garden-muted);
+}
+.garden-main {
+  min-height: 70vh;
+  padding: 24px 0 72px;
+}
+.garden-footer {
+  padding: 24px 0 36px;
+  color: var(--garden-muted);
+  font-size: 13px;
+}
+.garden-footer__inner {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  border-top: 1px solid var(--garden-line);
+  padding-top: 20px;
+}
+.garden-footer nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+.garden-footer nav a {
+  display: inline-flex;
+  min-width: 44px;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+}

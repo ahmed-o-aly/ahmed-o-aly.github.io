@@ -1,4 +1,8 @@
 {
+  "scripts": {
+    "format:check": "prettier --check \"tests/**/*.mjs\" \"assets/js/garden.js\" \"assets/css/garden.scss\" \"_sass/garden/**/*.scss\" \"_includes/garden-*.liquid\" \"_layouts/{archive,bib,book-review,cv,default,garden,home,page,post}.liquid\" \"_pages/{404,about,blog,books,home,projects,publications,repositories}.md\" \"_includes/cv/{nested_list,time_table}.liquid\" \"package.json\" \".github/workflows/{axe,deploy}.yml\"",
+    "test:site": "node tests/site-contract.mjs"
+  },
   "devDependencies": {
     "@shopify/prettier-plugin-liquid": "1.4.0",
     "prettier": "3.1.1"

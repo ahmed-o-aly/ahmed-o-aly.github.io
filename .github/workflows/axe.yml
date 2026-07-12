@@ -5,7 +5,9 @@ on:
     branches:
       - main
     paths:
+      - ".github/scripts/run-axe.mjs"
       - "assets/**"
+      - "_bibliography/**"
       - "_includes/**"
       - "_layouts/**"
       - "_pages/**"
@@ -16,20 +18,29 @@ on:
       - "**.liquid"
       - "**/*.md"
       - "**.yml"
+      - "tests/**"
   workflow_dispatch:
-    inputs:
-      url:
-        description: "URL to be checked (e.g.: blog/)"
-        required: false
-
-env:
-  URL: ""
 
 permissions:
   contents: read
 
 jobs:
   check:
+    strategy:
+      fail-fast: false
+      matrix:
+        path:
+          - ""
+          - "projects/"
+          - "projects/metahub-ai-xr-lab/"
+          - "blog/"
+          - "blog/2026/what-i-am-building-this-site-for/"
+          - "books/"
+          - "books/the_godfather/"
+          - "about/"
+          - "cv/"
+          - "publications/"
+          - "404.html"
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -78,4 +89,4 @@ jobs:
         run: |
           npm install axe-core chrome-remote-interface http-server
           npx http-server _site/ &
-          node .github/scripts/run-axe.mjs "http://127.0.0.1:8080/${{ github.event.inputs.url || env.URL }}" 1500
+          node .github/scripts/run-axe.mjs "http://127.0.0.1:8080/${{ matrix.path }}" 1500

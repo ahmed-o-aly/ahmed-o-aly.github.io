@@ -2,9 +2,11 @@
 layout: default
 ---
 {% assign year = page.date | date: '%Y' %}
-{% assign tags = page.tags | join: '' %}
-{% assign categories = page.categories | join: '' %}
 {% assign url_beginning = page.url | slice: 0, 6 %}
+{% assign article_eyebrow = 'Writing' %}
+{% unless url_beginning == '/blog/' %}
+  {% assign article_eyebrow = page.collection | default: 'Note' | capitalize %}
+{% endunless %}
 
 {% if page._styles %}
   <!-- Page/Post style -->
@@ -13,95 +15,105 @@ layout: default
   </style>
 {% endif %}
 
-<div class="post">
-  <header class="post-header">
-    <h1 class="post-title">{{ page.title }}</h1>
-    <p class="post-meta">
-      Created on {{ page.date | date: '%B %d, %Y' }}
-      {% if page.author %}by {{ page.author }}{% endif %}
-      {% if page.last_updated %}, last updated on {{ page.last_updated | date: '%B %d, %Y' }}{% endif %}
-      {% if page.meta %}• {{ page.meta }}{% endif %}
+<article class="garden-article">
+  <header class="garden-article__header">
+    <p class="garden-intro__eyebrow">{{ article_eyebrow }}</p>
+    <h1>{{ page.title }}</h1>
+    {% if page.description %}
+      <p class="garden-article__description">{{ page.description }}</p>
+    {% endif %}
+    <p class="garden-article__meta">
+      <time datetime="{{ page.date | date_to_xmlschema }}">{{ page.date | date: '%B %-d, %Y' }}</time>
+      {% if page.author -%}
+        <span>&middot; {{ page.author }}</span>
+      {%- endif %}
+      {% if page.last_updated -%}
+        <span>&middot; Updated {{ page.last_updated | date: '%B %-d, %Y' }}</span>
+      {%- endif %}
+      {% if page.meta -%}
+        <span>&middot; {{ page.meta }}</span>
+      {%- endif %}
+      {% if page.external_source -%}
+        <span>&middot; {{ page.external_source }}</span>
+      {%- endif %}
     </p>
-    <p class="post-tags">
-      {% if url_beginning == '/blog/' %}
-        <a href="{{ year | prepend: '/blog/' | relative_url }}"> <i class="fa-solid fa-calendar fa-sm"></i> {{ year }} </a>
-      {% else %}
-        <i class="fa-solid fa-calendar fa-sm"></i> {{ year }}
-      {% endif %}
-      {% if tags != '' %}
-        &nbsp; &middot; &nbsp;
-        {% for tag in page.tags %}
-          {% if url_beginning == '/blog/' %}
-            <a href="{{ tag | slugify | prepend: '/blog/tag/' | relative_url }}"> <i class="fa-solid fa-hashtag fa-sm"></i> {{ tag }}</a>
-          {% else %}
-            <i class="fa-solid fa-hashtag fa-sm"></i> {{ tag }}
-          {% endif %}
-          {% unless forloop.last %}
-            &nbsp;
-          {% endunless %}
-        {% endfor %}
-      {% endif %}
 
-      {% if categories != '' %}
-        &nbsp; &middot; &nbsp;
-        {% for category in page.categories %}
-          {% if url_beginning == '/blog/' %}
-            <a href="{{ category | slugify | prepend: '/blog/category/' | relative_url }}"> <i class="fa-solid fa-tag fa-sm"></i> {{ category -}}</a>
-          {% else %}
-            <i class="fa-solid fa-tag fa-sm"></i> {{ category }}
-          {% endif %}
-          {% unless forloop.last %}
-            &nbsp;
-          {% endunless %}
-        {% endfor %}
+    <div class="garden-article__taxonomy" aria-label="Article filing">
+      {% if url_beginning == '/blog/' %}
+        <a href="{{ year | prepend: '/blog/' | append: '/' | relative_url }}" aria-label="Writing from {{ year }}">{{ year }}</a>
+      {% else %}
+        <span>{{ year }}</span>
       {% endif %}
-    </p>
+      {% for tag in page.tags %}
+        {% if url_beginning == '/blog/' %}
+          <a href="{{ tag | slugify | prepend: '/blog/tag/' | append: '/' | relative_url }}">#{{ tag }}</a>
+        {% else %}
+          <span>#{{ tag }}</span>
+        {% endif %}
+      {% endfor %}
+      {% for category in page.categories %}
+        {% if url_beginning == '/blog/' %}
+          <a href="{{ category | slugify | prepend: '/blog/category/' | append: '/' | relative_url }}">{{ category }}</a>
+        {% else %}
+          <span>{{ category }}</span>
+        {% endif %}
+      {% endfor %}
+    </div>
   </header>
 
-  <article class="post-content">
-    {% if page.toc and page.toc.beginning %}
-      <div id="table-of-contents">
-        {% toc %}
-      </div>
-      <hr>
-    {% endif %}
-    <div id="markdown-content">
-      {{ content }}
-    </div>
-  </article>
+  {% if page.toc == true or page.toc.beginning %}
+    <nav id="table-of-contents" class="garden-article__toc" aria-label="Table of contents">
+      <p>On this page</p>
+      {% toc %}
+    </nav>
+  {% endif %}
+
+  <div id="markdown-content" class="garden-prose">
+    {{ content }}
+  </div>
 
   {% if page.thread %}
     {% assign matched_threads = site.data.work_threads | where: 'key', page.thread %}
-    {% if matched_threads.size > 0 %}
-      {% assign matched_thread = matched_threads | first %}
-      <aside class="post-thread-note">
-        <span>{{ matched_thread.label }}</span>
-        <p>This note belongs to the <a href="{{ '/blog/' | relative_url }}">{{ matched_thread.title }}</a> lane.</p>
-      </aside>
+    {% assign matched_thread = matched_threads | first %}
+    <aside class="garden-article__thread" aria-label="Writing thread">
+      <span>{{ matched_thread.label | default: 'Writing thread' }}</span>
+      {% if matched_thread %}
+        <p>
+          <a href="{{ '/blog/' | relative_url }}">{{ matched_thread.title }}</a>
+        </p>
+      {% else %}
+        <p>{{ page.thread }}</p>
+      {% endif %}
+    </aside>
+  {% endif %}
+
+  {% capture article_support %}
+    {% if page.citation %}
+      {% include citation.liquid %}
     {% endif %}
-  {% endif %}
 
-  {% if page.citation %}
-    {% include citation.liquid %}
-  {% endif %}
-
-  {% if page.related_publications %}
-    <h2>References</h2>
-    <div class="publications">
-      {% bibliography --group_by none --cited_in_order %}
-    </div>
-  {% endif %}
-
-  {% if site.related_blog_posts and site.related_blog_posts.enabled %}
-    {% if page.related_posts == null or page.related_posts %}
-      {% include related_posts.liquid %}
+    {% if page.related_publications %}
+      <h2>References</h2>
+      <div class="publications">
+        {% bibliography --group_by none --cited_in_order %}
+      </div>
     {% endif %}
-  {% endif %}
 
-  {% if site.disqus_shortname and page.disqus_comments %}
-    {% include disqus.liquid %}
+    {% if site.related_blog_posts and site.related_blog_posts.enabled %}
+      {% if page.related_posts == null or page.related_posts %}
+        {% include related_posts.liquid %}
+      {% endif %}
+    {% endif %}
+
+    {% if site.disqus_shortname and page.disqus_comments %}
+      {% include disqus.liquid %}
+    {% endif %}
+    {% if site.giscus and page.giscus_comments %}
+      {% include giscus.liquid %}
+    {% endif %}
+  {% endcapture %}
+  {% assign article_support = article_support | strip %}
+  {% if article_support != '' %}
+    <div class="garden-article__support">{{ article_support }}</div>
   {% endif %}
-  {% if site.giscus and page.giscus_comments %}
-    {% include giscus.liquid %}
-  {% endif %}
-</div>
+</article>

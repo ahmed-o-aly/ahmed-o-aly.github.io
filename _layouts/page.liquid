@@ -1,162 +1,92 @@
 ---
 layout: default
 ---
-{% if page._styles %}
-  <!-- Page/Post style -->
-  <style type="text/css">
-    {{ page._styles }}
-  </style>
-{% endif %}
-
-<div class="post">
-  <header class="post-header">
-    <h1 class="post-title">{{ page.title }}</h1>
-    <p class="post-description">{{ page.description }}</p>
-  </header>
-
-  {% if page.collection == 'projects' %}
-    <section class="project-showcase project-showcase-{{ page.visual.key | default: page.thread | default: 'system' | slugify }}" aria-label="Project overview">
-      {% include project-visual.liquid project=page %}
-      <div class="project-showcase-copy">
-        <span>{{ page.category }}</span>
-        <h2>{{ page.visual.headline | default: page.title }}</h2>
-        <p>{{ page.visual.summary | default: page.description }}</p>
-        {% if page.signals %}
-          <ul>
-            {% for signal in page.signals limit: 3 %}
-              <li>{{ signal }}</li>
-            {% endfor %}
-          </ul>
-        {% endif %}
+{% if page.collection == 'projects' %}
+  <article class="garden-case">
+    {% include garden-intro.liquid eyebrow=page.category title=page.title description=page.description %}
+    <dl class="garden-case__meta">
+      <div>
+        <dt>Role</dt>
+        <dd>{{ page.role }}</dd>
       </div>
+      <div>
+        <dt>Methods</dt>
+        <dd>{{ page.methods }}</dd>
+      </div>
+      <div>
+        <dt>Status</dt>
+        <dd>{{ page.status }}</dd>
+      </div>
+    </dl>
+    <section id="problem">
+      <h2>Problem</h2>
+      <p>{{ page.problem }}</p>
     </section>
-
-    <section class="project-brief" aria-label="Project brief">
-      <div class="project-brief-mark" aria-hidden="true">
-        <span>{{ page.category }}</span>
-        <strong>{{ page.importance | prepend: '0' }}</strong>
+    <section id="constraints">
+      <h2>Constraints</h2>
+      <ul>
+        {% for item in page.constraints %}
+          <li>{{ item }}</li>
+        {% endfor %}
+      </ul>
+    </section>
+    <section id="system">
+      <h2>{{ page.system_map.title | default: 'System' }}</h2>
+      <ol>
+        {% for step in page.system_map.steps %}
+          <li>
+            <strong>{{ step.title }}</strong>
+            <p>{{ step.detail }}</p>
+          </li>
+        {% endfor %}
+      </ol>
+    </section>
+    <section id="proof">
+      <h2>Proof and artifacts</h2>
+      <div class="garden-proof">
+        {% for item in page.proof %}
+          <article>
+            <h3>{{ item.label }}</h3>
+            <p>{{ item.detail }}</p>
+          </article>
+        {% endfor %}
       </div>
-      <div class="project-brief-copy">
-        <dl>
-          {% if page.role %}
-            <div>
-              <dt>Role</dt>
-              <dd>{{ page.role }}</dd>
-            </div>
-          {% endif %}
-          {% if page.methods %}
-            <div>
-              <dt>Methods</dt>
-              <dd>{{ page.methods }}</dd>
-            </div>
-          {% endif %}
-          {% if page.status %}
-            <div>
-              <dt>Status</dt>
-              <dd>{{ page.status }}</dd>
-            </div>
-          {% endif %}
-        </dl>
-        {% if page.artifacts %}
-          <h2>Artifacts</h2>
-          <div class="project-artifacts">
+      {% if page.artifacts %}
+        <div class="garden-artifacts">
+          <h3>Project artifacts</h3>
+          <div>
             {% for artifact in page.artifacts %}
-              <a href="{% if artifact.url contains '://' %}{{ artifact.url }}{% else %}{{ artifact.url | relative_url }}{% endif %}">
-                {{ artifact.label }}
-              </a>
+              {% assign artifact_url = artifact.url %}
+              {% unless artifact_url contains '://' %}{% assign artifact_url = artifact_url | relative_url %}{% endunless %}
+              <a href="{{ artifact_url }}">{{ artifact.label }}</a>
             {% endfor %}
           </div>
-        {% endif %}
-      </div>
+        </div>
+      {% endif %}
     </section>
-
-    {% if page.problem or page.constraints or page.system_map or page.proof or page.outcomes or page.decisions %}
-      <section class="case-study-modules" aria-label="Case study details">
-        {% if page.problem or page.constraints %}
-          <article class="case-module case-module-problem">
-            <span class="case-module-kicker">framing</span>
-            {% if page.problem %}
-              <h2>Problem</h2>
-              <p>{{ page.problem }}</p>
-            {% endif %}
-            {% if page.constraints %}
-              <h2>Constraints</h2>
-              <ul>
-                {% for constraint in page.constraints %}
-                  <li>{{ constraint }}</li>
-                {% endfor %}
-              </ul>
-            {% endif %}
-          </article>
-        {% endif %}
-
-        {% if page.system_map %}
-          <article class="case-module case-module-map">
-            <span class="case-module-kicker">system map</span>
-            <h2>{{ page.system_map.title | default: "How the work moves" }}</h2>
-            <ol>
-              {% for step in page.system_map.steps %}
-                <li>
-                  <strong>{{ step.title }}</strong>
-                  <span>{{ step.detail }}</span>
-                </li>
-              {% endfor %}
-            </ol>
-          </article>
-        {% endif %}
-
-        {% if page.proof %}
-          <article class="case-module case-module-proof">
-            <span class="case-module-kicker">proof to inspect</span>
-            <h2>Artifacts</h2>
-            <div class="proof-card-grid">
-              {% for item in page.proof %}
-                <div class="proof-card">
-                  <span>{{ item.label }}</span>
-                  <p>{{ item.detail }}</p>
-                </div>
-              {% endfor %}
-            </div>
-          </article>
-        {% endif %}
-
-        {% if page.decisions or page.outcomes %}
-          <article class="case-module case-module-outcomes">
-            <span class="case-module-kicker">judgment</span>
-            {% if page.decisions %}
-              <h2>Key Decisions</h2>
-              <ul>
-                {% for decision in page.decisions %}
-                  <li>{{ decision }}</li>
-                {% endfor %}
-              </ul>
-            {% endif %}
-            {% if page.outcomes %}
-              <h2>Signals And Outcomes</h2>
-              <ul>
-                {% for outcome in page.outcomes %}
-                  <li>{{ outcome }}</li>
-                {% endfor %}
-              </ul>
-            {% endif %}
-          </article>
-        {% endif %}
-      </section>
-    {% endif %}
-  {% endif %}
-
-  <article>
-    {{ content }}
+    <section id="decisions">
+      <h2>Decisions</h2>
+      <ul>
+        {% for item in page.decisions %}
+          <li>{{ item }}</li>
+        {% endfor %}
+      </ul>
+    </section>
+    <section id="outcomes">
+      <h2>Outcomes</h2>
+      <ul>
+        {% for item in page.outcomes %}
+          <li>{{ item }}</li>
+        {% endfor %}
+      </ul>
+    </section>
+    <div class="garden-prose">{{ content }}</div>
+    {% include garden-related.liquid collection=site.projects current=page label='More projects' %}
   </article>
-
-  {% if page.related_publications %}
-    <h2>References</h2>
-    <div class="publications">
-      {% bibliography --cited_in_order %}
-    </div>
-  {% endif %}
-
-  {% if site.giscus and page.giscus_comments %}
-    {% include giscus.liquid %}
-  {% endif %}
-</div>
+{% else %}
+  <article class="garden-page-content">
+    {% assign display_title = page.display_title | default: page.title %}
+    {% include garden-intro.liquid eyebrow=page.eyebrow title=display_title description=page.description %}
+    <div class="garden-prose">{{ content }}</div>
+  </article>
+{% endif %}

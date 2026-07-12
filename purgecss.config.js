@@ -23,5 +23,6 @@ module.exports = {
       /^quiet-/,
       /^text-link$/,
     ],
+    deep: [/^pagination$/],
   },
 };

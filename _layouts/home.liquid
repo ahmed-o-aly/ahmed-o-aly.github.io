@@ -1,14 +1,6 @@
-<!doctype html>
-<html lang="{{ site.lang }}">
-  <head>
-    {% include head.liquid %}
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=EB+Garamond:wght@400;700&display=swap">
-  </head>
-
-  <body class="portfolio-body">
-    {{ content }}
-    <script defer src="{{ '/assets/js/portfolio-home.js' | relative_url | bust_file_cache }}"></script>
-  </body>
-</html>
+---
+layout: garden
+---
+<main id="main-content" class="garden-main garden-main--home">
+  {{ content }}
+</main>

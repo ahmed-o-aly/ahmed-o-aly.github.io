@@ -1,0 +1,11 @@
+{% assign items = include.collection | sort: 'importance' %}
+<nav class="garden-related" aria-label="{{ include.label | default: 'Related content' }}">
+  <h2>{{ include.label | default: 'Related content' }}</h2>
+  <div>
+    {% for item in items limit: 3 %}
+      {% unless item.url == include.current.url %}
+        <a href="{{ item.url | relative_url }}">{{ item.title }}</a>
+      {% endunless %}
+    {% endfor %}
+  </div>
+</nav>
