@@ -1,257 +1,126 @@
 ---
 layout: default
 ---
-{% assign year = page.started | date: '%Y' %}
-{% assign tags = page.tags | join: '' %}
-{% assign categories = page.categories | join: '' %}
-
 {% if page._styles %}
-  <!-- Page/Post style -->
   <style type="text/css">
     {{ page._styles }}
   </style>
 {% endif %}
 
-<div class="post">
-  <header class="post-header">
-    <h1 class="post-title">{{ page.title }}</h1>
-    {% if page.author or page.released %}
-      <p class="post-meta">
-        {% if page.author %}
-          {{ page.author }}
-        {% endif %}
-        {% if page.author and page.released %} &nbsp;&middot;&nbsp; {% endif %}
-        {% if page.released %}
-          {{ page.released }}
-        {% endif %}
-      </p>
-    {% endif %}
+{% assign review_cover = page.cover %}
+{% if review_cover == blank and page.olid != blank %}
+  {% assign review_cover = 'https://covers.openlibrary.org/b/olid/' | append: page.olid | append: '-L.jpg' %}
+  {% assign review_cover_source_url = 'https://openlibrary.org/olid/' | append: page.olid %}
+{% elsif review_cover == blank and page.isbn != blank %}
+  {% assign review_cover = 'https://covers.openlibrary.org/b/isbn/' | append: page.isbn | append: '-L.jpg' %}
+  {% assign review_cover_source_url = 'https://openlibrary.org/isbn/' | append: page.isbn %}
+{% endif %}
+{% capture generated_cover_alt %}{{ page.title }} book cover{% endcapture %}
+{% assign review_cover_alt = page.cover_alt | default: generated_cover_alt | strip %}
+{% assign started_at = page.started | default: page.start %}
+{% assign finished_at = page.finished | default: page.end %}
+{% assign archive_year = started_at | date: '%Y' %}
+{% assign tags = page.tags | join: '' %}
+{% assign categories = page.categories | join: '' %}
 
-    {% if page.started or page.finished or page.stars %}
-      <p class="post-meta">
-        {% if page.started %}
-          <i class="fa-solid fa-play fa-sm" style="color: var(--global-tip-block) !important"></i> <em>{{ page.started }}</em>
-        {% endif %}
-        {% if page.finished %}
-          {% if page.started %}
-            &nbsp;&middot;&nbsp;
-          {% endif %}
-          <i class="fa-solid fa-stop fa-sm" style="color: #e56565 !important"></i> <em>{{ page.finished }}</em>
-        {% endif %}
-        {% if page.stars %}
-          {% if page.started or page.finished %}
-            &nbsp;&middot;&nbsp;
-          {% endif %}
-          {% if page.goodreads_review %}
-            <a target="_blank" href="https://www.goodreads.com/review/show/{{ page.goodreads_review }}"><i class="fa-brands fa-goodreads-g"></i>
-          {% endif %}
-          {% assign full_stars = page.stars | floor %}
-          {% assign half_star = page.stars | minus: full_stars %}
-          {% assign empty_stars = 5 | minus: full_stars %}
-          {% if half_star > 0 %}
-            {% assign empty_stars = empty_stars | minus: 1 %}
-          {% endif %}
-          {% for i in (1..full_stars) -%}
-            <i class="fa-solid fa-star fa-sm"></i>
-          {%- endfor -%}
-          {%- if half_star > 0 %}<i class="fa-solid fa-star-half-stroke fa-sm"></i>{% endif -%}
-          {%- for i in (1..empty_stars) -%}
-            <i class="fa-regular fa-star fa-sm"></i>
-          {%- endfor -%}
-          {% if page.goodreads_review %}
-            </a>
-          {% endif %}
-        {% endif %}
-        {% if page.buy_link %}
-          {% if page.started or page.finished or page.stars %}
-            &nbsp;&middot;&nbsp;
-          {% endif %}
-          <a target="_blank" href="{{ page.buy_link }}"
-            ><i class="fa-solid fa-cart-shopping"></i>
-            {% assign is_amazon_link = page.buy_link | slice: 0, 19 %}
-            {% if is_amazon_link == 'https://www.amazon.' %}
-              <i class="fa-brands fa-amazon"></i>
-            {% endif %}
-          </a>
-        {% endif %}
+<article class="garden-book-review">
+  <header class="garden-book-review__header">
+    <figure class="garden-book-review__cover">
+      {% include garden-media.liquid src=review_cover alt=review_cover_alt title=page.title fit='contain' %}
+      {% if review_cover %}
+        <figcaption>
+          Cover of <cite>{{ page.title }}</cite>
+          {%- if review_cover_source_url %}
+            via <a href="{{ review_cover_source_url }}">Open Library</a>
+          {%- endif -%}
+          .
+        </figcaption>
+      {% endif %}
+    </figure>
+
+    <div class="garden-book-review__intro">
+      <p class="garden-intro__eyebrow">
+        Reading{% if page.status %} &middot; {{ page.status }}{% endif %}
       </p>
-    {% endif %}
-    <p class="post-tags">
-      <a href="{{ year | prepend: '/books/' | relative_url }}"> <i class="fa-solid fa-calendar fa-sm"></i> {{ year }}</a>
-      {% if tags != '' %}
-        &nbsp;&middot;&nbsp;
-        {% for tag in page.tags %}
-          <a href="{{ tag | slugify | prepend: '/books/tag/' | relative_url }}"> <i class="fa-solid fa-hashtag fa-sm"></i> {{ tag }}</a>
-          {% unless forloop.last %}
-            &nbsp;
-          {% endunless %}
-        {% endfor %}
+      <h1>{{ page.title }}</h1>
+      {% if page.author %}
+        <p class="garden-book-review__author">{{ page.author }}</p>
       {% endif %}
 
-      {% if categories != '' %}
-        &nbsp;&middot;&nbsp;
-        {% for category in page.categories %}
-          <a href="{{ category | slugify | prepend: '/books/category/' | relative_url }}"> <i class="fa-solid fa-tag fa-sm"></i> {{ category }}</a>
-          {% unless forloop.last %}
-            &nbsp;
-          {% endunless %}
-        {% endfor %}
+      {% if started_at or finished_at or page.released or page.stars %}
+        <dl class="garden-book-review__meta">
+          {% if started_at %}
+            <div>
+              <dt>Started</dt>
+              <dd>
+                <time datetime="{{ started_at | date: '%Y-%m-%d' }}">{{ started_at | date: '%b %-d, %Y' }}</time>
+              </dd>
+            </div>
+          {% endif %}
+          {% if finished_at %}
+            <div>
+              <dt>Finished</dt>
+              <dd>
+                <time datetime="{{ finished_at | date: '%Y-%m-%d' }}">{{ finished_at | date: '%b %-d, %Y' }}</time>
+              </dd>
+            </div>
+          {% endif %}
+          {% if page.released %}
+            <div>
+              <dt>Released</dt>
+              <dd>{{ page.released }}</dd>
+            </div>
+          {% endif %}
+          {% if page.stars %}
+            <div>
+              <dt>Rating</dt>
+              <dd>
+                <span>{{ page.stars }}/5</span>
+              </dd>
+            </div>
+          {% endif %}
+        </dl>
       {% endif %}
-    </p>
-    <hr>
+
+      {% if page.goodreads_review or page.buy_link %}
+        <nav class="garden-book-review__actions" aria-label="Book links">
+          {% if page.goodreads_review %}
+            <a href="https://www.goodreads.com/review/show/{{ page.goodreads_review }}" rel="noopener" target="_blank">Review on Goodreads</a>
+          {% endif %}
+          {% if page.buy_link %}
+            <a href="{{ page.buy_link }}" rel="noopener" target="_blank">Buy this book</a>
+          {% endif %}
+        </nav>
+      {% endif %}
+    </div>
   </header>
 
-  <article>
-    {% if content == '' %}
-      <figure class="empty-review">
-        {% if page.cover %}
-          <img class="empty-review-cover" alt="{{ page.title }} cover" src="{{ site.baseurl }}/{{ page.cover }}">
-          <figcaption class="empty-review-caption">
-            Cover of <em>{{ page.title }}</em>
-          </figcaption>
-        {% elsif page.olid %}
-          <img class="empty-review-cover" alt="{{ page.title }} cover" src="http://covers.openlibrary.org/b/olid/{{ page.olid }}-L.jpg?default=false">
-          <figcaption class="empty-review-caption">
-            Cover of <em>{{ page.title }}</em> on the <a href="https://openlibrary.org/olid/{{ page.olid }}">Open Library</a>.
-          </figcaption>
-        {% elsif page.isbn %}
-          <img class="empty-review-cover" alt="{{ page.title }} cover" src="http://covers.openlibrary.org/b/isbn/{{ page.isbn }}-L.jpg?default=false">
-          <figcaption class="empty-review-caption">
-            Cover of <em>{{ page.title }}</em> on the <a href="https://openlibrary.org/isbn/{{ page.isbn }}">Open Library</a>.
-          </figcaption>
-        {% endif %}
-      </figure>
-      {% assign status = page.status | upcase %}
-      <div class="clearfix">
-        <h4>{{ status }}</h4>
-      </div>
-    {% else %}
-      <figure>
-        {% if page.cover %}
-          <img alt="{{ page.title }} cover" src="{{ site.baseurl }}/{{ page.cover }}">
-          <figcaption>
-            Cover of <em>{{ page.title }}</em>
-          </figcaption>
-        {% elsif page.olid %}
-          <img alt="{{ page.title }} cover" src="http://covers.openlibrary.org/b/olid/{{ page.olid }}-L.jpg?default=false">
-          <figcaption>
-            Cover of <em>{{ page.title }}</em> on the <a href="https://openlibrary.org/olid/{{ page.olid }}">Open Library</a>.
-          </figcaption>
-        {% elsif page.isbn %}
-          <img alt="{{ page.title }} cover" src="http://covers.openlibrary.org/b/isbn/{{ page.isbn }}-L.jpg?default=false">
-          <figcaption>
-            Cover of <em>{{ page.title }}</em> on the <a href="https://openlibrary.org/isbn/{{ page.isbn }}">Open Library</a>.
-          </figcaption>
-        {% endif %}
-      </figure>
-      <br class="mobile-break" clear="right">
-      <h4>
-        {% if page.start %} Start Date: {{ page.start | date: '%-d %B %Y' }}. {% endif %}
-        {% if page.end %} End Date: {{ page.end | date: '%-d %B %Y' }}. {% endif %}
-      </h4>
-      {{ content }}
-    {% endif %}
-  </article>
+  {% if started_at or tags != '' or categories != '' %}
+    <nav class="garden-book-review__filing" aria-label="Book filing">
+      {% if started_at -%}
+        <a href="{{ archive_year | prepend: '/books/' | append: '/' | relative_url }}">{{ archive_year }}</a>
+      {%- endif %}
+      {% for tag in page.tags %}
+        <a href="{{ tag | slugify | prepend: '/books/tag/' | append: '/' | relative_url }}">#{{ tag }}</a>
+      {% endfor %}
+      {% for category in page.categories %}
+        <a href="{{ category | slugify | prepend: '/books/category/' | append: '/' | relative_url }}">{{ category }}</a>
+      {% endfor %}
+    </nav>
+  {% endif %}
+
+  {% assign review_content = content | strip %}
+  {% if review_content != '' %}
+    <div id="markdown-content" class="garden-prose">{{ content }}</div>
+  {% elsif page.status %}
+    <p class="garden-book-review__empty">{{ page.status | upcase }}</p>
+  {% endif %}
+
+  {% if site.books.size > 1 %}
+    {% include garden-related.liquid collection=site.books current=page label='More reading' %}
+  {% endif %}
 
   {% if site.giscus and page.giscus_comments %}
     {% include giscus.liquid %}
   {% endif %}
-</div>
-
-<style>
-      figure {
-        float: none;
-        width: auto;
-        display: block;
-        margin-right: auto;
-        margin-left: auto;
-
-      }
-      figure  > img {
-
-           vertical-align: top;
-           display: block;
-           margin-right: 0px;
-           margin-left: 0px;
-           padding: 0px;
-
-      }
-      figure figcaption {
-
-        display: block;
-        caption-side: bottom;
-        text-align: center;
-      }
-
-      @media screen and (min-width: 600px)  {
-
-        .empty-review{
-          float: left;
-          display: block; /* in-line block; */
-          margin: 0px 0px 0px 0px;  /* adjust as needed */
-          padding: 0px 0px 0px 20px;
-         /* top right bottom left */
-          }
-
-         .empty-review-caption {
-                  caption-side: left;
-                  text-align: left;
-
-
-                  }
-
-          .empty-review-cover {
-              width:250px;
-              vertical-align: top;
-              padding-right: 40px;
-              }
-
-          figure {
-
-                float: right;
-                display: in-line block; /* in-line block; */
-                margin: 0px 0px 0px 0px;  /* adjust as needed */
-                padding: 0px 0px 0px 20px;
-               /* top right bottom left */
-              }
-
-          figure img {
-                  width:300px;
-                  vertical-align: top;
-
-                }
-
-          figure figcaption {
-                  caption-side: bottom;
-                  text-align: left;
-
-                  }
-
-          .mobile-break { display: none; }
-
-  /* =Blockquote
-  -------------------------------------------------------------- */
-  blockquote {
-
-      position: relative;
-      marign: 0px;
-      display: table;
-
-  }
-  blockquote:before, blockquote:after {
-
-   /* properties to format the block quotes /*
-
-  }
-  blockquote:before {
-      top: 0;
-      left: 0;
-
-
-  }
-  blockquote:after {
-      top: 0;
-      right: 0;
-
-  }
-</style>
+</article>
