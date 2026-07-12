@@ -851,6 +851,10 @@
   color: var(--garden-ink);
 }
 
+.garden-cv .table-cv.ml-md-4 {
+  margin-left: 0 !important;
+}
+
 .garden-cv table.table-responsive {
   display: table;
 }
@@ -1046,6 +1050,7 @@
 
 .garden-publications ol.bibliography > li > .row > [class*="col"] {
   width: auto;
+  min-width: 0;
   max-width: none;
   padding: 0;
 }
@@ -1154,7 +1159,7 @@
 @media (max-width: 639px) {
   .garden-cv .row,
   .garden-publications ol.bibliography > li > .row {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .garden-publications .abbr {

@@ -27,7 +27,12 @@
       {% endif %}
       {% if entry.preview %}
         {% if entry.preview contains '://' %}
-          <img class="preview rounded" src="{{ entry.preview }}" style="max-width: 140px; height: auto; display: block;">
+          <img
+            class="preview rounded"
+            src="{{ entry.preview }}"
+            alt="{{ entry.title | strip_html | escape }} publication preview"
+            style="max-width: 140px; height: auto; display: block;"
+          >
         {% else %}
           {% assign entry_path = entry.preview | prepend: '/assets/img/publication_preview/' %}
           {%
@@ -374,9 +379,12 @@
     {% if entry.bibtex_show %}
       <!-- Hidden bibtex block -->
       <div class="bibtex hidden">
-        {% highlight bibtex %}
-        {{- entry.bibtex | hideCustomBibtex -}}
-        {% endhighlight %}
+        {% capture highlighted_bibtex %}
+          {% highlight bibtex %}
+          {{- entry.bibtex | hideCustomBibtex -}}
+          {% endhighlight %}
+        {% endcapture %}
+        {{ highlighted_bibtex | replace: '<pre>', '<pre tabindex="0">' }}
       </div>
     {% endif %}
 

@@ -13,6 +13,7 @@ const cvTimeTableTemplate = readFileSync(new URL("../_includes/cv/time_table.liq
 const cvNestedListTemplate = readFileSync(new URL("../_includes/cv/nested_list.liquid", import.meta.url), "utf8");
 const gardenLayout = readFileSync(new URL("../_layouts/garden.liquid", import.meta.url), "utf8");
 const contentStyles = readFileSync(new URL("../_sass/garden/_content.scss", import.meta.url), "utf8");
+const tokenStyles = readFileSync(new URL("../_sass/garden/_tokens.scss", import.meta.url), "utf8");
 const utilitySources = ["about.md", "publications.md", "repositories.md", "404.md"].map((file) =>
   readFileSync(new URL(`../_pages/${file}`, import.meta.url), "utf8")
 );
@@ -105,6 +106,18 @@ assertContains(
 );
 assertContains(publications, /href="https:\/\/github\.com\/ahmed-o-aly\/TerritoryDesign"/, "bibliography retains the authored code link");
 assertContains(publications, /<img[^>]*class="[^"]*preview[^"]*"[^>]*src="https:\/\//i, "remote publication previews remain visible");
+const remotePreviewImages = [...publications.matchAll(/<img\b[^>]*class="[^"]*\bpreview\b[^"]*"[^>]*src="https:\/\/[^>]*>/gi)].map(
+  ([image]) => image
+);
+assert.ok(remotePreviewImages.length > 0, "publications render remote preview fixtures");
+for (const image of remotePreviewImages) {
+  assert.match(image, /alt="[^"]+ publication preview"/i, "each remote publication preview has informative alternative text");
+}
+const bibtexPreviews = [...publications.matchAll(/<div class="bibtex hidden">[\s\S]*?<pre\b[^>]*>/gi)].map(([preview]) => preview);
+assert.ok(bibtexPreviews.length > 0, "publications render BibTeX preview regions");
+for (const preview of bibtexPreviews) {
+  assert.match(preview, /<pre\b[^>]*tabindex="0"/i, "each scrollable BibTeX preview is keyboard focusable");
+}
 assert.doesNotMatch(publications, /class="[^"]*\bpreview\b[^"]*\bz-depth-/i, "publication previews do not inherit glossy elevation effects");
 assert.equal((publications.match(/<h1\b/g) || []).length, 1, "publications do not duplicate the page intro");
 
@@ -157,6 +170,29 @@ for (const [selector, label] of [
   assertTouchTarget(selector, label);
 }
 assertContains(css, /\.garden-body :focus-visible\{[^}]*outline:/, "utility links inherit a visible keyboard focus state");
+assertContains(tokenStyles, /--garden-quiet:\s*#6f6b63;/i, "quiet text uses the approved secondary ink");
+assertContains(css, /--garden-quiet:#6f6b63/i, "compiled quiet text keeps accessible contrast on garden surfaces");
+assertContains(
+  contentStyles,
+  /\.garden-cv \.table-cv\.ml-md-4\s*\{[^}]*margin-left:\s*0\s*!important;/,
+  "CV tables neutralize the inherited tablet margin"
+);
+assertContains(css, /\.garden-cv \.table-cv\.ml-md-4\{[^}]*margin-left:0!important(?:;|\})/, "compiled CV tables stay inside the tablet viewport");
+assertContains(
+  contentStyles,
+  /\.garden-publications ol\.bibliography\s*>\s*li\s*>\s*\.row\s*>\s*\[class\*=["']col["']\]\s*\{[^}]*min-width:\s*0;/,
+  "publication grid items may shrink below bibliography min-content"
+);
+assertContains(
+  contentStyles,
+  /@media \(max-width:\s*639px\)\s*\{[\s\S]*?\.garden-publications ol\.bibliography\s*>\s*li\s*>\s*\.row\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\);/,
+  "mobile publication rows use a zero-minimum grid track"
+);
+assertContains(
+  css,
+  /\.garden-publications ol\.bibliography>li>\.row>\[class\*=col\]\{[^}]*min-width:0;/,
+  "compiled publication grid items cannot widen the viewport"
+);
 
 const publicationRules = cssRules
   .filter(({ selector }) => selector.includes(".garden-publications"))

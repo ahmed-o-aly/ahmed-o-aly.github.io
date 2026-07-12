@@ -9,7 +9,7 @@ const postLayoutAnnouncement = readRoute("/news/announcement_1/");
 const yearArchive = readRoute("/blog/2026/");
 const tagArchive = readRoute("/blog/tag/optimization/");
 const categoryArchive = readRoute("/blog/category/blog/");
-const booksYearArchive = readRoute("/books/2026/");
+const booksYearArchive = readRoute("/books/2024/");
 const css = readFileSync(new URL("../_site/assets/css/garden.css", import.meta.url), "utf8");
 const blogTemplate = readFileSync(new URL("../_pages/blog.md", import.meta.url), "utf8");
 const postTemplate = readFileSync(new URL("../_layouts/post.liquid", import.meta.url), "utf8");
@@ -30,6 +30,11 @@ assert.equal((article.match(/<h1\b/g) || []).length, 1, "post has one h1");
 assertContains(article, /href="\/blog\/tag\/optimization\/"/, "post exposes tag archives");
 assertContains(article, /href="\/blog\/category\/blog\/"/, "post exposes category archives");
 assertContains(article, /publishing-system/, "post exposes an unmatched thread key without inventing content");
+assertContains(
+  article,
+  /<ul class="list-disc pl-8">[\s\S]*?<li class="my-2">[\s\S]*?<\/li>[\s\S]*?<\/ul>/,
+  "related article links remain inside their semantic list"
+);
 assertContains(
   matchedThreadArticle,
   /<aside class="garden-article__thread"[\s\S]*?<span>\s*Optimization\s*<\/span>/,

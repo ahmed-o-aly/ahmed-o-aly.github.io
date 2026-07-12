@@ -9,6 +9,8 @@ assertContains(home, /class="[^"]*garden-card--project/, "home includes a projec
 assertContains(home, /class="[^"]*garden-card--post/, "home includes a writing card");
 assertContains(home, /class="[^"]*garden-card--book/, "home includes a reading card");
 assert.equal((home.match(/<h1\b/g) || []).length, 1, "home has one h1");
+assert.doesNotMatch(home, /&amp;nearr;/, "card direction glyph is not rendered as escaped source text");
+assertContains(home, /aria-hidden="true">(?:&#8599;|↗)<\/span>/, "card direction glyph renders as an arrow");
 assert.doesNotMatch(home, /data-route=|data-portfolio-app|portfolio-home\.js/, "home no longer ships the mini-SPA");
 assertContains(about, /id="credentials"/, "about provides the achievements compatibility anchor");
 assert.doesNotMatch(

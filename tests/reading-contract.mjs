@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { assertContains, readRoute } from "./helpers/site.mjs";
 
 const index = readRoute("/books/");
@@ -11,6 +11,8 @@ const cardTemplate = readFileSync(new URL("../_includes/garden-book-card.liquid"
 const reviewTemplate = readFileSync(new URL("../_layouts/book-review.liquid", import.meta.url), "utf8");
 const cardStyles = readFileSync(new URL("../_sass/garden/_cards.scss", import.meta.url), "utf8");
 const contentStyles = readFileSync(new URL("../_sass/garden/_content.scss", import.meta.url), "utf8");
+const bookSource = readFileSync(new URL("../_books/the_godfather.md", import.meta.url), "utf8");
+const yearArchivePath = new URL("../_site/books/2024/index.html", import.meta.url);
 
 function sourcePosition(source, fragment, label) {
   const position = source.indexOf(fragment);
@@ -65,6 +67,10 @@ assertContains(review, /<article class="garden-book-review"/, "review is a seman
 assertContains(review, /<header class="garden-book-review__header"/, "review has a semantic header");
 assertContains(review, /<time datetime="2024-08-23"/, "review publishes a semantic started date");
 assertContains(review, /<time datetime="2024-09-07"/, "review publishes a semantic finished date");
+assert.equal(existsSync(yearArchivePath), true, "the authored finished year generates its linked book archive");
+const yearArchive = readFileSync(yearArchivePath, "utf8");
+assertContains(yearArchive, /href="\/books\/the_godfather\/"/, "the linked 2024 archive contains the finished review");
+assertContains(bookSource, /^date:\s*2024-09-07$/m, "book archive date derives from the authored finished date");
 
 for (const [pattern, label] of [
   [/Mario Puzo/, "author"],
@@ -112,6 +118,12 @@ assert.doesNotMatch(
   "book wells keep natural cover color on matte surfaces without optical effects"
 );
 assertContains(cardStyles, /\.garden-media--contain img\s*\{[\s\S]*?object-fit:\s*contain/, "cover art uses contain sizing");
+assertContains(
+  cardStyles,
+  /\.garden-media img\s*\{[\s\S]*?min-width:\s*0;[\s\S]*?min-height:\s*0;/,
+  "cover image boxes can shrink inside their matte wells"
+);
+assertContains(css, /\.garden-media img\{[^}]*min-width:0;[^}]*min-height:0;/, "compiled cover image boxes remain contained by their matte wells");
 
 for (const [source, label] of [
   [index, "reading index"],
