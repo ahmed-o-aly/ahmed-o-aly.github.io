@@ -4,7 +4,7 @@
   "bbox": [54.28, 24.24, 54.78, 24.62],
   "metadata": {
     "source": "adsdiCommunities",
-    "sourceClass": "observed",
+    "sourceClass": "derived",
     "modified": "Official community polygons were simplified, filtered to the contiguous city cluster and grouped by district into the model zones described in baseline.json.",
     "attribution": "Department of Government Enablement — Abu Dhabi Spatial Data Infrastructure"
   },
@@ -477,10 +477,10 @@
         "centroid": [54.345, 24.452],
         "geometryCentroid": [54.34464, 24.452354],
         "areaKm2": 14.05,
-        "geometrySourceClass": "observed",
+        "geometrySourceClass": "derived",
         "source": "adsdiCommunities",
         "excludedDisplacedCommunityRecords": 0,
-        "mappingNote": null
+        "mappingNote": "SCAD publishes one combined Al Qurm-Al Muzoun-Al Bateen census district; the model geometry is the official Al Bateen district group."
       }
     },
     {
@@ -717,7 +717,7 @@
         "centroid": [54.369, 24.486],
         "geometryCentroid": [54.368485, 24.486576],
         "areaKm2": 6.37,
-        "geometrySourceClass": "observed",
+        "geometrySourceClass": "derived",
         "source": "adsdiCommunities",
         "excludedDisplacedCommunityRecords": 0,
         "mappingNote": null
@@ -795,7 +795,7 @@
         "centroid": [54.351, 24.467],
         "geometryCentroid": [54.350935, 24.467013],
         "areaKm2": 1.89,
-        "geometrySourceClass": "observed",
+        "geometrySourceClass": "derived",
         "source": "adsdiCommunities",
         "excludedDisplacedCommunityRecords": 0,
         "mappingNote": null
@@ -918,10 +918,10 @@
         "centroid": [54.366, 24.462],
         "geometryCentroid": [54.366373, 24.461849],
         "areaKm2": 5.61,
-        "geometrySourceClass": "observed",
+        "geometrySourceClass": "derived",
         "source": "adsdiCommunities",
         "excludedDisplacedCommunityRecords": 0,
-        "mappingNote": "Official Al Manhal polygon used for the combined familiar-area label."
+        "mappingNote": "SCAD's observed Al Manhal population is mapped to the familiar Al Manhal / Al Karamah label and official Al Manhal polygon."
       }
     },
     {
@@ -1147,7 +1147,7 @@
         "centroid": [54.389, 24.44],
         "geometryCentroid": [54.388547, 24.439704],
         "areaKm2": 7.61,
-        "geometrySourceClass": "observed",
+        "geometrySourceClass": "derived",
         "source": "adsdiCommunities",
         "excludedDisplacedCommunityRecords": 0,
         "mappingNote": null
@@ -1290,7 +1290,7 @@
         "centroid": [54.388, 24.464],
         "geometryCentroid": [54.387576, 24.464116],
         "areaKm2": 5.68,
-        "geometrySourceClass": "observed",
+        "geometrySourceClass": "derived",
         "source": "adsdiCommunities",
         "excludedDisplacedCommunityRecords": 0,
         "mappingNote": null
@@ -1416,10 +1416,10 @@
         "centroid": [54.429, 24.436],
         "geometryCentroid": [54.429139, 24.43599],
         "areaKm2": 4.19,
-        "geometrySourceClass": "observed",
+        "geometrySourceClass": "derived",
         "source": "adsdiCommunities",
         "excludedDisplacedCommunityRecords": 0,
-        "mappingNote": "Muroor is a familiar corridor-area rather than an AD-SDI district; official Al Sa'adah is used as the reproducible fallback polygon."
+        "mappingNote": "Muroor is a familiar corridor-area rather than a census district; the observed SCAD Al Sa'adah population and official Al Sa'adah polygon are used reproducibly."
       }
     },
     {
@@ -1634,7 +1634,7 @@
         "centroid": [54.453, 24.418],
         "geometryCentroid": [54.452753, 24.418193],
         "areaKm2": 9.07,
-        "geometrySourceClass": "observed",
+        "geometrySourceClass": "derived",
         "source": "adsdiCommunities",
         "excludedDisplacedCommunityRecords": 0,
         "mappingNote": null
@@ -1787,7 +1787,7 @@
         "centroid": [54.38, 24.499],
         "geometryCentroid": [54.379984, 24.498731],
         "areaKm2": 4.98,
-        "geometrySourceClass": "observed",
+        "geometrySourceClass": "derived",
         "source": "adsdiCommunities",
         "excludedDisplacedCommunityRecords": 0,
         "mappingNote": null
@@ -2631,7 +2631,7 @@
         "centroid": [54.417, 24.505],
         "geometryCentroid": [54.41367, 24.496379],
         "areaKm2": 16.01,
-        "geometrySourceClass": "observed",
+        "geometrySourceClass": "derived",
         "source": "adsdiCommunities",
         "excludedDisplacedCommunityRecords": 4,
         "mappingNote": "Official Al Reem Island and Al Reem East Island polygons combined."
@@ -2989,7 +2989,7 @@
         "centroid": [54.39, 24.502],
         "geometryCentroid": [54.390364, 24.502407],
         "areaKm2": 1.48,
-        "geometrySourceClass": "observed",
+        "geometrySourceClass": "derived",
         "source": "adsdiCommunities",
         "excludedDisplacedCommunityRecords": 0,
         "mappingNote": null
@@ -3626,7 +3626,7 @@
         "centroid": [54.44, 24.54],
         "geometryCentroid": [54.442831, 24.534516],
         "areaKm2": 39.33,
-        "geometrySourceClass": "observed",
+        "geometrySourceClass": "derived",
         "source": "adsdiCommunities",
         "excludedDisplacedCommunityRecords": 0,
         "mappingNote": null
@@ -4053,10 +4053,10 @@
         "centroid": [54.5, 24.397],
         "geometryCentroid": [54.500103, 24.397483],
         "areaKm2": 16.44,
-        "geometrySourceClass": "observed",
+        "geometrySourceClass": "derived",
         "source": "adsdiCommunities",
         "excludedDisplacedCommunityRecords": 0,
-        "mappingNote": "Official Rabdan polygon used for the Rabdan / Al Maqta gateway zone."
+        "mappingNote": "SCAD's observed Rabdan population and official Rabdan polygon are used for the Rabdan / Al Maqta gateway label."
       }
     },
     {
@@ -4442,7 +4442,7 @@
         "centroid": [54.59, 24.453],
         "geometryCentroid": [54.59259, 24.45349],
         "areaKm2": 15.99,
-        "geometrySourceClass": "observed",
+        "geometrySourceClass": "derived",
         "source": "adsdiCommunities",
         "excludedDisplacedCommunityRecords": 0,
         "mappingNote": null
@@ -5101,7 +5101,7 @@
         "centroid": [54.603, 24.492],
         "geometryCentroid": [54.603033, 24.491771],
         "areaKm2": 28.65,
-        "geometrySourceClass": "observed",
+        "geometrySourceClass": "derived",
         "source": "adsdiCommunities",
         "excludedDisplacedCommunityRecords": 0,
         "mappingNote": null
@@ -5931,7 +5931,7 @@
         "centroid": [54.697, 24.425],
         "geometryCentroid": [54.577913, 24.418599],
         "areaKm2": 48.72,
-        "geometrySourceClass": "observed",
+        "geometrySourceClass": "derived",
         "source": "adsdiCommunities",
         "excludedDisplacedCommunityRecords": 3,
         "mappingNote": null
@@ -7770,10 +7770,10 @@
         "centroid": [54.574, 24.355],
         "geometryCentroid": [54.57444, 24.355476],
         "areaKm2": 99.17,
-        "geometrySourceClass": "observed",
+        "geometrySourceClass": "derived",
         "source": "adsdiCommunities",
         "excludedDisplacedCommunityRecords": 0,
-        "mappingNote": "Two official district polygons combined; only the Mohamed Bin Zayed City population is disclosed in SCAD's 2024 top-ten chart."
+        "mappingNote": "Two official district polygons and their two observed SCAD 2024 census populations are combined."
       }
     },
     {
@@ -8452,7 +8452,7 @@
         "centroid": [54.5, 24.35],
         "geometryCentroid": [54.488056, 24.355431],
         "areaKm2": 40.16,
-        "geometrySourceClass": "observed",
+        "geometrySourceClass": "derived",
         "source": "adsdiCommunities",
         "excludedDisplacedCommunityRecords": 19,
         "mappingNote": null
