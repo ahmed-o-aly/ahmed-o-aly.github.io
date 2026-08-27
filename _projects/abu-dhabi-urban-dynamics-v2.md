@@ -38,136 +38,178 @@ visual:
   <aside class="udes-v2-controls" aria-labelledby="udes-v2-controls-title" data-udes-v2-controls>
     <div class="udes-v2-panel-heading">
       <div>
-        <span class="udes-v2-kicker">Model inputs</span>
-        <h2 id="udes-v2-controls-title">Scenario controls</h2>
+        <span class="udes-v2-kicker">Scenario studio</span>
+        <h2 id="udes-v2-controls-title">Abu Dhabi interventions</h2>
       </div>
-      <button class="udes-v2-text-button" type="button" data-udes-v2-action="reset-levers">Reset inputs</button>
+      <button class="udes-v2-text-button" type="button" data-udes-v2-action="reset-levers">Reset draft</button>
+    </div>
+
+    <div class="udes-v2-control-tabs" role="tablist" aria-label="Scenario control views">
+      <button id="udes-v2-control-tab-setup" type="button" role="tab" aria-controls="udes-v2-control-panel-setup" aria-selected="true" data-udes-v2-control-tab="setup">Setup</button>
+      <button id="udes-v2-control-tab-policy" type="button" role="tab" aria-controls="udes-v2-control-panel-policy" aria-selected="false" tabindex="-1" data-udes-v2-control-tab="policy">Policy</button>
+      <button id="udes-v2-control-tab-model" type="button" role="tab" aria-controls="udes-v2-control-panel-model" aria-selected="false" tabindex="-1" data-udes-v2-control-tab="model">Model</button>
+      <button id="udes-v2-control-tab-evidence" type="button" role="tab" aria-controls="udes-v2-control-panel-evidence" aria-selected="false" tabindex="-1" data-udes-v2-control-tab="evidence">Evidence</button>
     </div>
 
     <div class="udes-v2-controls__scroll">
+      <div id="udes-v2-control-panel-setup" class="udes-v2-control-panel" role="tabpanel" aria-labelledby="udes-v2-control-tab-setup" data-udes-v2-control-panel="setup">
       <fieldset class="udes-v2-scenario-list">
-        <legend>Policy package</legend>
+        <legend>Intervention template</legend>
         <button type="button" data-udes-v2-scenario="reference" aria-pressed="true">
           <span>Reference</span>
-          <small>Current assumptions</small>
+          <small>No intervention</small>
         </button>
         <button type="button" data-udes-v2-scenario="transit" aria-pressed="false">
-          <span>Transit first</span>
-          <small>Lower fares, faster buses, +45% service</small>
+          <span>Bus priority</span>
+          <small>AED 1 base · 45 km/h · 2× capacity</small>
         </button>
         <button type="button" data-udes-v2-scenario="housing" aria-pressed="false">
-          <span>Connected housing</span>
-          <small>More homes, lower rent pressure</small>
+          <span>Housing delivery</span>
+          <small>Housing capacity only</small>
         </button>
         <button type="button" data-udes-v2-scenario="balanced" aria-pressed="false">
-          <span>Balanced growth</span>
-          <small>Multi-sector package</small>
+          <span>Housing + jobs</span>
+          <small>Co-located growth + public realm</small>
         </button>
       </fieldset>
 
       <section class="udes-v2-control-section" aria-labelledby="udes-v2-scope-title">
         <div class="udes-v2-section-heading">
-          <h3 id="udes-v2-scope-title">Scope</h3>
-          <span>18 districts</span>
+          <h3 id="udes-v2-scope-title">Run setup</h3>
+          <span>Daily calendar</span>
         </div>
         <label class="udes-v2-select-row" for="udes-v2-focus-zone">
-          <span>Inspect zone</span>
+          <span>Inspect district</span>
           <select id="udes-v2-focus-zone" data-udes-v2-focus-zone>
-            <option value="city">Loading Greater Abu Dhabi City districts…</option>
+            <option value="city">Loading Abu Dhabi districts…</option>
           </select>
         </label>
         <label class="udes-v2-select-row" for="udes-v2-horizon">
-          <span>Horizon</span>
+          <span>Run horizon</span>
           <select id="udes-v2-horizon" data-udes-v2-horizon>
-            <option value="120">10 years</option>
-            <option value="60">5 years</option>
-            <option value="24">2 years</option>
+            <option value="30">30 days</option>
+            <option value="90">90 days</option>
+            <option value="366" selected>1 calendar year</option>
+            <option value="731">2 calendar years</option>
+            <option value="1827">5 calendar years</option>
+            <option value="3653">10 calendar years</option>
+          </select>
+        </label>
+        <label class="udes-v2-select-row" for="udes-v2-window">
+          <span>Trend window</span>
+          <select id="udes-v2-window" data-udes-v2-window>
+            <option value="30">Last 30 days</option>
+            <option value="90" selected>Last 90 days</option>
+            <option value="365">Last year</option>
+            <option value="0">Full run</option>
           </select>
         </label>
         <label class="udes-v2-select-row" for="udes-v2-seed">
           <span>Random seed</span>
           <input id="udes-v2-seed" type="number" min="1" max="999999" step="1" value="240124" inputmode="numeric" data-udes-v2-seed>
         </label>
+        <div class="udes-v2-cadence-note">
+          <strong>Daily decisions, explicit accounting periods</strong>
+          <p>Commutes, network loading, citizen decisions, job matching and enterprise actions run daily. Household finance and enterprise accounts close monthly; rents update annually.</p>
+        </div>
+      </section>
+      </div>
+
+      <div id="udes-v2-control-panel-policy" class="udes-v2-control-panel" role="tabpanel" aria-labelledby="udes-v2-control-tab-policy" data-udes-v2-control-panel="policy" hidden>
+      <section class="udes-v2-control-section" aria-labelledby="udes-v2-policy-target-title">
+        <div class="udes-v2-section-heading">
+          <h3 id="udes-v2-policy-target-title">Intervention target</h3>
+          <span>Land-use levers</span>
+        </div>
+        <label class="udes-v2-select-row" for="udes-v2-policy-scope">
+          <span>Target area</span>
+          <select id="udes-v2-policy-scope" data-udes-v2-policy-scope>
+            <option value="city">All 18 districts</option>
+          </select>
+        </label>
+        <p class="udes-v2-control-explainer">Housing, employment space and public-realm changes apply to this target. Mobility inputs remain network-wide because published route and timetable data have not yet been integrated into this model.</p>
       </section>
 
       <section class="udes-v2-control-section" aria-labelledby="udes-v2-mobility-title">
         <div class="udes-v2-section-heading">
-          <h3 id="udes-v2-mobility-title">Mobility</h3>
+          <h3 id="udes-v2-mobility-title">Bus and road operations</h3>
           <span>Network-wide</span>
         </div>
         <label class="udes-v2-form-row" for="udes-v2-transit-fare">
           <span>
-            <span>Transit fare</span>
+            <span>Base bus fare / direction</span>
             <output for="udes-v2-transit-fare" data-udes-v2-output="transitFare">AED 2.00</output>
           </span>
-          <input id="udes-v2-transit-fare" type="range" min="0.5" max="5" step="0.25" value="2" data-udes-v2-lever="transitFare">
+          <input id="udes-v2-transit-fare" type="range" min="0" max="4" step="0.25" value="2" data-udes-v2-lever="transitFare">
         </label>
         <label class="udes-v2-form-row" for="udes-v2-transit-speed">
           <span>
-            <span>Transit speed</span>
+            <span>Effective bus speed</span>
             <output for="udes-v2-transit-speed" data-udes-v2-output="transitSpeed">28 km/h</output>
           </span>
           <input id="udes-v2-transit-speed" type="range" min="15" max="50" step="1" value="28" data-udes-v2-lever="transitSpeed">
         </label>
+        <label class="udes-v2-form-row" for="udes-v2-transit-capacity">
+          <span>
+            <span>Bus service capacity</span>
+            <output for="udes-v2-transit-capacity" data-udes-v2-output="transitCapacity">100%</output>
+          </span>
+          <input id="udes-v2-transit-capacity" type="range" min="60" max="200" step="5" value="100" data-udes-v2-lever="transitCapacity">
+        </label>
         <label class="udes-v2-form-row" for="udes-v2-road-capacity">
           <span>
-            <span>Road capacity</span>
+            <span>Road assignment capacity</span>
             <output for="udes-v2-road-capacity" data-udes-v2-output="roadCapacity">100%</output>
           </span>
           <input id="udes-v2-road-capacity" type="range" min="60" max="180" step="5" value="100" data-udes-v2-lever="roadCapacity">
         </label>
         <label class="udes-v2-form-row" for="udes-v2-car-cost">
           <span>
-            <span>Car cost / km</span>
+            <span>Vehicle running cost / km</span>
             <output for="udes-v2-car-cost" data-udes-v2-output="carCost">AED 0.35</output>
           </span>
           <input id="udes-v2-car-cost" type="range" min="0.1" max="1.2" step="0.05" value="0.35" data-udes-v2-lever="carCost">
         </label>
+        <p class="udes-v2-control-explainer">The observed Abu Dhabi standard pay-as-you-go fare adds AED 0.05 per passenger-kilometre to this base in each direction, capped at AED 5 per journey. The distance component remains fixed; passes, transfers and exemptions are outside the model.</p>
       </section>
 
       <section class="udes-v2-control-section" aria-labelledby="udes-v2-land-title">
         <div class="udes-v2-section-heading">
-          <h3 id="udes-v2-land-title">Land and economy</h3>
-          <span>Citywide levers</span>
+          <h3 id="udes-v2-land-title">Housing and employment</h3>
+          <span>Target-area delivery</span>
         </div>
         <label class="udes-v2-form-row" for="udes-v2-housing">
           <span>
-            <span>Housing stock</span>
+            <span>Housing capacity</span>
             <output for="udes-v2-housing" data-udes-v2-output="housing">100%</output>
           </span>
-          <input id="udes-v2-housing" type="range" min="70" max="160" step="5" value="100" data-udes-v2-lever="housing">
+          <input id="udes-v2-housing" type="range" min="100" max="180" step="5" value="100" data-udes-v2-lever="housing">
         </label>
         <label class="udes-v2-form-row" for="udes-v2-business">
           <span>
-            <span>Business capacity</span>
+            <span>Employment-space capacity</span>
             <output for="udes-v2-business" data-udes-v2-output="business">100%</output>
           </span>
-          <input id="udes-v2-business" type="range" min="70" max="160" step="5" value="100" data-udes-v2-lever="business">
-        </label>
-        <label class="udes-v2-form-row" for="udes-v2-rent-pressure">
-          <span>
-            <span>Rent pressure</span>
-            <output for="udes-v2-rent-pressure" data-udes-v2-output="rentPressure">Neutral</output>
-          </span>
-          <input id="udes-v2-rent-pressure" type="range" min="85" max="115" step="1" value="100" data-udes-v2-lever="rentPressure">
+          <input id="udes-v2-business" type="range" min="100" max="180" step="5" value="100" data-udes-v2-lever="business">
         </label>
         <label class="udes-v2-form-row" for="udes-v2-place-quality">
           <span>
-            <span>Place quality</span>
+            <span>Public-realm quality index</span>
             <output for="udes-v2-place-quality" data-udes-v2-output="placeQuality">0.82</output>
           </span>
-          <input id="udes-v2-place-quality" type="range" min="40" max="100" step="1" value="82" data-udes-v2-lever="placeQuality">
+          <input id="udes-v2-place-quality" type="range" min="82" max="100" step="1" value="82" data-udes-v2-lever="placeQuality">
         </label>
       </section>
+      </div>
 
-      <section class="udes-v2-control-section" aria-labelledby="udes-v2-agents-title">
+      <section id="udes-v2-control-panel-model" class="udes-v2-control-section" role="tabpanel" aria-labelledby="udes-v2-control-tab-model" data-udes-v2-control-panel="model" hidden>
         <div class="udes-v2-section-heading">
-          <h3 id="udes-v2-agents-title">Agent rules</h3>
-          <span>Explicit assumptions</span>
+          <h3 id="udes-v2-agents-title">Agent calibration</h3>
+          <span>Applied to both runs</span>
         </div>
-        <p class="udes-v2-control-explainer">Citizens protect their monthly financial position and commute time. Enterprises pursue a viable margin, sector demand, and labor access.</p>
-        <details class="udes-v2-agent-method">
-          <summary>Read the decision rules</summary>
+        <p class="udes-v2-control-explainer">These inputs define behavior; they are not policies. Changes apply to both the scenario and same-seed reference so the comparison remains like-for-like.</p>
+        <details class="udes-v2-agent-method" open>
+          <summary>Citizen and enterprise objectives</summary>
           <dl>
             <div>
               <dt>Citizen objective</dt>
@@ -208,41 +250,80 @@ visual:
             <span>Citizen income buffer</span>
             <output for="udes-v2-income-buffer" data-udes-v2-output="incomeBuffer">AED 1,500</output>
           </span>
-          <input id="udes-v2-income-buffer" type="range" min="0" max="4000" step="250" value="1500" data-udes-v2-lever="incomeBuffer">
+          <input id="udes-v2-income-buffer" type="range" min="0" max="4000" step="250" value="1500" data-udes-v2-lever="incomeBuffer" data-udes-v2-assumption>
         </label>
         <label class="udes-v2-form-row" for="udes-v2-acceptable-commute">
           <span>
             <span>Acceptable round trip</span>
             <output for="udes-v2-acceptable-commute" data-udes-v2-output="acceptableCommute">60 min</output>
           </span>
-          <input id="udes-v2-acceptable-commute" type="range" min="30" max="90" step="5" value="60" data-udes-v2-lever="acceptableCommute">
+          <input id="udes-v2-acceptable-commute" type="range" min="30" max="90" step="5" value="60" data-udes-v2-lever="acceptableCommute" data-udes-v2-assumption>
         </label>
         <label class="udes-v2-form-row" for="udes-v2-extreme-commute">
           <span>
             <span>Severe round trip</span>
             <output for="udes-v2-extreme-commute" data-udes-v2-output="extremeCommute">90 min</output>
           </span>
-          <input id="udes-v2-extreme-commute" type="range" min="45" max="120" step="5" value="90" data-udes-v2-lever="extremeCommute">
+          <input id="udes-v2-extreme-commute" type="range" min="45" max="120" step="5" value="90" data-udes-v2-lever="extremeCommute" data-udes-v2-assumption>
         </label>
         <label class="udes-v2-form-row" for="udes-v2-target-margin">
           <span>
             <span>Enterprise target margin</span>
             <output for="udes-v2-target-margin" data-udes-v2-output="targetMargin">12%</output>
           </span>
-          <input id="udes-v2-target-margin" type="range" min="4" max="25" step="1" value="12" data-udes-v2-lever="targetMargin">
+          <input id="udes-v2-target-margin" type="range" min="4" max="25" step="1" value="12" data-udes-v2-lever="targetMargin" data-udes-v2-assumption>
+        </label>
+        <label class="udes-v2-form-row" for="udes-v2-employment-target">
+          <span>
+            <span>Employment stock target</span>
+            <output for="udes-v2-employment-target" data-udes-v2-output="employmentTarget">80%</output>
+          </span>
+          <input id="udes-v2-employment-target" type="range" min="65" max="95" step="1" value="80" data-udes-v2-lever="employmentTarget" data-udes-v2-assumption>
+        </label>
+        <label class="udes-v2-form-row" for="udes-v2-rent-pressure">
+          <span>
+            <span>Annual rent-response strength</span>
+            <output for="udes-v2-rent-pressure" data-udes-v2-output="rentPressure">Neutral</output>
+          </span>
+          <input id="udes-v2-rent-pressure" type="range" min="85" max="115" step="1" value="100" data-udes-v2-lever="rentPressure" data-udes-v2-assumption>
         </label>
       </section>
 
-      <div class="udes-v2-control-note">
-        <span aria-hidden="true">i</span>
-        <p>
-          Official geography is combined with derived and synthetic assumptions. Every field is classified in the model data.
-          <a href="https://www.anylogic.com/upload/iblock/198/1985a2d61b26c2d23acd158ab6e5d68e.pdf" target="_blank" rel="noreferrer">UDES method</a>
-          · <a href="https://census.scad.gov.ae/home/population?lang=en" target="_blank" rel="noreferrer">SCAD population</a>
-          · <a href="https://arcgis.sdi.abudhabi.ae/agspublish/rest/services/OpenData/ADSDI_OpenData/MapServer/2" target="_blank" rel="noreferrer">AD-SDI geography</a>
-          · <a href="{{ '/assets/data/udes-v2/validation-report.json' | relative_url }}" target="_blank">Validation report</a>
-        </p>
+      <section id="udes-v2-control-panel-evidence" class="udes-v2-control-section udes-v2-evidence-panel" role="tabpanel" aria-labelledby="udes-v2-control-tab-evidence" data-udes-v2-control-panel="evidence" hidden>
+        <div class="udes-v2-section-heading">
+          <h3 id="udes-v2-evidence-title">Abu Dhabi evidence coverage</h3>
+          <span>Base 2024 · sources checked 2026</span>
+        </div>
+        <dl class="udes-v2-evidence-list">
+          <div><dt>District geography</dt><dd><b class="is-derived">Derived</b> 18 groups from official AD-SDI polygons</dd></div>
+          <div><dt>Bus-stop locations</dt><dd><b class="is-observed">Observed</b> 924 AD-SDI points</dd></div>
+          <div><dt>District population</dt><dd><b class="is-mixed">SCAD-mapped</b> 12 direct + 6 grouped / relabeled mappings</dd></div>
+          <div><dt>Standard bus fare</dt><dd><b class="is-observed">Observed</b> AED 2 + 0.05 / km · max 5</dd></div>
+          <div><dt>Road corridors</dt><dd><b class="is-derived">Derived</b> 31 OSM-routed links</dd></div>
+          <div><dt>Jobs, rents and incomes</dt><dd><b class="is-synthetic">Assumed</b> 18 / 18 districts</dd></div>
+          <div><dt>Bus routes and timetables</dt><dd><b class="is-synthetic">Assumed</b> service graph</dd></div>
+        </dl>
+        <div class="udes-v2-cadence-note udes-v2-cadence-note--warning">
+          <strong>Interpretation boundary</strong>
+          <p>This is a transparent scenario model, not an Abu Dhabi forecast. It has real geography and stops, but no observed daily demand profile, holiday/Ramadan schedule, incidents, household travel survey, establishment census or district rent series.</p>
+        </div>
+        <nav class="udes-v2-source-links" aria-label="Model sources">
+          <a href="https://www.anylogic.com/upload/iblock/198/1985a2d61b26c2d23acd158ab6e5d68e.pdf" target="_blank" rel="noreferrer">UDES paper</a>
+          <a href="https://census.scad.gov.ae/home/population?lang=en" target="_blank" rel="noreferrer">SCAD Census</a>
+          <a href="https://admobility.gov.ae/en/pb-bus-service/hafilat-public-buses-fees" target="_blank" rel="noreferrer">Bus tariff</a>
+          <a href="https://adrec.gov.ae/en/market-data" target="_blank" rel="noreferrer">ADREC market data · future calibration</a>
+          <a href="https://arcgis.sdi.abudhabi.ae/agspublish/rest/services/OpenData/ADSDI_OpenData/MapServer/2" target="_blank" rel="noreferrer">AD-SDI geography</a>
+          <a href="{{ '/assets/data/udes-v2/validation-report.json' | relative_url }}" target="_blank">Validation report</a>
+        </nav>
+      </section>
+    </div>
+
+    <div class="udes-v2-policy-action">
+      <div>
+        <span>Draft policy</span>
+        <strong data-udes-v2-policy-status>No unapplied changes</strong>
       </div>
+      <button class="udes-v2-button udes-v2-button--primary" type="button" data-udes-v2-action="apply-policy" disabled>Apply next day</button>
     </div>
 
   </aside>
@@ -273,35 +354,7 @@ visual:
       ></div>
 
       <div class="udes-v2-map-placeholder" data-udes-v2-map-placeholder aria-hidden="true">
-        <svg viewBox="0 0 1000 580" preserveAspectRatio="none" focusable="false">
-          <path class="udes-v2-map-placeholder__land" d="M-20 75 C120 54 205 93 313 85 C447 76 532 42 671 63 C786 80 866 60 1020 31 L1020 605 L-20 605 Z"></path>
-          <g class="udes-v2-map-placeholder__minor-roads">
-            <path d="M24 407 C175 352 271 366 394 287 S637 171 808 174 S928 124 1004 98"></path>
-            <path d="M105 516 C215 420 315 436 414 360 S604 261 772 268 S906 221 1010 205"></path>
-            <path d="M318 585 C394 479 493 442 582 360 S751 208 868 110"></path>
-            <path d="M521 581 C545 470 630 421 709 335 S865 224 1009 197"></path>
-            <path d="M154 167 C264 184 341 214 444 207 S627 116 782 125"></path>
-          </g>
-          <g class="udes-v2-map-placeholder__corridors">
-            <path d="M125 394 C231 361 321 349 425 302 C513 263 573 248 642 254"></path>
-            <path d="M425 302 C514 303 620 328 720 305 C798 287 845 247 892 205"></path>
-            <path d="M642 254 C714 229 778 186 867 151"></path>
-            <path d="M425 302 C407 239 445 185 501 142"></path>
-            <path d="M501 142 C601 131 734 115 867 151"></path>
-          </g>
-          <g class="udes-v2-map-placeholder__water-lines">
-            <path d="M0 98 C130 67 225 121 326 104 C477 79 541 51 686 76"></path>
-            <path d="M0 119 C132 89 222 143 334 124"></path>
-          </g>
-        </svg>
-        <span class="udes-v2-map-zone udes-v2-map-zone--musaffah">Musaffah</span>
-        <span class="udes-v2-map-zone udes-v2-map-zone--mbz">MBZ City</span>
-        <span class="udes-v2-map-zone udes-v2-map-zone--island">Mushrif</span>
-        <span class="udes-v2-map-zone udes-v2-map-zone--reem">Reem</span>
-        <span class="udes-v2-map-zone udes-v2-map-zone--saadiyat">Saadiyat</span>
-        <span class="udes-v2-map-zone udes-v2-map-zone--yas">Yas</span>
-        <span class="udes-v2-map-zone udes-v2-map-zone--khalifa">Khalifa</span>
-        <span class="udes-v2-map-zone udes-v2-map-zone--raha">Al Raha</span>
+        <span>Loading official Abu Dhabi geography and the routed network…</span>
       </div>
 
       <div class="udes-v2-map-zoom" role="group" aria-label="Map zoom">
@@ -318,7 +371,7 @@ visual:
 
       <div class="udes-v2-map-readout" data-udes-v2-map-readout>
         <span data-udes-v2-map-status>Map controller not connected</span>
-        <span>Model districts from official AD-SDI polygons · OSM-routed corridors</span>
+        <span>District groups derived from official AD-SDI polygons · OSM-routed corridors</span>
       </div>
     </div>
 
@@ -348,25 +401,22 @@ visual:
       <section id="udes-v2-panel-zone" class="udes-v2-tab-panel" role="tabpanel" aria-labelledby="udes-v2-tab-zone" data-udes-v2-inspector-panel="zone">
         <div class="udes-v2-primary-metric">
           <span>Resident satisfaction</span>
-          <strong data-udes-v2-metric="zoneSatisfaction">74.2%</strong>
-          <small data-udes-v2-delta="zoneSatisfaction">Reference month</small>
+          <strong data-udes-v2-metric="zoneSatisfaction">—</strong>
+          <small data-udes-v2-delta="zoneSatisfaction">Same-day reference</small>
         </div>
 
         <dl class="udes-v2-metric-list">
-          <div><dt>Population</dt><dd data-udes-v2-metric="zonePopulation">235k</dd></div>
-          <div><dt>Jobs</dt><dd data-udes-v2-metric="zoneJobs">260k</dd></div>
-          <div><dt>Housing capacity</dt><dd data-udes-v2-metric="zoneHousing">285k</dd></div>
-          <div><dt>Monthly housing rent</dt><dd data-udes-v2-metric="zoneRent">AED 2,890</dd></div>
-          <div><dt>Mean commute</dt><dd data-udes-v2-metric="zoneCommute">31.4 min</dd></div>
-          <div><dt>Car share</dt><dd data-udes-v2-metric="zoneCarShare">68.1%</dd></div>
+          <div><dt>Population</dt><dd data-udes-v2-metric="zonePopulation">—</dd></div>
+          <div><dt>Jobs</dt><dd data-udes-v2-metric="zoneJobs">—</dd></div>
+          <div><dt>Housing capacity</dt><dd data-udes-v2-metric="zoneHousing">—</dd></div>
+          <div><dt>Housing rent (AED/month)</dt><dd data-udes-v2-metric="zoneRent">—</dd></div>
+          <div><dt>Mean commute</dt><dd data-udes-v2-metric="zoneCommute">—</dd></div>
+          <div><dt>Car share</dt><dd data-udes-v2-metric="zoneCarShare">—</dd></div>
         </dl>
 
-        <div class="udes-v2-inspector-chart" aria-label="Zone trend placeholder" data-udes-v2-inspector-chart="zone">
-          <div class="udes-v2-mini-chart-heading"><span>12-month signal</span><strong>Stable</strong></div>
-          <svg viewBox="0 0 300 72" role="img" aria-label="Placeholder trend line">
-            <path class="udes-v2-mini-chart__area" d="M0 57 C42 52 57 42 88 45 S142 36 168 39 S219 27 244 31 S279 21 300 17 L300 72 L0 72 Z"></path>
-            <path class="udes-v2-mini-chart__line" d="M0 57 C42 52 57 42 88 45 S142 36 168 39 S219 27 244 31 S279 21 300 17"></path>
-          </svg>
+        <div class="udes-v2-inspector-chart" aria-label="Daily zone trend" data-udes-v2-inspector-chart="zone">
+          <div class="udes-v2-mini-chart-heading"><span>Daily signal</span><strong>Loading</strong></div>
+          <p class="udes-v2-chart-empty">Waiting for the first model observation.</p>
         </div>
 
         <div class="udes-v2-insight" data-udes-v2-insight>
@@ -376,13 +426,13 @@ visual:
 
         <div class="udes-v2-provenance" data-udes-v2-provenance>
           <span>Field provenance</span>
-          <p><strong>Population</strong> mixed observed / synthetic · <strong>Geography</strong> observed · <strong>Jobs and rents</strong> synthetic assumptions</p>
+          <p><strong>Population</strong> mapped from SCAD observations · <strong>Geography</strong> derived from official AD-SDI polygons · <strong>Jobs and rents</strong> synthetic assumptions</p>
         </div>
       </section>
 
       <section id="udes-v2-panel-citizen" class="udes-v2-tab-panel" role="tabpanel" aria-labelledby="udes-v2-tab-citizen" data-udes-v2-inspector-panel="citizen" hidden>
         <div class="udes-v2-empty-state">
-          <span>Citizen 004,218</span>
+          <span>Citizen sample</span>
           <strong>Citizen inspector loading</strong>
           <p>The model will expose home, work, finances, commute, mode choice, and the live satisfaction statechart here.</p>
         </div>
@@ -390,7 +440,7 @@ visual:
 
       <section id="udes-v2-panel-enterprise" class="udes-v2-tab-panel" role="tabpanel" aria-labelledby="udes-v2-tab-enterprise" data-udes-v2-inspector-panel="enterprise" hidden>
         <div class="udes-v2-empty-state">
-          <span>Enterprise 000,846</span>
+          <span>Enterprise sample</span>
           <strong>Enterprise inspector loading</strong>
           <p>The model will expose sector, employment, wages, rent, operating margin, accessibility, and the live enterprise statechart here.</p>
         </div>
@@ -398,7 +448,7 @@ visual:
 
       <section id="udes-v2-panel-link" class="udes-v2-tab-panel" role="tabpanel" aria-labelledby="udes-v2-tab-link" data-udes-v2-inspector-panel="link" hidden>
         <div class="udes-v2-empty-state">
-          <span>Corridor 01–04</span>
+          <span>Named model corridor</span>
           <strong>Network inspector loading</strong>
           <p>The model will expose distance, capacity, travel time, modeled flow, and congestion history here.</p>
         </div>
@@ -414,65 +464,34 @@ visual:
         <h2 id="udes-v2-tray-title">Scenario outcomes</h2>
       </div>
       <div class="udes-v2-chart-tabs" role="tablist" aria-label="Outcome chart views">
-        <button id="udes-v2-chart-tab-overview" type="button" role="tab" aria-selected="true" aria-controls="udes-v2-chart-panel-overview" data-udes-v2-chart-tab="overview">Overview</button>
-        <button id="udes-v2-chart-tab-population" type="button" role="tab" aria-selected="false" aria-controls="udes-v2-chart-panel-population" tabindex="-1" data-udes-v2-chart-tab="population">Population</button>
-        <button id="udes-v2-chart-tab-housing" type="button" role="tab" aria-selected="false" aria-controls="udes-v2-chart-panel-housing" tabindex="-1" data-udes-v2-chart-tab="housing">Housing</button>
-        <button id="udes-v2-chart-tab-business" type="button" role="tab" aria-selected="false" aria-controls="udes-v2-chart-panel-business" tabindex="-1" data-udes-v2-chart-tab="business">Business</button>
+        <button id="udes-v2-chart-tab-outcomes" type="button" role="tab" aria-selected="true" aria-controls="udes-v2-chart-panel-outcomes" data-udes-v2-chart-tab="outcomes">Outcomes</button>
+        <button id="udes-v2-chart-tab-places" type="button" role="tab" aria-selected="false" aria-controls="udes-v2-chart-panel-places" tabindex="-1" data-udes-v2-chart-tab="places">Places</button>
         <button id="udes-v2-chart-tab-mobility" type="button" role="tab" aria-selected="false" aria-controls="udes-v2-chart-panel-mobility" tabindex="-1" data-udes-v2-chart-tab="mobility">Mobility</button>
-        <button id="udes-v2-chart-tab-distribution" type="button" role="tab" aria-selected="false" aria-controls="udes-v2-chart-panel-distribution" tabindex="-1" data-udes-v2-chart-tab="distribution">Distribution</button>
+        <button id="udes-v2-chart-tab-agents" type="button" role="tab" aria-selected="false" aria-controls="udes-v2-chart-panel-agents" tabindex="-1" data-udes-v2-chart-tab="agents">Households &amp; economy</button>
       </div>
       <button class="udes-v2-text-button" type="button" data-udes-v2-action="export" data-udes-v2-export>Export CSV</button>
     </div>
 
     <div class="udes-v2-chart-panels">
-      <section id="udes-v2-chart-panel-overview" class="udes-v2-chart-panel" role="tabpanel" aria-labelledby="udes-v2-chart-tab-overview" data-udes-v2-chart-panel="overview">
+      <section id="udes-v2-chart-panel-outcomes" class="udes-v2-chart-panel" role="tabpanel" aria-labelledby="udes-v2-chart-tab-outcomes" data-udes-v2-chart-panel="outcomes">
         <dl class="udes-v2-summary-strip">
-          <div><dt>Population</dt><dd class="udes-v2-summary-value" data-udes-v2-metric="population">1.82m</dd><dd class="udes-v2-summary-delta" data-udes-v2-delta="population">Baseline</dd></div>
-          <div><dt>Mean commute</dt><dd class="udes-v2-summary-value" data-udes-v2-metric="commute">36.8 min</dd><dd class="udes-v2-summary-delta" data-udes-v2-delta="commute">Baseline</dd></div>
-          <div><dt>Car share</dt><dd class="udes-v2-summary-value" data-udes-v2-metric="carShare">71.4%</dd><dd class="udes-v2-summary-delta" data-udes-v2-delta="carShare">Baseline</dd></div>
-          <div><dt>Road load</dt><dd class="udes-v2-summary-value" data-udes-v2-metric="roadLoad">62%</dd><dd class="udes-v2-summary-delta" data-udes-v2-delta="roadLoad">Baseline</dd></div>
+          <div><dt>Satisfied</dt><dd class="udes-v2-summary-value" data-udes-v2-metric="satisfaction">—</dd><dd class="udes-v2-summary-delta" data-udes-v2-delta="satisfaction">Same-seed reference</dd></div>
+          <div><dt>Mean commute</dt><dd class="udes-v2-summary-value" data-udes-v2-metric="commute">—</dd><dd class="udes-v2-summary-delta" data-udes-v2-delta="commute">Same-seed reference</dd></div>
+          <div><dt>Transit share</dt><dd class="udes-v2-summary-value" data-udes-v2-metric="transitShare">—</dd><dd class="udes-v2-summary-delta" data-udes-v2-delta="transitShare">Same-seed reference</dd></div>
+          <div><dt>Housing occupancy</dt><dd class="udes-v2-summary-value" data-udes-v2-metric="housingOccupancy">—</dd><dd class="udes-v2-summary-delta" data-udes-v2-delta="housingOccupancy">Same-seed reference</dd></div>
         </dl>
 
-        <div class="udes-v2-chart-canvas" data-udes-v2-chart="overview">
-          <svg viewBox="0 0 900 142" role="img" aria-labelledby="udes-v2-chart-title udes-v2-chart-desc" preserveAspectRatio="none">
-            <title id="udes-v2-chart-title">Model overview loading</title>
-            <desc id="udes-v2-chart-desc">The chart will show satisfaction, car share, road load, and same-seed reference values from 2024 to 2034.</desc>
-            <g class="udes-v2-chart-grid" aria-hidden="true">
-              <line x1="38" y1="18" x2="884" y2="18"></line>
-              <line x1="38" y1="54" x2="884" y2="54"></line>
-              <line x1="38" y1="90" x2="884" y2="90"></line>
-              <line x1="38" y1="126" x2="884" y2="126"></line>
-              <line x1="38" y1="18" x2="38" y2="126"></line>
-              <line x1="461" y1="18" x2="461" y2="126"></line>
-              <line x1="884" y1="18" x2="884" y2="126"></line>
-            </g>
-            <path class="udes-v2-series udes-v2-series--satisfaction" data-udes-v2-series="satisfaction" d="M38 73 C151 70 236 66 323 62 S498 55 588 50 S773 44 884 38"></path>
-            <path class="udes-v2-series udes-v2-series--car" data-udes-v2-series="carShare" d="M38 61 C151 62 233 65 323 69 S497 73 588 75 S771 78 884 82"></path>
-            <path class="udes-v2-series udes-v2-series--load" data-udes-v2-series="roadLoad" d="M38 92 C147 89 239 83 323 79 S496 70 588 67 S773 60 884 54"></path>
-          </svg>
-          <div class="udes-v2-chart-axis" aria-hidden="true"><span>2024</span><span>2029</span><span>2034</span></div>
-          <div class="udes-v2-chart-legend" aria-label="Chart legend">
-            <span><i class="is-satisfaction"></i>Satisfaction</span>
-            <span><i class="is-car"></i>Car share</span>
-            <span><i class="is-load"></i>Road load</span>
-          </div>
-        </div>
+        <div class="udes-v2-chart-canvas" data-udes-v2-chart="outcomes"><p class="udes-v2-chart-empty">Daily outcome and same-seed reference trends are loading.</p></div>
       </section>
 
-      <section id="udes-v2-chart-panel-population" class="udes-v2-chart-panel" role="tabpanel" aria-labelledby="udes-v2-chart-tab-population" data-udes-v2-chart-panel="population" hidden>
-        <div class="udes-v2-chart-mount" data-udes-v2-chart="population"><p class="udes-v2-chart-empty">Population totals and inter-zone movement series mount here.</p></div>
-      </section>
-      <section id="udes-v2-chart-panel-housing" class="udes-v2-chart-panel" role="tabpanel" aria-labelledby="udes-v2-chart-tab-housing" data-udes-v2-chart-panel="housing" hidden>
-        <div class="udes-v2-chart-mount" data-udes-v2-chart="housing"><p class="udes-v2-chart-empty">Housing capacity, occupancy, and rent series mount here.</p></div>
-      </section>
-      <section id="udes-v2-chart-panel-business" class="udes-v2-chart-panel" role="tabpanel" aria-labelledby="udes-v2-chart-tab-business" data-udes-v2-chart-panel="business" hidden>
-        <div class="udes-v2-chart-mount" data-udes-v2-chart="business"><p class="udes-v2-chart-empty">Jobs, enterprise geography, vacancies, and labor-market events mount here.</p></div>
+      <section id="udes-v2-chart-panel-places" class="udes-v2-chart-panel" role="tabpanel" aria-labelledby="udes-v2-chart-tab-places" data-udes-v2-chart-panel="places" hidden>
+        <div class="udes-v2-chart-mount" data-udes-v2-chart="places"><p class="udes-v2-chart-empty">All-district housing, jobs and rent impacts are loading.</p></div>
       </section>
       <section id="udes-v2-chart-panel-mobility" class="udes-v2-chart-panel" role="tabpanel" aria-labelledby="udes-v2-chart-tab-mobility" data-udes-v2-chart-panel="mobility" hidden>
-        <div class="udes-v2-chart-mount" data-udes-v2-chart="mobility"><p class="udes-v2-chart-empty">Mode choice, car ownership, commute burden, and road-load series mount here.</p></div>
+        <div class="udes-v2-chart-mount" data-udes-v2-chart="mobility"><p class="udes-v2-chart-empty">Daily mode choice, commute burden and named-corridor pressure are loading.</p></div>
       </section>
-      <section id="udes-v2-chart-panel-distribution" class="udes-v2-chart-panel" role="tabpanel" aria-labelledby="udes-v2-chart-tab-distribution" data-udes-v2-chart-panel="distribution" hidden>
-        <div class="udes-v2-chart-mount" data-udes-v2-chart="distribution"><p class="udes-v2-chart-empty">Full weighted income, commute-time, and enterprise-size distributions mount here.</p></div>
+      <section id="udes-v2-chart-panel-agents" class="udes-v2-chart-panel" role="tabpanel" aria-labelledby="udes-v2-chart-tab-agents" data-udes-v2-chart-panel="agents" hidden>
+        <div class="udes-v2-chart-mount" data-udes-v2-chart="agents"><p class="udes-v2-chart-empty">Household distributions and daily labor-market events are loading.</p></div>
       </section>
     </div>
 

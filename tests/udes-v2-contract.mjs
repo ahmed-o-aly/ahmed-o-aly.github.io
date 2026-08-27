@@ -26,15 +26,37 @@ assertContains(html, /data-worker-url="\/assets\/js\/udes-v2-worker\.js"/, "v2 e
 assertContains(html, /aria-label="Interactive map of Greater Abu Dhabi City/, "map has the correct city boundary description");
 assertContains(
   html,
-  /Model districts from official AD-SDI polygons · OSM-routed corridors/,
+  /District groups derived from official AD-SDI polygons · OSM-routed corridors/,
   "map provenance distinguishes grouped model districts from their official source polygons"
 );
 assert.equal((html.match(/data-udes-v2-inspector-tab=/g) || []).length, 4, "four object inspectors are available");
-assert.equal((html.match(/data-udes-v2-chart-tab=/g) || []).length, 6, "six analysis workspaces are available");
-assertContains(html, /Read the decision rules/, "citizen and enterprise objectives are documented in the controls");
+assert.equal((html.match(/data-udes-v2-control-tab=/g) || []).length, 4, "four focused control workspaces are available");
+for (const name of ["setup", "policy", "model", "evidence"]) {
+  assertContains(
+    html,
+    new RegExp(`id="udes-v2-control-tab-${name}"[^>]+aria-controls="udes-v2-control-panel-${name}"`),
+    `${name} control tab identifies its panel`
+  );
+  assertContains(
+    html,
+    new RegExp(`id="udes-v2-control-panel-${name}"[^>]+role="tabpanel"[^>]+aria-labelledby="udes-v2-control-tab-${name}"`),
+    `${name} control panel identifies its tab`
+  );
+}
+assert.equal((html.match(/data-udes-v2-chart-tab=/g) || []).length, 4, "four decision-oriented analysis workspaces are available");
+assert.equal((html.match(/data-udes-v2-step-days=/g) || []).length, 3, "one-, seven-, and thirty-day step controls are available");
+assertContains(html, /Citizen and enterprise objectives/, "citizen and enterprise objectives are documented in the model panel");
 assertContains(html, /Essential consumption: AED 2,500\/month/, "household saving assumptions are disclosed beside the controls");
+assertContains(
+  html,
+  /Commutes, network loading, citizen decisions, job matching and enterprise actions run daily/,
+  "daily agent cadence is disclosed"
+);
+assertContains(html, /Apply next day/, "policy changes are staged at a clear daily boundary");
+assertContains(html, /12 direct \+ 6 grouped \/ relabeled mappings/, "the evidence panel distinguishes direct and derived SCAD mappings");
 assertContains(html, /validation-report\.json/, "the console links to its reproducible full-scale validation report");
 assertContains(html, /data-udes-v2-provenance/, "the inspector exposes field provenance");
+assert.doesNotMatch(html, /udes-v2-map-placeholder__(?:land|corridors|minor-roads|water-lines)/, "the loading state does not fabricate map geometry");
 assert.doesNotMatch(html, /<option[^>]*>(?:Al Ain|Al Dhafra|Ruwais)/i, "out-of-scope regions are not selectable");
 assertContains(html, /assets\/js\/udes-v2-app\.js/, "v2 controller is loaded");
 assertContains(html, /echarts(?:\.min)?\.js/, "v2 loads the chart engine");
@@ -70,6 +92,26 @@ assert.ok(
   baseline.zones.every((zone) => zone.sourceClassByField),
   "zone inputs expose field-level provenance"
 );
+const studyPopulation = baseline.zones.reduce((total, zone) => total + Number(zone.population2024 || 0), 0);
+assert.equal(studyPopulation, 1517535, "the focused study-area population matches the mapped 2024 SCAD district table");
+assert.equal(baseline.calibration.studyScopePopulation2024, studyPopulation, "the study-scope population is derived from the 18 model zones");
+assert.equal(
+  baseline.zones.filter((zone) => zone.sourceClassByField.population2024 === "observed").length,
+  12,
+  "twelve modeled district populations map directly to observed records"
+);
+assert.equal(
+  baseline.zones.filter((zone) => zone.sourceClassByField.population2024 === "derived-from-observed").length,
+  6,
+  "six modeled district populations are grouped or relabeled from observed records"
+);
+assert.equal(zones.metadata.sourceClass, "derived", "grouped and simplified district geometry is classified as derived");
+assert.ok(
+  Object.values(baseline.sources).every((source) => Object.prototype.hasOwnProperty.call(baseline.classifications, source.classification)),
+  "every source uses a defined provenance classification"
+);
+assert.equal(baseline.temporal.simulationStep, "1 calendar day", "the temporal contract is explicitly daily");
+assert.equal(baseline.temporal.observedDailyProfiles, false, "the absence of observed day profiles is explicit");
 assert.match(baseline.calibration.note, /synthetic/i, "calibration limitations are explicit");
 
 assert.match(worker, /class UdesV2Engine/, "worker contains the persistent agent engine");
@@ -78,6 +120,11 @@ assert.match(worker, /Working|Grow|Lesser/, "enterprise statechart is implemente
 assert.match(worker, /validateInvariants\(\)/, "engine exposes reciprocal-link validation");
 assert.match(worker, /housingCapacityIsSoft: true/, "housing overcrowding is an explicit soft-capacity assumption");
 assert.match(worker, /allowCapacityOverflow: true/, "network overflow is modeled as congestion instead of forced walking");
+assert.match(worker, /captureDaily/, "the engine can return one compact observation for each simulated day");
+assert.match(worker, /networkAssignmentStatus/, "daily output distinguishes current and retained workday network assignments");
+assert.match(worker, /policyScopeZoneId/, "land-use policy can target a named modeled district");
+assert.match(worker, /applyExplicitZonePolicies\(/, "heterogeneous district policies survive model resets");
+assert.match(worker, /activeEnterpriseSharePercent/, "daily snapshots expose an aggregate enterprise outcome");
 assert.match(worker, /monthlyEssentialConsumptionAed: 2500/, "household essential-consumption assumption is explicit");
 assert.match(worker, /positiveResidualSavingsRate: 0\.25/, "positive residual saving rate is explicit");
 assert.match(
@@ -86,20 +133,19 @@ assert.match(
   "enterprise inspection serializes only hiring-aware represented vacancies"
 );
 assert.match(app, /referenceWorker = new WorkerClient/, "controller runs a same-seed reference worker");
+assert.match(app, /function renderOutcomeCharts\(/, "controller renders focused scenario outcomes");
+assert.match(app, /function renderPlaceCharts\(/, "controller renders all-district place outcomes");
 assert.match(app, /function renderMobilityCharts\(/, "controller renders the mobility analysis workspace");
-assert.match(app, /function horizonEndDay\(/, "controller uses calendar-exact scenario horizons");
-assert.match(
-  app,
-  /occupancyZones = \[\.\.\.normalizedZones\]\.sort\(\(a, b\) => b\.occupancy - a\.occupancy\)\.slice\(0, 12\)/,
-  "capacity-pressure chart ranks districts by occupancy instead of rent"
-);
-assert.match(app, /mountAggregateHistogram\(incomeNode/, "income distributions use every weighted citizen-agent bin");
-assert.match(app, /mountAggregateHistogram\(commuteNode/, "commute distributions use every completed commuter-agent bin");
+assert.match(app, /function renderAgentCharts\(/, "controller renders household and labor-market outcomes");
+assert.match(app, /agents:enterprise/, "the household and economy workspace includes an enterprise portfolio chart");
+assert.match(app, /captureDaily: true/, "controller requests consecutive daily observations from both workers");
+assert.match(app, /const HISTORY_POINT_LIMIT = 3654/, "controller retains Day 0 plus a full ten-year daily run");
+assert.match(app, /function filterHistoryWindow\(/, "daily charts support bounded display windows without changing the run");
+assert.match(app, /function stagedEnginePatch\(/, "only explicitly changed intervention fields are applied to the live model");
 assert.match(app, /inspectionRequestToken/, "late inspection responses cannot overwrite the current agent selection");
 assert.match(app, /data-udes-v2-agent-search/, "inspectors support direct typed IDs beyond the sample navigator");
 assert.match(app, /\["representedVacancies"\]/, "enterprise inspector reads the hiring-aware vacancy field");
 assert.match(app, /statechart\(\["Happy", "Waiting", "Extreme", "Recovery"\]/, "citizen inspector exposes all satisfaction states");
-assert.match(app, /name: "Car ownership"/, "mobility analysis distinguishes car ownership from commute mode");
 assert.match(app, /function summarizeChart\(/, "rendered charts receive data-derived accessible summaries");
 assert.match(app, /root\.dataset\.udesV2Mobile = compact\.matches \? "readonly" : "interactive"/, "compact simulation view is explicitly read-only");
 assert.match(app, /setMutationControlsDisabled\(true\)/, "scenario mutation controls are disabled during model initialization");
@@ -111,6 +157,11 @@ assert.match(
 assert.match(app, /let operationFailed = false/, "worker failures are retained as model errors instead of being relabeled ready");
 assert.doesNotMatch(app, /normalizeShare/, "controller does not guess whether percentage fields are ratios");
 assert.doesNotMatch(app, /emissions/i, "the interface does not claim an unmodeled emissions output");
+assert.doesNotMatch(
+  app,
+  /monthlyHiresRepresented|monthlyFiresRepresented|monthlyMovesRepresented/,
+  "daily charts do not repeat completed-month event totals"
+);
 assert.match(
   validationHarnessBuffer.toString("utf8"),
   /\["car", "pt", "walk"\]\.map\(\(mode\) => Number\(metrics\.modeCountsRepresented\?\.\[mode\]\) \|\| 0\)/,
@@ -119,7 +170,16 @@ assert.match(
 
 assert.equal(validation.status, "passed-software-and-plausibility-checks", "full-scale validation report passes");
 assert.equal(validation.checkSummary.failed, 0, "full-scale validation report has no failed checks");
-assert.equal(validation.sourceScope.citizenAgents, 7291, "validation uses the full weighted citizen model");
+assert.equal(
+  validation.sourceScope.citizenAgents,
+  Math.round(studyPopulation / baseline.calibration.citizenAgentPersonsRecommended),
+  "validation uses the full weighted citizen model"
+);
+assert.equal(
+  validation.sourceScope.scadMappedDistrictPopulationSubtotal2024,
+  studyPopulation,
+  "validation reports the current SCAD-mapped district subtotal"
+);
 assert.equal(validation.sourceScope.enterpriseAgents, 600, "validation uses all enterprise agents");
 const expectedValidationScenarioIds = ["reference-1y", "transit-1y", "reference-10y", "transit-10y", "housing-10y", "balanced-10y"];
 assert.deepEqual(
@@ -149,7 +209,8 @@ for (const requiredId of [
   "ten-year-transit-increases-public-transport-share",
   "ten-year-transit-reduces-car-ownership",
   "ten-year-housing-reduces-occupancy-pressure",
-  "ten-year-balanced-reduces-average-commute",
+  "ten-year-balanced-increases-housing-capacity",
+  "ten-year-balanced-increases-employment-space-capacity",
 ]) {
   assert.ok(validationCrossCheckIds.has(requiredId), `validation retains ${requiredId}`);
 }

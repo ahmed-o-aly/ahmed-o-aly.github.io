@@ -1,19 +1,30 @@
 {
   "schemaVersion": "2.0.0",
-  "generatedAt": "2026-08-27T14:39:39.967Z",
+  "generatedAt": "2026-08-27T22:02:04.378Z",
   "baseYear": 2024,
   "scope": {
     "name": "Greater Abu Dhabi City — focused UDES v2 study area",
-    "bounds": [54.28, 24.24, 54.78, 24.62],
+    "bounds": [
+      54.28,
+      24.24,
+      54.78,
+      24.62
+    ],
     "includedZoneCount": 18,
-    "excluded": ["Al Ain Region", "Al Dhafra Region", "Outer Abu Dhabi Region districts outside the selected metropolitan study area"],
+    "excluded": [
+      "Al Ain Region",
+      "Al Dhafra Region",
+      "Outer Abu Dhabi Region districts outside the selected metropolitan study area"
+    ],
     "note": "This is a selected urban system, not the full Abu Dhabi Region. Main-island neighborhoods remain distinct."
   },
   "classifications": {
     "observed": "Published directly by the cited government source.",
     "derived": "Calculated from observed geometry, stops or an OSM route snapshot.",
     "synthetic": "Transparent modeling assumption requiring calibration before policy use.",
-    "derived-from-observed": "Calculated solely from cited observed records."
+    "derived-from-observed": "Calculated solely from cited observed records.",
+    "reference": "Published evidence consulted as a reasonableness check or rejected implementation source.",
+    "license": "Reuse and attribution terms for a cited source."
   },
   "files": {
     "zones": "zones.geojson",
@@ -33,7 +44,7 @@
       "title": "AD-SDI Open Data — RoadCenterline",
       "url": "https://arcgis.sdi.abudhabi.ae/agspublish/rest/services/OpenData/ADSDI_OpenData/MapServer/101",
       "publisher": "Department of Government Enablement, Abu Dhabi Spatial Data Infrastructure",
-      "classification": "observed-reference",
+      "classification": "reference",
       "use": "Inspected as the preferred road source; not embedded because the layer is a dense, non-routable centerline inventory",
       "retrieved": "2026-08-27"
     },
@@ -50,22 +61,42 @@
       "url": "https://sdi.gov.abudhabi/sdi/Imagenarycatalogue.html",
       "publisher": "Department of Government Enablement",
       "classification": "license",
-      "use": "Open-data attribution and reuse terms"
+      "use": "Open-data attribution and reuse terms",
+      "retrieved": "2026-08-27"
     },
     "scadPopulation": {
       "title": "Abu Dhabi Census — Population 2024",
       "url": "https://census.scad.gov.ae/home/population?lang=en",
       "publisher": "Statistics Centre — Abu Dhabi",
       "classification": "observed",
-      "use": "Abu Dhabi Region total and officially disclosed top-ten district populations",
+      "use": "Abu Dhabi Region total and the complete 2024 district table returned by the official census indicator endpoint",
+      "indicatorEndpoint": "https://census.scad.gov.ae/home/IndicatorData",
+      "indicatorRequest": {
+        "contentsetupid": 6010,
+        "topicid": 6,
+        "itemindex": 0,
+        "year": 2024,
+        "lang": "en"
+      },
       "referenceYear": 2024,
+      "retrieved": "2026-08-27"
+    },
+    "abuDhabiBusTariff": {
+      "title": "Public Transport Services — Standard Service fare",
+      "url": "https://admobility.gov.ae/en/pb-bus-service/hafilat-public-buses-fees",
+      "publisher": "Abu Dhabi Mobility",
+      "classification": "observed",
+      "use": "Standard pay-as-you-go city bus fare formula used by the commute-cost model",
+      "baseFarePerDirectionAed": 2,
+      "farePerPassengerKmAed": 0.05,
+      "maximumFarePerDirectionAed": 5,
       "retrieved": "2026-08-27"
     },
     "unHabitatMobility": {
       "title": "National Urban Policy Transport Guide — Figure 21",
       "url": "https://unhabitat.org/sites/default/files/2022/03/nup-transport_guide-web.pdf",
       "publisher": "UN-Habitat",
-      "classification": "observed-reference",
+      "classification": "reference",
       "use": "Historical Abu Dhabi all-trip mode shares used as a broad calibration check, not a current commute forecast",
       "referenceYear": 2015,
       "underlyingSource": "UITP (2019)",
@@ -76,7 +107,7 @@
       "url": "https://www.openstreetmap.org/copyright",
       "publisher": "OpenStreetMap contributors",
       "license": "ODbL",
-      "classification": "observed-base / derived-route",
+      "classification": "derived",
       "use": "Routable road geometry where the official centerline service is impractical",
       "retrieved": "2026-08-27"
     },
@@ -92,12 +123,19 @@
   "calibration": {
     "officialAbuDhabiRegionPopulation2024": 2823340,
     "officialAbuDhabiRegionPopulationSource": "scadPopulation",
-    "studyScopePopulation2024": 1822770,
-    "studyScopeShareOfRegion": 0.646,
+    "studyScopePopulation2024": 1517535,
+    "studyScopeShareOfRegion": 0.537,
     "studyScopeJobs2024": 1805000,
-    "officialTargetDistrictPopulationSubtotal": 1092770,
+    "officialMappedDistrictPopulationSubtotal": 1517535,
     "citizenAgentPersonsRecommended": 250,
     "enterpriseAgentJobsRecommended": 1500,
+    "busTariffReference": {
+      "source": "abuDhabiBusTariff",
+      "baseFarePerDirectionAed": 2,
+      "farePerPassengerKmAed": 0.05,
+      "maximumFarePerDirectionAed": 5,
+      "caveat": "Pass products, transfers and exemptions are not modeled; scenarios may vary only the base fare while retaining the observed distance rate."
+    },
     "historicalAllTripModeShareReference": {
       "source": "unHabitatMobility",
       "referenceYear": 2015,
@@ -108,22 +146,71 @@
       "walkingPercent": 19.7,
       "caveat": "Historical all-trip shares are used only to reject implausible synthetic model outputs; the model represents work trips and requires a current household travel survey for validation."
     },
-    "note": "Only six selected districts appear in SCAD's published 2024 top-ten values. Other district populations and all district jobs/behavioral attributes are explicitly synthetic baselines."
+    "note": "All 18 model-zone population totals are mapped from SCAD's complete 2024 district table: 12 direct mappings and 6 grouped or relabeled mappings derived from observed records. District jobs and behavioral attributes remain synthetic baselines."
+  },
+  "temporal": {
+    "simulationStep": "1 calendar day",
+    "startDate": "2024-01-01",
+    "displayTimeZone": "Asia/Dubai",
+    "deterministicClockTimeZone": "UTC",
+    "modeledWorkdays": [
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday"
+    ],
+    "dailyProcesses": [
+      "commute assignment",
+      "network loading",
+      "citizen decisions",
+      "labor matching",
+      "enterprise actions"
+    ],
+    "monthlyProcesses": [
+      "household finance close",
+      "enterprise accounts",
+      "operating-margin and hazard update"
+    ],
+    "annualProcesses": [
+      "rent response",
+      "wage growth",
+      "ageing and mortality replacement"
+    ],
+    "sourceClass": "synthetic-model-rule",
+    "observedDailyProfiles": false,
+    "caveat": "The daily clock is a model cadence, not an observed Abu Dhabi day profile. Holidays, Ramadan schedules, seasonal heat, incidents, and observed hourly road or transit demand are not represented."
   },
   "zones": [
     {
       "id": "al-bateen",
       "name": "Al Bateen",
-      "officialDistrictIds": [1300],
-      "officialDistrictNames": ["AL BATEEN"],
+      "officialDistrictIds": [
+        1300
+      ],
+      "officialDistrictNames": [
+        "AL BATEEN"
+      ],
       "officialCommunityCount": 31,
-      "centroid": [54.345, 24.452],
-      "geometryCentroid": [54.34464, 24.452354],
+      "centroid": [
+        54.345,
+        24.452
+      ],
+      "geometryCentroid": [
+        54.34464,
+        24.452354
+      ],
       "areaKm2": 14.05,
-      "population2024": 45000,
-      "populationComponents": null,
+      "population2024": 57100,
+      "populationComponents": [
+        {
+          "name": "Al Qurm-Al Muzoun-Al Bateen",
+          "value": 57100,
+          "sourceClass": "observed"
+        }
+      ],
       "jobs2024": 70000,
-      "housingCapacityPersons": 51800,
+      "housingCapacityPersons": 65700,
       "jobCapacityPersons": 78500,
       "enterprisePlaceCapacity": 78,
       "quality": 0.9,
@@ -131,7 +218,11 @@
       "businessRentIndex": 1.25,
       "carOwnershipRate": 0.78,
       "averageMonthlySalaryAed": 14500,
-      "dominantEmployment": ["government", "professional services", "hospitality"],
+      "dominantEmployment": [
+        "government",
+        "professional services",
+        "hospitality"
+      ],
       "busStopCount": 63,
       "busStopsPerKm2": 4.48,
       "transitAccessIndex": 0.624,
@@ -141,7 +232,7 @@
         "centroid": "synthetic",
         "geometryCentroid": "derived",
         "areaKm2": "derived",
-        "population2024": "synthetic",
+        "population2024": "derived-from-observed",
         "jobs2024": "synthetic",
         "housingCapacityPersons": "synthetic",
         "jobCapacityPersons": "synthetic",
@@ -155,16 +246,26 @@
         "busStopCount": "derived-from-observed",
         "transitAccessIndex": "derived-from-observed"
       },
-      "mappingNote": null
+      "mappingNote": "SCAD publishes one combined Al Qurm-Al Muzoun-Al Bateen census district; the model geometry is the official Al Bateen district group."
     },
     {
       "id": "al-danah",
       "name": "Al Danah",
-      "officialDistrictIds": [1301],
-      "officialDistrictNames": ["AL DANAH"],
+      "officialDistrictIds": [
+        1301
+      ],
+      "officialDistrictNames": [
+        "AL DANAH"
+      ],
       "officialCommunityCount": 17,
-      "centroid": [54.369, 24.486],
-      "geometryCentroid": [54.368485, 24.486576],
+      "centroid": [
+        54.369,
+        24.486
+      ],
+      "geometryCentroid": [
+        54.368485,
+        24.486576
+      ],
       "areaKm2": 6.37,
       "population2024": 259925,
       "populationComponents": null,
@@ -177,7 +278,11 @@
       "businessRentIndex": 1.15,
       "carOwnershipRate": 0.62,
       "averageMonthlySalaryAed": 10500,
-      "dominantEmployment": ["retail", "government", "professional services"],
+      "dominantEmployment": [
+        "retail",
+        "government",
+        "professional services"
+      ],
       "busStopCount": 92,
       "busStopsPerKm2": 14.44,
       "transitAccessIndex": 1,
@@ -206,16 +311,26 @@
     {
       "id": "al-khalidiyah",
       "name": "Al Khalidiyah",
-      "officialDistrictIds": [1290],
-      "officialDistrictNames": ["AL KHALIDIYAH"],
+      "officialDistrictIds": [
+        1290
+      ],
+      "officialDistrictNames": [
+        "AL KHALIDIYAH"
+      ],
       "officialCommunityCount": 5,
-      "centroid": [54.351, 24.467],
-      "geometryCentroid": [54.350935, 24.467013],
+      "centroid": [
+        54.351,
+        24.467
+      ],
+      "geometryCentroid": [
+        54.350935,
+        24.467013
+      ],
       "areaKm2": 1.89,
-      "population2024": 85000,
+      "population2024": 29700,
       "populationComponents": null,
       "jobs2024": 75000,
-      "housingCapacityPersons": 97800,
+      "housingCapacityPersons": 34200,
       "jobCapacityPersons": 84100,
       "enterprisePlaceCapacity": 84,
       "quality": 0.82,
@@ -223,7 +338,11 @@
       "businessRentIndex": 1.1,
       "carOwnershipRate": 0.69,
       "averageMonthlySalaryAed": 12000,
-      "dominantEmployment": ["retail", "professional services", "hospitality"],
+      "dominantEmployment": [
+        "retail",
+        "professional services",
+        "hospitality"
+      ],
       "busStopCount": 21,
       "busStopsPerKm2": 11.11,
       "transitAccessIndex": 0.896,
@@ -233,7 +352,7 @@
         "centroid": "synthetic",
         "geometryCentroid": "derived",
         "areaKm2": "derived",
-        "population2024": "synthetic",
+        "population2024": "observed",
         "jobs2024": "synthetic",
         "housingCapacityPersons": "synthetic",
         "jobCapacityPersons": "synthetic",
@@ -252,16 +371,32 @@
     {
       "id": "al-manhal-karamah",
       "name": "Al Manhal / Al Karamah",
-      "officialDistrictIds": [1294],
-      "officialDistrictNames": ["AL MANHAL"],
+      "officialDistrictIds": [
+        1294
+      ],
+      "officialDistrictNames": [
+        "AL MANHAL"
+      ],
       "officialCommunityCount": 11,
-      "centroid": [54.366, 24.462],
-      "geometryCentroid": [54.366373, 24.461849],
+      "centroid": [
+        54.366,
+        24.462
+      ],
+      "geometryCentroid": [
+        54.366373,
+        24.461849
+      ],
       "areaKm2": 5.61,
-      "population2024": 70000,
-      "populationComponents": null,
+      "population2024": 42760,
+      "populationComponents": [
+        {
+          "name": "Al Manhal",
+          "value": 42760,
+          "sourceClass": "observed"
+        }
+      ],
       "jobs2024": 70000,
-      "housingCapacityPersons": 80500,
+      "housingCapacityPersons": 49200,
       "jobCapacityPersons": 78500,
       "enterprisePlaceCapacity": 78,
       "quality": 0.78,
@@ -269,7 +404,11 @@
       "businessRentIndex": 1.05,
       "carOwnershipRate": 0.72,
       "averageMonthlySalaryAed": 12000,
-      "dominantEmployment": ["government", "education", "retail"],
+      "dominantEmployment": [
+        "government",
+        "education",
+        "retail"
+      ],
       "busStopCount": 36,
       "busStopsPerKm2": 6.42,
       "transitAccessIndex": 0.717,
@@ -279,7 +418,7 @@
         "centroid": "synthetic",
         "geometryCentroid": "derived",
         "areaKm2": "derived",
-        "population2024": "synthetic",
+        "population2024": "derived-from-observed",
         "jobs2024": "synthetic",
         "housingCapacityPersons": "synthetic",
         "jobCapacityPersons": "synthetic",
@@ -293,21 +432,31 @@
         "busStopCount": "derived-from-observed",
         "transitAccessIndex": "derived-from-observed"
       },
-      "mappingNote": "Official Al Manhal polygon used for the combined familiar-area label."
+      "mappingNote": "SCAD's observed Al Manhal population is mapped to the familiar Al Manhal / Al Karamah label and official Al Manhal polygon."
     },
     {
       "id": "al-mushrif",
       "name": "Al Mushrif",
-      "officialDistrictIds": [1291],
-      "officialDistrictNames": ["AL MUSHRIF"],
+      "officialDistrictIds": [
+        1291
+      ],
+      "officialDistrictNames": [
+        "AL MUSHRIF"
+      ],
       "officialCommunityCount": 14,
-      "centroid": [54.389, 24.44],
-      "geometryCentroid": [54.388547, 24.439704],
+      "centroid": [
+        54.389,
+        24.44
+      ],
+      "geometryCentroid": [
+        54.388547,
+        24.439704
+      ],
       "areaKm2": 7.61,
-      "population2024": 80000,
+      "population2024": 33770,
       "populationComponents": null,
       "jobs2024": 70000,
-      "housingCapacityPersons": 92000,
+      "housingCapacityPersons": 38900,
       "jobCapacityPersons": 78500,
       "enterprisePlaceCapacity": 78,
       "quality": 0.82,
@@ -315,7 +464,11 @@
       "businessRentIndex": 1,
       "carOwnershipRate": 0.78,
       "averageMonthlySalaryAed": 12500,
-      "dominantEmployment": ["education", "health", "government"],
+      "dominantEmployment": [
+        "education",
+        "health",
+        "government"
+      ],
       "busStopCount": 55,
       "busStopsPerKm2": 7.23,
       "transitAccessIndex": 0.751,
@@ -325,7 +478,7 @@
         "centroid": "synthetic",
         "geometryCentroid": "derived",
         "areaKm2": "derived",
-        "population2024": "synthetic",
+        "population2024": "observed",
         "jobs2024": "synthetic",
         "housingCapacityPersons": "synthetic",
         "jobCapacityPersons": "synthetic",
@@ -344,11 +497,21 @@
     {
       "id": "al-nahyan",
       "name": "Al Nahyan",
-      "officialDistrictIds": [1295],
-      "officialDistrictNames": ["AL NAHYAN"],
+      "officialDistrictIds": [
+        1295
+      ],
+      "officialDistrictNames": [
+        "AL NAHYAN"
+      ],
       "officialCommunityCount": 11,
-      "centroid": [54.388, 24.464],
-      "geometryCentroid": [54.387576, 24.464116],
+      "centroid": [
+        54.388,
+        24.464
+      ],
+      "geometryCentroid": [
+        54.387576,
+        24.464116
+      ],
       "areaKm2": 5.68,
       "population2024": 99695,
       "populationComponents": null,
@@ -361,7 +524,11 @@
       "businessRentIndex": 1,
       "carOwnershipRate": 0.65,
       "averageMonthlySalaryAed": 11000,
-      "dominantEmployment": ["education", "retail", "professional services"],
+      "dominantEmployment": [
+        "education",
+        "retail",
+        "professional services"
+      ],
       "busStopCount": 32,
       "busStopsPerKm2": 5.63,
       "transitAccessIndex": 0.681,
@@ -390,16 +557,26 @@
     {
       "id": "muroor-al-saadah",
       "name": "Muroor / Al Sa'adah",
-      "officialDistrictIds": [1298],
-      "officialDistrictNames": ["AL SA`ADAH"],
+      "officialDistrictIds": [
+        1298
+      ],
+      "officialDistrictNames": [
+        "AL SA`ADAH"
+      ],
       "officialCommunityCount": 9,
-      "centroid": [54.429, 24.436],
-      "geometryCentroid": [54.429139, 24.43599],
+      "centroid": [
+        54.429,
+        24.436
+      ],
+      "geometryCentroid": [
+        54.429139,
+        24.43599
+      ],
       "areaKm2": 4.19,
-      "population2024": 125000,
+      "population2024": 25970,
       "populationComponents": null,
       "jobs2024": 110000,
-      "housingCapacityPersons": 143800,
+      "housingCapacityPersons": 29900,
       "jobCapacityPersons": 123300,
       "enterprisePlaceCapacity": 123,
       "quality": 0.7,
@@ -407,7 +584,11 @@
       "businessRentIndex": 0.95,
       "carOwnershipRate": 0.71,
       "averageMonthlySalaryAed": 10000,
-      "dominantEmployment": ["retail", "education", "professional services"],
+      "dominantEmployment": [
+        "retail",
+        "education",
+        "professional services"
+      ],
       "busStopCount": 16,
       "busStopsPerKm2": 3.82,
       "transitAccessIndex": 0.587,
@@ -417,7 +598,7 @@
         "centroid": "synthetic",
         "geometryCentroid": "derived",
         "areaKm2": "derived",
-        "population2024": "synthetic",
+        "population2024": "derived-from-observed",
         "jobs2024": "synthetic",
         "housingCapacityPersons": "synthetic",
         "jobCapacityPersons": "synthetic",
@@ -431,21 +612,31 @@
         "busStopCount": "derived-from-observed",
         "transitAccessIndex": "derived-from-observed"
       },
-      "mappingNote": "Muroor is a familiar corridor-area rather than an AD-SDI district; official Al Sa'adah is used as the reproducible fallback polygon."
+      "mappingNote": "Muroor is a familiar corridor-area rather than a census district; the observed SCAD Al Sa'adah population and official Al Sa'adah polygon are used reproducibly."
     },
     {
       "id": "al-rawdah",
       "name": "Al Rawdah",
-      "officialDistrictIds": [1297],
-      "officialDistrictNames": ["AL RAWDAH"],
+      "officialDistrictIds": [
+        1297
+      ],
+      "officialDistrictNames": [
+        "AL RAWDAH"
+      ],
       "officialCommunityCount": 15,
-      "centroid": [54.453, 24.418],
-      "geometryCentroid": [54.452753, 24.418193],
+      "centroid": [
+        54.453,
+        24.418
+      ],
+      "geometryCentroid": [
+        54.452753,
+        24.418193
+      ],
       "areaKm2": 9.07,
-      "population2024": 45000,
+      "population2024": 26935,
       "populationComponents": null,
       "jobs2024": 95000,
-      "housingCapacityPersons": 51800,
+      "housingCapacityPersons": 31000,
       "jobCapacityPersons": 106500,
       "enterprisePlaceCapacity": 106,
       "quality": 0.86,
@@ -453,7 +644,11 @@
       "businessRentIndex": 1.2,
       "carOwnershipRate": 0.82,
       "averageMonthlySalaryAed": 14500,
-      "dominantEmployment": ["government", "events", "professional services"],
+      "dominantEmployment": [
+        "government",
+        "events",
+        "professional services"
+      ],
       "busStopCount": 55,
       "busStopsPerKm2": 6.06,
       "transitAccessIndex": 0.701,
@@ -463,7 +658,7 @@
         "centroid": "synthetic",
         "geometryCentroid": "derived",
         "areaKm2": "derived",
-        "population2024": "synthetic",
+        "population2024": "observed",
         "jobs2024": "synthetic",
         "housingCapacityPersons": "synthetic",
         "jobCapacityPersons": "synthetic",
@@ -482,11 +677,21 @@
     {
       "id": "al-zahiyah",
       "name": "Al Zahiyah",
-      "officialDistrictIds": [1303],
-      "officialDistrictNames": ["AL ZAHIYAH"],
+      "officialDistrictIds": [
+        1303
+      ],
+      "officialDistrictNames": [
+        "AL ZAHIYAH"
+      ],
       "officialCommunityCount": 8,
-      "centroid": [54.38, 24.499],
-      "geometryCentroid": [54.379984, 24.498731],
+      "centroid": [
+        54.38,
+        24.499
+      ],
+      "geometryCentroid": [
+        54.379984,
+        24.498731
+      ],
       "areaKm2": 4.98,
       "population2024": 122515,
       "populationComponents": null,
@@ -499,7 +704,11 @@
       "businessRentIndex": 1.1,
       "carOwnershipRate": 0.6,
       "averageMonthlySalaryAed": 10000,
-      "dominantEmployment": ["hospitality", "retail", "professional services"],
+      "dominantEmployment": [
+        "hospitality",
+        "retail",
+        "professional services"
+      ],
       "busStopCount": 33,
       "busStopsPerKm2": 6.63,
       "transitAccessIndex": 0.726,
@@ -528,16 +737,28 @@
     {
       "id": "al-reem",
       "name": "Al Reem Island",
-      "officialDistrictIds": [57, 1319],
-      "officialDistrictNames": ["AL REEM ISLAND", "AL REEM EAST ISLAND"],
+      "officialDistrictIds": [
+        57,
+        1319
+      ],
+      "officialDistrictNames": [
+        "AL REEM ISLAND",
+        "AL REEM EAST ISLAND"
+      ],
       "officialCommunityCount": 27,
-      "centroid": [54.417, 24.505],
-      "geometryCentroid": [54.41367, 24.496379],
+      "centroid": [
+        54.417,
+        24.505
+      ],
+      "geometryCentroid": [
+        54.41367,
+        24.496379
+      ],
       "areaKm2": 16.01,
-      "population2024": 90000,
+      "population2024": 59725,
       "populationComponents": null,
       "jobs2024": 80000,
-      "housingCapacityPersons": 103500,
+      "housingCapacityPersons": 68700,
       "jobCapacityPersons": 89700,
       "enterprisePlaceCapacity": 89,
       "quality": 0.88,
@@ -545,7 +766,11 @@
       "businessRentIndex": 1.3,
       "carOwnershipRate": 0.76,
       "averageMonthlySalaryAed": 15000,
-      "dominantEmployment": ["professional services", "retail", "education"],
+      "dominantEmployment": [
+        "professional services",
+        "retail",
+        "education"
+      ],
       "busStopCount": 36,
       "busStopsPerKm2": 2.25,
       "transitAccessIndex": 0.485,
@@ -555,7 +780,7 @@
         "centroid": "synthetic",
         "geometryCentroid": "derived",
         "areaKm2": "derived",
-        "population2024": "synthetic",
+        "population2024": "derived-from-observed",
         "jobs2024": "synthetic",
         "housingCapacityPersons": "synthetic",
         "jobCapacityPersons": "synthetic",
@@ -574,16 +799,26 @@
     {
       "id": "al-maryah",
       "name": "Al Maryah Island",
-      "officialDistrictIds": [74],
-      "officialDistrictNames": ["AL MARYAH ISLAND"],
+      "officialDistrictIds": [
+        74
+      ],
+      "officialDistrictNames": [
+        "AL MARYAH ISLAND"
+      ],
       "officialCommunityCount": 24,
-      "centroid": [54.39, 24.502],
-      "geometryCentroid": [54.390364, 24.502407],
+      "centroid": [
+        54.39,
+        24.502
+      ],
+      "geometryCentroid": [
+        54.390364,
+        24.502407
+      ],
       "areaKm2": 1.48,
-      "population2024": 10000,
+      "population2024": 3375,
       "populationComponents": null,
       "jobs2024": 100000,
-      "housingCapacityPersons": 11500,
+      "housingCapacityPersons": 3900,
       "jobCapacityPersons": 112100,
       "enterprisePlaceCapacity": 112,
       "quality": 0.96,
@@ -591,7 +826,11 @@
       "businessRentIndex": 1.8,
       "carOwnershipRate": 0.7,
       "averageMonthlySalaryAed": 22000,
-      "dominantEmployment": ["finance", "health", "hospitality"],
+      "dominantEmployment": [
+        "finance",
+        "health",
+        "hospitality"
+      ],
       "busStopCount": 12,
       "busStopsPerKm2": 8.11,
       "transitAccessIndex": 0.787,
@@ -601,7 +840,7 @@
         "centroid": "synthetic",
         "geometryCentroid": "derived",
         "areaKm2": "derived",
-        "population2024": "synthetic",
+        "population2024": "observed",
         "jobs2024": "synthetic",
         "housingCapacityPersons": "synthetic",
         "jobCapacityPersons": "synthetic",
@@ -620,16 +859,26 @@
     {
       "id": "al-saadiyat",
       "name": "Al Saadiyat Island",
-      "officialDistrictIds": [1347],
-      "officialDistrictNames": ["AL SAADIYAT ISLAND"],
+      "officialDistrictIds": [
+        1347
+      ],
+      "officialDistrictNames": [
+        "AL SAADIYAT ISLAND"
+      ],
       "officialCommunityCount": 16,
-      "centroid": [54.44, 24.54],
-      "geometryCentroid": [54.442831, 24.534516],
+      "centroid": [
+        54.44,
+        24.54
+      ],
+      "geometryCentroid": [
+        54.442831,
+        24.534516
+      ],
       "areaKm2": 39.33,
-      "population2024": 25000,
+      "population2024": 30555,
       "populationComponents": null,
       "jobs2024": 55000,
-      "housingCapacityPersons": 28800,
+      "housingCapacityPersons": 35200,
       "jobCapacityPersons": 61700,
       "enterprisePlaceCapacity": 62,
       "quality": 0.95,
@@ -637,7 +886,11 @@
       "businessRentIndex": 1.45,
       "carOwnershipRate": 0.86,
       "averageMonthlySalaryAed": 16000,
-      "dominantEmployment": ["culture", "education", "hospitality"],
+      "dominantEmployment": [
+        "culture",
+        "education",
+        "hospitality"
+      ],
       "busStopCount": 34,
       "busStopsPerKm2": 0.86,
       "transitAccessIndex": 0.358,
@@ -647,7 +900,7 @@
         "centroid": "synthetic",
         "geometryCentroid": "derived",
         "areaKm2": "derived",
-        "population2024": "synthetic",
+        "population2024": "observed",
         "jobs2024": "synthetic",
         "housingCapacityPersons": "synthetic",
         "jobCapacityPersons": "synthetic",
@@ -666,16 +919,26 @@
     {
       "id": "rabdan-al-maqta",
       "name": "Rabdan / Al Maqta",
-      "officialDistrictIds": [1244],
-      "officialDistrictNames": ["RABDAN"],
+      "officialDistrictIds": [
+        1244
+      ],
+      "officialDistrictNames": [
+        "RABDAN"
+      ],
       "officialCommunityCount": 28,
-      "centroid": [54.5, 24.397],
-      "geometryCentroid": [54.500103, 24.397483],
+      "centroid": [
+        54.5,
+        24.397
+      ],
+      "geometryCentroid": [
+        54.500103,
+        24.397483
+      ],
       "areaKm2": 16.44,
-      "population2024": 35000,
+      "population2024": 32960,
       "populationComponents": null,
       "jobs2024": 45000,
-      "housingCapacityPersons": 40300,
+      "housingCapacityPersons": 38000,
       "jobCapacityPersons": 50500,
       "enterprisePlaceCapacity": 50,
       "quality": 0.8,
@@ -683,7 +946,11 @@
       "businessRentIndex": 1,
       "carOwnershipRate": 0.86,
       "averageMonthlySalaryAed": 12500,
-      "dominantEmployment": ["government", "hospitality", "retail"],
+      "dominantEmployment": [
+        "government",
+        "hospitality",
+        "retail"
+      ],
       "busStopCount": 40,
       "busStopsPerKm2": 2.43,
       "transitAccessIndex": 0.499,
@@ -693,7 +960,7 @@
         "centroid": "synthetic",
         "geometryCentroid": "derived",
         "areaKm2": "derived",
-        "population2024": "synthetic",
+        "population2024": "derived-from-observed",
         "jobs2024": "synthetic",
         "housingCapacityPersons": "synthetic",
         "jobCapacityPersons": "synthetic",
@@ -707,21 +974,31 @@
         "busStopCount": "derived-from-observed",
         "transitAccessIndex": "derived-from-observed"
       },
-      "mappingNote": "Official Rabdan polygon used for the Rabdan / Al Maqta gateway zone."
+      "mappingNote": "SCAD's observed Rabdan population and official Rabdan polygon are used for the Rabdan / Al Maqta gateway label."
     },
     {
       "id": "al-raha",
       "name": "Al Raha",
-      "officialDistrictIds": [1345],
-      "officialDistrictNames": ["AL RAHAH"],
+      "officialDistrictIds": [
+        1345
+      ],
+      "officialDistrictNames": [
+        "AL RAHAH"
+      ],
       "officialCommunityCount": 16,
-      "centroid": [54.59, 24.453],
-      "geometryCentroid": [54.59259, 24.45349],
+      "centroid": [
+        54.59,
+        24.453
+      ],
+      "geometryCentroid": [
+        54.59259,
+        24.45349
+      ],
       "areaKm2": 15.99,
-      "population2024": 40000,
+      "population2024": 30200,
       "populationComponents": null,
       "jobs2024": 45000,
-      "housingCapacityPersons": 46000,
+      "housingCapacityPersons": 34800,
       "jobCapacityPersons": 50500,
       "enterprisePlaceCapacity": 50,
       "quality": 0.88,
@@ -729,7 +1006,11 @@
       "businessRentIndex": 1.2,
       "carOwnershipRate": 0.88,
       "averageMonthlySalaryAed": 15000,
-      "dominantEmployment": ["professional services", "hospitality", "retail"],
+      "dominantEmployment": [
+        "professional services",
+        "hospitality",
+        "retail"
+      ],
       "busStopCount": 18,
       "busStopsPerKm2": 1.13,
       "transitAccessIndex": 0.387,
@@ -739,7 +1020,7 @@
         "centroid": "synthetic",
         "geometryCentroid": "derived",
         "areaKm2": "derived",
-        "population2024": "synthetic",
+        "population2024": "observed",
         "jobs2024": "synthetic",
         "housingCapacityPersons": "synthetic",
         "jobCapacityPersons": "synthetic",
@@ -758,16 +1039,26 @@
     {
       "id": "yas-island",
       "name": "Yas Island",
-      "officialDistrictIds": [1330],
-      "officialDistrictNames": ["YAS ISLAND"],
+      "officialDistrictIds": [
+        1330
+      ],
+      "officialDistrictNames": [
+        "YAS ISLAND"
+      ],
       "officialCommunityCount": 20,
-      "centroid": [54.603, 24.492],
-      "geometryCentroid": [54.603033, 24.491771],
+      "centroid": [
+        54.603,
+        24.492
+      ],
+      "geometryCentroid": [
+        54.603033,
+        24.491771
+      ],
       "areaKm2": 28.65,
-      "population2024": 20000,
+      "population2024": 36730,
       "populationComponents": null,
       "jobs2024": 75000,
-      "housingCapacityPersons": 23000,
+      "housingCapacityPersons": 42300,
       "jobCapacityPersons": 84100,
       "enterprisePlaceCapacity": 84,
       "quality": 0.92,
@@ -775,7 +1066,11 @@
       "businessRentIndex": 1.35,
       "carOwnershipRate": 0.9,
       "averageMonthlySalaryAed": 13000,
-      "dominantEmployment": ["tourism", "leisure", "retail"],
+      "dominantEmployment": [
+        "tourism",
+        "leisure",
+        "retail"
+      ],
       "busStopCount": 34,
       "busStopsPerKm2": 1.19,
       "transitAccessIndex": 0.394,
@@ -785,7 +1080,7 @@
         "centroid": "synthetic",
         "geometryCentroid": "derived",
         "areaKm2": "derived",
-        "population2024": "synthetic",
+        "population2024": "observed",
         "jobs2024": "synthetic",
         "housingCapacityPersons": "synthetic",
         "jobCapacityPersons": "synthetic",
@@ -804,11 +1099,21 @@
     {
       "id": "khalifa-city",
       "name": "Khalifa City",
-      "officialDistrictIds": [26],
-      "officialDistrictNames": ["KHALIFA CITY"],
+      "officialDistrictIds": [
+        26
+      ],
+      "officialDistrictNames": [
+        "KHALIFA CITY"
+      ],
       "officialCommunityCount": 54,
-      "centroid": [54.697, 24.425],
-      "geometryCentroid": [54.577913, 24.418599],
+      "centroid": [
+        54.697,
+        24.425
+      ],
+      "geometryCentroid": [
+        54.577913,
+        24.418599
+      ],
       "areaKm2": 48.72,
       "population2024": 104930,
       "populationComponents": null,
@@ -821,7 +1126,11 @@
       "businessRentIndex": 1,
       "carOwnershipRate": 0.92,
       "averageMonthlySalaryAed": 14500,
-      "dominantEmployment": ["education", "aviation services", "retail"],
+      "dominantEmployment": [
+        "education",
+        "aviation services",
+        "retail"
+      ],
       "busStopCount": 30,
       "busStopsPerKm2": 0.62,
       "transitAccessIndex": 0.326,
@@ -850,13 +1159,25 @@
     {
       "id": "mbz-zayed-city",
       "name": "Mohamed Bin Zayed / Zayed City",
-      "officialDistrictIds": [48, 400],
-      "officialDistrictNames": ["ZAYED CITY", "MOHAMED BIN ZAYED CITY"],
+      "officialDistrictIds": [
+        48,
+        400
+      ],
+      "officialDistrictNames": [
+        "ZAYED CITY",
+        "MOHAMED BIN ZAYED CITY"
+      ],
       "officialCommunityCount": 102,
-      "centroid": [54.574, 24.355],
-      "geometryCentroid": [54.57444, 24.355476],
+      "centroid": [
+        54.574,
+        24.355
+      ],
+      "geometryCentroid": [
+        54.57444,
+        24.355476
+      ],
       "areaKm2": 99.17,
-      "population2024": 269360,
+      "population2024": 224345,
       "populationComponents": [
         {
           "name": "Mohamed Bin Zayed City",
@@ -865,12 +1186,12 @@
         },
         {
           "name": "Zayed City",
-          "value": 60000,
-          "sourceClass": "synthetic"
+          "value": 14985,
+          "sourceClass": "observed"
         }
       ],
       "jobs2024": 120000,
-      "housingCapacityPersons": 309800,
+      "housingCapacityPersons": 258000,
       "jobCapacityPersons": 134400,
       "enterprisePlaceCapacity": 134,
       "quality": 0.72,
@@ -878,7 +1199,11 @@
       "businessRentIndex": 0.85,
       "carOwnershipRate": 0.91,
       "averageMonthlySalaryAed": 10500,
-      "dominantEmployment": ["construction", "retail", "government"],
+      "dominantEmployment": [
+        "construction",
+        "retail",
+        "government"
+      ],
       "busStopCount": 180,
       "busStopsPerKm2": 1.82,
       "transitAccessIndex": 0.451,
@@ -888,7 +1213,7 @@
         "centroid": "synthetic",
         "geometryCentroid": "derived",
         "areaKm2": "derived",
-        "population2024": "derived",
+        "population2024": "derived-from-observed",
         "jobs2024": "synthetic",
         "housingCapacityPersons": "synthetic",
         "jobCapacityPersons": "synthetic",
@@ -902,16 +1227,26 @@
         "busStopCount": "derived-from-observed",
         "transitAccessIndex": "derived-from-observed"
       },
-      "mappingNote": "Two official district polygons combined; only the Mohamed Bin Zayed City population is disclosed in SCAD's 2024 top-ten chart."
+      "mappingNote": "Two official district polygons and their two observed SCAD 2024 census populations are combined."
     },
     {
       "id": "musaffah",
       "name": "Musaffah",
-      "officialDistrictIds": [38],
-      "officialDistrictNames": ["MUSAFFAH"],
+      "officialDistrictIds": [
+        38
+      ],
+      "officialDistrictNames": [
+        "MUSAFFAH"
+      ],
       "officialCommunityCount": 53,
-      "centroid": [54.5, 24.35],
-      "geometryCentroid": [54.488056, 24.355431],
+      "centroid": [
+        54.5,
+        24.35
+      ],
+      "geometryCentroid": [
+        54.488056,
+        24.355431
+      ],
       "areaKm2": 40.16,
       "population2024": 296345,
       "populationComponents": null,
@@ -924,7 +1259,11 @@
       "businessRentIndex": 0.7,
       "carOwnershipRate": 0.75,
       "averageMonthlySalaryAed": 6500,
-      "dominantEmployment": ["industry", "construction", "logistics"],
+      "dominantEmployment": [
+        "industry",
+        "construction",
+        "logistics"
+      ],
       "busStopCount": 137,
       "busStopsPerKm2": 3.41,
       "transitAccessIndex": 0.563,
@@ -956,109 +1295,163 @@
       {
         "id": "al-bateen",
         "zoneId": "al-bateen",
-        "coord": [54.345, 24.452],
+        "coord": [
+          54.345,
+          24.452
+        ],
         "sourceClass": "synthetic"
       },
       {
         "id": "al-danah",
         "zoneId": "al-danah",
-        "coord": [54.369, 24.486],
+        "coord": [
+          54.369,
+          24.486
+        ],
         "sourceClass": "synthetic"
       },
       {
         "id": "al-khalidiyah",
         "zoneId": "al-khalidiyah",
-        "coord": [54.351, 24.467],
+        "coord": [
+          54.351,
+          24.467
+        ],
         "sourceClass": "synthetic"
       },
       {
         "id": "al-manhal-karamah",
         "zoneId": "al-manhal-karamah",
-        "coord": [54.366, 24.462],
+        "coord": [
+          54.366,
+          24.462
+        ],
         "sourceClass": "synthetic"
       },
       {
         "id": "al-mushrif",
         "zoneId": "al-mushrif",
-        "coord": [54.389, 24.44],
+        "coord": [
+          54.389,
+          24.44
+        ],
         "sourceClass": "synthetic"
       },
       {
         "id": "al-nahyan",
         "zoneId": "al-nahyan",
-        "coord": [54.388, 24.464],
+        "coord": [
+          54.388,
+          24.464
+        ],
         "sourceClass": "synthetic"
       },
       {
         "id": "muroor-al-saadah",
         "zoneId": "muroor-al-saadah",
-        "coord": [54.429, 24.436],
+        "coord": [
+          54.429,
+          24.436
+        ],
         "sourceClass": "synthetic"
       },
       {
         "id": "al-rawdah",
         "zoneId": "al-rawdah",
-        "coord": [54.453, 24.418],
+        "coord": [
+          54.453,
+          24.418
+        ],
         "sourceClass": "synthetic"
       },
       {
         "id": "al-zahiyah",
         "zoneId": "al-zahiyah",
-        "coord": [54.38, 24.499],
+        "coord": [
+          54.38,
+          24.499
+        ],
         "sourceClass": "synthetic"
       },
       {
         "id": "al-reem",
         "zoneId": "al-reem",
-        "coord": [54.417, 24.505],
+        "coord": [
+          54.417,
+          24.505
+        ],
         "sourceClass": "synthetic"
       },
       {
         "id": "al-maryah",
         "zoneId": "al-maryah",
-        "coord": [54.39, 24.502],
+        "coord": [
+          54.39,
+          24.502
+        ],
         "sourceClass": "synthetic"
       },
       {
         "id": "al-saadiyat",
         "zoneId": "al-saadiyat",
-        "coord": [54.44, 24.54],
+        "coord": [
+          54.44,
+          24.54
+        ],
         "sourceClass": "synthetic"
       },
       {
         "id": "rabdan-al-maqta",
         "zoneId": "rabdan-al-maqta",
-        "coord": [54.5, 24.397],
+        "coord": [
+          54.5,
+          24.397
+        ],
         "sourceClass": "synthetic"
       },
       {
         "id": "al-raha",
         "zoneId": "al-raha",
-        "coord": [54.59, 24.453],
+        "coord": [
+          54.59,
+          24.453
+        ],
         "sourceClass": "synthetic"
       },
       {
         "id": "yas-island",
         "zoneId": "yas-island",
-        "coord": [54.603, 24.492],
+        "coord": [
+          54.603,
+          24.492
+        ],
         "sourceClass": "synthetic"
       },
       {
         "id": "khalifa-city",
         "zoneId": "khalifa-city",
-        "coord": [54.697, 24.425],
+        "coord": [
+          54.697,
+          24.425
+        ],
         "sourceClass": "synthetic"
       },
       {
         "id": "mbz-zayed-city",
         "zoneId": "mbz-zayed-city",
-        "coord": [54.574, 24.355],
+        "coord": [
+          54.574,
+          24.355
+        ],
         "sourceClass": "synthetic"
       },
       {
         "id": "musaffah",
         "zoneId": "musaffah",
-        "coord": [54.5, 24.35],
+        "coord": [
+          54.5,
+          24.35
+        ],
         "sourceClass": "synthetic"
       }
     ],
@@ -2132,13 +2525,13 @@
         "note": "Connectivity follows the static road corridor and official stop presence; this is not an observed bus route or timetable."
       }
     ],
-    "caveat": "Stops are observed. Links, frequency, capacity and travel time are modeled because an official route/timetable layer was not available in the AD-SDI open service."
+    "caveat": "Stops are observed. Published route and timetable data has not yet been integrated; links, frequency, capacity and travel time remain modeled."
   },
   "assumptions": [
-    "Population values for Al Danah, Al Zahiyah, Al Nahyan, Khalifa City, Musaffah and the Mohamed Bin Zayed City component are observed SCAD 2024 top-ten figures.",
-    "Other selected-zone population values distribute a plausible metropolitan subtotal but are not official district estimates.",
+    "All selected-zone population values are mapped from SCAD's complete 2024 Abu Dhabi Region district table: 12 direct mappings and 6 grouped or relabeled mappings derived from observed records.",
     "Jobs, capacities, quality, rent indices, car ownership, salaries and employment themes are synthetic starting values, not forecasts or administrative statistics.",
     "Mode-choice parameters are synthetic and checked only against a historical 2015 all-trip reference reported by UN-Habitat/UITP; they are not a current household-travel-survey calibration.",
+    "The reference standard pay-as-you-go bus fare uses Abu Dhabi Mobility's AED 2 base fare plus AED 0.05 per passenger-kilometre in each direction, capped at AED 5 per journey; pass products, transfers and exemptions are not modeled.",
     "Same-zone mode shares, the 45-day commute escalation grace period and financial car-disposal guards are transparent synthetic work-trip calibration choices.",
     "Muroor uses the official Al Sa'adah polygon; Al Manhal represents the combined Al Manhal / Al Karamah label; Rabdan represents Rabdan / Al Maqta.",
     "Road and transit links are aggregate zone connectors, not a segment-level assignment network.",

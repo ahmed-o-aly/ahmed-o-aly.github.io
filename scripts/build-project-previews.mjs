@@ -62,7 +62,7 @@ const transitModeBarCar = percentageWidth(transitCity.modeShares.car, 280);
 const transitModeBarPt = percentageWidth(transitCity.modeShares.pt, 280);
 const transitModeBarWalk = percentageWidth(transitCity.modeShares.walk, 280);
 const satisfactionWidth = percentageWidth(city.satisfaction, 300);
-const referenceDate = new Intl.DateTimeFormat("en-AE", { month: "short", year: "numeric", timeZone: "UTC" }).format(
+const referenceDate = new Intl.DateTimeFormat("en-AE", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }).format(
   new Date(`${reference.clock.date}T00:00:00Z`)
 );
 const oneDecimal = (value) => Number(value).toFixed(1);
@@ -158,15 +158,15 @@ const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" role
     <text x="1248" y="48" font-size="11" fill="#75817e">SIMULATION STATUS</text><circle cx="1253" cy="66" r="5" fill="#2e8b70"/><text x="1267" y="71" font-size="14" font-weight="650">Ready · 18 districts</text>
 
     <rect x="38" y="108" width="282" height="754" rx="10" fill="#f1f3f0" stroke="#d7dedb"/>
-    <text x="58" y="137" font-size="11" letter-spacing="1.5" fill="#75817e">MODEL INPUTS</text><text x="58" y="163" font-size="20" font-weight="650">Scenario controls</text>
-    <text x="58" y="203" font-size="12" font-weight="650">POLICY PACKAGE</text>
+    <text x="58" y="137" font-size="11" letter-spacing="1.5" fill="#75817e">SCENARIO STUDIO</text><text x="58" y="163" font-size="20" font-weight="650">Interventions</text>
+    <text x="58" y="203" font-size="12" font-weight="650">INTERVENTION TEMPLATE</text>
     <rect x="54" y="220" width="250" height="48" rx="8" fill="#e2eee9" stroke="#76a697"/><circle cx="76" cy="244" r="6" fill="#236b5b"/><text x="92" y="249" font-size="14" font-weight="650">Reference</text>
-    <rect x="54" y="276" width="250" height="42" rx="8" fill="#fff" stroke="#d7dedb"/><text x="72" y="302" font-size="13">Transit first</text>
-    <rect x="54" y="326" width="250" height="42" rx="8" fill="#fff" stroke="#d7dedb"/><text x="72" y="352" font-size="13">Connected housing</text>
-    <rect x="54" y="376" width="250" height="42" rx="8" fill="#fff" stroke="#d7dedb"/><text x="72" y="402" font-size="13">Balanced growth</text>
-    <text x="58" y="454" font-size="12" font-weight="650">TRANSPORT</text>
-    <text x="58" y="485" font-size="12" fill="#66736f">Transit fare</text><text x="284" y="485" text-anchor="end" font-size="12">AED 2.00</text><path d="M58 501H284" stroke="#cbd4cf" stroke-width="5" stroke-linecap="round"/><path d="M58 501H171" stroke="#2f7f85" stroke-width="5" stroke-linecap="round"/><circle cx="171" cy="501" r="7" fill="#fff" stroke="#2f7f85" stroke-width="3"/>
-    <text x="58" y="535" font-size="12" fill="#66736f">Transit speed</text><text x="284" y="535" text-anchor="end" font-size="12">28 km/h</text><path d="M58 551H284" stroke="#cbd4cf" stroke-width="5" stroke-linecap="round"/><path d="M58 551H201" stroke="#2f7f85" stroke-width="5" stroke-linecap="round"/><circle cx="201" cy="551" r="7" fill="#fff" stroke="#2f7f85" stroke-width="3"/>
+    <rect x="54" y="276" width="250" height="42" rx="8" fill="#fff" stroke="#d7dedb"/><text x="72" y="302" font-size="13">Bus priority</text>
+    <rect x="54" y="326" width="250" height="42" rx="8" fill="#fff" stroke="#d7dedb"/><text x="72" y="352" font-size="13">Housing delivery</text>
+    <rect x="54" y="376" width="250" height="42" rx="8" fill="#fff" stroke="#d7dedb"/><text x="72" y="402" font-size="13">Housing + jobs</text>
+    <text x="58" y="454" font-size="12" font-weight="650">BUS &amp; ROAD OPERATIONS</text>
+    <text x="58" y="485" font-size="12" fill="#66736f">Base bus fare</text><text x="284" y="485" text-anchor="end" font-size="12">AED 2.00</text><path d="M58 501H284" stroke="#cbd4cf" stroke-width="5" stroke-linecap="round"/><path d="M58 501H171" stroke="#2f7f85" stroke-width="5" stroke-linecap="round"/><circle cx="171" cy="501" r="7" fill="#fff" stroke="#2f7f85" stroke-width="3"/>
+    <text x="58" y="535" font-size="12" fill="#66736f">Effective bus speed</text><text x="284" y="535" text-anchor="end" font-size="12">28 km/h</text><path d="M58 551H284" stroke="#cbd4cf" stroke-width="5" stroke-linecap="round"/><path d="M58 551H201" stroke="#2f7f85" stroke-width="5" stroke-linecap="round"/><circle cx="201" cy="551" r="7" fill="#fff" stroke="#2f7f85" stroke-width="3"/>
     <text x="58" y="596" font-size="12" font-weight="650">AGENT RULES</text>
     <rect x="54" y="614" width="250" height="92" rx="8" fill="#fff" stroke="#d7dedb"/><text x="70" y="638" font-size="12" font-weight="650">Citizen objective</text><text x="70" y="660" font-size="11" fill="#6d7976">Income · commute · place quality</text><text x="70" y="686" font-size="11" fill="#6d7976">Happy → Waiting → Extreme</text>
     <rect x="54" y="716" width="250" height="92" rx="8" fill="#fff" stroke="#d7dedb"/><text x="70" y="740" font-size="12" font-weight="650">Enterprise objective</text><text x="70" y="762" font-size="11" fill="#6d7976">Margin · labor access · vacancies</text><text x="70" y="788" font-size="11" fill="#6d7976">Working → Grow / Lesser / Re-entry</text>
@@ -206,7 +206,7 @@ const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" role
     <rect x="336" y="616" width="1226" height="246" rx="10" fill="#fff" stroke="#d7dedb"/>
     <text x="360" y="646" font-size="11" letter-spacing="1.4" fill="#75817e">OUTCOMES · REFERENCE VS POLICY</text>
     <text x="360" y="680" font-size="13" font-weight="650">Satisfied citizen share</text><path d="M360 820H726M360 706V820" stroke="#d7dedb"/>
-    <path d="${referenceSatisfactionPath}" fill="none" stroke="#236b5b" stroke-width="4"/><path d="${transitSatisfactionPath}" fill="none" stroke="#8fb6aa" stroke-width="3" stroke-dasharray="7 7"/><path d="M370 838h18" stroke="#236b5b" stroke-width="3"/><text x="394" y="842" font-size="10" fill="#66736f">Reference</text><path d="M470 838h18" stroke="#8fb6aa" stroke-width="3" stroke-dasharray="5 4"/><text x="494" y="842" font-size="10" fill="#66736f">Transit first</text>
+    <path d="${referenceSatisfactionPath}" fill="none" stroke="#236b5b" stroke-width="4"/><path d="${transitSatisfactionPath}" fill="none" stroke="#8fb6aa" stroke-width="3" stroke-dasharray="7 7"/><path d="M370 838h18" stroke="#236b5b" stroke-width="3"/><text x="394" y="842" font-size="10" fill="#66736f">Reference</text><path d="M470 838h18" stroke="#8fb6aa" stroke-width="3" stroke-dasharray="5 4"/><text x="494" y="842" font-size="10" fill="#66736f">Bus priority</text>
     <text x="760" y="680" font-size="13" font-weight="650">Mobility mix <tspan font-size="9" fill="#75817e">REF / TRANSIT</tspan></text><text x="760" y="716" font-size="11" fill="#66736f">Car</text><rect x="820" y="702" width="280" height="20" rx="4" fill="#e7ece9"/><rect x="820" y="702" width="${modeBarCar}" height="9" rx="3" fill="#557fa3"/><rect x="820" y="713" width="${transitModeBarCar}" height="7" rx="3" fill="#8fb6aa"/><text x="1115" y="718" font-size="10">${oneDecimal(
       city.modeShares.car
     )}% / ${oneDecimal(transitCity.modeShares.car)}%</text>
@@ -218,7 +218,7 @@ const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" role
     )}% / ${oneDecimal(transitCity.modeShares.walk)}%</text>
     <text x="1192" y="680" font-size="13" font-weight="650">Model evidence</text><rect x="1192" y="700" width="338" height="112" rx="8" fill="#f3f6f3"/><text x="1210" y="727" font-size="11" fill="#66736f">${formatNumber(
       zones.features.length
-    )} model districts from official AD-SDI polygons</text><text x="1210" y="752" font-size="11" fill="#66736f">${formatNumber(
+    )} district groups derived from AD-SDI</text><text x="1210" y="752" font-size="11" fill="#66736f">${formatNumber(
       roads.features.length
     )} routed road corridors</text><text x="1210" y="777" font-size="11" fill="#66736f">${formatNumber(
       stops.features.length

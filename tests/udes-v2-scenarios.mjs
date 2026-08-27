@@ -25,7 +25,7 @@ const referencePolicy = {
 };
 
 const representativeScale = {
-  citizenCount: 1823,
+  citizenCount: 1518,
   citizenWeight: 1000,
   enterpriseCount: 180,
   routingBatchSize: 256,
@@ -317,7 +317,7 @@ assert.equal(
 // Every traveler on this one-link network is assigned before the final load is
 // known. The realized time must nevertheless use the final directional load
 // for every agent, rather than giving early agents a free-flow trip.
-function createGuaranteedBottleneck(mode, seed = 88021, corridorWaitMinutes = 7) {
+function createGuaranteedBottleneck(mode, seed = 88021, corridorWaitMinutes = 7, distanceKm = 10) {
   const engine = new UdesV2Engine({
     seed,
     data: {
@@ -350,7 +350,7 @@ function createGuaranteedBottleneck(mode, seed = 88021, corridorWaitMinutes = 7)
           id: "single-bottleneck",
           from: "bottleneck-home",
           to: "bottleneck-work",
-          distanceKm: 10,
+          distanceKm,
           durationMin: 10,
           capacityVehicles: 1,
           ptCapacityPassengers: 1,
@@ -439,6 +439,33 @@ function assertGuaranteedBottleneck(mode, seed) {
 
 assertGuaranteedBottleneck("car", 88021);
 assertGuaranteedBottleneck("pt", 88022);
+
+const shortFareCorridor = createGuaranteedBottleneck("pt", 88024, 7, 3);
+const longFareCorridor = createGuaranteedBottleneck("pt", 88024, 7, 20);
+const shortFareCitizen = shortFareCorridor.citizens[0];
+const longFareCitizen = longFareCorridor.citizens[0];
+assert.equal(shortFareCitizen.dailyTransportCostAed, 4.3, "a 3 km PT commute charges AED 2.15 in each direction");
+assert.equal(longFareCitizen.dailyTransportCostAed, 6, "a 20 km PT commute charges AED 3 in each direction");
+assert.ok(
+  longFareCitizen.dailyTransportCostAed > shortFareCitizen.dailyTransportCostAed,
+  "realized inter-zone PT cost increases deterministically with passenger-kilometres"
+);
+const shortResidentialCost = shortFareCorridor.residentialOptionCosts(shortFareCitizen, shortFareCorridor.zoneById.get(shortFareCitizen.homeZoneId));
+const longResidentialCost = longFareCorridor.residentialOptionCosts(longFareCitizen, longFareCorridor.zoneById.get(longFareCitizen.homeZoneId));
+assert.equal(
+  longResidentialCost.cashMonthlyCostAed - longFareCorridor.zoneById.get(longFareCitizen.homeZoneId).residentialRentAed,
+  longFareCitizen.dailyTransportCostAed * longFareCorridor.config.workdaysPerMonth,
+  "inter-zone residential choices price the distance-sensitive PT commute"
+);
+assert.ok(
+  longResidentialCost.cashMonthlyCostAed > shortResidentialCost.cashMonthlyCostAed,
+  "a farther otherwise-identical home-work pair has a higher cheapest-commute cash cost"
+);
+assert.equal(
+  longFareCorridor.carAcquisitionAlternatives(longFareCitizen).alternativeCashCostAed,
+  longFareCitizen.dailyTransportCostAed,
+  "inter-zone car-acquisition decisions use the same distance-sensitive PT fare"
+);
 
 // The corridor wait is one boarding wait in each direction, not the global
 // fallback and not a sum across every link. It affects experienced time and
@@ -777,7 +804,11 @@ for (const [label, engine, snapshot] of [
   ["reference", reference, referenceSnapshot],
   ["transit-first", transit, transitSnapshot],
 ]) {
-  assert.equal(snapshot.city.representedPopulation, 1823000, `${label}: represented population is conserved`);
+  assert.equal(
+    snapshot.city.representedPopulation,
+    representativeScale.citizenCount * representativeScale.citizenWeight,
+    `${label}: represented population is conserved`
+  );
   assert.deepEqual(engine.validateInvariants(), [], `${label}: real-baseline invariants hold after one year`);
   assertHousingPolicyConsistent(engine, `${label} after one year`);
   assertEmploymentBand(snapshot, label);
@@ -800,12 +831,12 @@ assert.ok(
 );
 
 // Ten calendar years are 3,653 days from the 2024 baseline (three leap years),
-// not 120 synthetic 30-day months. Fewer, heavier agents preserve the 1.8m
+// not 120 synthetic 30-day months. Fewer, heavier agents preserve the 1.518m
 // represented population and real network while keeping four UI presets fast.
 const tenCalendarYears = calendarDayDifference("2024-01-01", "2034-01-01");
 assert.equal(tenCalendarYears, 3653);
 const tenYearScale = {
-  citizenCount: 720,
+  citizenCount: 607,
   citizenWeight: 2500,
   enterpriseCount: 60,
   maxDailyLaborMatches: 24,
@@ -866,7 +897,10 @@ const longReference = tenYearResults.reference;
 const longTransit = tenYearResults.transit;
 const longHousing = tenYearResults.housing;
 const longBalanced = tenYearResults.balanced;
-assert.ok(longTransit.snapshot.city.modeShares.car < longReference.snapshot.city.modeShares.car, "ten-year transit preset lowers car mode share");
+assert.ok(
+  longTransit.snapshot.city.modeShares.car < longReference.snapshot.city.modeShares.car,
+  `ten-year transit preset lowers car mode share (${longReference.snapshot.city.modeShares.car}% to ${longTransit.snapshot.city.modeShares.car}%)`
+);
 assert.ok(longTransit.snapshot.city.modeShares.pt > longReference.snapshot.city.modeShares.pt, "ten-year transit preset raises PT mode share");
 assert.ok(
   longTransit.snapshot.city.averageRoundTripMinutes <= longReference.snapshot.city.averageRoundTripMinutes,
@@ -899,11 +933,14 @@ assert.ok(
   "housing preset does not materially worsen commute welfare"
 );
 
-assert.ok(longBalanced.snapshot.city.modeShares.car < longReference.snapshot.city.modeShares.car, "balanced preset lowers car mode share");
-assert.ok(longBalanced.snapshot.city.modeShares.pt > longReference.snapshot.city.modeShares.pt, "balanced preset raises PT mode share");
 assert.ok(
-  longBalanced.snapshot.city.averageRoundTripMinutes <= longReference.snapshot.city.averageRoundTripMinutes + 1,
-  `balanced preset does not materially worsen mean commute time (${longReference.snapshot.city.averageRoundTripMinutes} to ${longBalanced.snapshot.city.averageRoundTripMinutes} minutes)`
+  longBalanced.snapshot.city.housingCapacityRepresented > longReference.snapshot.city.housingCapacityRepresented,
+  "housing + jobs preset increases represented housing capacity"
+);
+assert.ok(
+  sumBy(longBalanced.snapshot.zones, (zone) => zone.enterprisePlaceCapacity) >
+    sumBy(longReference.snapshot.zones, (zone) => zone.enterprisePlaceCapacity),
+  "housing + jobs preset increases modeled employment-space capacity"
 );
 assert.ok(
   longBalanced.snapshot.city.housingOccupancyRate < longReference.snapshot.city.housingOccupancyRate,
@@ -916,11 +953,11 @@ assert.ok(
 
 // Directional conclusions must survive seed variance rather than depend on
 // the main validation trajectory. This reduced real-network scale preserves
-// approximately 1.825m represented people and runs each exact ten-year pair
+// approximately 1.52m represented people and runs each exact ten-year pair
 // quickly enough for CI.
 const varianceSeeds = [240124, 70117, 90421];
 const varianceScale = {
-  citizenCount: 365,
+  citizenCount: 304,
   citizenWeight: 5000,
   enterpriseCount: 48,
   maxDailyLaborMatches: 24,

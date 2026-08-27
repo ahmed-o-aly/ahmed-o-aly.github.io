@@ -15,7 +15,7 @@ layout: garden
         <span aria-hidden="true">&#8592;</span>
       </a>
       <div class="udes-v2-commandbar__title">
-        <span>Urban Dynamics Console</span>
+        <span>Illustrative scenario · not a forecast</span>
         <h1>{{ page.title }}</h1>
       </div>
     </div>
@@ -25,7 +25,7 @@ layout: garden
         <span class="udes-v2-status-dot" aria-hidden="true"></span>
         <span>
           <small>Model time</small>
-          <strong data-udes-v2-date>Jan 2024</strong>
+          <strong data-udes-v2-date>Mon, 1 Jan 2024</strong>
         </span>
       </div>
 
@@ -34,27 +34,27 @@ layout: garden
           <span class="udes-v2-play-icon" aria-hidden="true"></span>
           <span data-udes-v2-play-label>Run</span>
         </button>
-        <button class="udes-v2-icon-button" type="button" data-udes-v2-action="step" aria-label="Advance one month">
-          <span aria-hidden="true">&#8594;|</span>
-        </button>
+        <button class="udes-v2-step-button" type="button" data-udes-v2-step-days="1" aria-label="Advance one day">+1d</button>
+        <button class="udes-v2-step-button" type="button" data-udes-v2-step-days="7" aria-label="Advance seven days">+7d</button>
+        <button class="udes-v2-step-button" type="button" data-udes-v2-step-days="30" aria-label="Advance thirty days">+30d</button>
         <button class="udes-v2-icon-button" type="button" data-udes-v2-action="reset" aria-label="Reset simulation">
           <span aria-hidden="true">&#8634;</span>
         </button>
       </div>
 
       <div class="udes-v2-progress" aria-label="Simulation progress">
-        <progress data-udes-v2-progress value="0" max="120" aria-label="Simulation progress">0 of 120 months</progress>
-        <span><strong data-udes-v2-progress-label>0</strong> / <span data-udes-v2-horizon-label>120</span> months</span>
+        <progress data-udes-v2-progress value="0" max="366" aria-label="Simulation progress">Day 0 of 366</progress>
+        <span>Day <strong data-udes-v2-progress-label>0</strong> / <span data-udes-v2-horizon-label>366</span></span>
       </div>
     </div>
 
     <div class="udes-v2-commandbar__context">
       <button class="udes-v2-compare" type="button" data-udes-v2-compare aria-pressed="true">Compare</button>
       <fieldset class="udes-v2-speed">
-        <legend>Run speed</legend>
-        <button type="button" data-udes-v2-speed="1" aria-pressed="true">1x</button>
-        <button type="button" data-udes-v2-speed="4" aria-pressed="false">4x</button>
-        <button type="button" data-udes-v2-speed="12" aria-pressed="false">12x</button>
+        <legend>Automatic run step</legend>
+        <button type="button" data-udes-v2-speed="1" aria-pressed="true" title="Run one model day per update">1d</button>
+        <button type="button" data-udes-v2-speed="7" aria-pressed="false" title="Run seven model days per update">7d</button>
+        <button type="button" data-udes-v2-speed="30" aria-pressed="false" title="Run thirty model days per update">30d</button>
       </fieldset>
       <span class="udes-v2-runtime-state" data-udes-v2-runtime-state>
         <span aria-hidden="true"></span>

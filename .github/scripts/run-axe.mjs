@@ -49,15 +49,8 @@ function formatViolations(violations) {
 
 const chrome = spawn(
   chromePath,
-  [
-    "--headless=new",
-    "--disable-gpu",
-    "--disable-dev-shm-usage",
-    "--no-sandbox",
-    `--remote-debugging-port=${port}`,
-    "about:blank",
-  ],
-  { stdio: ["ignore", "pipe", "pipe"] },
+  ["--headless=new", "--disable-gpu", "--disable-dev-shm-usage", "--no-sandbox", `--remote-debugging-port=${port}`, "about:blank"],
+  { stdio: ["ignore", "pipe", "pipe"] }
 );
 
 let client;
@@ -66,9 +59,10 @@ try {
   await waitForChrome();
   client = await CDP({ port });
 
-  const { Page, Runtime } = client;
+  const { Emulation, Page, Runtime } = client;
   await Page.enable();
   await Runtime.enable();
+  await Emulation.setDeviceMetricsOverride({ width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false });
   await Page.navigate({ url });
   await Page.loadEventFired();
   await sleep(loadDelay);

@@ -6,7 +6,7 @@
  *
  * Worker request: { type, requestId?, payload? }
  *   init       { data?: { zones?, links? }, config?: Partial<Config>, seed? }
- *   step       { days?: 1, snapshot?: SnapshotOptions }
+ *   step       { days?: 1, captureDaily?: false, snapshot?: SnapshotOptions }
  *   run        { days, chunkDays?: 30, snapshot?: SnapshotOptions }
  *   reset      { seed? }
  *   configure  { patch, reset?: false }
@@ -70,6 +70,10 @@
     businessCapacityMultiplier: 1,
     rentPressureMultiplier: 1,
     placeQuality: 0.82,
+    // Land-use levers can be applied citywide (null) or to one named zone.
+    // Mobility levers remain citywide. Each zone retains its own applied
+    // values so a subsequent targeted intervention does not reset others.
+    policyScopeZoneId: null,
     focusZoneId: null,
     housingRentBaseAed: 3000,
     assignmentPeakHours: 8,
@@ -126,7 +130,11 @@
     ptTimeCoefficient: -0.035,
     ptWaitCoefficient: -0.06,
     costScaleAed: 10,
+    // Abu Dhabi bus tariff: each direction charges a boarding/base fare plus
+    // a distance component for every passenger-kilometre travelled.
     ptFareOneWayAed: 2,
+    ptFarePerPassengerKmAed: 0.05,
+    ptFareMaximumOneWayAed: 5,
     ptAverageSpeedKmh: 28,
     ptAverageWaitMin: 7,
     carFuelAndRunningCostAedPerKm: 0.28,
@@ -519,6 +527,7 @@
         seed: this.seed,
         config: deepClone(suppliedConfig),
         data: deepClone(options.data || {}),
+        zonePolicies: deepClone(options.zonePolicies || []),
       };
       this.day = 0;
       this.monthCounter = 0;
@@ -532,7 +541,9 @@
       this.cityHistory = [];
       this.zones = this.createZones(options.data?.zones || DEFAULT_ZONES);
       this.zoneById = new Map(this.zones.map((zone) => [zone.id, zone]));
-      this.applyPlaceQualityPolicy();
+      this.initializeZoneLandUsePolicies();
+      if (this.initialOptions.zonePolicies.length) this.applyExplicitZonePolicies(this.initialOptions.zonePolicies);
+      this.initialOptions.zonePolicies = this.serializeZonePolicies();
       this.links = this.createLinks(options.data?.links || options.data?.routes, options.data?.transit);
       this.linkById = new Map(this.links.map((link) => [link.id, link]));
       this.graph = this.buildGraph();
@@ -568,45 +579,57 @@
         seed,
         config: this.initialOptions.config,
         data: this.initialOptions.data,
+        zonePolicies: this.initialOptions.zonePolicies,
       });
     }
 
     configure(patch, reset = false) {
       if (!isPlainObject(patch)) throw new Error("configure.patch must be an object");
       const normalizedPatch = normalizeConfigPatch(patch);
+      const explicitZonePolicies = Array.isArray(normalizedPatch.zonePolicies) ? normalizedPatch.zonePolicies : null;
+      delete normalizedPatch.zonePolicies;
       if (reset) {
+        const resetZonePolicies = explicitZonePolicies || this.initialOptions.zonePolicies;
         this.initialOptions.config = mergeConfig(this.initialOptions.config, normalizedPatch);
-        return this.initialize({
+        this.initialize({
           seed: normalizedPatch.seed ?? this.seed,
           config: this.initialOptions.config,
           data: this.initialOptions.data,
+          zonePolicies: resetZonePolicies,
         });
+        return this.snapshot();
       }
       const structuralKeys = ["citizenCount", "enterpriseCount", "citizenWeight", "startDate", "salaryDistribution", "sectorDistribution"];
       if (structuralKeys.some((key) => Object.prototype.hasOwnProperty.call(normalizedPatch, key))) {
         throw new Error(`Structural configuration (${structuralKeys.join(", ")}) requires reset:true`);
       }
+      const policyScopeZoneId = this.normalizePolicyScopeZoneId(
+        Object.prototype.hasOwnProperty.call(normalizedPatch, "policyScopeZoneId") ? normalizedPatch.policyScopeZoneId : this.config.policyScopeZoneId
+      );
+      normalizedPatch.policyScopeZoneId = policyScopeZoneId;
       this.config = mergeConfig(this.config, normalizedPatch);
       this.initialOptions.config = mergeConfig(this.initialOptions.config, normalizedPatch);
-      // The focus zone is an inspection selection, not a hidden policy scope.
-      // Levers remain citywide so reset and live configuration are identical.
-      const targetZones = this.zones;
+      const targetZones = policyScopeZoneId ? [this.zoneById.get(policyScopeZoneId)] : this.zones;
       if (normalizedPatch.housingCapacityMultiplier !== undefined) {
         for (const zone of targetZones) {
-          zone.housingCapacityAgents = Math.max(1, Math.ceil(zone.baseHousingCapacityAgents * this.config.housingCapacityMultiplier));
+          zone.housingCapacityMultiplier = Number(this.config.housingCapacityMultiplier);
+          zone.housingCapacityAgents = Math.max(1, Math.ceil(zone.baseHousingCapacityAgents * zone.housingCapacityMultiplier));
         }
       }
       if (normalizedPatch.businessCapacityMultiplier !== undefined) {
         for (const zone of targetZones) {
+          zone.businessCapacityMultiplier = Number(this.config.businessCapacityMultiplier);
           zone.enterprisePlaceCapacity = Math.max(
             zone.enterpriseIds.size,
-            Math.round(zone.baseEnterprisePlaceCapacity * this.config.businessCapacityMultiplier)
+            Math.round(zone.baseEnterprisePlaceCapacity * zone.businessCapacityMultiplier)
           );
         }
       }
       if (normalizedPatch.placeQuality !== undefined) {
-        this.applyPlaceQualityPolicy();
+        this.applyPlaceQualityPolicy(targetZones, this.config.placeQuality);
       }
+      if (explicitZonePolicies) this.applyExplicitZonePolicies(explicitZonePolicies);
+      this.initialOptions.zonePolicies = this.serializeZonePolicies();
       if (normalizedPatch.endogenousEnterpriseDynamics !== undefined) this.updateEnterpriseEconomics(true);
       this.lastSnapshotCache = null;
       return this.snapshot();
@@ -623,6 +646,52 @@
         replacements: 0,
         firmMoves: 0,
         firmRestarts: 0,
+      };
+    }
+
+    eventCounterDelta(current, previous) {
+      const delta = this.emptyEventCounters();
+      for (const key of Object.keys(delta)) delta[key] = Math.max(0, Number(current[key] || 0) - Number(previous[key] || 0));
+      return delta;
+    }
+
+    serializeEventDeltas(rawCounters) {
+      const counters = { ...this.emptyEventCounters(), ...rawCounters };
+      const representedKeys = ["residentialMoves", "jobChanges", "hires", "fires", "carAcquisitions", "carDisposals", "replacements"];
+      const output = { ...counters };
+      for (const key of representedKeys) output[`${key}Represented`] = counters[key] * this.config.citizenWeight;
+      return output;
+    }
+
+    dailyObservation(previousEventTotals) {
+      const metrics = this.computeMetrics();
+      const isWorkday = this.config.workdays.includes(this.clock.weekday);
+      const networkAssignmentDate = this.lastWorkdayAssignmentDate;
+      const networkAssignmentStatus = !networkAssignmentDate
+        ? "not-assigned"
+        : networkAssignmentDate === this.clock.date
+          ? "current"
+          : "retained-last-workday";
+      return {
+        clock: { ...this.clock },
+        date: this.clock.date,
+        day: this.day,
+        isWorkday,
+        networkAssignmentDate,
+        networkAssignmentStatus,
+        networkAssignmentIsStale: networkAssignmentStatus === "retained-last-workday",
+        city: metrics.city,
+        zonePolicies: this.serializeZonePolicies(),
+        zoneSeries: metrics.zones.map((zone) => ({
+          id: zone.id,
+          satisfaction: zone.stateShares.Happy,
+          averageRoundTripMinutes: zone.averageRoundTripMinutes,
+          housingOccupancyRate: zone.housingOccupancyRate,
+          jobs: zone.jobs,
+          population: zone.population,
+        })),
+        events: this.serializeEventDeltas(this.eventCounterDelta(this.eventsTotal, previousEventTotals)),
+        monthToDateEvents: this.serializeEventDeltas(this.eventCounterDelta(this.eventsTotal, this.lastHistoryEventTotals)),
       };
     }
 
@@ -698,9 +767,12 @@
           residentialRentAed,
           businessRentAed: Math.max(0, Number(source.businessRentAed) || 0),
           baseHousingCapacityAgents,
-          housingCapacityAgents: Math.max(1, Math.ceil(baseHousingCapacityAgents * this.config.housingCapacityMultiplier)),
+          housingCapacityMultiplier: 1,
+          housingCapacityAgents: baseHousingCapacityAgents,
           baseEnterprisePlaceCapacity,
-          enterprisePlaceCapacity: Math.max(1, Math.round(baseEnterprisePlaceCapacity * this.config.businessCapacityMultiplier)),
+          businessCapacityMultiplier: 1,
+          enterprisePlaceCapacity: baseEnterprisePlaceCapacity,
+          placeQualityPolicy: 0.82,
           carOwnershipRate: clamp(Number(source.carOwnershipRate ?? this.config.initialCarOwnership), 0, 1),
           averageMonthlySalaryAed: Math.max(0, Number(source.averageMonthlySalaryAed) || 0),
           jobsBaselineRepresented: Math.max(0, Number(source.jobs2024) || 0),
@@ -712,10 +784,78 @@
       });
     }
 
-    applyPlaceQualityPolicy() {
-      const change = Number(this.config.placeQuality) - 0.82;
+    normalizePolicyScopeZoneId(scopeZoneId) {
+      if (scopeZoneId == null || scopeZoneId === "") return null;
+      const normalized = String(scopeZoneId);
+      if (!this.zoneById.has(normalized)) throw new Error(`Unknown policy scope zone: ${normalized}`);
+      return normalized;
+    }
+
+    initializeZoneLandUsePolicies() {
+      const policyScopeZoneId = this.normalizePolicyScopeZoneId(this.config.policyScopeZoneId);
+      this.config.policyScopeZoneId = policyScopeZoneId;
+      const targetZones = policyScopeZoneId ? [this.zoneById.get(policyScopeZoneId)] : this.zones;
+      const housingMultiplier = Number(this.config.housingCapacityMultiplier);
+      const businessMultiplier = Number(this.config.businessCapacityMultiplier);
+      for (const zone of targetZones) {
+        zone.housingCapacityMultiplier = housingMultiplier;
+        zone.housingCapacityAgents = Math.max(1, Math.ceil(zone.baseHousingCapacityAgents * housingMultiplier));
+        zone.businessCapacityMultiplier = businessMultiplier;
+        zone.enterprisePlaceCapacity = Math.max(1, Math.round(zone.baseEnterprisePlaceCapacity * businessMultiplier));
+      }
+      this.applyPlaceQualityPolicy(targetZones, this.config.placeQuality);
+    }
+
+    applyPlaceQualityPolicy(targetZones = this.zones, policyValue = this.config.placeQuality) {
+      const normalizedPolicyValue = Number(policyValue);
+      const change = normalizedPolicyValue - 0.82;
       if (!Number.isFinite(change)) return;
-      for (const zone of this.zones) zone.quality = clamp(zone.baselineQuality + change, 0, 1);
+      for (const zone of targetZones) {
+        zone.placeQualityPolicy = normalizedPolicyValue;
+        zone.quality = clamp(zone.baselineQuality + change, 0, 1);
+      }
+    }
+
+    serializeZonePolicies() {
+      return this.zones.map((zone) => ({
+        id: zone.id,
+        housingCapacityMultiplier: zone.housingCapacityMultiplier,
+        businessCapacityMultiplier: zone.businessCapacityMultiplier,
+        placeQuality: zone.placeQualityPolicy,
+      }));
+    }
+
+    applyExplicitZonePolicies(entries) {
+      const seen = new Set();
+      for (const entry of entries) {
+        if (!isPlainObject(entry)) throw new Error("Each zone policy must be an object");
+        const zoneId = String(entry.id ?? entry.zoneId ?? "");
+        if (!zoneId || seen.has(zoneId)) throw new Error(`Invalid or duplicate zone policy: ${zoneId || "(missing id)"}`);
+        const zone = this.zoneById.get(zoneId);
+        if (!zone) throw new Error(`Unknown zone policy target: ${zoneId}`);
+        const housingCapacityMultiplier = Number(entry.housingCapacityMultiplier);
+        const businessCapacityMultiplier = Number(entry.businessCapacityMultiplier);
+        const placeQuality = Number(entry.placeQuality);
+        if (!Number.isFinite(housingCapacityMultiplier) || housingCapacityMultiplier <= 0) {
+          throw new Error(`Invalid housing capacity multiplier for ${zoneId}`);
+        }
+        if (!Number.isFinite(businessCapacityMultiplier) || businessCapacityMultiplier <= 0) {
+          throw new Error(`Invalid business capacity multiplier for ${zoneId}`);
+        }
+        if (!Number.isFinite(placeQuality) || placeQuality < 0 || placeQuality > 1) {
+          throw new Error(`Invalid place quality for ${zoneId}`);
+        }
+        seen.add(zoneId);
+        zone.housingCapacityMultiplier = housingCapacityMultiplier;
+        zone.housingCapacityAgents = Math.max(1, Math.ceil(zone.baseHousingCapacityAgents * housingCapacityMultiplier));
+        zone.businessCapacityMultiplier = businessCapacityMultiplier;
+        zone.enterprisePlaceCapacity = Math.max(
+          1,
+          zone.enterpriseIds.size,
+          Math.round(zone.baseEnterprisePlaceCapacity * businessCapacityMultiplier)
+        );
+        this.applyPlaceQualityPolicy([zone], placeQuality);
+      }
     }
 
     createLinks(linkDefinitions, transitData) {
@@ -1125,6 +1265,35 @@
       return Math.max(0, Number(this.config.localPtCommuteMin) || 0) * (28 / Math.max(1, Number(this.config.ptAverageSpeedKmh) || 1));
     }
 
+    ptOneWayFareAed(oneWayDistanceKm) {
+      const distanceKm = Number(oneWayDistanceKm);
+      if (!Number.isFinite(distanceKm) || distanceKm < 0) return Infinity;
+      const baseFareAed = Math.max(0, Number(this.config.ptFareOneWayAed) || 0);
+      const distanceFareAed = Math.max(0, Number(this.config.ptFarePerPassengerKmAed) || 0);
+      const calculatedFareAed = baseFareAed + distanceKm * distanceFareAed;
+      const maximumFareAed = Number(this.config.ptFareMaximumOneWayAed);
+      return Number.isFinite(maximumFareAed) && maximumFareAed >= 0 ? Math.min(calculatedFareAed, maximumFareAed) : calculatedFareAed;
+    }
+
+    ptRoundTripFareAed(oneWayDistanceKm) {
+      const oneWayFareAed = this.ptOneWayFareAed(oneWayDistanceKm);
+      return Number.isFinite(oneWayFareAed) ? oneWayFareAed * 2 : Infinity;
+    }
+
+    transitFareEvidence() {
+      const localRoundTripDistanceKm = Math.max(0, Number(this.config.localPtDistanceKm) || 0);
+      return {
+        currency: "AED",
+        basis: "per-direction",
+        formula: "min(maximum fare, base fare + passenger-km rate × one-way distance)",
+        baseFarePerDirectionAed: round(Math.max(0, Number(this.config.ptFareOneWayAed) || 0), 2),
+        farePerPassengerKmAed: round(Math.max(0, Number(this.config.ptFarePerPassengerKmAed) || 0), 4),
+        maximumFarePerDirectionAed: round(Math.max(0, Number(this.config.ptFareMaximumOneWayAed) || 0), 2),
+        localRoundTripDistanceKm: round(localRoundTripDistanceKm, 2),
+        localRoundTripFareAed: round(this.ptRoundTripFareAed(localRoundTripDistanceKm / 2), 2),
+      };
+    }
+
     resetDailyNetwork() {
       for (const link of this.links) {
         link.loadABVehicles = 0;
@@ -1165,7 +1334,16 @@
       } else if (this.rng.next() < walkProbability) {
         this.applyCommute(citizen, "walk", null, this.config.localWalkCommuteMin, this.config.localWalkDistanceKm, 0, false);
       } else {
-        this.applyCommute(citizen, "pt", null, this.localPtRoundTripMinutes(), this.config.localPtDistanceKm, this.config.ptFareOneWayAed * 2, false);
+        const localRoundTripDistanceKm = Math.max(0, Number(this.config.localPtDistanceKm) || 0);
+        this.applyCommute(
+          citizen,
+          "pt",
+          null,
+          this.localPtRoundTripMinutes(),
+          localRoundTripDistanceKm,
+          this.ptRoundTripFareAed(localRoundTripDistanceKm / 2),
+          false
+        );
       }
     }
 
@@ -1203,7 +1381,7 @@
         const ptWaitMinutes = ptPath ? this.ptPathRoundTripWaitMinutes(ptPath) : Infinity;
         const ptMinutes = ptPath ? ptInVehicleMinutes + ptWaitMinutes : Infinity;
         const carCost = carPath ? carDistance * 2 * this.config.carFuelAndRunningCostAedPerKm + this.config.carFixedDailyCostAed : Infinity;
-        const ptCost = ptPath ? this.config.ptFareOneWayAed * 2 : Infinity;
+        const ptCost = ptPath ? this.ptRoundTripFareAed(ptDistance) : Infinity;
         const carUtility =
           this.config.carAlternativeConstant +
           this.config.modeCostCoefficient * (carCost / this.config.costScaleAed) +
@@ -1455,7 +1633,7 @@
             roundTripMinutes: this.config.localCarCommuteMin,
           });
         }
-        const ptCash = this.config.ptFareOneWayAed * 2;
+        const ptCash = this.ptRoundTripFareAed(Math.max(0, Number(this.config.localPtDistanceKm) || 0) / 2);
         options.push({
           cashAed: ptCash,
           generalizedAed: ptCash + (this.localPtRoundTripMinutes() / 60) * valueOfTime,
@@ -1478,7 +1656,7 @@
           const minutes =
             sumBy(ptPath.steps, (step) => this.linkTravelTime(this.links[step.linkIndex], step.direction, "pt")) * 2 +
             this.ptPathRoundTripWaitMinutes(ptPath);
-          const cashAed = this.config.ptFareOneWayAed * 2;
+          const cashAed = this.ptRoundTripFareAed(ptPath.distanceKm);
           options.push({ cashAed, generalizedAed: cashAed + (minutes / 60) * valueOfTime, roundTripMinutes: minutes });
         }
         const walkDistanceKm = Math.min(carPath?.distanceKm ?? Infinity, ptPath?.distanceKm ?? Infinity) * 2;
@@ -1609,11 +1787,13 @@
       let carMinutes;
       let carDistanceKm;
       let ptMinutes;
+      let ptOneWayDistanceKm;
       let walkMinutes = Infinity;
       if (home.id === work.id) {
         carMinutes = this.config.localCarCommuteMin;
         carDistanceKm = this.config.localCarDistanceKm;
         ptMinutes = this.localPtRoundTripMinutes();
+        ptOneWayDistanceKm = Math.max(0, Number(this.config.localPtDistanceKm) || 0) / 2;
         walkMinutes = this.config.localWalkCommuteMin;
       } else {
         const carPath = this.lastCarPathMatrix?.[home.index]?.[work.index];
@@ -1625,6 +1805,7 @@
           ? sumBy(ptPath.steps, (step) => this.linkTravelTime(this.links[step.linkIndex], step.direction, "pt")) * 2 +
             this.ptPathRoundTripWaitMinutes(ptPath)
           : Infinity;
+        ptOneWayDistanceKm = ptPath?.distanceKm ?? Infinity;
         const walkDistanceKm = Math.min(carPath.distanceKm, ptPath?.distanceKm ?? Infinity) * 2;
         if (walkDistanceKm <= this.config.maxInterzoneWalkDistanceKm) {
           walkMinutes = (walkDistanceKm / Math.max(0.1, this.config.walkSpeedKmh)) * 60;
@@ -1632,7 +1813,7 @@
       }
 
       const carCashCostAed = carDistanceKm * this.config.carFuelAndRunningCostAedPerKm + this.config.carFixedDailyCostAed;
-      const ptCashCostAed = this.config.ptFareOneWayAed * 2;
+      const ptCashCostAed = this.ptRoundTripFareAed(ptOneWayDistanceKm);
       const carGeneralizedCostAed = Math.max(0, carCashCostAed + (carMinutes / 60) * valueOfTime - convenienceBenefit);
       const ptGeneralizedCostAed = ptCashCostAed + (ptMinutes / 60) * valueOfTime;
       const walkGeneralizedCostAed = (walkMinutes / 60) * valueOfTime;
@@ -1985,7 +2166,7 @@
       }
     }
 
-    closeMonth() {
+    closeMonth(accountingClock = this.clock) {
       this.monthCounter += 1;
       for (const citizen of this.citizens) {
         citizen.monthlyTransportCostAed = round(citizen.currentMonthTransportCostAed, 2);
@@ -2001,7 +2182,7 @@
         citizen.currentMonthTransportCostAed = 0;
       }
       this.updateEnterpriseSalaryBills();
-      this.updateEnterpriseEconomics(true, true);
+      this.updateEnterpriseEconomics(true, true, accountingClock);
       this.recordMonthlyHistory(false);
     }
 
@@ -2125,9 +2306,9 @@
       }
     }
 
-    updateEnterpriseEconomics(rescheduleWorkingHazards = false, recordCompletedMonth = false) {
+    updateEnterpriseEconomics(rescheduleWorkingHazards = false, recordCompletedMonth = false, accountingClock = this.clock) {
       this.computeZoneLaborAccessScores();
-      const monthAngle = ((this.clock.month - 1) / 12) * Math.PI * 2;
+      const monthAngle = ((accountingClock.month - 1) / 12) * Math.PI * 2;
       for (const enterprise of this.enterprises) {
         const zone = this.zoneById.get(enterprise.zoneId);
         const shockInnovation = (this.rng.next() * 2 - 1) * this.config.enterpriseDemandShockAmplitude;
@@ -2204,7 +2385,7 @@
       this.clock = this.clockAt(this.day);
       const monthChanged = this.clock.month !== previousClock.month || this.clock.year !== previousClock.year;
       const yearChanged = this.clock.year !== previousClock.year;
-      if (monthChanged) this.closeMonth();
+      if (monthChanged) this.closeMonth(previousClock);
       if (yearChanged) this.closeYear();
       this.commuteCitizens();
       this.updateCitizenStates();
@@ -2212,10 +2393,21 @@
       this.lastSnapshotCache = null;
     }
 
-    step(days = 1) {
+    step(days = 1, options = {}) {
       const count = Math.max(0, Math.floor(Number(days) || 0));
-      for (let index = 0; index < count; index += 1) this.advanceOneDay();
-      return this.snapshot();
+      const normalizedOptions = isPlainObject(options) ? options : {};
+      const captureDaily = Boolean(normalizedOptions.captureDaily);
+      const { captureDaily: _captureDaily, snapshot: nestedSnapshotOptions, ...inlineSnapshotOptions } = normalizedOptions;
+      const snapshotOptions = isPlainObject(nestedSnapshotOptions) ? nestedSnapshotOptions : inlineSnapshotOptions;
+      const dailySeries = [];
+      for (let index = 0; index < count; index += 1) {
+        const previousEventTotals = { ...this.eventsTotal };
+        this.advanceOneDay();
+        if (captureDaily) dailySeries.push(this.dailyObservation(previousEventTotals));
+      }
+      const snapshot = this.snapshot(snapshotOptions);
+      if (captureDaily) snapshot.dailySeries = dailySeries;
+      return snapshot;
     }
 
     recordCitizenEvent(citizen, type, details) {
@@ -2326,6 +2518,10 @@
       let sameZoneWorkers = 0;
       let representedJobCapacity = 0;
       let representedVacancies = 0;
+      let activeEnterpriseCount = 0;
+      let lossMakingEnterpriseCount = 0;
+      let enterpriseRevenueTotal = 0;
+      let enterpriseCostTotal = 0;
       const completedModes = new Set(["car", "pt", "walk"]);
       for (const citizen of this.citizens) {
         const zone = this.zoneById.get(citizen.homeZoneId);
@@ -2375,6 +2571,13 @@
         accumulator.vacancies += vacancies;
         representedJobCapacity += activeCapacity;
         representedVacancies += vacancies;
+        const isActiveEnterprise = enterprise.employeeIds.size > 0 && enterprise.monthlyRevenueAed > 0;
+        if (isActiveEnterprise) {
+          activeEnterpriseCount += 1;
+          enterpriseRevenueTotal += enterprise.monthlyRevenueAed;
+          enterpriseCostTotal += enterprise.operatingCostAed;
+          if (enterprise.operatingMargin < 0) lossMakingEnterpriseCount += 1;
+        }
       }
       const zones = zoneAccumulators.map((item) => {
         const zone = this.zoneById.get(item.id);
@@ -2393,6 +2596,8 @@
           id: zone.id,
           name: zone.name,
           quality: zone.quality,
+          appliedPlaceQuality: zone.quality,
+          placeQualityPolicy: zone.placeQualityPolicy,
           residentialRentAed: zone.residentialRentAed,
           housingRentAed: zone.residentialRentAed,
           businessRentAedPerRepresentedWorker: zone.businessRentAed,
@@ -2401,12 +2606,16 @@
           carOwnershipRate: round((item.carOwners / population) * 100, 2),
           housingCapacityRepresented,
           housingCapacity: housingCapacityRepresented,
+          appliedHousingCapacityMultiplier: zone.housingCapacityMultiplier,
+          effectiveHousingCapacityMultiplier: round(zone.housingCapacityAgents / Math.max(zone.baseHousingCapacityAgents, 1), 4),
           housingOccupancyRatio: round(housingOccupancyRatio, 4),
           housingOccupancyRate: round(housingOccupancyRatio * 100, 2),
           housingOvercapacityRepresented,
           housingConstraintMode: this.config.housingCapacityIsSoft ? "soft-overcrowding" : "hard-capacity",
           enterprises: zone.enterpriseIds.size,
           enterprisePlaceCapacity: zone.enterprisePlaceCapacity,
+          appliedBusinessCapacityMultiplier: zone.businessCapacityMultiplier,
+          effectiveBusinessCapacityMultiplier: round(zone.enterprisePlaceCapacity / Math.max(zone.baseEnterprisePlaceCapacity, 1), 4),
           representedEmployed: item.employed,
           jobs: item.locatedJobs,
           representedJobCapacity: item.jobCapacity,
@@ -2494,6 +2703,12 @@
         citizens: this.citizens.length,
         citizenWeight: this.config.citizenWeight,
         enterprises: this.enterprises.length,
+        activeEnterpriseSharePercent: round((activeEnterpriseCount / Math.max(this.enterprises.length, 1)) * 100, 2),
+        lossMakingEnterpriseSharePercent: round((lossMakingEnterpriseCount / Math.max(activeEnterpriseCount, 1)) * 100, 2),
+        enterprisePortfolioOperatingMarginPercent: round(
+          enterpriseRevenueTotal > 0 ? ((enterpriseRevenueTotal - enterpriseCostTotal) / enterpriseRevenueTotal) * 100 : 0,
+          2
+        ),
         stateCounts: cityState,
         stateShares,
         states: {
@@ -2776,6 +2991,7 @@
         schemaVersion: SCHEMA_VERSION,
         calibrationLabel: this.config.calibrationLabel,
         housingConstraintMode: this.config.housingCapacityIsSoft ? "soft-overcrowding" : "hard-capacity",
+        transitFare: this.transitFareEvidence(),
         seed: this.seed,
         clock: { ...this.clock, elapsedMonths: this.monthCounter, elapsedYears: this.yearCounter },
         city: metrics.city,
@@ -2920,8 +3136,11 @@
         }
         if (type === "step") {
           runToken += 1;
-          engine.step(payload.days ?? 1);
-          reply("snapshot", requestId, engine.snapshot(payload.snapshot));
+          const snapshot = engine.step(payload.days ?? 1, {
+            captureDaily: Boolean(payload.captureDaily),
+            snapshot: payload.snapshot,
+          });
+          reply("snapshot", requestId, snapshot);
           return;
         }
         if (type === "inspect") {
