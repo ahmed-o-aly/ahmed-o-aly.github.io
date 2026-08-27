@@ -75,6 +75,11 @@
   <script defer src="{{ '/assets/js/udes-simulation.js' | relative_url | bust_file_cache }}" type="text/javascript"></script>
 {% endif %}
 
+{% if page.udes_v2 %}
+  <!-- Abu Dhabi Urban Dynamics Lab v2 -->
+  <script defer src="{{ '/assets/js/udes-v2-app.js' | relative_url | bust_file_cache }}" type="text/javascript"></script>
+{% endif %}
+
 {% if page.chart and page.chart.chartjs %}
   <!-- Chart.js -->
   <script

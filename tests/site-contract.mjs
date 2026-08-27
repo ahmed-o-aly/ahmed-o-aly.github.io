@@ -11,6 +11,7 @@ const focusedContracts = [
   "./legacy-contract.mjs",
   "./garden-enhancement-contract.mjs",
   "./udes-contract.mjs",
+  "./udes-v2-contract.mjs",
 ];
 
 const projectFile = (path) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
@@ -20,15 +21,17 @@ const axeWorkflow = projectFile(".github/workflows/axe.yml");
 
 const formatTargets = [
   "tests/**/*.mjs",
-  "assets/js/{garden,udes-simulation}.js",
+  "assets/js/{garden,udes-simulation,udes-v2-app,udes-v2-worker}.js",
   "assets/data/udes/abu-dhabi-corridors.json",
+  "assets/data/udes-v2/*.{json,geojson,md}",
+  "scripts/build-udes-v2-data.mjs",
   "assets/css/garden.scss",
   "_sass/garden/**/*.scss",
   "_includes/garden-*.liquid",
   "_includes/scripts.liquid",
-  "_layouts/{archive,bib,book-review,cv,default,garden,home,page,post,simulation}.liquid",
+  "_layouts/{archive,bib,book-review,cv,default,garden,home,page,post,simulation,simulation-v2}.liquid",
   "_pages/{404,about,blog,books,home,projects,publications,repositories}.md",
-  "_projects/abu-dhabi-urban-dynamics.md",
+  "_projects/{abu-dhabi-urban-dynamics,abu-dhabi-urban-dynamics-v2}.md",
   "_includes/cv/{nested_list,time_table}.liquid",
   "package.json",
   ".github/workflows/{axe,deploy}.yml",
@@ -66,6 +69,7 @@ const expectedAxePaths = [
   "projects/",
   "projects/metahub-ai-xr-lab/",
   "projects/abu-dhabi-urban-dynamics/",
+  "projects/abu-dhabi-urban-dynamics-v2/",
   "blog/",
   "blog/2026/what-i-am-building-this-site-for/",
   "books/",

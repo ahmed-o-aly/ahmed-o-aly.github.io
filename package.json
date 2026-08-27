@@ -1,7 +1,8 @@
 {
   "scripts": {
-    "format:check": "prettier --check \"tests/**/*.mjs\" \"assets/js/{garden,udes-simulation}.js\" \"assets/data/udes/abu-dhabi-corridors.json\" \"assets/css/garden.scss\" \"_sass/garden/**/*.scss\" \"_includes/garden-*.liquid\" \"_includes/scripts.liquid\" \"_layouts/{archive,bib,book-review,cv,default,garden,home,page,post,simulation}.liquid\" \"_pages/{404,about,blog,books,home,projects,publications,repositories}.md\" \"_projects/abu-dhabi-urban-dynamics.md\" \"_includes/cv/{nested_list,time_table}.liquid\" \"package.json\" \".github/workflows/{axe,deploy}.yml\"",
-    "test:site": "node tests/site-contract.mjs"
+    "format:check": "prettier --check \"tests/**/*.mjs\" \"assets/js/{garden,udes-simulation,udes-v2-app,udes-v2-worker}.js\" \"assets/data/udes/abu-dhabi-corridors.json\" \"assets/data/udes-v2/*.{json,geojson,md}\" \"scripts/build-udes-v2-data.mjs\" \"assets/css/garden.scss\" \"_sass/garden/**/*.scss\" \"_includes/garden-*.liquid\" \"_includes/scripts.liquid\" \"_layouts/{archive,bib,book-review,cv,default,garden,home,page,post,simulation,simulation-v2}.liquid\" \"_pages/{404,about,blog,books,home,projects,publications,repositories}.md\" \"_projects/{abu-dhabi-urban-dynamics,abu-dhabi-urban-dynamics-v2}.md\" \"_includes/cv/{nested_list,time_table}.liquid\" \"package.json\" \".github/workflows/{axe,deploy}.yml\"",
+    "test:site": "node tests/site-contract.mjs",
+    "test:udes-v2": "node tests/udes-v2-engine.mjs"
   },
   "devDependencies": {
     "@shopify/prettier-plugin-liquid": "1.4.0",
