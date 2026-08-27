@@ -1,0 +1,23 @@
+---
+layout: garden
+---
+<main id="main-content" class="garden-main udes-main">
+  <header class="udes-hero garden-container">
+    <a class="udes-hero__back" href="{{ '/projects/' | relative_url }}">Projects <span aria-hidden="true">/</span> Simulation lab</a>
+    <div class="udes-hero__heading">
+      <div>
+        <p class="udes-eyebrow">{{ page.eyebrow | default: 'Interactive model' }}</p>
+        <h1>{{ page.title }}</h1>
+      </div>
+      <p>{{ page.description }}</p>
+    </div>
+    <ul class="udes-hero__facts" aria-label="Model summary">
+      <li>Eight emirate-wide study zones</li>
+      <li>Eleven OSM-derived road corridors</li>
+      <li>Ten-year policy horizon</li>
+      <li>Educational scenario, not a forecast</li>
+    </ul>
+  </header>
+
+  {{ content }}
+</main>

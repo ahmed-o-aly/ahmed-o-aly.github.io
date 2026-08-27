@@ -46,6 +46,9 @@ proof:
     detail: Diagrams that make stakeholder choices, delayed feedback, and trade-offs easier to discuss.
   - label: Facility routines
     detail: Operating support for the department environment where simulation and learning sessions happen.
+artifacts:
+  - label: Launch the Abu Dhabi Urban Dynamics Lab
+    url: /projects/abu-dhabi-urban-dynamics/
 decisions:
   - Start with assumption visibility before model complexity.
   - Separate scenario logic from presentation so ideas can be challenged cleanly.

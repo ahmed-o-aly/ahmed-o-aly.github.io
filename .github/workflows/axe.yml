@@ -33,6 +33,7 @@ jobs:
           - ""
           - "projects/"
           - "projects/metahub-ai-xr-lab/"
+          - "projects/abu-dhabi-urban-dynamics/"
           - "blog/"
           - "blog/2026/what-i-am-building-this-site-for/"
           - "books/"

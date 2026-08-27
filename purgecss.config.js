@@ -21,8 +21,9 @@ module.exports = {
       /^case-/,
       /^book-/,
       /^quiet-/,
+      /^udes-/,
       /^text-link$/,
     ],
-    deep: [/^pagination$/],
+    deep: [/^pagination$/, /^udes-/],
   },
 };

@@ -70,6 +70,11 @@
   <script defer src="{{ '/assets/js/leaflet-setup.js' | relative_url | bust_file_cache }}" type="text/javascript"></script>
 {% endif %}
 
+{% if page.udes_simulation %}
+  <!-- Abu Dhabi Urban Dynamics Lab -->
+  <script defer src="{{ '/assets/js/udes-simulation.js' | relative_url | bust_file_cache }}" type="text/javascript"></script>
+{% endif %}
+
 {% if page.chart and page.chart.chartjs %}
   <!-- Chart.js -->
   <script
