@@ -1,4 +1,10 @@
 {% assign project = include.project %}
 {% assign label = project.visual.label | default: project.category | prepend: 'Projects &middot; ' %}
 {% assign media = project.image %}
-{% include garden-card.liquid kind='project' size=include.size url=project.url label=label title=project.title summary=project.description media=media alt=project.image_alt fit=project.image_fit %}
+{% assign card_size = include.size | default: 'standard' %}
+{% if card_size == 'wide' %}
+  {% assign media_sizes = '(min-width: 1280px) 790px, (min-width: 1024px) 66vw, (min-width: 640px) 50vw, 100vw' %}
+{% else %}
+  {% assign media_sizes = '(min-width: 1280px) 390px, (min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw' %}
+{% endif %}
+{% include garden-card.liquid kind='project' size=include.size url=project.url label=label title=project.title summary=project.description media=media alt=project.image_alt fit=project.image_fit width=project.image_width height=project.image_height loading=include.loading fetchpriority=include.fetchpriority sizes=media_sizes media_aspect=project.image_aspect %}

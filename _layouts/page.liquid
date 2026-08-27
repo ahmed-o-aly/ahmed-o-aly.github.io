@@ -18,6 +18,33 @@ layout: default
         <dd>{{ page.status }}</dd>
       </div>
     </dl>
+    {% if page.gallery %}
+      <section class="garden-case__gallery" aria-labelledby="project-gallery-title">
+        <div class="garden-case__gallery-heading">
+          <span>Project views</span>
+          <h2 id="project-gallery-title">Inside the experience</h2>
+        </div>
+        <div class="garden-case__gallery-grid">
+          {% for item in page.gallery %}
+            {% if forloop.first %}
+              {% assign gallery_sizes = '(min-width: 1200px) 1120px, (min-width: 800px) calc(100vw - 80px), 100vw' %}
+              {% assign gallery_loading = 'eager' %}
+              {% assign gallery_fetchpriority = 'high' %}
+            {% else %}
+              {% assign gallery_sizes = '(min-width: 1200px) 552px, (min-width: 800px) calc(50vw - 48px), 100vw' %}
+              {% assign gallery_loading = 'lazy' %}
+              {% assign gallery_fetchpriority = 'auto' %}
+            {% endif %}
+            <figure>
+              {% include garden-media.liquid src=item.image alt=item.alt fit=item.fit width=item.width height=item.height loading=gallery_loading fetchpriority=gallery_fetchpriority sizes=gallery_sizes zoom=item.zoom %}
+              {% if item.caption %}
+                <figcaption>{{ item.caption }}</figcaption>
+              {% endif %}
+            </figure>
+          {% endfor %}
+        </div>
+      </section>
+    {% endif %}
     <section id="problem">
       <h2>Problem</h2>
       <p>{{ page.problem }}</p>

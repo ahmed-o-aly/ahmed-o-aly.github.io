@@ -163,6 +163,23 @@ assertContains(
   /unless media_fetchpriority == 'high' or media_fetchpriority == 'low'[\s\S]*assign media_fetchpriority = 'auto'/,
   "shared media accepts only safe fetch-priority overrides"
 );
+assertContains(
+  mediaTemplate,
+  /unless media_url contains ':\/\/'[\s\S]*?if site\.imagemagick\.enabled[\s\S]*?<source/,
+  "shared media never generates local WebP candidates for external raster URLs"
+);
+assertContains(
+  mediaTemplate,
+  /if include\.width and include\.height[\s\S]*?width="\{\{ include\.width \}\}"[\s\S]*?height="\{\{ include\.height \}\}"/,
+  "shared media emits intrinsic dimensions only when both are supplied"
+);
+assert.doesNotMatch(
+  mediaTemplate,
+  /include\.width \| default: 1280|include\.height \| default: 720/,
+  "shared media never fabricates 16:9 dimensions"
+);
+const reviewCoverImage = review.match(/class="garden-book-review__cover"[\s\S]*?(<img\b[^>]*>)/)?.[1] || "";
+assert.doesNotMatch(reviewCoverImage, /\bwidth="1280"|\bheight="720"/, "portrait review cover has no fabricated 16:9 dimensions");
 
 assertContains(
   css,

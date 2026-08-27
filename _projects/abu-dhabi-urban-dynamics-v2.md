@@ -1,12 +1,20 @@
 ---
 layout: simulation-v2
-title: Abu Dhabi Urban Dynamics Lab · Analyst Preview
+title: Abu Dhabi Urban Dynamics Lab
 permalink: /projects/abu-dhabi-urban-dynamics-v2/
 description: A desktop agent-based planning console for exploring housing, enterprise, and mobility scenarios across Greater Abu Dhabi City.
-eyebrow: Calibrated agent model
-importance: 99
+eyebrow: Agent-based planning lab
+importance: 0
 category: simulation
-preview: true
+preview: false
+image: /assets/img/projects/urban-dynamics-console.png
+image_alt: Abu Dhabi Urban Dynamics analyst console with real district geography, agent indicators, and scenario charts
+image_fit: cover
+image_width: 1600
+image_height: 900
+image_aspect: widescreen
+card_size: wide
+og_image: https://ahmed-o-aly.github.io/assets/img/projects/urban-dynamics-console.png
 map: true
 udes_v2: true
 model_url: /assets/data/udes-v2/baseline.json
@@ -17,7 +25,7 @@ visual:
   key: urban-dynamics-v2
   icon: fa-solid fa-chart-line
   label: analyst console
-  headline: Abu Dhabi Urban Dynamics Lab v2
+  headline: Abu Dhabi Urban Dynamics Lab
   summary: A map-first analyst console for inspecting citizen, enterprise, housing, and transport dynamics across Greater Abu Dhabi City.
   chips:
     - simulation
@@ -45,11 +53,11 @@ visual:
         </button>
         <button type="button" data-udes-v2-scenario="transit" aria-pressed="false">
           <span>Transit first</span>
-          <small>Lower fares, faster buses</small>
+          <small>Lower fares, faster buses, +45% service</small>
         </button>
         <button type="button" data-udes-v2-scenario="housing" aria-pressed="false">
           <span>Connected housing</span>
-          <small>Capacity near jobs</small>
+          <small>More homes, lower rent pressure</small>
         </button>
         <button type="button" data-udes-v2-scenario="balanced" aria-pressed="false">
           <span>Balanced growth</span>
@@ -63,7 +71,7 @@ visual:
           <span>18 districts</span>
         </div>
         <label class="udes-v2-select-row" for="udes-v2-focus-zone">
-          <span>Focus zone</span>
+          <span>Inspect zone</span>
           <select id="udes-v2-focus-zone" data-udes-v2-focus-zone>
             <option value="city">Loading Greater Abu Dhabi City districts…</option>
           </select>
@@ -120,11 +128,11 @@ visual:
       <section class="udes-v2-control-section" aria-labelledby="udes-v2-land-title">
         <div class="udes-v2-section-heading">
           <h3 id="udes-v2-land-title">Land and economy</h3>
-          <span>Selected scope</span>
+          <span>Citywide levers</span>
         </div>
         <label class="udes-v2-form-row" for="udes-v2-housing">
           <span>
-            <span>Housing capacity</span>
+            <span>Housing stock</span>
             <output for="udes-v2-housing" data-udes-v2-output="housing">100%</output>
           </span>
           <input id="udes-v2-housing" type="range" min="70" max="160" step="5" value="100" data-udes-v2-lever="housing">
@@ -155,19 +163,19 @@ visual:
       <section class="udes-v2-control-section" aria-labelledby="udes-v2-agents-title">
         <div class="udes-v2-section-heading">
           <h3 id="udes-v2-agents-title">Agent rules</h3>
-          <span>Calibrated</span>
+          <span>Explicit assumptions</span>
         </div>
-        <p class="udes-v2-control-explainer">Citizens protect disposable income and commute time. Enterprises pursue a viable margin, sector demand, and labor access.</p>
+        <p class="udes-v2-control-explainer">Citizens protect their monthly financial position and commute time. Enterprises pursue a viable margin, sector demand, and labor access.</p>
         <details class="udes-v2-agent-method">
           <summary>Read the decision rules</summary>
           <dl>
             <div>
               <dt>Citizen objective</dt>
-              <dd>Keep monthly net income—salary less housing and transport—above the buffer while keeping the round trip below the acceptable limit.</dd>
+              <dd>Keep monthly net income—salary less housing and transport—above the buffer while keeping the round trip below the acceptable limit. Net income is distinct from saving: modeled essential consumption is deducted before any positive residual is added to the household's savings stock.</dd>
             </div>
             <div>
               <dt>Citizen response</dt>
-              <dd>Happy agents pursue higher-quality locations. Waiting and Extreme agents search for better work or move toward lower rent and shorter commutes; financially severe agents may give up a car.</dd>
+              <dd>Happy agents pursue higher-quality locations. Waiting and Extreme agents search for better work or move toward lower rent and shorter commutes; financially severe agents may give up a car. Carless agents consider ownership only when income, savings, and generalized commute cost pass explicit affordability and service gates.</dd>
             </div>
             <div>
               <dt>Enterprise objective</dt>
@@ -175,11 +183,23 @@ visual:
             </div>
             <div>
               <dt>Enterprise response</dt>
-              <dd>Working firms enter Grow or Lesser with economics-adjusted hazards, then change jobs and wages and may relocate for quality, rent, or labor access.</dd>
+              <dd>Working firms enter Grow or Lesser with economics-adjusted hazards, then change jobs and wages and may relocate for quality, rent, or labor access. A firm at minimum scale exits only after 12 consecutive months below a −20% margin; its agent slot re-enters after a 14-day setup period.</dd>
             </div>
             <div>
-              <dt>Fixed reference calibration</dt>
-              <dd>Severe net income: AED −500/month. Commute-only escalation: 45 days. Car disposal: net income below AED −3,000 or negative savings. Firm state clocks: 80-day Working hazards and 30-day action means.</dd>
+              <dt>Labor market</dt>
+              <dd>Employment is held near an explicit 80% reference target rather than allowing every vacant job to drive the model mechanically to 100% employment.</dd>
+            </div>
+            <div>
+              <dt>Housing and network capacity</dt>
+              <dd>Housing stock is a soft overcrowding constraint that feeds rent pressure. Road and transit overflow becomes congestion or crowding; it never turns a long inter-district commute into a forced walk.</dd>
+            </div>
+            <div>
+              <dt>Fixed reference assumptions</dt>
+              <dd>Severe net income: AED −500/month. Essential consumption: AED 2,500/month. Households save 25% of a positive residual after essentials and draw down the full negative residual. Commute-only escalation: 45 days. Car disposal: net income below AED −3,000 or negative savings. Car acquisition is a transparent Abu Dhabi calibration extension, not a rule taken from UDES. Firm state clocks: 80-day Working hazards and 30-day action means.</dd>
+            </div>
+            <div>
+              <dt>Validation boundary</dt>
+              <dd>Determinism, conservation, scenario direction, exact calendar horizons, capacity handling, and ten-year numerical stability are regression-tested. Synthetic behavioral inputs still require survey calibration before policy use.</dd>
             </div>
           </dl>
         </details>
@@ -216,10 +236,11 @@ visual:
       <div class="udes-v2-control-note">
         <span aria-hidden="true">i</span>
         <p>
-          Official geography is combined with derived and synthetic calibration values. Every field is classified in the model data.
+          Official geography is combined with derived and synthetic assumptions. Every field is classified in the model data.
           <a href="https://www.anylogic.com/upload/iblock/198/1985a2d61b26c2d23acd158ab6e5d68e.pdf" target="_blank" rel="noreferrer">UDES method</a>
           · <a href="https://census.scad.gov.ae/home/population?lang=en" target="_blank" rel="noreferrer">SCAD population</a>
           · <a href="https://arcgis.sdi.abudhabi.ae/agspublish/rest/services/OpenData/ADSDI_OpenData/MapServer/2" target="_blank" rel="noreferrer">AD-SDI geography</a>
+          · <a href="{{ '/assets/data/udes-v2/validation-report.json' | relative_url }}" target="_blank">Validation report</a>
         </p>
       </div>
     </div>
@@ -235,7 +256,7 @@ visual:
       <div class="udes-v2-map-layers" role="group" aria-label="Map metric">
         <button type="button" data-udes-v2-map-layer="network" aria-pressed="true">Network</button>
         <button type="button" data-udes-v2-map-layer="population" aria-pressed="false">Population</button>
-        <button type="button" data-udes-v2-map-layer="access" aria-pressed="false">Access</button>
+        <button type="button" data-udes-v2-map-layer="access" aria-pressed="false">Commute</button>
         <button type="button" data-udes-v2-map-layer="rent" aria-pressed="false">Rent</button>
       </div>
       <button class="udes-v2-text-button" type="button" data-udes-v2-action="fit-emirate">Fit city</button>
@@ -297,12 +318,12 @@ visual:
 
       <div class="udes-v2-map-readout" data-udes-v2-map-readout>
         <span data-udes-v2-map-status>Map controller not connected</span>
-        <span>Official districts · OSM-routed corridors</span>
+        <span>Model districts from official AD-SDI polygons · OSM-routed corridors</span>
       </div>
     </div>
 
     <p id="udes-v2-map-caption" class="udes-v2-sr-only">
-      Eighteen Greater Abu Dhabi districts are shown with official ADSDI geography, routed road corridors, and public-transport stops. Al Ain and Al Dhafra are outside the model boundary.
+      Eighteen model districts, grouped from official AD-SDI community polygons, are shown with routed road corridors and public-transport stops. Al Ain and Al Dhafra are outside the model boundary.
     </p>
 
   </section>
@@ -355,7 +376,7 @@ visual:
 
         <div class="udes-v2-provenance" data-udes-v2-provenance>
           <span>Field provenance</span>
-          <p><strong>Population</strong> mixed observed / synthetic · <strong>Geography</strong> observed · <strong>Jobs and rents</strong> synthetic calibration</p>
+          <p><strong>Population</strong> mixed observed / synthetic · <strong>Geography</strong> observed · <strong>Jobs and rents</strong> synthetic assumptions</p>
         </div>
       </section>
 
@@ -445,13 +466,13 @@ visual:
         <div class="udes-v2-chart-mount" data-udes-v2-chart="housing"><p class="udes-v2-chart-empty">Housing capacity, occupancy, and rent series mount here.</p></div>
       </section>
       <section id="udes-v2-chart-panel-business" class="udes-v2-chart-panel" role="tabpanel" aria-labelledby="udes-v2-chart-tab-business" data-udes-v2-chart-panel="business" hidden>
-        <div class="udes-v2-chart-mount" data-udes-v2-chart="business"><p class="udes-v2-chart-empty">Enterprise counts, jobs, and relocation series mount here.</p></div>
+        <div class="udes-v2-chart-mount" data-udes-v2-chart="business"><p class="udes-v2-chart-empty">Jobs, enterprise geography, vacancies, and labor-market events mount here.</p></div>
       </section>
       <section id="udes-v2-chart-panel-mobility" class="udes-v2-chart-panel" role="tabpanel" aria-labelledby="udes-v2-chart-tab-mobility" data-udes-v2-chart-panel="mobility" hidden>
-        <div class="udes-v2-chart-mount" data-udes-v2-chart="mobility"><p class="udes-v2-chart-empty">Mode share, commute, road-load, and emissions series mount here.</p></div>
+        <div class="udes-v2-chart-mount" data-udes-v2-chart="mobility"><p class="udes-v2-chart-empty">Mode choice, car ownership, commute burden, and road-load series mount here.</p></div>
       </section>
       <section id="udes-v2-chart-panel-distribution" class="udes-v2-chart-panel" role="tabpanel" aria-labelledby="udes-v2-chart-tab-distribution" data-udes-v2-chart-panel="distribution" hidden>
-        <div class="udes-v2-chart-mount" data-udes-v2-chart="distribution"><p class="udes-v2-chart-empty">Distribution plots for residents, firms, rent, and accessibility mount here.</p></div>
+        <div class="udes-v2-chart-mount" data-udes-v2-chart="distribution"><p class="udes-v2-chart-empty">Full weighted income, commute-time, and enterprise-size distributions mount here.</p></div>
       </section>
     </div>
 
@@ -459,5 +480,5 @@ visual:
 </div>
 
 <noscript>
-  <p class="udes-v2-noscript">JavaScript is required to run the agent model. The interface uses official Abu Dhabi district geography with clearly classified derived and synthetic calibration values.</p>
+  <p class="udes-v2-noscript">JavaScript is required to run the agent model. The interface uses official Abu Dhabi district geography with clearly classified derived and synthetic assumptions.</p>
 </noscript>

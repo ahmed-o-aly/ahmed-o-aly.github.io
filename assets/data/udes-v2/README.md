@@ -40,6 +40,20 @@ Mode-choice outputs are checked against a broad historical reference only: UN-Ha
 
 The reference engine also makes its behavioral adaptation explicit: same-zone commutes are distributed across car, transit, and walking; commute-only hardship spends 45 days in Waiting before it can become Extreme; and car disposal requires a severe financial signal rather than a long commute alone. Configuration switches retain the point-zone, immediate-guard, and automatic-disposal behavior for UDES-exact comparison.
 
+Housing capacity is modeled as a soft stock constraint. Occupancy above 100% is reported as overcrowding and increases rent pressure; it does not silently relocate residents to an arbitrary fallback district. Road and transit capacities are also soft assignment constraints: excess demand produces congestion or crowding and is reported as overflow, while inter-district travelers are never converted into implausible forced walkers. The reference labor market targets 80% employment, with a vacancy buffer for matching and enterprise turnover, instead of treating every vacancy as a reason to converge to 100% employment.
+
+Enterprise exit is conditional rather than random: a firm already at minimum scale must remain below a −20% operating margin for 12 monthly observations before it exits, relocates to the lowest-rent available district, and re-enters after a 14-day startup period.
+
+Car ownership can also change. Carless agents periodically evaluate a purchase using income and savings gates plus the generalized cost of car, transit, and walking for their current commute; financially severe owners can dispose of a car. This ownership process is a transparent Abu Dhabi calibration extension rather than a rule copied from the UDES paper. The output therefore reports both daily commute mode and resident car ownership, which are related but not interchangeable.
+
+Household finance distinguishes monthly net income from saving. Net income is salary less housing and modeled transport costs. The reference configuration then subtracts AED 2,500 of essential monthly consumption: households add 25% of any remaining positive residual to their modeled savings stock, while a negative residual is drawn down in full. These transparent behavioral assumptions are exposed in every city snapshot and require household-survey calibration before policy use.
+
+## Engine validation
+
+`validation-report.json` records reproducible full-scale checks using the real baseline, 7,291 weighted citizen agents, 600 enterprise agents, and seed `240124`. The companion script runs one-year reference and transit-first scenarios plus all four public policy packages over the exact ten-calendar-year horizon ending on 2034-01-01. Regression tests separately cover deterministic replay, reciprocal agent references, finite outputs, population conservation, dissatisfaction-episode reset, weekend network consistency, housing-policy order independence, final-load congestion and crowding, long-run scenario direction, zero forced or unserved inter-district trips, enterprise exit/re-entry, and long-run enterprise stability.
+
+These are software, structural, and plausibility checks—not empirical validation of a forecast. Current household travel, establishment, rent, income, and longitudinal relocation data are still required to estimate parameters and test predictive accuracy before policy use.
+
 ## Sources
 
 - [AD-SDI Community layer](https://arcgis.sdi.abudhabi.ae/agspublish/rest/services/OpenData/ADSDI_OpenData/MapServer/2)
@@ -55,7 +69,7 @@ The precise retrieval date, publisher, use, and classification for every source 
 
 ## Rebuild
 
-From the repository root with Node.js 18 or newer:
+From the repository root with Node.js 20.9 or newer:
 
 ```sh
 node scripts/build-udes-v2-data.mjs

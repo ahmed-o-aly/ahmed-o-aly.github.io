@@ -6,13 +6,16 @@
 {% endunless %}
 {% assign card_url = include.url %}
 {% unless card_url contains '://' %}{% assign card_url = card_url | relative_url %}{% endunless %}
-<article class="garden-card garden-card--{{ card_kind }} garden-card--{{ card_size }}" data-reveal>
+<article
+  class="garden-card garden-card--{{ card_kind }} garden-card--{{ card_size }}{% if include.media_aspect == 'widescreen' %} garden-card--media-widescreen{% endif %}"
+  data-reveal
+>
   <a class="garden-card__link" href="{{ card_url }}">
     <div class="garden-card__meta">
       <span>{{ include.label }}</span>
       <span aria-hidden="true">&#8599;</span>
     </div>
-    {% include garden-media.liquid src=include.media alt=include.alt fit=include.fit title=include.title %}
+    {% include garden-media.liquid src=include.media alt=include.alt fit=include.fit title=include.title width=include.width height=include.height loading=include.loading fetchpriority=include.fetchpriority sizes=include.sizes %}
     <div class="garden-card__copy">
       <{{ card_heading_tag }} class="garden-card__title">{{ include.title }}</{{ card_heading_tag }}>
       {% if include.summary %}

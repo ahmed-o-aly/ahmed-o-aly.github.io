@@ -172,7 +172,7 @@ const baselineData = {
 };
 const appReferenceConfig = {
   startDate: "2024-01-01",
-  calibrationLabel: "Greater Abu Dhabi City calibrated scenario baseline — not a forecast",
+  calibrationLabel: "Illustrative Greater Abu Dhabi City scenario baseline — not a forecast",
   endogenousEnterpriseDynamics: true,
   transitFareAed: 2,
   transitSpeedKmh: 28,
@@ -217,13 +217,13 @@ assert.deepEqual(
     averageRoundTripMinutes: baselineCity.averageRoundTripMinutes,
   },
   {
-    modeShares: { car: 55.85, pt: 32.64, walk: 11.51 },
-    stateShares: { Happy: 39.02, Waiting: 32.15, Extreme: 28.09, Recovery: 0.74 },
+    modeShares: { car: 60.68, pt: 29.31, walk: 10.02 },
+    stateShares: { Happy: 42.48, Waiting: 30.64, Extreme: 26.22, Recovery: 0.66 },
     forcedInterzoneWalkers: 0,
-    carDisposals: 455,
-    averageRoundTripMinutes: 50.79,
+    carDisposals: 399,
+    averageRoundTripMinutes: 49.65,
   },
-  "the seeded real-baseline 30-day calibration remains deterministic"
+  "the seeded real-baseline 30-day scenario remains deterministic"
 );
 
 const workerMessages = [];
@@ -244,6 +244,18 @@ await controller.handle({ type: "run", requestId: "run-1", payload: { days: 5, c
 assert.ok(workerMessages.some((message) => message.type === "progress" && message.requestId === "run-1"));
 assert.equal(workerMessages.at(-1).type, "snapshot");
 assert.equal(workerMessages.at(-1).payload.clock.day, 7);
+const interruptedRun = controller.handle({ type: "run", requestId: "run-cancelled", payload: { days: 60, chunkDays: 1 } });
+await new Promise((resolve) => setTimeout(resolve, 0));
+await controller.handle({ type: "step", requestId: "step-supersedes-run", payload: { days: 1 } });
+await interruptedRun;
+const cancelledRunReply = workerMessages.find((message) => message.type === "error" && message.requestId === "run-cancelled");
+assert.equal(cancelledRunReply?.payload?.code, "RUN_CANCELLED", "a superseded run receives a terminal cancellation reply");
+assert.equal(
+  workerMessages.filter((message) => message.requestId === "run-cancelled" && ["snapshot", "ready", "inspection", "error"].includes(message.type))
+    .length,
+  1,
+  "an interrupted run emits exactly one terminal reply"
+);
 
 const inspectedCitizenId = controller.getEngine().citizens[0].id;
 await controller.handle({

@@ -1,10 +1,14 @@
-{% assign items = include.collection | sort: 'importance' %}
+{% assign items = include.collection | where_exp: 'item', 'item.preview != true' | sort: 'importance' %}
 <nav class="garden-related" aria-label="{{ include.label | default: 'Related content' }}">
   <h2>{{ include.label | default: 'Related content' }}</h2>
   <div>
-    {% for item in items limit: 3 %}
+    {% assign related_count = 0 %}
+    {% for item in items %}
       {% unless item.url == include.current.url %}
-        <a href="{{ item.url | relative_url }}">{{ item.title }}</a>
+        {% if related_count < 3 %}
+          <a href="{{ item.url | relative_url }}">{{ item.title }}</a>
+          {% assign related_count = related_count | plus: 1 %}
+        {% endif %}
       {% endunless %}
     {% endfor %}
   </div>

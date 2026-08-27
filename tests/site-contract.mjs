@@ -11,6 +11,7 @@ const focusedContracts = [
   "./legacy-contract.mjs",
   "./garden-enhancement-contract.mjs",
   "./udes-contract.mjs",
+  "./udes-v2-history.mjs",
   "./udes-v2-contract.mjs",
 ];
 
@@ -20,19 +21,16 @@ const deployWorkflow = projectFile(".github/workflows/deploy.yml");
 const axeWorkflow = projectFile(".github/workflows/axe.yml");
 
 const formatTargets = [
-  "tests/**/*.mjs",
-  "assets/js/{garden,udes-simulation,udes-v2-app,udes-v2-worker}.js",
-  "assets/data/udes/abu-dhabi-corridors.json",
-  "assets/data/udes-v2/*.{json,geojson,md}",
-  "scripts/build-udes-v2-data.mjs",
-  "assets/css/garden.scss",
-  "_sass/garden/**/*.scss",
-  "_includes/garden-*.liquid",
-  "_includes/scripts.liquid",
-  "_layouts/{archive,bib,book-review,cv,default,garden,home,page,post,simulation,simulation-v2}.liquid",
-  "_pages/{404,about,blog,books,home,projects,publications,repositories}.md",
-  "_projects/{abu-dhabi-urban-dynamics,abu-dhabi-urban-dynamics-v2}.md",
-  "_includes/cv/{nested_list,time_table}.liquid",
+  "tests/{projects-contract,reading-contract,site-contract,udes-contract,udes-v2-contract,udes-v2-engine,udes-v2-history,udes-v2-scenarios}.mjs",
+  "assets/js/{udes-v2-app,udes-v2-worker}.js",
+  "assets/data/cnc-machine-inspector/portfolio-evidence.json",
+  "assets/data/udes-v2/README.md",
+  "scripts/{build-project-previews,validate-udes-v2-full}.mjs",
+  "_sass/garden/{_cards,_content,_simulation-v2}.scss",
+  "_includes/{garden-card,garden-media,garden-project-card,garden-related,head}.liquid",
+  "_layouts/page.liquid",
+  "_pages/projects.md",
+  "_projects/{abu-dhabi-urban-dynamics,abu-dhabi-urban-dynamics-v2,adsg-policy-simulations,cnc-machine-inspector}.md",
   "package.json",
   ".github/workflows/{axe,deploy}.yml",
 ];
@@ -52,6 +50,8 @@ function assertEventWatches(workflow, eventName, path, label) {
 
 assertEventWatches(deployWorkflow, "push", "tests/**", "deploy push watches test changes");
 assertEventWatches(deployWorkflow, "pull_request", "tests/**", "deploy pull requests watch test changes");
+assertEventWatches(deployWorkflow, "push", "scripts/**", "deploy push watches validation scripts");
+assertEventWatches(deployWorkflow, "pull_request", "scripts/**", "deploy pull requests watch validation scripts");
 assertEventWatches(axeWorkflow, "pull_request", "tests/**", "axe pull requests watch contract changes");
 assertEventWatches(axeWorkflow, "pull_request", "_bibliography/**", "axe pull requests watch bibliography changes");
 assertEventWatches(axeWorkflow, "pull_request", ".github/scripts/run-axe.mjs", "axe pull requests watch their accessibility runner");
@@ -60,14 +60,20 @@ assert.doesNotMatch(axeWorkflow, /^\s+inputs:\s*$/m, "axe manual dispatch has no
 assert.doesNotMatch(axeWorkflow, /^\s*URL:\s*/m, "axe has no unused global URL variable");
 assert.match(
   deployWorkflow,
-  /- name: Verify generated site\s+run: \|\s+test -f _site\/index\.html\s+node tests\/site-contract\.mjs/,
-  "deploy verifies the generated site through the aggregate contract"
+  /- name: Verify generated site\s+run: \|\s+test -f _site\/index\.html\s+node tests\/udes-v2-engine\.mjs\s+node tests\/udes-v2-scenarios\.mjs\s+node tests\/site-contract\.mjs/,
+  "deploy verifies the simulation and generated site contracts"
+);
+assert.match(
+  deployWorkflow,
+  /npm ci\s+npm run validate:udes-v2-full\s+npm run build:project-previews/,
+  "deploy regenerates full-scale model evidence before producing public previews"
 );
 
 const expectedAxePaths = [
   "",
   "projects/",
   "projects/metahub-ai-xr-lab/",
+  "projects/cnc-machine-inspector/",
   "projects/abu-dhabi-urban-dynamics/",
   "projects/abu-dhabi-urban-dynamics-v2/",
   "blog/",

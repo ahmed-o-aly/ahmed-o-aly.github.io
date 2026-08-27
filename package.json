@@ -1,11 +1,19 @@
 {
+  "name": "al-folio",
+  "engines": {
+    "node": ">=20.9.0"
+  },
   "scripts": {
-    "format:check": "prettier --check \"tests/**/*.mjs\" \"assets/js/{garden,udes-simulation,udes-v2-app,udes-v2-worker}.js\" \"assets/data/udes/abu-dhabi-corridors.json\" \"assets/data/udes-v2/*.{json,geojson,md}\" \"scripts/build-udes-v2-data.mjs\" \"assets/css/garden.scss\" \"_sass/garden/**/*.scss\" \"_includes/garden-*.liquid\" \"_includes/scripts.liquid\" \"_layouts/{archive,bib,book-review,cv,default,garden,home,page,post,simulation,simulation-v2}.liquid\" \"_pages/{404,about,blog,books,home,projects,publications,repositories}.md\" \"_projects/{abu-dhabi-urban-dynamics,abu-dhabi-urban-dynamics-v2}.md\" \"_includes/cv/{nested_list,time_table}.liquid\" \"package.json\" \".github/workflows/{axe,deploy}.yml\"",
+    "build:project-previews": "node scripts/build-project-previews.mjs",
+    "format:check": "prettier --check \"tests/{projects-contract,reading-contract,site-contract,udes-contract,udes-v2-contract,udes-v2-engine,udes-v2-history,udes-v2-scenarios}.mjs\" \"assets/js/{udes-v2-app,udes-v2-worker}.js\" \"assets/data/cnc-machine-inspector/portfolio-evidence.json\" \"assets/data/udes-v2/README.md\" \"scripts/{build-project-previews,validate-udes-v2-full}.mjs\" \"_sass/garden/{_cards,_content,_simulation-v2}.scss\" \"_includes/{garden-card,garden-media,garden-project-card,garden-related,head}.liquid\" \"_layouts/page.liquid\" \"_pages/projects.md\" \"_projects/{abu-dhabi-urban-dynamics,abu-dhabi-urban-dynamics-v2,adsg-policy-simulations,cnc-machine-inspector}.md\" \"package.json\" \".github/workflows/{axe,deploy}.yml\"",
     "test:site": "node tests/site-contract.mjs",
-    "test:udes-v2": "node tests/udes-v2-engine.mjs"
+    "test:udes-v2": "node tests/udes-v2-engine.mjs",
+    "test:udes-v2-scenarios": "node tests/udes-v2-scenarios.mjs",
+    "validate:udes-v2-full": "node scripts/validate-udes-v2-full.mjs"
   },
   "devDependencies": {
     "@shopify/prettier-plugin-liquid": "1.4.0",
-    "prettier": "3.1.1"
+    "prettier": "3.1.1",
+    "sharp": "0.35.4"
   }
 }

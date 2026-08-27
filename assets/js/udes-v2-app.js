@@ -1,10 +1,283 @@
 (() => {
+  const DAY_MS = 24 * 60 * 60 * 1000;
+  const HISTORY_NUMERIC_POLICY_FIELDS = Object.freeze([
+    "transitFareAed",
+    "transitSpeedKmh",
+    "ptCapacityMultiplier",
+    "roadCapacityMultiplier",
+    "carCostPerKmAed",
+    "housingCapacityMultiplier",
+    "businessCapacityMultiplier",
+    "rentPressureMultiplier",
+    "placeQuality",
+    "waitingNetIncomeAed",
+    "acceptableCommuteRoundTripMin",
+    "extremeCommuteRoundTripMin",
+    "enterpriseTargetMargin",
+    "targetEmploymentRate",
+  ]);
+  const PUBLIC_PRESETS = Object.freeze({
+    reference: Object.freeze({
+      transitFareAed: 2,
+      transitSpeedKmh: 28,
+      ptCapacityMultiplier: 1,
+      roadCapacityMultiplier: 1,
+      carCostPerKmAed: 0.35,
+      housingCapacityMultiplier: 1,
+      businessCapacityMultiplier: 1,
+      rentPressureMultiplier: 1,
+      placeQuality: 0.82,
+      waitingNetIncomeAed: 1500,
+      acceptableCommuteRoundTripMin: 60,
+      extremeCommuteRoundTripMin: 90,
+      enterpriseTargetMargin: 0.12,
+      targetEmploymentRate: 0.8,
+    }),
+    transit: Object.freeze({
+      transitFareAed: 1,
+      transitSpeedKmh: 36,
+      ptCapacityMultiplier: 1.45,
+      roadCapacityMultiplier: 1,
+      carCostPerKmAed: 0.45,
+      housingCapacityMultiplier: 1.05,
+      businessCapacityMultiplier: 1,
+      rentPressureMultiplier: 0.99,
+      placeQuality: 0.84,
+      waitingNetIncomeAed: 1500,
+      acceptableCommuteRoundTripMin: 60,
+      extremeCommuteRoundTripMin: 90,
+      enterpriseTargetMargin: 0.12,
+      targetEmploymentRate: 0.8,
+    }),
+    housing: Object.freeze({
+      transitFareAed: 2,
+      transitSpeedKmh: 31,
+      ptCapacityMultiplier: 1,
+      roadCapacityMultiplier: 1,
+      carCostPerKmAed: 0.35,
+      housingCapacityMultiplier: 1.3,
+      businessCapacityMultiplier: 1.08,
+      rentPressureMultiplier: 0.96,
+      placeQuality: 0.86,
+      waitingNetIncomeAed: 1500,
+      acceptableCommuteRoundTripMin: 60,
+      extremeCommuteRoundTripMin: 90,
+      enterpriseTargetMargin: 0.12,
+      targetEmploymentRate: 0.8,
+    }),
+    balanced: Object.freeze({
+      transitFareAed: 1.5,
+      transitSpeedKmh: 35,
+      ptCapacityMultiplier: 1.3,
+      roadCapacityMultiplier: 1.1,
+      carCostPerKmAed: 0.45,
+      housingCapacityMultiplier: 1.2,
+      businessCapacityMultiplier: 1.15,
+      rentPressureMultiplier: 0.97,
+      placeQuality: 0.9,
+      waitingNetIncomeAed: 1750,
+      acceptableCommuteRoundTripMin: 60,
+      extremeCommuteRoundTripMin: 90,
+      enterpriseTargetMargin: 0.12,
+      targetEmploymentRate: 0.8,
+    }),
+  });
+  const HISTORY_CSV_HEADERS = Object.freeze([
+    "date",
+    "scenario",
+    "population",
+    "satisfaction_share",
+    "mean_commute_minutes",
+    "car_share",
+    "car_ownership_share",
+    "transit_share",
+    "walk_share",
+    "road_load",
+    "mean_net_income_aed",
+    "mean_bank_balance_aed",
+    "transit_fare_aed",
+    "transit_speed_kmh",
+    "pt_capacity_multiplier",
+    "road_capacity_multiplier",
+    "car_cost_per_km_aed",
+    "housing_capacity_multiplier",
+    "business_capacity_multiplier",
+    "rent_pressure_multiplier",
+    "place_quality",
+    "citizen_income_buffer_aed",
+    "acceptable_round_trip_minutes",
+    "severe_round_trip_minutes",
+    "enterprise_target_margin",
+    "target_employment_rate",
+  ]);
+
+  function resolveHistoryPolicy(patch = {}, fallback = {}, scenario = null) {
+    const resolved = {
+      scenario: String(scenario || patch.scenario || fallback.scenario || "custom"),
+    };
+    for (const field of HISTORY_NUMERIC_POLICY_FIELDS) {
+      const value = Number(patch[field] ?? fallback[field]);
+      resolved[field] = Number.isFinite(value) ? value : 0;
+    }
+    return resolved;
+  }
+
+  function historyDate(value) {
+    if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+    const date = value instanceof Date ? value : new Date(value);
+    return Number.isNaN(date.valueOf()) ? "" : date.toISOString().slice(0, 10);
+  }
+
+  function historyEntryCsvRow(entry) {
+    return [
+      historyDate(entry.date),
+      entry.scenario,
+      entry.population,
+      entry.satisfaction,
+      entry.meanCommute,
+      entry.carShare,
+      entry.carOwnership,
+      entry.ptShare,
+      entry.walkShare,
+      entry.roadLoad,
+      entry.netIncome,
+      entry.bankBalance,
+      entry.transitFareAed,
+      entry.transitSpeedKmh,
+      entry.ptCapacityMultiplier,
+      entry.roadCapacityMultiplier,
+      entry.carCostPerKmAed,
+      entry.housingCapacityMultiplier,
+      entry.businessCapacityMultiplier,
+      entry.rentPressureMultiplier,
+      entry.placeQuality,
+      entry.waitingNetIncomeAed,
+      entry.acceptableCommuteRoundTripMin,
+      entry.extremeCommuteRoundTripMin,
+      entry.enterpriseTargetMargin,
+      entry.targetEmploymentRate,
+    ];
+  }
+
+  function createHistoryPoint(metrics, policy, fallback = {}) {
+    return { ...metrics, ...resolveHistoryPolicy(policy, fallback) };
+  }
+
+  function historyToCsv(history) {
+    return [HISTORY_CSV_HEADERS, ...history.map(historyEntryCsvRow)]
+      .map((row) => row.map((cell) => `"${String(cell ?? "").replaceAll('"', '""')}"`).join(","))
+      .join("\n");
+  }
+
+  function parseUtcDate(value) {
+    const text = String(value || "");
+    const parsed = /^\d{4}-\d{2}-\d{2}$/.test(text) ? new Date(`${text}T00:00:00Z`) : new Date(text);
+    return Number.isNaN(parsed.valueOf()) ? null : parsed;
+  }
+
+  function addUtcCalendarMonths(date, months) {
+    const source = new Date(date.valueOf());
+    const targetMonth = new Date(
+      Date.UTC(
+        source.getUTCFullYear(),
+        source.getUTCMonth() + Math.trunc(months),
+        1,
+        source.getUTCHours(),
+        source.getUTCMinutes(),
+        source.getUTCSeconds(),
+        source.getUTCMilliseconds()
+      )
+    );
+    const lastDay = new Date(Date.UTC(targetMonth.getUTCFullYear(), targetMonth.getUTCMonth() + 1, 0)).getUTCDate();
+    targetMonth.setUTCDate(Math.min(source.getUTCDate(), lastDay));
+    return targetMonth;
+  }
+
+  function utcDayDifference(start, end) {
+    return Math.round((end.valueOf() - start.valueOf()) / DAY_MS);
+  }
+
+  function completedCalendarMonthsFrom(start, date) {
+    let months = (date.getUTCFullYear() - start.getUTCFullYear()) * 12 + date.getUTCMonth() - start.getUTCMonth();
+    if (addUtcCalendarMonths(start, months).valueOf() > date.valueOf()) months -= 1;
+    return Math.max(0, months);
+  }
+
+  function nextCalendarBoundaryDayFrom(start, date, calendarMonths = 1) {
+    const month = completedCalendarMonthsFrom(start, date) + Math.max(1, Math.trunc(calendarMonths));
+    return utcDayDifference(start, addUtcCalendarMonths(start, month));
+  }
+
+  function horizonEndDayFrom(start, horizonMonths) {
+    return utcDayDifference(start, addUtcCalendarMonths(start, horizonMonths));
+  }
+
+  function formatChartMonthUtc(date) {
+    return new Intl.DateTimeFormat("en-AE", { month: "short", year: "2-digit", timeZone: "UTC" }).format(date);
+  }
+
+  function commuteRangeMessage(roundTripMinutes, acceptableRoundTripMinutes) {
+    const threshold = Number(acceptableRoundTripMinutes);
+    return Number(roundTripMinutes) > threshold
+      ? ` Mean commute is above the applied ${threshold}-minute acceptable range.`
+      : ` Mean commute is within the applied ${threshold}-minute acceptable range.`;
+  }
+
+  function summarizeChart(title, option) {
+    const axes = [option.xAxis, option.yAxis].flatMap((axis) => (Array.isArray(axis) ? axis : axis ? [axis] : []));
+    const categoryLabels = axes.find((axis) => Array.isArray(axis.data))?.data || [];
+    const summaries = (option.series || [])
+      .map((series) => {
+        const points = (series.data || [])
+          .map((point) => (typeof point === "object" && point !== null ? Number(point.value) : Number(point)))
+          .filter(Number.isFinite);
+        if (!points.length) return null;
+        if (series.type === "pie") {
+          const parts = series.data
+            .map((point) => `${point.name}: ${Number(point.value).toFixed(1)}`)
+            .slice(0, 6)
+            .join(", ");
+          return `${series.name || "distribution"}: ${parts}`;
+        }
+        if (series.type === "bar" && categoryLabels.length === points.length) {
+          const pairs = points.map((point, index) => `${categoryLabels[index]}: ${point.toFixed(1)}`).join(", ");
+          return `${series.name || "series"}: ${pairs}`;
+        }
+        const latest = points.at(-1);
+        return `${series.name || "series"}: latest ${latest.toFixed(1)}, range ${Math.min(...points).toFixed(1)} to ${Math.max(...points).toFixed(
+          1
+        )}`;
+      })
+      .filter(Boolean);
+    return summaries.length ? `${title}. ${summaries.join(". ")}.` : title;
+  }
+
+  if (typeof module !== "undefined" && module.exports) {
+    module.exports = {
+      PUBLIC_PRESETS,
+      HISTORY_CSV_HEADERS,
+      resolveHistoryPolicy,
+      createHistoryPoint,
+      historyEntryCsvRow,
+      historyToCsv,
+      parseUtcDate,
+      addUtcCalendarMonths,
+      utcDayDifference,
+      completedCalendarMonthsFrom,
+      nextCalendarBoundaryDayFrom,
+      horizonEndDayFrom,
+      formatChartMonthUtc,
+      commuteRangeMessage,
+      summarizeChart,
+    };
+  }
+  if (typeof document === "undefined") return;
+
   const root = document.querySelector("[data-udes-v2-root]");
   if (!root) return;
 
   const $ = (selector, scope = root) => scope.querySelector(selector);
   const $$ = (selector, scope = root) => Array.from(scope.querySelectorAll(selector));
-  const DAY_MS = 24 * 60 * 60 * 1000;
   const palette = {
     ink: "#1d2a2a",
     muted: "#6b7774",
@@ -40,72 +313,23 @@
     horizonMonths: 120,
     elapsedDays: 0,
     seed: 240124,
+    policyConfig: {
+      ptCapacityMultiplier: 1,
+      targetEmploymentRate: 0.8,
+    },
+    appliedPolicy: null,
     charts: new Map(),
     resizeObserver: null,
     requestCounter: 0,
+    inspectionRequestToken: 0,
     playTimer: null,
     pendingConfigurationReset: null,
     pendingModelReset: false,
   };
 
-  const presets = {
-    reference: {
-      transitFareAed: 2,
-      transitSpeedKmh: 28,
-      roadCapacityMultiplier: 1,
-      carCostPerKmAed: 0.35,
-      housingCapacityMultiplier: 1,
-      businessCapacityMultiplier: 1,
-      rentPressureMultiplier: 1,
-      placeQuality: 0.82,
-      waitingNetIncomeAed: 1500,
-      acceptableCommuteRoundTripMin: 60,
-      extremeCommuteRoundTripMin: 90,
-      enterpriseTargetMargin: 0.12,
-    },
-    transit: {
-      transitFareAed: 1,
-      transitSpeedKmh: 36,
-      roadCapacityMultiplier: 1,
-      carCostPerKmAed: 0.45,
-      housingCapacityMultiplier: 1.05,
-      businessCapacityMultiplier: 1,
-      rentPressureMultiplier: 0.99,
-      placeQuality: 0.84,
-      waitingNetIncomeAed: 1500,
-      acceptableCommuteRoundTripMin: 60,
-      extremeCommuteRoundTripMin: 90,
-      enterpriseTargetMargin: 0.12,
-    },
-    housing: {
-      transitFareAed: 2,
-      transitSpeedKmh: 31,
-      roadCapacityMultiplier: 1,
-      carCostPerKmAed: 0.35,
-      housingCapacityMultiplier: 1.3,
-      businessCapacityMultiplier: 1.08,
-      rentPressureMultiplier: 0.96,
-      placeQuality: 0.86,
-      waitingNetIncomeAed: 1500,
-      acceptableCommuteRoundTripMin: 60,
-      extremeCommuteRoundTripMin: 90,
-      enterpriseTargetMargin: 0.12,
-    },
-    balanced: {
-      transitFareAed: 1.5,
-      transitSpeedKmh: 35,
-      roadCapacityMultiplier: 1.1,
-      carCostPerKmAed: 0.45,
-      housingCapacityMultiplier: 1.2,
-      businessCapacityMultiplier: 1.15,
-      rentPressureMultiplier: 0.97,
-      placeQuality: 0.9,
-      waitingNetIncomeAed: 1750,
-      acceptableCommuteRoundTripMin: 60,
-      extremeCommuteRoundTripMin: 90,
-      enterpriseTargetMargin: 0.12,
-    },
-  };
+  const presets = PUBLIC_PRESETS;
+  const MUTATING_CONTROL_SELECTOR =
+    "[data-udes-v2-action='play'], [data-udes-v2-action='step'], [data-udes-v2-action='reset'], [data-udes-v2-action='reset-levers'], [data-udes-v2-lever], [data-udes-v2-scenario], [data-udes-v2-seed]";
 
   const ui = {
     live: $("[data-udes-v2-live-status]"),
@@ -252,6 +476,7 @@
     return {
       transitFareAed: values.transitFare,
       transitSpeedKmh: values.transitSpeed,
+      ptCapacityMultiplier: state.policyConfig.ptCapacityMultiplier,
       roadCapacityMultiplier: values.roadCapacity / 100,
       carCostPerKmAed: values.carCost,
       housingCapacityMultiplier: values.housing / 100,
@@ -262,15 +487,23 @@
       acceptableCommuteRoundTripMin: values.acceptableCommute,
       extremeCommuteRoundTripMin: values.extremeCommute,
       enterpriseTargetMargin: values.targetMargin / 100,
-      focusZoneId: ui.zoneSelect?.value === "city" ? null : ui.zoneSelect?.value,
+      targetEmploymentRate: state.policyConfig.targetEmploymentRate,
       scenario: state.scenario,
     };
+  }
+
+  function policyFromControls() {
+    return resolveHistoryPolicy(currentPatch(), presets[state.scenario] || presets.reference, state.scenario);
+  }
+
+  function referencePolicy() {
+    return resolveHistoryPolicy({ ...presets.reference, scenario: "reference" }, presets.reference, "reference");
   }
 
   function structuralConfig() {
     return {
       startDate: state.dataset?.calibration?.baseDate || "2024-01-01",
-      calibrationLabel: "Greater Abu Dhabi City calibrated scenario baseline — not a forecast",
+      calibrationLabel: "Illustrative Greater Abu Dhabi City scenario baseline — not a forecast",
       endogenousEnterpriseDynamics: true,
     };
   }
@@ -299,6 +532,10 @@
   function applyPreset(name, configure = true) {
     const preset = presets[name] || presets.reference;
     state.scenario = name;
+    state.policyConfig = {
+      ptCapacityMultiplier: preset.ptCapacityMultiplier,
+      targetEmploymentRate: preset.targetEmploymentRate,
+    };
     for (const button of $$("[data-udes-v2-scenario]")) {
       button.setAttribute("aria-pressed", String(button.dataset.udesV2Scenario === name));
     }
@@ -346,19 +583,22 @@
     state.worker = new WorkerClient(workerUrl, renderProgress);
     state.referenceWorker = new WorkerClient(workerUrl);
     const data = workerDataset(state.dataset);
+    const activePolicy = policyFromControls();
+    const fixedReferencePolicy = referencePolicy();
     const referenceConfig = { ...structuralConfig(), ...presets.reference, scenario: "reference" };
-    const activeConfig = { ...structuralConfig(), ...currentPatch(), scenario: state.scenario };
+    const activeConfig = { ...structuralConfig(), ...activePolicy };
     const [active, reference] = await Promise.all([
       state.worker.request("init", { data, config: activeConfig, seed: state.seed }),
       state.referenceWorker.request("init", { data, config: referenceConfig, seed: state.seed }),
     ]);
     state.snapshot = snapshotFrom(active);
     state.referenceSnapshot = snapshotFrom(reference);
+    state.appliedPolicy = activePolicy;
     state.elapsedDays = modelDay(state.snapshot);
     state.history = [];
     state.referenceHistory = [];
-    recordHistory(state.snapshot, state.history);
-    recordHistory(state.referenceSnapshot, state.referenceHistory);
+    recordHistory(state.snapshot, state.history, state.appliedPolicy);
+    recordHistory(state.referenceSnapshot, state.referenceHistory, fixedReferencePolicy);
     renderAll();
     setRuntime("Ready", "ready");
     announce("Agent model initialized with the reference comparison ready.");
@@ -373,9 +613,12 @@
     }
     state.busy = true;
     setRuntime(reset ? "Rebuilding agents" : "Applying inputs", "busy");
+    let operationFailed = false;
     try {
-      const reply = await state.worker.request("configure", { patch: currentPatch(), reset });
+      const requestedPolicy = policyFromControls();
+      const reply = await state.worker.request("configure", { patch: requestedPolicy, reset });
       state.snapshot = snapshotFrom(reply);
+      state.appliedPolicy = requestedPolicy;
       if (reset) {
         const reference = await state.referenceWorker.request("reset", { seed: state.seed });
         state.referenceSnapshot = snapshotFrom(reference);
@@ -383,17 +626,27 @@
         state.referenceHistory = [];
       }
       state.elapsedDays = modelDay(state.snapshot);
-      recordHistory(state.snapshot, state.history);
-      recordHistory(state.referenceSnapshot, state.referenceHistory);
+      recordHistory(state.snapshot, state.history, state.appliedPolicy);
+      recordHistory(state.referenceSnapshot, state.referenceHistory, referencePolicy());
       renderAll();
       announce(`${scenarioLabel(state.scenario)} inputs applied.`);
     } catch (error) {
+      operationFailed = true;
+      stopPlayback();
+      clearPendingWork();
       handleError(error);
     } finally {
       state.busy = false;
-      setRuntime("Ready", "ready");
-      drainPendingWork();
+      if (!operationFailed) {
+        setRuntime("Ready", "ready");
+        drainPendingWork();
+      }
     }
+  }
+
+  function clearPendingWork() {
+    state.pendingConfigurationReset = null;
+    state.pendingModelReset = false;
   }
 
   function drainPendingWork() {
@@ -410,18 +663,20 @@
     }
   }
 
-  async function advance(days = 30) {
+  async function advance(calendarMonths = 1) {
     if (state.busy || !state.worker) return;
-    const horizonDays = state.horizonMonths * 30;
-    if (state.elapsedDays >= horizonDays) {
+    const horizonDay = horizonEndDay();
+    if (state.elapsedDays >= horizonDay) {
       stopPlayback();
       setRuntime("Horizon reached", "complete");
       return;
     }
     state.busy = true;
     setRuntime("Computing", "busy");
+    let operationFailed = false;
     try {
-      const stepDays = Math.min(days, horizonDays - state.elapsedDays);
+      const nextBoundaryDay = nextCalendarBoundaryDay(calendarMonths);
+      const stepDays = Math.min(nextBoundaryDay, horizonDay) - state.elapsedDays;
       const [active, reference] = await Promise.all([
         state.worker.request("step", { days: stepDays, snapshot: { historyLimit: 180, includeHistories: true } }),
         state.referenceWorker.request("step", { days: stepDays, snapshot: { historyLimit: 180, includeHistories: true } }),
@@ -429,17 +684,27 @@
       state.snapshot = snapshotFrom(active);
       state.referenceSnapshot = snapshotFrom(reference);
       state.elapsedDays = modelDay(state.snapshot, state.elapsedDays + stepDays);
-      recordHistory(state.snapshot, state.history);
-      recordHistory(state.referenceSnapshot, state.referenceHistory);
+      recordHistory(state.snapshot, state.history, state.appliedPolicy);
+      recordHistory(state.referenceSnapshot, state.referenceHistory, referencePolicy());
       renderAll();
+      if (state.elapsedDays >= horizonDay) {
+        stopPlayback();
+        setRuntime("Horizon reached", "complete");
+        announce(`Simulation reached the ${state.horizonMonths}-month horizon.`);
+      }
     } catch (error) {
+      operationFailed = true;
       stopPlayback();
+      clearPendingWork();
       handleError(error);
     } finally {
       state.busy = false;
-      if (state.playing) setRuntime("Running", "running");
-      else setRuntime("Paused", "ready");
-      drainPendingWork();
+      if (!operationFailed) {
+        if (state.elapsedDays >= horizonDay) setRuntime("Horizon reached", "complete");
+        else if (state.playing) setRuntime("Running", "running");
+        else setRuntime("Paused", "ready");
+        drainPendingWork();
+      }
     }
   }
 
@@ -448,7 +713,7 @@
     if (!state.playing) return;
     state.playTimer = setTimeout(
       async () => {
-        await advance(30);
+        await advance(1);
         schedulePlayback();
       },
       Math.max(80, 850 / state.speed)
@@ -456,6 +721,10 @@
   }
 
   function togglePlayback() {
+    if (!state.worker || !state.referenceWorker || state.busy) {
+      announce(state.busy ? "Wait for the current model operation to finish." : "Wait for the agent model to finish loading.");
+      return;
+    }
     state.playing = !state.playing;
     ui.play?.setAttribute("aria-pressed", String(state.playing));
     if (ui.playLabel) ui.playLabel.textContent = state.playing ? "Pause" : "Run";
@@ -489,7 +758,9 @@
     stopPlayback();
     state.seed = Number(ui.seed?.value || 240124);
     setRuntime("Resetting", "busy");
+    let operationFailed = false;
     try {
+      const resetPolicy = policyFromControls();
       const [active, reference] = await Promise.all([
         state.worker.request("reset", { seed: state.seed }),
         state.referenceWorker.request("reset", { seed: state.seed }),
@@ -497,28 +768,33 @@
       state.snapshot = snapshotFrom(active);
       state.referenceSnapshot = snapshotFrom(reference);
       if (state.scenario !== "reference") {
-        const configured = await state.worker.request("configure", { patch: currentPatch(), reset: true });
+        const configured = await state.worker.request("configure", { patch: resetPolicy, reset: true });
         state.snapshot = snapshotFrom(configured);
       }
+      state.appliedPolicy = resetPolicy;
       state.elapsedDays = 0;
       state.history = [];
       state.referenceHistory = [];
-      recordHistory(state.snapshot, state.history);
-      recordHistory(state.referenceSnapshot, state.referenceHistory);
+      recordHistory(state.snapshot, state.history, state.appliedPolicy);
+      recordHistory(state.referenceSnapshot, state.referenceHistory, referencePolicy());
       renderAll();
       announce(`Reset to seed ${state.seed}.`);
     } catch (error) {
+      operationFailed = true;
+      clearPendingWork();
       handleError(error);
     } finally {
       state.busy = false;
-      setRuntime("Ready", "ready");
-      drainPendingWork();
+      if (!operationFailed) {
+        setRuntime("Ready", "ready");
+        drainPendingWork();
+      }
     }
   }
 
   function bindControls() {
     ui.play?.addEventListener("click", togglePlayback);
-    $("[data-udes-v2-action='step']")?.addEventListener("click", () => advance(30));
+    $("[data-udes-v2-action='step']")?.addEventListener("click", () => advance(1));
     $("[data-udes-v2-action='reset']")?.addEventListener("click", resetModel);
     $("[data-udes-v2-action='reset-levers']")?.addEventListener("click", () => applyPreset("reference"));
     $("[data-udes-v2-action='export']")?.addEventListener("click", exportCsv);
@@ -554,7 +830,6 @@
     ui.zoneSelect?.addEventListener("change", () => {
       if (ui.zoneSelect.value === "city") selectObject("city", null);
       else selectObject("zone", ui.zoneSelect.value);
-      configureModel(false);
     });
     ui.horizon?.addEventListener("change", () => {
       state.horizonMonths = Number(ui.horizon.value);
@@ -631,11 +906,18 @@
     if (!state.map && placeholder) placeholder.hidden = false;
   }
 
+  function setMutationControlsDisabled(disabled) {
+    $$(MUTATING_CONTROL_SELECTOR).forEach((control) => {
+      control.disabled = disabled;
+    });
+  }
+
   async function init() {
     root.dataset.udesV2State = "loading";
     root.dataset.udesV2Compare = "on";
     setRuntime("Loading geography", "busy");
     bindControls();
+    setMutationControlsDisabled(true);
     try {
       await loadData();
       initMap();
@@ -716,14 +998,30 @@
     return valueAt(snapshot, ["clock.day", "day", "elapsedDays", "time.day"], fallback);
   }
 
+  function simulationStartDate() {
+    const supplied = state.dataset?.calibration?.baseDate || state.dataset?.scope?.baseDate || "2024-01-01";
+    return parseUtcDate(supplied) || new Date(Date.UTC(2024, 0, 1));
+  }
+
+  function completedCalendarMonths(date = modelDate()) {
+    return completedCalendarMonthsFrom(simulationStartDate(), date);
+  }
+
+  function nextCalendarBoundaryDay(calendarMonths = 1) {
+    return nextCalendarBoundaryDayFrom(simulationStartDate(), modelDate(), calendarMonths);
+  }
+
+  function horizonEndDay() {
+    return horizonEndDayFrom(simulationStartDate(), state.horizonMonths);
+  }
+
   function modelDate(snapshot = state.snapshot) {
     const supplied = textAt(snapshot, ["clock.date", "date", "time.date"], "");
     if (supplied) {
-      const parsed = new Date(supplied);
-      if (!Number.isNaN(parsed.valueOf())) return parsed;
+      const parsed = parseUtcDate(supplied);
+      if (parsed) return parsed;
     }
-    const start = state.dataset?.calibration?.baseDate || state.dataset?.scope?.baseDate || "2024-01-01";
-    return new Date(new Date(start).valueOf() + modelDay(snapshot) * DAY_MS);
+    return new Date(simulationStartDate().valueOf() + modelDay(snapshot) * DAY_MS);
   }
 
   function normalizeCity(snapshot = state.snapshot) {
@@ -742,6 +1040,7 @@
       extreme: percentToRatio(valueAt(status, ["extreme", "Extreme", "unhappy"], valueAt(city, ["extremeShare", "extreme"], 0))),
       recovery: percentToRatio(valueAt(status, ["recovery", "Recovery"], valueAt(city, ["recoveryShare", "recovery"], 0))),
       carShare: percentToRatio(valueAt(modes, ["car"], valueAt(city, ["carShare", "modeCar"], 0))),
+      carOwnership: percentToRatio(valueAt(city, ["carOwnershipRate", "carOwnershipShare", "carOwnership"], 0)),
       ptShare: percentToRatio(valueAt(modes, ["pt", "transit"], valueAt(city, ["ptShare", "transitShare"], 0))),
       walkShare: percentToRatio(valueAt(modes, ["walk", "walking"], valueAt(city, ["walkShare"], 0))),
       meanCommute: valueAt(city, [
@@ -762,9 +1061,9 @@
       sameZone: percentToRatio(valueAt(city, ["sameZoneWorkShare", "sameZoneShare", "liveWorkSameShare"])),
       carKm: valueAt(city, ["dailyCarKm", "daily.carVehicleKm", "carKilometres", "vehicleKm"]),
       forcedWalkers: valueAt(city, ["forcedInterzoneWalkers", "daily.forcedWalkTrips", "forcedWalkers"]),
-      hires: valueAt(city, ["monthlyHires", "currentMonthEvents.hires", "events.hires", "hires"]),
-      fires: valueAt(city, ["monthlyFires", "currentMonthEvents.fires", "events.fires", "fires"]),
-      moves: valueAt(city, ["monthlyMoves", "currentMonthEvents.residentialMoves", "events.residentialMoves", "moves"]),
+      hires: valueAt(city, ["monthlyHiresRepresented", "monthlyHires", "currentMonthEvents.hires", "events.hires", "hires"]),
+      fires: valueAt(city, ["monthlyFiresRepresented", "monthlyFires", "currentMonthEvents.fires", "events.fires", "fires"]),
+      moves: valueAt(city, ["monthlyMovesRepresented", "monthlyMoves", "currentMonthEvents.residentialMoves", "events.residentialMoves", "moves"]),
     };
   }
 
@@ -772,9 +1071,9 @@
     return Number.isFinite(Number(value)) ? Number(value) / 100 : 0;
   }
 
-  function recordHistory(snapshot, target) {
+  function recordHistory(snapshot, target, policy) {
     if (!snapshot) return;
-    const point = normalizeCity(snapshot);
+    const point = createHistoryPoint(normalizeCity(snapshot), policy || state.appliedPolicy || policyFromControls(), presets.reference);
     const index = target.findIndex((entry) => entry.day === point.day);
     if (index >= 0) target[index] = point;
     else target.push(point);
@@ -846,8 +1145,10 @@
 
   function renderClock() {
     const date = modelDate();
-    if (ui.date) ui.date.textContent = new Intl.DateTimeFormat("en-AE", { month: "short", year: "numeric" }).format(date);
-    const months = Math.min(state.horizonMonths, Math.round(state.elapsedDays / 30));
+    if (ui.date) {
+      ui.date.textContent = new Intl.DateTimeFormat("en-AE", { month: "short", year: "numeric", timeZone: "UTC" }).format(date);
+    }
+    const months = Math.min(state.horizonMonths, completedCalendarMonths(date));
     if (ui.progress) {
       ui.progress.max = state.horizonMonths;
       ui.progress.value = months;
@@ -855,6 +1156,11 @@
     }
     if (ui.progressLabel) ui.progressLabel.textContent = months;
     if (ui.horizonLabel) ui.horizonLabel.textContent = state.horizonMonths;
+    const assignmentDate = parseUtcDate(textAt(cityOf(state.snapshot), ["networkAssignmentDate", "daily.assignmentDate"], ""));
+    if (state.map && ui.mapStatus && assignmentDate) {
+      const label = new Intl.DateTimeFormat("en-AE", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }).format(assignmentDate);
+      ui.mapStatus.textContent = `${state.dataset.zones?.length || 0} model districts · official AD-SDI polygons · network assigned ${label}`;
+    }
   }
 
   function renderSummary() {
@@ -898,6 +1204,7 @@
       quality: valueAt(zone, ["quality", "placeQuality"], baseline.quality || 0),
       enterprises: valueAt(zone, ["enterprises", "enterpriseCount", "firms"]),
       vacancies: valueAt(zone, ["vacancies", "openJobs"]),
+      jobCapacity: valueAt(zone, ["representedJobCapacity", "jobCapacity", "maxJobsPersons"]),
       bankBalance: valueAt(zone, ["averageBankBalanceAed", "meanBankBalanceAed", "bankBalance"]),
       netIncome: valueAt(zone, ["averageNetIncomeAed", "meanNetIncomeAed", "netIncome"]),
       occupancy:
@@ -963,8 +1270,8 @@
     const insight = $("[data-udes-v2-insight] p");
     if (insight) {
       const pressure = zone.occupancy > 0.92 ? "Housing occupancy is the main modeled pressure." : "Housing capacity remains available.";
-      const access =
-        zone.commute > 60 ? " Commutes are above the calibrated acceptable range." : " Employment access remains within the calibrated range.";
+      const acceptableCommute = (state.appliedPolicy || policyFromControls()).acceptableCommuteRoundTripMin;
+      const access = commuteRangeMessage(zone.commute, acceptableCommute);
       insight.textContent = `${pressure}${access}`;
     }
     renderProvenance(baseline);
@@ -976,7 +1283,7 @@
     if (!node) return;
     if (!zone) {
       node.innerHTML =
-        "<span>Field provenance</span><p><strong>Population</strong> mixed observed / synthetic · <strong>Geography</strong> observed · <strong>Jobs and rents</strong> synthetic calibration</p>";
+        "<span>Field provenance</span><p><strong>Population</strong> mixed observed / synthetic · <strong>Geography</strong> observed · <strong>Jobs and rents</strong> synthetic assumptions</p>";
       return;
     }
     const classes = zone.sourceClassByField || {};
@@ -1060,7 +1367,8 @@
     }
     if (placeholder) placeholder.hidden = true;
     fitMap();
-    if (ui.mapStatus) ui.mapStatus.textContent = `${state.dataset.zones?.length || 0} official districts · calibrated agent model`;
+    if (ui.mapStatus)
+      ui.mapStatus.textContent = `${state.dataset.zones?.length || 0} model districts · official AD-SDI polygons · transparent agent baseline`;
     state.map.on("zoomend", updateTransitVisibility);
     updateTransitVisibility();
     setTimeout(() => state.map.invalidateSize(), 80);
@@ -1089,7 +1397,7 @@
     const id = zoneFeatureId(feature);
     const zone = normalizeZone(findZone(id) || {}, baselineZone(id) || feature?.properties || {});
     if (state.mapMode === "population") return zone.population;
-    if (state.mapMode === "access") return 1 - Math.min(1, zone.commute / 100);
+    if (state.mapMode === "access") return -zone.commute;
     if (state.mapMode === "rent") return zone.rent;
     return zone.occupancy;
   }
@@ -1155,7 +1463,7 @@
       const labels = {
         network: ["Road load", "Below 65%", "65–90%", "Above 90%"],
         population: ["Resident population", "Lower", "Middle", "Higher"],
-        access: ["Job accessibility", "Lower", "Middle", "Higher"],
+        access: ["Shorter mean commute", "Longer", "Middle", "Shorter"],
         rent: ["Housing rent", "Lower", "Middle", "Higher"],
       }[state.mapMode];
       const strong = $("strong", ui.mapLegend);
@@ -1196,14 +1504,20 @@
 
   async function requestInspection(kind, id, fallback) {
     const panel = $(`[data-udes-v2-inspector-panel='${kind}']`);
+    const requestToken = ++state.inspectionRequestToken;
+    const isCurrentSelection = () =>
+      requestToken === state.inspectionRequestToken && state.selected.kind === kind && String(state.selected.id) === String(id);
     if (panel) panel.setAttribute("aria-busy", "true");
     try {
       const reply = await state.worker.request("inspect", { kind, id, historyLimit: 36 });
-      renderInspection(kind, reply?.value || reply?.inspection || reply?.agent || reply, fallback);
+      if (!isCurrentSelection()) return;
+      const inspection = reply && ("value" in reply || "inspection" in reply) ? reply.value ?? reply.inspection : reply?.agent || reply;
+      renderInspection(kind, inspection, fallback);
     } catch (_error) {
+      if (!isCurrentSelection()) return;
       renderInspection(kind, fallback || (kind === "link" ? roadSnapshot(id) : null));
     } finally {
-      panel?.removeAttribute("aria-busy");
+      if (requestToken === state.inspectionRequestToken) panel?.removeAttribute("aria-busy");
     }
   }
 
@@ -1230,13 +1544,20 @@
 
   function agentNavigation(kind, item) {
     const samples = kind === "link" ? linksOf() : samplesOf(kind);
-    if (samples.length < 2) return "";
-    return `<div class="udes-v2-agent-nav"><button type="button" data-udes-v2-agent-nav="previous">Previous</button><span>${escapeHtml(
-      item.id || item[`${kind}Id`] || "sample"
-    )}</span><button type="button" data-udes-v2-agent-nav="next">Next</button></div>`;
+    const id = item.id || item[`${kind}Id`] || state.selected.id || "";
+    const disabled = samples.length < 2 ? " disabled" : "";
+    return `<div class="udes-v2-agent-nav"><button type="button" data-udes-v2-agent-nav="previous"${disabled}>Previous sample</button><form data-udes-v2-agent-search><label class="udes-v2-sr-only" for="udes-v2-${escapeHtml(
+      kind
+    )}-id">Inspect ${escapeHtml(kind)} ID</label><input id="udes-v2-${escapeHtml(kind)}-id" name="agent-id" value="${escapeHtml(
+      id
+    )}" autocomplete="off" spellcheck="false"><button type="submit">Inspect</button></form><button type="button" data-udes-v2-agent-nav="next"${disabled}>Next sample</button></div>`;
   }
 
   function renderInspection(kind, inspection, fallback = {}) {
+    if ((!inspection || typeof inspection !== "object") && (!fallback || !Object.keys(fallback).length)) {
+      renderEmptyInspection(kind, `No ${kind} matched ${state.selected.id}. Enter a valid model ID and try again.`);
+      return;
+    }
     const item = inspection && typeof inspection === "object" ? inspection : fallback || {};
     const panel = $(`[data-udes-v2-inspector-panel='${kind}']`);
     if (!panel) return;
@@ -1249,6 +1570,7 @@
       const status = textAt(item, ["status", "state"], "Happy");
       const netIncome = valueAt(item, ["netIncomeAed", "netIncomeMonthly", "netIncome"]);
       const roundTrip = valueAt(item, ["roundTripMinutes", "commuteMinutes"]);
+      const appliedPolicy = state.appliedPolicy || policyFromControls();
       panel.innerHTML = `${agentNavigation(kind, item)}${statechart(["Happy", "Waiting", "Extreme", "Recovery"], status)}${metricRows([
         ["Representative weight", `${formatNumber(valueAt(item, ["weight"], 1))} people`],
         ["Home district", zoneLabel(textAt(item, ["homeZoneId", "livingZoneId"]))],
@@ -1261,16 +1583,21 @@
         ["Housing rent", formatAed(valueAt(item, ["residentialRentAed", "rentMonthly", "rent"]))],
         ["Transport / month", formatAed(valueAt(item, ["monthlyTransportCostAed", "monthlyTransportCost", "transportCost"]))],
         ["Net income", formatAed(netIncome)],
-        ["Income goal margin", formatAed(netIncome - currentPatch().waitingNetIncomeAed)],
-        ["Savings", formatAed(valueAt(item, ["bankBalanceAed", "bankBalance", "savings"]))],
+        ["Income goal margin", formatAed(netIncome - appliedPolicy.waitingNetIncomeAed)],
+        ["Modeled savings stock", formatAed(valueAt(item, ["bankBalanceAed", "bankBalance", "savings"]))],
+        ["Last monthly saving / drawdown", formatAed(valueAt(item, ["lastMonthlyBankBalanceDeltaAed"]))],
         ["Round trip", `${roundTrip.toFixed(1)} min`],
-        ["Commute goal margin", `${(currentPatch().acceptableCommuteRoundTripMin - roundTrip).toFixed(1)} min`],
-      ])}${historyBars(item.history || item.histories, "Citizen finance and commute history")}`;
+        ["Commute goal margin", `${(appliedPolicy.acceptableCommuteRoundTripMin - roundTrip).toFixed(1)} min`],
+      ])}${historyBars(item.history || item.histories, "Net income history", ["netIncomeAed", "netIncome"], "AED/month")}`;
     } else if (kind === "enterprise") {
       const status = textAt(item, ["status", "state"], "Working");
       const representedEmployees = valueAt(item, ["representedEmployees", "employeeCount", "employees", "staff"]);
       const representedJobCapacity = valueAt(item, ["representedJobCapacity", "maxJobsPersons", "jobCapacity", "maxJobs"]);
-      const representedVacancies = Math.max(0, representedJobCapacity - representedEmployees);
+      const representedVacancies = valueAt(
+        item,
+        ["representedVacancies"],
+        item.hiring === false ? 0 : Math.max(0, representedJobCapacity - representedEmployees)
+      );
       panel.innerHTML = `${agentNavigation(kind, item)}${statechart(["Starting", "Working", "Grow", "Lesser"], status)}${metricRows([
         ["District", zoneLabel(textAt(item, ["zoneId"]))],
         ["Sector", textAt(item, ["sectorLabel", "sector"], "Services")],
@@ -1283,7 +1610,7 @@
         ["Operating margin", formatPercent(valueAt(item, ["operatingMargin", "margin"]))],
         ["Sector demand", valueAt(item, ["demandIndex"], 1).toFixed(2)],
         ["Labor accessibility", formatPercent(valueAt(item, ["laborAccessScore", "labourAccessibility", "accessibility"]))],
-      ])}${historyBars(item.history || item.histories, "Employment, wages and rent history")}`;
+      ])}${historyBars(item.history || item.histories, "Employee-agent count history", ["employeeCount", "employees"], "employee agents")}`;
     } else {
       const current = item.current && typeof item.current === "object" ? { ...item, ...item.current } : item;
       const load = linkLoad(current);
@@ -1303,15 +1630,19 @@
         ],
         ["Capacity", `${formatNumber(valueAt(current, ["capacityVehPerHour", "capacityVehiclesPerDirection", "capacity"]))} veh/h`],
         ["Load / capacity", formatPercent(load)],
-      ])}${historyBars(item.history || item.histories, "Link congestion history")}`;
+      ])}${historyBars(item.history || item.histories, "Maximum load / capacity history", ["volumeCapacityRatio", "loadRatio"], "ratio")}`;
     }
     bindAgentNavigation(panel, kind);
   }
 
   function renderEmptyInspection(kind, message) {
     const panel = $(`[data-udes-v2-inspector-panel='${kind}']`);
-    if (panel)
-      panel.innerHTML = `<div class="udes-v2-empty-state"><strong>No ${escapeHtml(kind)} selected</strong><p>${escapeHtml(message)}</p></div>`;
+    if (!panel) return;
+    const navigation = ["citizen", "enterprise", "link"].includes(kind) ? agentNavigation(kind, { id: state.selected.id }) : "";
+    panel.innerHTML = `${navigation}<div class="udes-v2-empty-state"><strong>No ${escapeHtml(kind)} selected</strong><p>${escapeHtml(
+      message
+    )}</p></div>`;
+    if (navigation) bindAgentNavigation(panel, kind);
   }
 
   function bindAgentNavigation(panel, kind) {
@@ -1323,18 +1654,22 @@
         selectSample(kind);
       });
     });
+    $("[data-udes-v2-agent-search]", panel)?.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const id = String(new FormData(event.currentTarget).get("agent-id") || "").trim();
+      if (id) selectObject(kind, id);
+    });
   }
 
-  function historyBars(history, label) {
-    const values = Array.isArray(history)
-      ? history.slice(-24).map((entry) => valueAt(entry, ["value", "netIncome", "loadRatio", "employeeCount", "commuteMinutes"], 0))
-      : [];
+  function historyBars(history, label, keys, unit) {
+    const values = Array.isArray(history) ? history.slice(-24).map((entry) => valueAt(entry, keys, 0)) : [];
     if (!values.length)
       return `<div class="udes-v2-agent-history"><span>${escapeHtml(label)}</span><p>History begins after the first model month.</p></div>`;
     const maximum = Math.max(...values.map(Math.abs), 1);
-    return `<div class="udes-v2-agent-history"><span>${escapeHtml(label)}</span><div>${values
-      .map((value) => `<i style="--value:${Math.max(0.08, Math.abs(value) / maximum)}" title="${escapeHtml(value.toFixed?.(1) || value)}"></i>`)
-      .join("")}</div></div>`;
+    const accessibleValues = values.map((value) => `${Number(value).toFixed(1)} ${unit}`).join(", ");
+    return `<div class="udes-v2-agent-history"><span>${escapeHtml(label)}</span><div role="img" aria-label="${escapeHtml(
+      `${label}, oldest to newest: ${accessibleValues}`
+    )}">${values.map((value) => `<i aria-hidden="true" style="--value:${Math.max(0.08, Math.abs(value) / maximum)}"></i>`).join("")}</div></div>`;
   }
 
   function linePath(values, width, height, padding = 8, minimum = null, maximum = null) {
@@ -1354,7 +1689,7 @@
   function chartSource() {
     const history = state.history.length ? state.history : [normalizeCity()];
     const reference = state.referenceHistory.length ? state.referenceHistory : [normalizeCity(state.referenceSnapshot)];
-    const labels = history.map((entry) => new Intl.DateTimeFormat("en-AE", { month: "short", year: "2-digit" }).format(entry.date));
+    const labels = history.map((entry) => formatChartMonthUtc(entry.date));
     return { history, reference, labels };
   }
 
@@ -1402,7 +1737,7 @@
 
   function mountChart(node, key, option) {
     if (!node) return;
-    node.setAttribute("aria-label", chartSummary(node.dataset.udesV2ChartTitle || key, option));
+    node.setAttribute("aria-label", summarizeChart(node.dataset.udesV2ChartTitle || key, option));
     if (!window.echarts) {
       node.innerHTML =
         '<p class="udes-v2-chart-empty">Interactive chart library unavailable. Model values remain available in the inspector and export.</p>';
@@ -1414,29 +1749,6 @@
       state.charts.set(key, chart);
     }
     chart.setOption(option, { notMerge: true, lazyUpdate: true });
-  }
-
-  function chartSummary(title, option) {
-    const summaries = (option.series || [])
-      .map((series) => {
-        const points = (series.data || [])
-          .map((point) => (typeof point === "object" && point !== null ? Number(point.value) : Number(point)))
-          .filter(Number.isFinite);
-        if (!points.length) return null;
-        if (series.type === "pie") {
-          const parts = series.data
-            .map((point) => `${point.name}: ${Number(point.value).toFixed(1)}`)
-            .slice(0, 6)
-            .join(", ");
-          return `${series.name || "distribution"}: ${parts}`;
-        }
-        const latest = points.at(-1);
-        return `${series.name || "series"}: latest ${latest.toFixed(1)}, range ${Math.min(...points).toFixed(1)} to ${Math.max(...points).toFixed(
-          1
-        )}`;
-      })
-      .filter(Boolean);
-    return summaries.length ? `${title}. ${summaries.join(". ")}.` : title;
   }
 
   function prepareChartPanel(kind, definitions) {
@@ -1564,9 +1876,9 @@
 
   function renderPopulationCharts() {
     const [statesNode, zonesNode, movesNode] = prepareChartPanel("population", [
-      ["states", "Satisfaction state history", "Happy, waiting, and extreme"],
+      ["states", "Satisfaction state history", "All four citizen states; stacked to 100%"],
       ["zones", "Residents by district", "Current weighted population"],
-      ["moves", "Residential response", "Moves, hires, and forced walks"],
+      ["moves", "Resident transitions", "Represented people moved, hired, or forced to walk"],
     ]);
     const { history, labels } = chartSource();
     const stacked = baseChartOptions();
@@ -1599,6 +1911,15 @@
         showSymbol: false,
         data: history.map((entry) => entry.extreme * 100),
         itemStyle: { color: palette.red },
+      },
+      {
+        name: "Recovery",
+        type: "line",
+        stack: "state",
+        areaStyle: {},
+        showSymbol: false,
+        data: history.map((entry) => entry.recovery * 100),
+        itemStyle: { color: palette.blue },
       },
     ];
     mountChart(statesNode, "population:states", stacked);
@@ -1636,22 +1957,28 @@
     events.xAxis.data = labels;
     events.legend = { ...events.legend, show: true };
     events.series = [
-      { name: "Moves", type: "bar", data: history.map((entry) => entry.moves), itemStyle: { color: palette.sand } },
-      { name: "Hires", type: "line", showSymbol: false, data: history.map((entry) => entry.hires), itemStyle: { color: palette.green } },
-      { name: "Forced walks", type: "line", showSymbol: false, data: history.map((entry) => entry.forcedWalkers), itemStyle: { color: palette.red } },
+      { name: "Represented moves", type: "bar", data: history.map((entry) => entry.moves), itemStyle: { color: palette.sand } },
+      { name: "Represented hires", type: "line", showSymbol: false, data: history.map((entry) => entry.hires), itemStyle: { color: palette.green } },
+      {
+        name: "Represented forced walks",
+        type: "line",
+        showSymbol: false,
+        data: history.map((entry) => entry.forcedWalkers),
+        itemStyle: { color: palette.red },
+      },
     ];
     mountChart(movesNode, "population:moves", events);
   }
 
   function renderHousingCharts() {
     const [rentNode, occupancyNode, affordabilityNode] = prepareChartPanel("housing", [
-      ["rent", "Housing cost", "District rent level"],
-      ["occupancy", "Capacity pressure", "Residents divided by housing capacity"],
-      ["affordability", "Household position", "Net income and accumulated savings"],
+      ["rent", "Housing cost", "12 highest-rent districts"],
+      ["occupancy", "Capacity pressure", "12 highest occupancy ratios"],
+      ["affordability", "Household position", "Monthly household flows and accumulated savings stock"],
     ]);
-    const zones = zonesOf()
-      .map((item) => normalizeZone(item, baselineZone(item.id || item.zoneId) || {}))
-      .sort((a, b) => b.rent - a.rent);
+    const normalizedZones = zonesOf().map((item) => normalizeZone(item, baselineZone(item.id || item.zoneId) || {}));
+    const rentZones = [...normalizedZones].sort((a, b) => b.rent - a.rent).slice(0, 12);
+    const occupancyZones = [...normalizedZones].sort((a, b) => b.occupancy - a.occupancy).slice(0, 12);
     const rent = baseChartOptions();
     rent.grid = { top: 14, left: 88, right: 14, bottom: 20 };
     rent.legend = { show: false };
@@ -1659,19 +1986,13 @@
     rent.yAxis = {
       ...rent.yAxis,
       type: "category",
-      data: zones
-        .slice(0, 12)
-        .map((zone) => zone.name)
-        .reverse(),
+      data: rentZones.map((zone) => zone.name).reverse(),
       axisLabel: { ...rent.yAxis.axisLabel, width: 78, overflow: "truncate" },
     };
     rent.series = [
       {
         type: "bar",
-        data: zones
-          .slice(0, 12)
-          .map((zone) => zone.rent)
-          .reverse(),
+        data: rentZones.map((zone) => zone.rent).reverse(),
         barMaxWidth: 11,
         itemStyle: { color: palette.amber },
       },
@@ -1684,23 +2005,19 @@
     occupancy.xAxis = {
       ...occupancy.xAxis,
       type: "value",
-      max: Math.max(1.2, ...zones.map((zone) => zone.occupancy)),
+      max: Math.max(1.2, ...occupancyZones.map((zone) => zone.occupancy)),
       axisLabel: { ...occupancy.xAxis.axisLabel, formatter: (value) => `${Math.round(value * 100)}%` },
     };
     occupancy.yAxis = {
       ...occupancy.yAxis,
       type: "category",
-      data: zones
-        .slice(0, 12)
-        .map((zone) => zone.name)
-        .reverse(),
+      data: occupancyZones.map((zone) => zone.name).reverse(),
       axisLabel: { ...occupancy.yAxis.axisLabel, width: 78, overflow: "truncate" },
     };
     occupancy.series = [
       {
         type: "bar",
-        data: zones
-          .slice(0, 12)
+        data: occupancyZones
           .map((zone) => ({
             value: zone.occupancy,
             itemStyle: { color: zone.occupancy > 0.95 ? palette.red : zone.occupancy > 0.82 ? palette.amber : palette.green },
@@ -1714,11 +2031,33 @@
 
     const { history, labels } = chartSource();
     const finance = baseChartOptions();
+    finance.grid = { top: 30, left: 50, right: 54, bottom: 28 };
     finance.xAxis.data = labels;
-    finance.yAxis.axisLabel.formatter = (value) => formatCompact(value);
+    finance.yAxis = [
+      {
+        ...finance.yAxis,
+        name: "Monthly AED",
+        nameTextStyle: { color: palette.muted, fontSize: 9 },
+        axisLabel: { ...finance.yAxis.axisLabel, formatter: (value) => formatCompact(value) },
+      },
+      {
+        type: "value",
+        name: "Savings stock AED",
+        nameTextStyle: { color: palette.muted, fontSize: 9 },
+        axisLabel: { formatter: (value) => formatCompact(value), color: palette.muted, fontSize: 9 },
+        splitLine: { show: false },
+      },
+    ];
     finance.series = [
       { name: "Net income", type: "line", showSymbol: false, data: history.map((entry) => entry.netIncome), itemStyle: { color: palette.green } },
-      { name: "Savings", type: "line", showSymbol: false, data: history.map((entry) => entry.bankBalance), itemStyle: { color: palette.blue } },
+      {
+        name: "Modeled savings stock",
+        type: "line",
+        yAxisIndex: 1,
+        showSymbol: false,
+        data: history.map((entry) => entry.bankBalance),
+        itemStyle: { color: palette.blue },
+      },
       { name: "Rent", type: "line", showSymbol: false, data: history.map((entry) => entry.rent), itemStyle: { color: palette.amber } },
     ];
     mountChart(affordabilityNode, "housing:affordability", finance);
@@ -1727,8 +2066,8 @@
   function renderBusinessCharts() {
     const [jobsNode, firmsNode, labourNode] = prepareChartPanel("business", [
       ["jobs", "Jobs and residents", "District labor-market balance"],
-      ["firms", "Enterprise geography", "Firms and vacancies"],
-      ["labour", "Labor-market events", "Hires, fires, and unemployment"],
+      ["firms", "Enterprise geography", "Enterprise agents and represented vacancy rate"],
+      ["labour", "Labor-market events", "Represented hires, represented fires, and unemployment"],
     ]);
     const zones = zonesOf()
       .map((item) => normalizeZone(item, baselineZone(item.id || item.zoneId) || {}))
@@ -1751,7 +2090,24 @@
 
     const firms = baseChartOptions();
     firms.grid = { top: 12, left: 82, right: 14, bottom: 20 };
-    firms.xAxis = { ...firms.xAxis, type: "value" };
+    firms.xAxis = [
+      {
+        ...firms.xAxis,
+        type: "value",
+        name: "Firm agents",
+        nameTextStyle: { color: palette.muted, fontSize: 9 },
+      },
+      {
+        type: "value",
+        position: "top",
+        min: 0,
+        max: 100,
+        name: "Vacancy rate",
+        nameTextStyle: { color: palette.muted, fontSize: 9 },
+        axisLabel: { formatter: "{value}%", color: palette.muted, fontSize: 9 },
+        splitLine: { show: false },
+      },
+    ];
     firms.yAxis = {
       ...firms.yAxis,
       type: "category",
@@ -1759,8 +2115,21 @@
       axisLabel: { ...firms.yAxis.axisLabel, width: 72, overflow: "truncate" },
     };
     firms.series = [
-      { name: "Enterprises", type: "bar", data: zones.map((zone) => zone.enterprises).reverse(), barWidth: 7, itemStyle: { color: palette.green } },
-      { name: "Vacancies", type: "bar", data: zones.map((zone) => zone.vacancies).reverse(), barWidth: 7, itemStyle: { color: palette.amber } },
+      {
+        name: "Enterprise agents",
+        type: "bar",
+        data: zones.map((zone) => zone.enterprises).reverse(),
+        barWidth: 7,
+        itemStyle: { color: palette.green },
+      },
+      {
+        name: "Vacancy rate",
+        type: "bar",
+        xAxisIndex: 1,
+        data: zones.map((zone) => (zone.vacancies / Math.max(zone.jobCapacity, 1)) * 100).reverse(),
+        barWidth: 7,
+        itemStyle: { color: palette.amber },
+      },
     ];
     mountChart(firmsNode, "business:firms", firms);
 
@@ -1768,8 +2137,8 @@
     const labour = baseChartOptions();
     labour.xAxis.data = labels;
     labour.series = [
-      { name: "Hires", type: "bar", data: history.map((entry) => entry.hires), itemStyle: { color: palette.green } },
-      { name: "Fires", type: "bar", data: history.map((entry) => -entry.fires), itemStyle: { color: palette.red } },
+      { name: "Represented hires", type: "bar", data: history.map((entry) => entry.hires), itemStyle: { color: palette.green } },
+      { name: "Represented fires", type: "bar", data: history.map((entry) => -entry.fires), itemStyle: { color: palette.red } },
       {
         name: "Unemployment %",
         type: "line",
@@ -1788,7 +2157,7 @@
 
   function renderMobilityCharts() {
     const [modesNode, commuteNode, linksNode] = prepareChartPanel("mobility", [
-      ["modes", "Daily mode choice", "Car, public transport, and walking"],
+      ["modes", "Daily mode choice", "Completed commute modes plus resident car ownership"],
       ["commute", "Travel burden", "Round-trip time and same-zone work"],
       ["links", "Most loaded road links", "Current modeled volume / capacity"],
     ]);
@@ -1823,6 +2192,15 @@
         showSymbol: false,
         data: history.map((entry) => entry.walkShare * 100),
         itemStyle: { color: palette.green },
+      },
+      {
+        name: "Car ownership",
+        type: "line",
+        showSymbol: false,
+        data: history.map((entry) => entry.carOwnership * 100),
+        lineStyle: { type: "dashed", width: 2, color: palette.ink },
+        itemStyle: { color: palette.ink },
+        z: 4,
       },
     ];
     mountChart(modesNode, "mobility:modes", modes);
@@ -1891,57 +2269,60 @@
   }
 
   function renderDistributionCharts() {
+    const distributions = cityOf(state.snapshot).distributions || {};
+    const income = distributions.income || {};
+    const commute = distributions.commute || {};
+    const firmSize = distributions.firmSize || {};
     const [incomeNode, commuteNode, firmsNode] = prepareChartPanel("distribution", [
-      ["income", "Net income distribution", "Citizen-agent sample, AED/month"],
-      ["commute", "Commute-time distribution", "Citizen-agent sample, round trip"],
-      ["firms", "Enterprise-size distribution", "Enterprise-agent sample"],
+      [
+        "income",
+        "Net income distribution",
+        income.sourceAgentCount
+          ? `All ${formatNumber(income.sourceAgentCount)} weighted citizen agents · ${formatCompact(income.representedTotal)} represented residents`
+          : "Full weighted resident population · AED/month",
+      ],
+      [
+        "commute",
+        "Commute-time distribution",
+        commute.sourceAgentCount
+          ? `All ${formatNumber(commute.sourceAgentCount)} employed commuter agents · ${formatCompact(
+              commute.representedTotal
+            )} represented commuters`
+          : "Full weighted employed-commuter population · round trip",
+      ],
+      [
+        "firms",
+        "Enterprise-size distribution",
+        firmSize.enterpriseTotal
+          ? `All ${formatNumber(firmSize.enterpriseTotal)} enterprise agents · ${formatCompact(
+              firmSize.representedEmployeeTotal
+            )} represented workers`
+          : "Full enterprise-agent population",
+      ],
     ]);
-    const citizens = samplesOf("citizen");
-    const enterprises = samplesOf("enterprise");
-    mountHistogram(
-      incomeNode,
-      "distribution:income",
-      citizens.map((item) => valueAt(item, ["netIncomeAed", "netIncomeMonthly", "netIncome"])),
-      14,
-      "AED"
-    );
-    mountHistogram(
-      commuteNode,
-      "distribution:commute",
-      citizens.map((item) => valueAt(item, ["roundTripMinutes", "commuteMinutes"])),
-      14,
-      "min"
-    );
-    mountHistogram(
-      firmsNode,
-      "distribution:firms",
-      enterprises.map((item) => valueAt(item, ["representedEmployees", "employeeCount", "employees", "staff"])),
-      12,
-      "workers"
-    );
+    mountAggregateHistogram(incomeNode, "distribution:income", income, "representedCount", "Represented residents");
+    mountAggregateHistogram(commuteNode, "distribution:commute", commute, "representedCount", "Represented commuters");
+    mountAggregateHistogram(firmsNode, "distribution:firms", firmSize, "enterpriseCount", "Enterprise agents");
   }
 
-  function histogram(values, binCount) {
-    const data = values.filter((value) => Number.isFinite(value));
-    if (!data.length) return { labels: ["No sample"], values: [0] };
-    const min = Math.min(...data);
-    const max = Math.max(...data);
-    const width = Math.max(1, (max - min) / binCount);
-    const bins = Array.from({ length: binCount }, () => 0);
-    data.forEach((value) => {
-      bins[Math.min(binCount - 1, Math.floor((value - min) / width))] += 1;
-    });
-    return { labels: bins.map((_value, index) => formatCompact(min + width * index)), values: bins };
-  }
-
-  function mountHistogram(node, key, values, bins, unit) {
-    const data = histogram(values, bins);
+  function mountAggregateHistogram(node, key, distribution, valueField, yAxisName) {
+    const bins = Array.isArray(distribution?.bins) ? distribution.bins : [];
     const option = baseChartOptions();
     option.legend = { show: false };
-    option.xAxis.data = data.labels;
-    option.xAxis.name = unit;
-    option.xAxis.nameTextStyle = { color: palette.muted, fontSize: 9 };
-    option.series = [{ type: "bar", data: data.values, barCategoryGap: "8%", itemStyle: { color: palette.green } }];
+    option.grid = { top: 24, left: 58, right: 12, bottom: 48 };
+    option.xAxis.data = bins.length ? bins.map((bin) => bin.label) : ["No data"];
+    option.xAxis.axisLabel = { ...option.xAxis.axisLabel, interval: 0, rotate: bins.length > 6 ? 24 : 0 };
+    option.yAxis.name = yAxisName;
+    option.yAxis.nameTextStyle = { color: palette.muted, fontSize: 9 };
+    option.yAxis.axisLabel = { ...option.yAxis.axisLabel, formatter: (value) => formatCompact(value) };
+    option.series = [
+      {
+        type: "bar",
+        data: bins.length ? bins.map((bin) => Number(bin[valueField]) || 0) : [0],
+        barCategoryGap: "8%",
+        itemStyle: { color: palette.green },
+      },
+    ];
     mountChart(node, key, option);
   }
 
@@ -1950,58 +2331,7 @@
   }
 
   function exportCsv() {
-    const patch = currentPatch();
-    const header = [
-      "date",
-      "scenario",
-      "population",
-      "satisfaction_share",
-      "mean_commute_minutes",
-      "car_share",
-      "transit_share",
-      "walk_share",
-      "road_load",
-      "mean_net_income_aed",
-      "mean_bank_balance_aed",
-      "transit_fare_aed",
-      "transit_speed_kmh",
-      "road_capacity_multiplier",
-      "car_cost_per_km_aed",
-      "housing_capacity_multiplier",
-      "business_capacity_multiplier",
-      "rent_pressure_multiplier",
-      "place_quality",
-      "citizen_income_buffer_aed",
-      "acceptable_round_trip_minutes",
-      "severe_round_trip_minutes",
-      "enterprise_target_margin",
-    ];
-    const rows = state.history.map((entry) => [
-      entry.date.toISOString().slice(0, 10),
-      state.scenario,
-      entry.population,
-      entry.satisfaction,
-      entry.meanCommute,
-      entry.carShare,
-      entry.ptShare,
-      entry.walkShare,
-      entry.roadLoad,
-      entry.netIncome,
-      entry.bankBalance,
-      patch.transitFareAed,
-      patch.transitSpeedKmh,
-      patch.roadCapacityMultiplier,
-      patch.carCostPerKmAed,
-      patch.housingCapacityMultiplier,
-      patch.businessCapacityMultiplier,
-      patch.rentPressureMultiplier,
-      patch.placeQuality,
-      patch.waitingNetIncomeAed,
-      patch.acceptableCommuteRoundTripMin,
-      patch.extremeCommuteRoundTripMin,
-      patch.enterpriseTargetMargin,
-    ]);
-    const csv = [header, ...rows].map((row) => row.map((cell) => `"${String(cell).replaceAll('"', '""')}"`).join(",")).join("\n");
+    const csv = historyToCsv(state.history);
     const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
     const link = document.createElement("a");
     link.href = url;
@@ -2017,9 +2347,7 @@
     const compact = window.matchMedia("(max-width: 1099px)");
     const apply = () => {
       root.dataset.udesV2Mobile = compact.matches ? "readonly" : "interactive";
-      $$("[data-udes-v2-action='play'], [data-udes-v2-action='step'], [data-udes-v2-lever], [data-udes-v2-scenario]").forEach((control) => {
-        control.disabled = compact.matches;
-      });
+      setMutationControlsDisabled(compact.matches || !state.worker || !state.referenceWorker);
       if (compact.matches) {
         stopPlayback();
         setRuntime("Read-only", "readonly");

@@ -71,7 +71,15 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300&family=Inter:wght@400;500&display=swap">
 <link rel="stylesheet" href="{{ '/assets/css/garden.css' | relative_url | bust_css_cache }}">
-<link rel="canonical" href="{{ page.url | replace:'index.html','' | absolute_url }}">
+{% assign canonical_path = page.url | replace: 'index.html', '' %}
+{% if page.redirect and page.redirect != true %}
+  {% assign canonical_path = page.redirect %}
+{% endif %}
+{% if canonical_path contains '://' %}
+  <link rel="canonical" href="{{ canonical_path }}">
+{% else %}
+  <link rel="canonical" href="{{ canonical_path | absolute_url }}">
+{% endif %}
 
 {% if site.enable_darkmode %}
   <!-- Dark Mode -->

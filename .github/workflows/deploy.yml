@@ -17,6 +17,7 @@ on:
       - "_projects/**"
       - "_sass/**"
       - "_scripts/**"
+      - "scripts/**"
       - "**.bib"
       - "**.html"
       - "**.js"
@@ -47,6 +48,7 @@ on:
       - "_projects/**"
       - "_sass/**"
       - "_scripts/**"
+      - "scripts/**"
       - "**.bib"
       - "**.html"
       - "**.js"
@@ -91,6 +93,18 @@ jobs:
           python-version: "3.13"
           cache: "pip"
 
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Install Node dependencies, validate the model, and generate project previews
+        run: |
+          npm ci
+          npm run validate:udes-v2-full
+          npm run build:project-previews
+
       - name: Prepare build config
         run: |
           ruby -ryaml -e 'config = YAML.load_file("_config.yml"); config["giscus"] ||= {}; config["giscus"]["repo"] = ENV.fetch("GITHUB_REPOSITORY"); File.write("_config.yml", config.to_yaml)'
@@ -118,6 +132,8 @@ jobs:
       - name: Verify generated site
         run: |
           test -f _site/index.html
+          node tests/udes-v2-engine.mjs
+          node tests/udes-v2-scenarios.mjs
           node tests/site-contract.mjs
 
       - name: Upload built site

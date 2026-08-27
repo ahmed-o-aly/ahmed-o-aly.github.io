@@ -1379,6 +1379,29 @@
   white-space: nowrap;
 }
 
+.udes-v2-agent-nav form {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+}
+
+.udes-v2-agent-nav input {
+  width: 100%;
+  min-width: 64px;
+  height: 26px;
+  padding: 3px 6px;
+  border: 1px solid var(--udes-v2-line);
+  background: #fff;
+  color: var(--udes-v2-text);
+  font: 600 9px / 1 var(--garden-sans);
+  text-align: center;
+}
+
+.udes-v2-agent-nav form button {
+  flex: 0 0 auto;
+  padding-inline: 7px;
+}
+
 .udes-v2-statechart {
   display: flex;
   align-items: center;
