@@ -1,19 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
-const focusedContracts = [
-  "./shell-contract.mjs",
-  "./home-contract.mjs",
-  "./projects-contract.mjs",
-  "./writing-contract.mjs",
-  "./reading-contract.mjs",
-  "./utility-contract.mjs",
-  "./legacy-contract.mjs",
-  "./garden-enhancement-contract.mjs",
-  "./udes-contract.mjs",
-  "./udes-v2-history.mjs",
-  "./udes-v2-contract.mjs",
-];
+const focusedContracts = ["./folio-contract.mjs", "./legacy-contract.mjs", "./udes-contract.mjs", "./udes-v2-history.mjs", "./udes-v2-contract.mjs"];
 
 const projectFile = (path) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
 const packageJson = JSON.parse(projectFile("package.json"));
@@ -21,15 +9,15 @@ const deployWorkflow = projectFile(".github/workflows/deploy.yml");
 const axeWorkflow = projectFile(".github/workflows/axe.yml");
 
 const formatTargets = [
-  "tests/{projects-contract,reading-contract,site-contract,udes-contract,udes-v2-contract,udes-v2-engine,udes-v2-history,udes-v2-job-capacity,udes-v2-scenarios}.mjs",
-  "assets/js/{udes-v2-app,udes-v2-worker}.js",
+  "tests/{folio-contract,site-contract,udes-contract,udes-v2-contract,udes-v2-engine,udes-v2-history,udes-v2-job-capacity,udes-v2-scenarios}.mjs",
+  "assets/js/{garden,udes-v2-app,udes-v2-worker}.js",
   "assets/data/cnc-machine-inspector/portfolio-evidence.json",
   "assets/data/udes-v2/README.md",
   "scripts/{build-project-previews,validate-udes-v2-full}.mjs",
-  "_sass/garden/{_cards,_content,_simulation-v2}.scss",
-  "_includes/{garden-card,garden-media,garden-project-card,garden-related,head}.liquid",
-  "_layouts/page.liquid",
-  "_pages/projects.md",
+  "_sass/garden/{_cards,_content,_folio,_simulation-v2}.scss",
+  "_includes/{folio-work-card,garden-card,garden-media,garden-project-card,garden-related,head}.liquid",
+  "_layouts/{cv,garden,page,post}.liquid",
+  "_pages/{about,blog,books,home,marginalia,projects}.md",
   "_projects/{abu-dhabi-urban-dynamics,abu-dhabi-urban-dynamics-v2,adsg-policy-simulations,cnc-machine-inspector}.md",
   "package.json",
   ".github/workflows/{axe,deploy}.yml",
@@ -83,6 +71,7 @@ const expectedAxePaths = [
   "books/the_godfather/",
   "about/",
   "cv/",
+  "marginalia/",
   "publications/",
   "404.html",
 ];

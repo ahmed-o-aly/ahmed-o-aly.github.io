@@ -1,29 +1,26 @@
 {% assign active_path = page.url | default: '/' %}
+{% assign is_home = false %}
+{% if active_path == '/' %}{% assign is_home = true %}{% endif %}
 <header class="garden-header">
-  <nav class="garden-nav garden-container" aria-label="Primary navigation">
-    <a class="garden-nav__name" href="{{ '/' | relative_url }}">Ahmed Aly</a>
-    <div class="garden-nav__segments">
-      {% assign items = 'Home|/;Projects|/projects/;Writing|/blog/;Reading|/books/;About|/about/' | split: ';' %}
+  <nav class="garden-nav" aria-label="Primary navigation">
+    <a class="garden-nav__monogram" href="{{ '/' | relative_url }}" aria-label="Ahmed Aly, home">A<span>.</span></a>
+    <div class="garden-nav__links">
+      {% assign items = 'Writing|writing|/blog/;Library|library|/books/;Works|works|/projects/;Records|records|/cv/;Marginalia|marginalia|/marginalia/;About|about|/#sec-about' | split: ';' %}
       {% for item in items %}
         {% assign parts = item | split: '|' %}
         {% assign label = parts[0] %}
-        {% assign destination = parts[1] %}
+        {% assign section = parts[1] %}
+        {% assign destination = parts[2] %}
         {% assign current = false %}
-        {% if destination == '/' and active_path == '/' %}{% assign current = true %}{% endif %}
-        {% if destination != '/' and active_path contains destination %}{% assign current = true %}{% endif %}
+        {% if destination != '/#sec-about' and active_path contains destination %}{% assign current = true %}{% endif %}
         <a
-          href="{{ destination | relative_url }}"
-          {% if current %}
-            aria-current="page"
-          {% endif %}
+          href="{% if is_home %}#sec-{{ section }}{% else %}{{ destination | relative_url }}{% endif %}"
+          {% if is_home %}data-scroll-target="sec-{{ section }}"{% else %}data-page-turn{% endif %}
+          {% if current %}aria-current="page"{% endif %}
         >
           {{- label -}}
         </a>
       {% endfor %}
-    </div>
-    <div class="garden-nav__utility">
-      <a href="https://github.com/ahmed-o-aly">GitHub</a>
-      <a href="{{ '/cv/' | relative_url }}">CV</a>
     </div>
   </nav>
 </header>

@@ -1,0 +1,24 @@
+{% assign work = include.project %}
+{% assign figure_number = include.index | default: 1 %}
+<article class="folio-work-card" data-reveal>
+  <a href="{{ work.url | relative_url }}" data-page-turn>
+    <div class="folio-work-card__figure folio-work-card__figure--{{ work.visual.key | default: 'default' }}" aria-hidden="true">
+      <span style="--bar-height: 38%"></span>
+      <span style="--bar-height: 62%"></span>
+      <span style="--bar-height: 48%"></span>
+      <span style="--bar-height: 84%"></span>
+      <span style="--bar-height: 70%"></span>
+      <span style="--bar-height: 100%"></span>
+      <small>fig. {{ figure_number }} &mdash; {{ work.visual.label | default: work.category }}</small>
+    </div>
+    <h3>{{ work.title }}</h3>
+    <p>{{ work.description }}</p>
+    {% if work.visual.chips %}
+      <ul class="folio-tags" aria-label="Methods">
+        {% for chip in work.visual.chips limit: 3 %}
+          <li>{{ chip }}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+  </a>
+</article>

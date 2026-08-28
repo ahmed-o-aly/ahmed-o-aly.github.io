@@ -42,6 +42,7 @@ jobs:
           - "books/the_godfather/"
           - "about/"
           - "cv/"
+          - "marginalia/"
           - "publications/"
           - "404.html"
     runs-on: ubuntu-latest

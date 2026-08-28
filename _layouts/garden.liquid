@@ -21,6 +21,29 @@
       {{ content }}
       {% include garden-footer.liquid %}
     </div>
+    <div class="folio-cursor-glow" aria-hidden="true"></div>
+    <div class="folio-page-turn" aria-hidden="true">
+      <div class="folio-page-turn__leaf"><span>Ahmed &middot; Folio</span></div>
+    </div>
+    <dialog class="folio-book-dialog" id="folio-book-dialog" aria-labelledby="folio-book-title">
+      <div class="folio-book-dialog__card">
+        <div class="folio-book-dialog__cover" data-dialog-cover>
+          <strong data-dialog-cover-title></strong>
+          <small data-dialog-cover-author></small>
+        </div>
+        <div class="folio-book-dialog__copy">
+          <div class="folio-book-dialog__topline">
+            <span data-dialog-status></span>
+            <button type="button" data-dialog-close>Close &times;</button>
+          </div>
+          <h2 id="folio-book-title" data-dialog-title></h2>
+          <p class="folio-book-dialog__author" data-dialog-author></p>
+          <p class="folio-book-dialog__rating" data-dialog-rating></p>
+          <h3>Margin notes</h3>
+          <div class="folio-book-dialog__notes" data-dialog-notes></div>
+        </div>
+      </div>
+    </dialog>
     {% include scripts.liquid %}
     <script defer src="{{ '/assets/js/garden.js' | relative_url | bust_file_cache }}"></script>
   </body>

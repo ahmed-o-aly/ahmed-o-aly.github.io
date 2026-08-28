@@ -1,119 +1,35 @@
 ---
 layout: default
 ---
-{% assign year = page.date | date: '%Y' %}
-{% assign url_beginning = page.url | slice: 0, 6 %}
-{% assign article_eyebrow = 'Writing' %}
-{% unless url_beginning == '/blog/' %}
-  {% assign article_eyebrow = page.collection | default: 'Note' | capitalize %}
-{% endunless %}
-
-{% if page._styles %}
-  <!-- Page/Post style -->
-  <style type="text/css">
-    {{ page._styles }}
-  </style>
-{% endif %}
-
-<article class="garden-article">
-  <header class="garden-article__header">
-    <p class="garden-intro__eyebrow">{{ article_eyebrow }}</p>
+{% assign word_count = content | number_of_words %}
+{% assign read_minutes = word_count | divided_by: 180 | plus: 1 %}
+<article class="folio-reader">
+  <a class="folio-back-link" href="{{ '/blog/' | relative_url }}" data-page-turn>&larr; Back to the folio</a>
+  <header class="folio-reader__header">
+    <p>
+      {{ page.date | date: '%b %Y' }} &middot; {{ read_minutes }} min{% if page.tags %} &middot; {{ page.tags | first }}{% endif %}
+    </p>
     <h1>{{ page.title }}</h1>
     {% if page.description %}
-      <p class="garden-article__description">{{ page.description }}</p>
+      <p class="folio-reader__deck">{{ page.description }}</p>
     {% endif %}
-    <p class="garden-article__meta">
-      <time datetime="{{ page.date | date_to_xmlschema }}">{{ page.date | date: '%B %-d, %Y' }}</time>
-      {% if page.author -%}
-        <span>&middot; {{ page.author }}</span>
-      {%- endif %}
-      {% if page.last_updated -%}
-        <span>&middot; Updated {{ page.last_updated | date: '%B %-d, %Y' }}</span>
-      {%- endif %}
-      {% if page.meta -%}
-        <span>&middot; {{ page.meta }}</span>
-      {%- endif %}
-      {% if page.external_source -%}
-        <span>&middot; {{ page.external_source }}</span>
-      {%- endif %}
-    </p>
-
-    <div class="garden-article__taxonomy" aria-label="Article filing">
-      {% if url_beginning == '/blog/' %}
-        <a href="{{ year | prepend: '/blog/' | append: '/' | relative_url }}" aria-label="Writing from {{ year }}">{{ year }}</a>
-      {% else %}
-        <span>{{ year }}</span>
-      {% endif %}
-      {% for tag in page.tags %}
-        {% if url_beginning == '/blog/' %}
-          <a href="{{ tag | slugify | prepend: '/blog/tag/' | append: '/' | relative_url }}">#{{ tag }}</a>
-        {% else %}
-          <span>#{{ tag }}</span>
-        {% endif %}
-      {% endfor %}
-      {% for category in page.categories %}
-        {% if url_beginning == '/blog/' %}
-          <a href="{{ category | slugify | prepend: '/blog/category/' | append: '/' | relative_url }}">{{ category }}</a>
-        {% else %}
-          <span>{{ category }}</span>
-        {% endif %}
-      {% endfor %}
-    </div>
   </header>
-
   {% if page.toc == true or page.toc.beginning %}
-    <nav id="table-of-contents" class="garden-article__toc" aria-label="Table of contents">
+    <nav class="folio-reader__toc" aria-label="Table of contents">
       <p>On this page</p>
       {% toc %}
     </nav>
   {% endif %}
-
-  <div id="markdown-content" class="garden-prose">
-    {{ content }}
-  </div>
-
-  {% if page.thread %}
-    {% assign matched_threads = site.data.work_threads | where: 'key', page.thread %}
-    {% assign matched_thread = matched_threads | first %}
-    <aside class="garden-article__thread" aria-label="Writing thread">
-      <span>{{ matched_thread.label | default: 'Writing thread' }}</span>
-      {% if matched_thread %}
-        <p>
-          <a href="{{ '/blog/' | relative_url }}">{{ matched_thread.title }}</a>
-        </p>
-      {% else %}
-        <p>{{ page.thread }}</p>
-      {% endif %}
-    </aside>
+  <div id="markdown-content" class="folio-prose folio-essay-body">{{ content }}</div>
+  {% if page.tags or page.categories %}
+    <footer class="folio-reader__filing">
+      {% for tag in page.tags -%}
+        <span>#{{ tag }}</span>
+      {%- endfor %}
+      {% for category in page.categories -%}
+        <span>{{ category }}</span>
+      {%- endfor %}
+    </footer>
   {% endif %}
-
-  {% capture article_support %}
-    {% if page.citation %}
-      {% include citation.liquid %}
-    {% endif %}
-
-    {% if page.related_publications %}
-      <h2>References</h2>
-      <div class="publications">
-        {% bibliography --group_by none --cited_in_order %}
-      </div>
-    {% endif %}
-
-    {% if site.related_blog_posts and site.related_blog_posts.enabled %}
-      {% if page.related_posts == null or page.related_posts %}
-        {% include related_posts.liquid %}
-      {% endif %}
-    {% endif %}
-
-    {% if site.disqus_shortname and page.disqus_comments %}
-      {% include disqus.liquid %}
-    {% endif %}
-    {% if site.giscus and page.giscus_comments %}
-      {% include giscus.liquid %}
-    {% endif %}
-  {% endcapture %}
-  {% assign article_support = article_support | strip %}
-  {% if article_support != '' %}
-    <div class="garden-article__support">{{ article_support }}</div>
-  {% endif %}
+  <p class="folio-ornament" aria-hidden="true">❦</p>
 </article>

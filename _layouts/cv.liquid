@@ -1,44 +1,80 @@
 ---
 layout: default
 ---
-{% assign cv_pdf = site.data.socials.cv_pdf | default: page.cv_pdf %}
-{% assign cv_email = site.data.socials.email %}
-{% assign cv_linkedin = site.data.socials.linkedin_username %}
-{% assign cv_github = site.data.socials.github_username %}
-{% assign cv_general_information = site.data.cv | where: 'title', 'General Information' | first %}
-{% assign cv_full_name = cv_general_information.contents | where: 'name', 'Full Name' | first %}
-{% assign cv_title = cv_full_name.value | default: page.title %}
-<article class="garden-cv">
-  {% include garden-intro.liquid eyebrow='Curriculum vitae' title=cv_title description=page.description %}
-  <nav class="garden-cv__actions" aria-label="CV contact and download actions">
-    {% if cv_pdf -%}
-      <a class="garden-button" href="{{ cv_pdf | relative_url }}">Download PDF</a>
-    {%- endif %}
-    {% if cv_email -%}
-      <a href="mailto:{{ cv_email }}">Email</a>
-    {%- endif %}
-    {% if cv_linkedin -%}
-      <a href="https://www.linkedin.com/in/{{ cv_linkedin }}/">LinkedIn</a>
-    {%- endif %}
-    {% if cv_github -%}
-      <a href="https://github.com/{{ cv_github }}/">GitHub</a>
-    {%- endif %}
-  </nav>
-  {% for entry in site.data.cv %}
-    <section class="garden-cv__section" id="{{ entry.title | slugify }}">
-      <h2>{{ entry.title }}</h2>
-      {% case entry.type %}
-        {% when 'time_table' -%}
-          {%- include cv/time_table.liquid heading_tag='h3' %}
-        {% when 'list' -%}
-          {%- include cv/list.liquid %}
-        {% when 'map' -%}
-          {%- include cv/map.liquid %}
-        {% when 'nested_list' -%}
-          {%- include cv/nested_list.liquid heading_tag='h3' %}
-        {% when 'list_groups' -%}
-          {%- include cv/list_groups.liquid %}
-      {% endcase %}
-    </section>
-  {% endfor %}
+{% assign experience = site.data.cv | where: 'title', 'Experience' | first %}
+{% assign education = site.data.cv | where: 'title', 'Education' | first %}
+{% assign certifications = site.data.cv | where: 'title', 'Certifications' | first %}
+{% assign skills = site.data.cv | where: 'title', 'Skills' | first %}
+<article class="folio-page folio-records-page">
+  <a class="folio-back-link" href="{{ '/' | relative_url }}" data-page-turn>&larr; Back to the folio</a>
+  <header class="folio-page__header" data-reveal>
+    <p class="folio-kicker">Cabinet of Records</p>
+    <h1><span data-drift="6">The official paperwork.</span></h1>
+    <p>{{ page.description }}</p>
+  </header>
+  <div class="folio-records-grid folio-records-grid--page">
+    <div>
+      <section class="folio-record-section" aria-labelledby="experience-title">
+        <h2 id="experience-title">Experience</h2>
+        <div class="folio-timeline">
+          {% for role in experience.contents %}
+            <article data-reveal>
+              <time>{{ role.year }}</time>
+              <div>
+                <h3>{{ role.title }}</h3>
+                <p>
+                  {{ role.institution -}}
+                  {%- if role.location %} &middot; {{ role.location }}{% endif %}
+                </p>
+                {% if role.description %}
+                  <p class="folio-timeline__detail">{{ role.description | first }}</p>
+                {% endif %}
+              </div>
+            </article>
+          {% endfor %}
+        </div>
+      </section>
+      <section class="folio-record-section" aria-labelledby="education-title">
+        <h2 id="education-title">Education</h2>
+        <div class="folio-timeline">
+          {% for item in education.contents %}
+            <article data-reveal>
+              <time>{{ item.year }}</time>
+              <div>
+                <h3>{{ item.title }}</h3>
+                <p>{{ item.institution }}</p>
+              </div>
+            </article>
+          {% endfor %}
+        </div>
+      </section>
+      <a class="folio-button" href="{{ page.cv_pdf | relative_url }}">Download the full CV &darr;</a>
+    </div>
+    <aside class="folio-records-aside" aria-labelledby="certificates-title">
+      <h2 id="certificates-title">Certificates, framed</h2>
+      {% for certificate in certifications.contents %}
+        <article class="folio-certificate" data-reveal>
+          <span>Certificate</span>
+          <h3>{{ certificate.title }}</h3>
+          <p>{{ certificate.institution }} &middot; {{ certificate.year }}</p>
+        </article>
+      {% endfor %}
+      {% for item in education.contents %}
+        <article class="folio-certificate" data-reveal>
+          <span>Diploma</span>
+          <h3>{{ item.title }}</h3>
+          <p>{{ item.institution }} &middot; {{ item.year }}</p>
+        </article>
+      {% endfor %}
+      <section class="folio-skills" aria-labelledby="skills-title">
+        <h2 id="skills-title">Working methods</h2>
+        <ul>
+          {% for item in skills.contents %}
+            <li>{{ item }}</li>
+          {% endfor %}
+        </ul>
+      </section>
+    </aside>
+  </div>
+  <p class="folio-ornament" aria-hidden="true">❦</p>
 </article>

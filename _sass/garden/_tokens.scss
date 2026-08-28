@@ -1,16 +1,19 @@
 :root {
-  --garden-canvas: #faf9f6;
-  --garden-surface: #f2f0eb;
-  --garden-surface-hover: #ece9e3;
-  --garden-ink: #171717;
-  --garden-muted: #6f6b63;
-  --garden-quiet: #6f6b63;
-  --garden-line: #dedad2;
-  --garden-accent: #8d8069;
-  --garden-focus: #615846;
+  --garden-canvas: #f6f0e3;
+  --garden-surface: #faf5e9;
+  --garden-surface-hover: #f1e6cf;
+  --garden-ink: #372b1f;
+  --garden-muted: #5c4c39;
+  --garden-quiet: #826644;
+  --garden-sepia: #8a6d4b;
+  --garden-line: rgba(93, 70, 50, 0.25);
+  --garden-accent: #8a3b2a;
+  --garden-focus: #8a3b2a;
+  --garden-espresso: #2b2118;
+  --garden-cream: #e9ddc6;
   --garden-max: 1120px;
-  --garden-gap: 8px;
-  --garden-radius: 8px;
-  --garden-serif: "Fraunces", Georgia, serif;
-  --garden-sans: "Inter", "Helvetica Neue", sans-serif;
+  --garden-gap: 28px;
+  --garden-radius: 0;
+  --garden-serif: "EB Garamond", Georgia, serif;
+  --garden-sans: "EB Garamond", Georgia, serif;
 }

@@ -2,8 +2,9 @@
   margin: 0;
   padding: 0;
   background: var(--garden-canvas);
+  background-image: repeating-linear-gradient(0deg, rgba(93, 70, 50, 0.022) 0 1px, transparent 1px 3px);
   color: var(--garden-ink);
-  font-family: var(--garden-sans);
+  font-family: var(--garden-serif);
 }
 .garden-body *,
 .garden-body *::before,
@@ -18,7 +19,7 @@
   outline-offset: 3px;
 }
 .garden-container {
-  width: min(calc(100% - 32px), var(--garden-max));
+  width: min(calc(100% - 128px), var(--garden-max));
   margin-inline: auto;
 }
 .garden-skip {
@@ -37,48 +38,59 @@
   position: sticky;
   top: 0;
   z-index: 40;
-  padding: 16px 0 8px;
-  pointer-events: none;
+  border-bottom: 1px solid var(--garden-line);
+  background: rgba(246, 240, 227, 0.92);
+  backdrop-filter: blur(6px);
 }
 .garden-nav {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  font-size: 14px;
-  pointer-events: auto;
+  gap: 32px;
+  min-height: 72px;
+  padding: 0 64px;
 }
-.garden-nav__segments {
+.garden-nav__links {
   display: flex;
-  overflow-x: auto;
-  padding: 4px;
-  border: 1px solid var(--garden-line);
-  border-radius: var(--garden-radius);
-  background: var(--garden-surface);
+  gap: 34px;
+  align-items: center;
 }
-.garden-nav__segments a,
-.garden-nav__name,
-.garden-nav__utility a {
+.garden-nav__monogram {
+  color: var(--garden-ink);
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-decoration: none;
+}
+.garden-nav__monogram span {
+  color: var(--garden-accent);
+}
+.garden-nav__links a {
   display: inline-flex;
   min-width: 44px;
   min-height: 44px;
   align-items: center;
   justify-content: center;
-  padding: 6px 9px;
+  padding: 3px 0;
+  background-image: linear-gradient(var(--garden-accent), var(--garden-accent));
+  background-position: 0 calc(100% - 10px);
+  background-repeat: no-repeat;
+  background-size: 0 1px;
+  color: var(--garden-ink);
+  font-size: 13.5px;
+  letter-spacing: 0.22em;
   text-decoration: none;
+  text-transform: uppercase;
+  transition: background-size 0.35s;
   white-space: nowrap;
 }
-.garden-nav__segments a[aria-current="page"] {
-  border-radius: 5px;
-  background: var(--garden-line);
-}
-.garden-nav__utility {
-  display: flex;
-  color: var(--garden-muted);
+.garden-nav__links a:hover,
+.garden-nav__links a[aria-current="page"] {
+  background-size: 100% 1px;
 }
 .garden-main {
   min-height: 70vh;
-  padding: 24px 0 72px;
+  padding: 0;
 }
 .garden-footer {
   padding: 24px 0 36px;

@@ -18,12 +18,20 @@
 .garden-body--simulation-v2 .garden-nav {
   width: calc(100% - 24px);
   max-width: none;
+  min-height: 44px;
+  gap: 12px;
+  margin-inline: auto;
+  padding: 0;
 }
 
-.garden-body--simulation-v2 .garden-nav__segments a,
-.garden-body--simulation-v2 .garden-nav__name,
-.garden-body--simulation-v2 .garden-nav__utility a {
-  min-height: 40px;
+.garden-body--simulation-v2 .garden-nav__links {
+  gap: 18px;
+  overflow-x: auto;
+}
+
+.garden-body--simulation-v2 .garden-nav__monogram,
+.garden-body--simulation-v2 .garden-nav__links a {
+  min-height: 44px;
 }
 
 .garden-body--simulation-v2 .garden-footer {

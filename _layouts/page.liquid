@@ -2,9 +2,18 @@
 layout: default
 ---
 {% if page.collection == 'projects' %}
-  <article class="garden-case">
-    {% include garden-intro.liquid eyebrow=page.category title=page.title description=page.description %}
-    <dl class="garden-case__meta">
+  <article class="folio-page folio-case-page">
+    <a class="folio-back-link" href="{{ '/projects/' | relative_url }}" data-page-turn>&larr; Back to all works</a>
+    <header class="folio-page__header folio-case-page__header" data-reveal>
+      <p class="folio-kicker">{{ page.category | default: 'Project' }}</p>
+      <h1>
+        <span data-drift="6">{{ page.title }}</span>
+      </h1>
+      {% if page.description %}
+        <p>{{ page.description }}</p>
+      {% endif %}
+    </header>
+    <dl class="folio-case-meta" data-reveal>
       <div>
         <dt>Role</dt>
         <dd>{{ page.role }}</dd>
@@ -19,24 +28,12 @@ layout: default
       </div>
     </dl>
     {% if page.gallery %}
-      <section class="garden-case__gallery" aria-labelledby="project-gallery-title">
-        <div class="garden-case__gallery-heading">
-          <span>Project views</span>
-          <h2 id="project-gallery-title">Inside the experience</h2>
-        </div>
-        <div class="garden-case__gallery-grid">
+      <section class="folio-case-gallery" aria-labelledby="project-gallery-title">
+        <h2 id="project-gallery-title">Inside the experience</h2>
+        <div>
           {% for item in page.gallery %}
-            {% if forloop.first %}
-              {% assign gallery_sizes = '(min-width: 1200px) 1120px, (min-width: 800px) calc(100vw - 80px), 100vw' %}
-              {% assign gallery_loading = 'eager' %}
-              {% assign gallery_fetchpriority = 'high' %}
-            {% else %}
-              {% assign gallery_sizes = '(min-width: 1200px) 552px, (min-width: 800px) calc(50vw - 48px), 100vw' %}
-              {% assign gallery_loading = 'lazy' %}
-              {% assign gallery_fetchpriority = 'auto' %}
-            {% endif %}
-            <figure>
-              {% include garden-media.liquid src=item.image alt=item.alt fit=item.fit width=item.width height=item.height loading=gallery_loading fetchpriority=gallery_fetchpriority sizes=gallery_sizes zoom=item.zoom %}
+            <figure data-reveal>
+              {% include garden-media.liquid src=item.image alt=item.alt fit=item.fit width=item.width height=item.height loading='lazy' %}
               {% if item.caption %}
                 <figcaption>{{ item.caption }}</figcaption>
               {% endif %}
@@ -45,75 +42,104 @@ layout: default
         </div>
       </section>
     {% endif %}
-    <section id="problem">
-      <h2>Problem</h2>
-      <p>{{ page.problem }}</p>
-    </section>
-    <section id="constraints">
-      <h2>Constraints</h2>
-      <ul>
-        {% for item in page.constraints %}
-          <li>{{ item }}</li>
-        {% endfor %}
-      </ul>
-    </section>
-    <section id="system">
-      <h2>{{ page.system_map.title | default: 'System' }}</h2>
-      <ol>
-        {% for step in page.system_map.steps %}
-          <li>
-            <strong>{{ step.title }}</strong>
-            <p>{{ step.detail }}</p>
-          </li>
-        {% endfor %}
-      </ol>
-    </section>
-    <section id="proof">
-      <h2>Proof and artifacts</h2>
-      <div class="garden-proof">
-        {% for item in page.proof %}
-          <article>
-            <h3>{{ item.label }}</h3>
-            <p>{{ item.detail }}</p>
-          </article>
-        {% endfor %}
-      </div>
-      {% if page.artifacts %}
-        <div class="garden-artifacts">
-          <h3>Project artifacts</h3>
-          <div>
-            {% for artifact in page.artifacts %}
-              {% assign artifact_url = artifact.url %}
-              {% unless artifact_url contains '://' %}{% assign artifact_url = artifact_url | relative_url %}{% endunless %}
-              <a href="{{ artifact_url }}">{{ artifact.label }}</a>
+    <div class="folio-case-sections">
+      {% if page.problem %}
+        <section data-reveal>
+          <p class="folio-kicker">The problem</p>
+          <h2>What had to change</h2>
+          <p>{{ page.problem }}</p>
+        </section>
+      {% endif %}
+      {% if page.constraints %}
+        <section data-reveal>
+          <p class="folio-kicker">Constraints</p>
+          <h2>The shape of the work</h2>
+          <ul>
+            {% for item in page.constraints %}
+              <li>{{ item }}</li>
+            {% endfor %}
+          </ul>
+        </section>
+      {% endif %}
+      {% if page.system_map %}
+        <section data-reveal>
+          <p class="folio-kicker">System</p>
+          <h2>{{ page.system_map.title | default: 'How it works' }}</h2>
+          <ol class="folio-system-steps">
+            {% for step in page.system_map.steps %}
+              <li>
+                <span>{{ forloop.index | prepend: '0' }}</span>
+                <div>
+                  <h3>{{ step.title }}</h3>
+                  <p>{{ step.detail }}</p>
+                </div>
+              </li>
+            {% endfor %}
+          </ol>
+        </section>
+      {% endif %}
+      {% if page.proof %}
+        <section data-reveal>
+          <p class="folio-kicker">Proof &amp; artifacts</p>
+          <h2>What remains inspectable</h2>
+          <div class="folio-proof-grid">
+            {% for item in page.proof %}
+              <article>
+                <h3>{{ item.label }}</h3>
+                <p>{{ item.detail }}</p>
+              </article>
             {% endfor %}
           </div>
-        </div>
+        </section>
       {% endif %}
-    </section>
-    <section id="decisions">
-      <h2>Decisions</h2>
-      <ul>
-        {% for item in page.decisions %}
-          <li>{{ item }}</li>
-        {% endfor %}
-      </ul>
-    </section>
-    <section id="outcomes">
-      <h2>Outcomes</h2>
-      <ul>
-        {% for item in page.outcomes %}
-          <li>{{ item }}</li>
-        {% endfor %}
-      </ul>
-    </section>
-    <div class="garden-prose">{{ content }}</div>
+      {% if page.decisions %}
+        <section data-reveal>
+          <p class="folio-kicker">Decisions</p>
+          <h2>Choices that shaped the result</h2>
+          <ul>
+            {% for item in page.decisions %}
+              <li>{{ item }}</li>
+            {% endfor %}
+          </ul>
+        </section>
+      {% endif %}
+      {% if page.outcomes %}
+        <section data-reveal>
+          <p class="folio-kicker">Outcomes</p>
+          <h2>What the work made possible</h2>
+          <ul>
+            {% for item in page.outcomes %}
+              <li>{{ item }}</li>
+            {% endfor %}
+          </ul>
+        </section>
+      {% endif %}
+    </div>
+    <div class="folio-prose">{{ content }}</div>
+    {% if page.artifacts %}
+      <nav class="folio-case-artifacts" aria-label="Project artifacts">
+        {% for artifact in page.artifacts -%}
+          <a href="{{ artifact.url | relative_url }}">{{ artifact.label }} &rarr;</a>
+        {%- endfor %}
+      </nav>
+    {% endif %}
     {% include garden-related.liquid collection=site.projects current=page label='More projects' %}
+    <p class="folio-ornament" aria-hidden="true">❦</p>
   </article>
 {% else %}
-  <article class="garden-page-content">
+  <article class="folio-page">
     {% assign display_title = page.display_title | default: page.title %}
-    {% include garden-intro.liquid eyebrow=page.eyebrow title=display_title description=page.description %}
-    <div class="garden-prose">{{ content }}</div>
+    <a class="folio-back-link" href="{{ '/' | relative_url }}" data-page-turn>&larr; Back to the folio</a>
+    <header class="folio-page__header" data-reveal>
+      <p class="folio-kicker">{{ page.eyebrow | default: page.title }}</p>
+      <h1>
+        <span data-drift="6">{{ display_title }}</span>
+      </h1>
+      {% if page.description %}
+        <p>{{ page.description }}</p>
+      {% endif %}
+    </header>
+    <div class="folio-prose">{{ content }}</div>
+    <p class="folio-ornament" aria-hidden="true">❦</p>
   </article>
 {% endif %}

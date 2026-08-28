@@ -9,50 +9,44 @@ pagination:
   enabled: true
   collection: posts
   permalink: /page/:num/
-  per_page: 5
+  per_page: 10
   sort_field: date
   sort_reverse: true
-  trail:
-    before: 1
-    after: 3
 ---
 
-<div class="garden-writing">
-  {% include garden-intro.liquid eyebrow='Writing' title='Notes from systems in progress.' description=page.description %}
-
-  <nav class="garden-writing__archives" aria-label="Writing archives">
-    <span>Browse the archive</span>
-    <div>
-      {% assign archive_years = site.posts | group_by_exp: 'post', 'post.date | date: "%Y"' %}
-      {% for archive_year in archive_years %}
-        {% assign year_path = archive_year.name | prepend: '/blog/' | append: '/' %}
-        <a href="{{ year_path | relative_url }}" aria-label="Writing from {{ archive_year.name }}">{{ archive_year.name }}</a>
-      {% endfor %}
-      {% assign archive_tags = site.tags | sort %}
-      {% for archive_tag in archive_tags %}
-        {% assign tag_name = archive_tag[0] %}
-        {% assign tag_path = tag_name | slugify | prepend: '/blog/tag/' | append: '/' %}
-        <a href="{{ tag_path | relative_url }}">#{{ tag_name }}</a>
-      {% endfor %}
-      {% assign archive_categories = site.categories | sort %}
-      {% for archive_category in archive_categories %}
-        {% assign category_name = archive_category[0] %}
-        {% assign category_path = category_name | slugify | prepend: '/blog/category/' | append: '/' %}
-        <a href="{{ category_path | relative_url }}">{{ category_name }}</a>
-      {% endfor %}
-    </div>
-  </nav>
+<article class="folio-page folio-archive">
+  <a class="folio-back-link" href="{{ '/' | relative_url }}" data-page-turn>&larr; Back to the folio</a>
+  <header class="folio-page__header" data-reveal>
+    <p class="folio-kicker">Essays &amp; Writing</p>
+    <h1><span data-drift="6">The full archive.</span></h1>
+    <p>It grows slowly, on purpose.</p>
+  </header>
 
 {% assign postlist = paginator.posts | default: site.posts %}
+{% assign grouped_posts = postlist | group_by_exp: 'post', 'post.date | date: "%Y"' %}
+{% for year in grouped_posts %}
 
-  <section class="garden-writing-grid garden-grid" aria-label="Writing posts">
-    {% for post in postlist %}
-      {% assign size = 'standard' %}
-      {% if forloop.first %}{% assign size = 'wide' %}{% endif %}
-      {% include garden-post-card.liquid post=post size=size %}
-    {% endfor %}
-  </section>
-
+<section class="folio-archive__year" aria-labelledby="year-{{ year.name }}">
+<h2 id="year-{{ year.name }}">{{ year.name }}</h2>
+<ol class="folio-essay-list folio-essay-list--archive">
+{% for post in year.items %}
+{% assign word_count = post.content | number_of_words %}
+{% assign read_minutes = word_count | divided_by: 180 | plus: 1 %}
+<li data-reveal>
+<a href="{{ post.url | relative_url }}" data-page-turn>
+<span class="folio-essay-list__number" aria-hidden="true">{% case forloop.index %}{% when 1 %}I.{% when 2 %}II.{% when 3 %}III.{% when 4 %}IV.{% when 5 %}V.{% else %}{{ forloop.index }}.{% endcase %}</span>
+<span class="folio-essay-list__copy">
+<span class="folio-essay-list__title">{{ post.title }}</span>
+<span class="folio-essay-list__excerpt">{{ post.description }}</span>
+</span>
+<span class="folio-essay-list__meta"><time datetime="{{ post.date | date_to_xmlschema }}">{{ post.date | date: '%b %Y' }}</time> &middot; {{ read_minutes }} min</span>
+</a>
+</li>
+{% endfor %}
+</ol>
+</section>
+{% endfor %}
 {% include pagination.liquid %}
 
-</div>
+  <p class="folio-ornament" aria-hidden="true">❦</p>
+</article>
