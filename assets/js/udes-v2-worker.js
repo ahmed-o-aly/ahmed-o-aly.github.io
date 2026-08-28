@@ -9,7 +9,7 @@
  *   step       { days?: 1, captureDaily?: false, snapshot?: SnapshotOptions }
  *   run        { days, chunkDays?: 30, snapshot?: SnapshotOptions }
  *   reset      { seed? }
- *   configure  { patch, reset?: false }
+ *   configure  { patch, reset?: false, snapshot?: SnapshotOptions }
  *   inspect    { kind: city|zone|citizen|enterprise|link, id?, historyLimit? }
  *
  * Worker reply: ready | snapshot | progress | inspection | error. Replies
@@ -23,6 +23,11 @@
   const SCHEMA_VERSION = "2.1";
   const DAY_MS = 86400000;
   const EPSILON = 1e-9;
+  const MAP_FRAME_NONE = 255;
+  const CITIZEN_STATE_CODES = Object.freeze({ Happy: 0, Waiting: 1, Extreme: 2, Recovery: 3 });
+  const CITIZEN_MODE_CODES = Object.freeze({ none: 0, car: 1, pt: 2, walk: 3, unserved: 4 });
+  const CITIZEN_LABOR_FORCE_CODES = Object.freeze({ nonparticipant: 0, unemployed: 1, employed: 2 });
+  const ENTERPRISE_STATE_CODES = Object.freeze({ Starting: 0, Working: 1, Grow: 2, Lesser: 3 });
 
   // These are transparent, illustrative Abu Dhabi City calibration values,
   // not official forecasts. Original UDES rules are identified in comments;
@@ -35,11 +40,26 @@
     citizenCount: 8000,
     enterpriseCount: 600,
     citizenWeight: 100,
-    initialEmploymentRate: 0.8,
+    // Citizen agents represent the full resident stock, not only labor-force
+    // participants. The 67% opening/target share is anchored to SCAD's 2024
+    // emirate-wide employed-population ratio (2.76m / 4.14m) and remains an
+    // explicit approximation for the selected Greater Abu Dhabi City scope.
+    initialEmploymentRate: 0.67,
     // Employment is a calibrated stock, not an absorbing state. Daily labor
     // matching repairs separations only up to this citywide target instead of
     // mechanically filling every vacancy until unemployment reaches zero.
-    targetEmploymentRate: 0.8,
+    targetEmploymentRate: 0.67,
+    // Labor-force participation is a separate, explicit modeling assumption.
+    // The baseline has 67% employed plus a 3 percentage-point active job-seeker
+    // reserve, leaving 30% as nonparticipants. These values are not a SCAD
+    // calibration and should be replaced when scoped evidence exists.
+    laborForceParticipationRate: 0.7,
+    activeJobSeekerResidentRate: 0.03,
+    // Nonparticipants stand in for residents supported by household transfers,
+    // pensions, study arrangements, or other non-labor resources. Their modeled
+    // monthly support covers current housing, ordinary essentials, and this
+    // modest residual buffer; it is not a named government benefit or forecast.
+    nonParticipantMonthlySupportBufferAed: 1500,
     initialCarOwnership: 0.86,
     initialHomeZoneJobProbability: 0.3,
     initialHousingOccupancyTarget: 0.82,
@@ -62,6 +82,13 @@
     mapCitizenSamplesPerZone: 3,
     mapEnterpriseSamplesPerZone: 2,
     routingBatchSize: 512,
+    // Daily route choice is warm-started from the preceding workday. Each
+    // commuter removes their own old trip before choosing again, so the first
+    // routing batch sees the rest of the city's demand instead of an empty
+    // network. This is a deterministic day-to-day best-response assignment,
+    // and prevents agent aggregation or batch size from creating a large
+    // artificial zero-load overshoot.
+    warmStartDailyRouteChoice: true,
     maxDailyLaborMatches: 160,
     laborMarketVacancyBuffer: 0.08,
     betterJobSearchAttempts: 8,
@@ -82,12 +109,15 @@
     policyScopeZoneId: null,
     focusZoneId: null,
     housingRentBaseAed: 3000,
-    assignmentPeakHours: 8,
-    // The 18-zone graph has one representative edge where the real city has
-    // several parallel roads and bus services. These factors convert an
-    // observed/synthetic per-corridor hourly capacity into an aggregate
-    // district-to-district assignment capacity. They apply only to inputs
-    // explicitly supplied as `*PerHour`, never to already-aggregated values.
+    // Legacy config key: this is the daily morning-to-evening work-trip
+    // assignment window, not a peak-hour traffic count. Outbound and return
+    // modeled work trips share 13 hours of directional road/service capacity.
+    assignmentPeakHours: 13,
+    // Legacy zone-pair roads stand in for multiple parallel roads, while every
+    // synthetic PT record represents aggregate district service supply rather
+    // than one observed bus route. Physical road edges always use their supplied
+    // directional capacity directly (no road bundle factor). The PT service
+    // factor is applied once before a service is loaded onto physical traversals.
     roadCorridorBundleFactor: 5,
     ptCorridorBundleFactor: 48,
 
@@ -452,6 +482,14 @@
     return total;
   }
 
+  function firstFinite(values, fallback = NaN) {
+    for (const value of values) {
+      const numeric = Number(value);
+      if (Number.isFinite(numeric)) return numeric;
+    }
+    return fallback;
+  }
+
   function haversineKm(a, b) {
     const radians = (degrees) => (degrees * Math.PI) / 180;
     const earthRadiusKm = 6371;
@@ -523,6 +561,49 @@
     }
   }
 
+  class MinPriorityQueue {
+    constructor() {
+      this.items = [];
+    }
+
+    push(node, priority) {
+      const item = { node, priority };
+      this.items.push(item);
+      let index = this.items.length - 1;
+      while (index > 0) {
+        const parent = Math.floor((index - 1) / 2);
+        if (this.items[parent].priority <= priority) break;
+        this.items[index] = this.items[parent];
+        index = parent;
+      }
+      this.items[index] = item;
+    }
+
+    pop() {
+      if (!this.items.length) return null;
+      const first = this.items[0];
+      const last = this.items.pop();
+      if (this.items.length && last) {
+        let index = 0;
+        while (true) {
+          const left = index * 2 + 1;
+          const right = left + 1;
+          if (left >= this.items.length) break;
+          const child = right < this.items.length && this.items[right].priority < this.items[left].priority ? right : left;
+          if (this.items[child].priority >= last.priority) break;
+          this.items[index] = this.items[child];
+          index = child;
+        }
+        this.items[index] = last;
+      }
+      return first;
+    }
+
+    get length() {
+      return this.items.length;
+    }
+  }
+
   class UdesV2Engine {
     constructor(options = {}) {
       this.initialize(options);
@@ -552,6 +633,9 @@
       this.residentialMoveRng = new SeededRandom(this.seed ^ 0xc2b2ae35);
       this.enterpriseMoveRng = new SeededRandom(this.seed ^ 0x27d4eb2f);
       this.initialTenureRng = new SeededRandom(this.seed ^ 0x165667b1);
+      // Labor-force classification has an isolated stream so changing this
+      // replaceable assumption cannot perturb firms, commutes, or housing draws.
+      this.laborForceRng = new SeededRandom(this.seed ^ 0xa511e9b3);
       this.initialOptions = {
         seed: this.seed,
         config: deepClone(suppliedConfig),
@@ -576,14 +660,28 @@
       this.initializeZoneLandUsePolicies();
       if (this.initialOptions.zonePolicies.length) this.applyExplicitZonePolicies(this.initialOptions.zonePolicies);
       this.initialOptions.zonePolicies = this.serializeZonePolicies();
-      this.links = this.createLinks(options.data?.links || options.data?.routes, options.data?.transit);
+      const roadGraph = isPlainObject(options.data?.roadGraph) ? options.data.roadGraph : {};
+      const linkDefinitions = options.data?.links || options.data?.routes || roadGraph.edges;
+      const nodeDefinitions = options.data?.nodes || roadGraph.nodes;
+      const candidateRoutes = options.data?.candidateRoutes || roadGraph.candidateRoutes;
+      this.usesPhysicalRoadGraph = this.detectPhysicalRoadGraph(nodeDefinitions, linkDefinitions);
+      this.networkNodes = this.createNetworkNodes(nodeDefinitions);
+      this.networkNodeById = new Map(this.networkNodes.map((node) => [node.id, node]));
+      this.resolveZoneNetworkNodes();
+      this.links = this.createLinks(linkDefinitions, options.data?.transit);
       this.linkById = new Map(this.links.map((link) => [link.id, link]));
-      this.graph = this.buildGraph();
+      if (this.usesPhysicalRoadGraph) this.configurePhysicalTransit(options.data?.transit, candidateRoutes);
+      this.graph = this.buildGraph("car");
+      this.ptGraph = this.buildGraph("pt");
       this.citizens = [];
       this.citizenById = new Map();
       this.enterprises = [];
       this.enterpriseById = new Map();
+      // `unemployedIds` remains the complete non-employed stock for accounting
+      // compatibility; only `jobSeekerIds` is eligible for labor matching.
       this.unemployedIds = new Set();
+      this.jobSeekerIds = new Set();
+      this.nonParticipantIds = new Set();
       this.daily = this.emptyDailyMetrics();
       this.lastWorkdayAssignmentDate = null;
       this.lastCarPathMatrix = null;
@@ -592,6 +690,7 @@
       this.createEnterprises();
       this.createCitizens();
       this.assignInitialEmployment();
+      this.initializeLaborForceParticipation();
       this.selectMapAgentIds();
       this.initializeCitizenFinances();
       this.updateZoneAndEnterpriseRents();
@@ -656,6 +755,8 @@
             zone.enterpriseIds.size,
             Math.round(zone.baseEnterprisePlaceCapacity * zone.businessCapacityMultiplier)
           );
+          zone.requestedJobCapacityAgents = this.scaledZoneJobCapacityAgents(zone, zone.businessCapacityMultiplier);
+          this.reconcileZoneJobCapacity(zone);
         }
       }
       if (normalizedPatch.placeQuality !== undefined) {
@@ -922,6 +1023,10 @@
           residentialRentAed: zone.residentialRentAed,
           jobs: zone.jobs,
           jobCapacity: zone.jobCapacity,
+          requestedZonedJobCapacityRepresented: zone.requestedZonedJobCapacityRepresented,
+          zonedJobCapacityRepresented: zone.zonedJobCapacityRepresented,
+          zonedJobCapacityGrandfatheredRepresented: zone.zonedJobCapacityGrandfatheredRepresented,
+          zonedJobCapacityUtilizationPercent: zone.zonedJobCapacityUtilizationPercent,
           vacancies: zone.vacancies,
           population: zone.population,
           representedEmployed: zone.representedEmployed,
@@ -1016,10 +1121,14 @@
           1,
           Math.round(Number(source.enterprisePlaceCapacity) || this.config.enterpriseCount * 1.35 * firmShare)
         );
+        const suppliedJobCapacityRepresented = Math.max(0, Number(source.jobCapacityPersons) || 0);
+        const baseJobCapacityAgents =
+          suppliedJobCapacityRepresented > 0 ? Math.max(1, Math.ceil(suppliedJobCapacityRepresented / this.config.citizenWeight)) : Infinity;
         return {
           id: String(source.id),
           index,
           name: source.name || String(source.id),
+          networkNodeId: source.networkNodeId != null ? String(source.networkNodeId) : null,
           lat: Number(source.lat ?? centroid[1]),
           lon: Number(source.lon ?? centroid[0]),
           populationShare,
@@ -1034,11 +1143,15 @@
           baseEnterprisePlaceCapacity,
           businessCapacityMultiplier: 1,
           enterprisePlaceCapacity: baseEnterprisePlaceCapacity,
+          baseJobCapacityRepresented: suppliedJobCapacityRepresented,
+          baseJobCapacityAgents,
+          requestedJobCapacityAgents: baseJobCapacityAgents,
+          jobCapacityAgents: baseJobCapacityAgents,
           placeQualityPolicy: 0.82,
           carOwnershipRate: clamp(Number(source.carOwnershipRate ?? this.config.initialCarOwnership), 0, 1),
           averageMonthlySalaryAed: Math.max(0, Number(source.averageMonthlySalaryAed) || 0),
           jobsBaselineRepresented: Math.max(0, Number(source.jobs2024) || 0),
-          jobCapacityRepresented: Math.max(0, Number(source.jobCapacityPersons) || 0),
+          jobCapacityRepresented: suppliedJobCapacityRepresented,
           residentIds: new Set(),
           enterpriseIds: new Set(),
           history: [],
@@ -1064,6 +1177,8 @@
         zone.housingCapacityAgents = Math.max(1, Math.ceil(zone.baseHousingCapacityAgents * housingMultiplier));
         zone.businessCapacityMultiplier = businessMultiplier;
         zone.enterprisePlaceCapacity = Math.max(1, Math.round(zone.baseEnterprisePlaceCapacity * businessMultiplier));
+        zone.requestedJobCapacityAgents = this.scaledZoneJobCapacityAgents(zone, businessMultiplier);
+        zone.jobCapacityAgents = zone.requestedJobCapacityAgents;
       }
       this.applyPlaceQualityPolicy(targetZones, this.config.placeQuality);
     }
@@ -1116,12 +1231,82 @@
           zone.enterpriseIds.size,
           Math.round(zone.baseEnterprisePlaceCapacity * businessCapacityMultiplier)
         );
+        zone.requestedJobCapacityAgents = this.scaledZoneJobCapacityAgents(zone, businessCapacityMultiplier);
+        this.reconcileZoneJobCapacity(zone);
         this.applyPlaceQualityPolicy([zone], placeQuality);
+      }
+    }
+
+    detectPhysicalRoadGraph(nodeDefinitions, linkDefinitions) {
+      if (!Array.isArray(nodeDefinitions) || !nodeDefinitions.length || !Array.isArray(linkDefinitions) || !linkDefinitions.length) return false;
+      const nodeIds = new Set(nodeDefinitions.map((node) => String(node?.id ?? "")).filter(Boolean));
+      const endpointsUseNodes = linkDefinitions.every(
+        (link) => nodeIds.has(String(link?.from ?? link?.fromNodeId ?? "")) && nodeIds.has(String(link?.to ?? link?.toNodeId ?? ""))
+      );
+      if (!endpointsUseNodes) return false;
+      return (
+        this.zones.some((zone) => zone.networkNodeId && nodeIds.has(zone.networkNodeId)) ||
+        linkDefinitions.some((link) => !this.zoneById.has(String(link?.from ?? "")) || !this.zoneById.has(String(link?.to ?? "")))
+      );
+    }
+
+    createNetworkNodes(nodeDefinitions) {
+      if (!this.usesPhysicalRoadGraph) {
+        return this.zones.map((zone, index) => ({
+          id: zone.id,
+          index,
+          lat: zone.lat,
+          lon: zone.lon,
+          kind: "zone-anchor",
+          zoneIds: [zone.id],
+        }));
+      }
+      const seen = new Set();
+      return nodeDefinitions.map((source, index) => {
+        const id = String(source?.id ?? "");
+        if (!id || seen.has(id)) throw new Error(`Invalid or duplicate road node: ${id || index}`);
+        seen.add(id);
+        const coord = Array.isArray(source.coord) ? source.coord : [];
+        return {
+          id,
+          index,
+          lon: firstFinite([source.lon, coord[0]], NaN),
+          lat: firstFinite([source.lat, coord[1]], NaN),
+          kind: String(source.kind || "junction"),
+          zoneIds: Array.isArray(source.zoneIds) ? source.zoneIds.map(String) : [],
+          rawDegree: firstFinite([source.rawDegree], 0),
+          sourceClass: source.sourceClass || null,
+        };
+      });
+    }
+
+    resolveZoneNetworkNodes() {
+      for (const zone of this.zones) {
+        let node = zone.networkNodeId ? this.networkNodeById.get(zone.networkNodeId) : null;
+        if (!node && this.usesPhysicalRoadGraph) node = this.networkNodes.find((candidate) => candidate.zoneIds.includes(zone.id));
+        if (!node && !this.usesPhysicalRoadGraph) node = this.networkNodeById.get(zone.id);
+        if (!node && this.usesPhysicalRoadGraph) {
+          let nearest = null;
+          let nearestDistance = Infinity;
+          for (const candidate of this.networkNodes) {
+            if (!Number.isFinite(candidate.lat) || !Number.isFinite(candidate.lon)) continue;
+            const distance = haversineKm(zone, candidate);
+            if (distance < nearestDistance) {
+              nearest = candidate;
+              nearestDistance = distance;
+            }
+          }
+          node = nearest;
+        }
+        if (!node) throw new Error(`Zone ${zone.id} has no road-network access node`);
+        zone.networkNodeId = node.id;
+        zone.networkNodeIndex = node.index;
       }
     }
 
     createLinks(linkDefinitions, transitData) {
       const definitions = Array.isArray(linkDefinitions) && linkDefinitions.length ? linkDefinitions : this.defaultLinkDefinitions();
+      if (this.usesPhysicalRoadGraph) return definitions.map((source, index) => this.createPhysicalLink(source, index));
       const transitLinks = Array.isArray(transitData?.links) ? transitData.links : [];
       const transitByPair = new Map();
       for (const transit of transitLinks) transitByPair.set([String(transit.from), String(transit.to)].sort().join("|"), transit);
@@ -1142,6 +1327,7 @@
           : Number.isFinite(ptCapacity)
             ? ptCapacity
             : (capacityVehicles || 30000) * 0.55;
+        const roadNames = Array.isArray(source.roadNames) ? source.roadNames.map(String) : [];
         return {
           id: String(source.id || `${from.id}-${to.id}`),
           index,
@@ -1149,19 +1335,56 @@
           to: to.id,
           fromIndex: from.index,
           toIndex: to.index,
+          fromZoneId: from.id,
+          toZoneId: to.id,
+          allowAB: true,
+          allowBA: source.bidirectional !== false,
+          bidirectional: source.bidirectional !== false,
           distanceKm,
           baseDurationMin,
           capacityVehicles: Math.max(1, capacityVehicles || 30000),
+          capacityVehiclesAB: Math.max(1, capacityVehicles || 30000),
+          capacityVehiclesBA: Math.max(1, capacityVehicles || 30000),
+          capacityVehPerHour: capacityIsHourly ? Math.max(0, Number(source.capacityVehPerHour)) : null,
+          capacityVehPerHourAB: capacityIsHourly ? Math.max(0, Number(source.capacityVehPerHour)) : null,
+          capacityVehPerHourBA: capacityIsHourly ? Math.max(0, Number(source.capacityVehPerHour)) : null,
           capacityIsHourly,
+          ptAllowedAB: true,
+          ptAllowedBA: source.bidirectional !== false,
           ptCapacityPassengers: Math.max(1, ptCapacityPassengers),
+          ptCapacityPassengersAB: Math.max(1, ptCapacityPassengers),
+          ptCapacityPassengersBA: Math.max(1, ptCapacityPassengers),
           ptCapacityIsHourly,
           ptBaseDurationMin: Math.max(1, Number(transit?.inVehicleMinutes) || (distanceKm / this.config.ptAverageSpeedKmh) * 60),
+          ptBaseDurationABMin: Math.max(1, Number(transit?.inVehicleMinutes) || (distanceKm / this.config.ptAverageSpeedKmh) * 60),
+          ptBaseDurationBAMin: Math.max(1, Number(transit?.inVehicleMinutes) || (distanceKm / this.config.ptAverageSpeedKmh) * 60),
           ptAverageWaitMin: Number.isFinite(Number(transit?.averageWaitMinutes))
+            ? Math.max(0, Number(transit.averageWaitMinutes))
+            : Math.max(0, Number(this.config.ptAverageWaitMin) || 0),
+          ptAverageWaitABMin: Number.isFinite(Number(transit?.averageWaitMinutes))
+            ? Math.max(0, Number(transit.averageWaitMinutes))
+            : Math.max(0, Number(this.config.ptAverageWaitMin) || 0),
+          ptAverageWaitBAMin: Number.isFinite(Number(transit?.averageWaitMinutes))
             ? Math.max(0, Number(transit.averageWaitMinutes))
             : Math.max(0, Number(this.config.ptAverageWaitMin) || 0),
           geometry: source.geometry || source.coordinates || null,
           geometryFeatureId: source.geometryFeatureId || null,
+          hidden: Boolean(source.hidden),
+          modelVisible: source.modelVisible !== false,
+          contextOnly: Boolean(source.contextOnly),
+          modelRole: source.modelRole || null,
+          displayClass: source.displayClass || "arterial",
+          loadBearing: source.loadBearing !== false,
           roadClass: source.corridorType || source.roadClass || "urban-arterial",
+          primaryRoad: String(source.primaryRoad || source.name || roadNames[0] || "Inter-district road route"),
+          roadNames,
+          roadRefs: Array.isArray(source.roadRefs) ? source.roadRefs.map(String) : [],
+          lanesPerDirection: firstFinite([source.lanesPerDirection], null),
+          capacityPerLaneVehPerHour: firstFinite([source.capacityPerLaneVehPerHour], null),
+          capacityDirection: source.capacityDirection || null,
+          candidateRouteIds: Array.isArray(source.candidateRouteIds) ? source.candidateRouteIds.map(String) : [],
+          sourceClass: source.sourceClass || null,
+          sourceClassByField: isPlainObject(source.sourceClassByField) ? deepClone(source.sourceClassByField) : null,
           loadABVehicles: 0,
           loadBAVehicles: 0,
           loadABPassengers: 0,
@@ -1171,6 +1394,200 @@
           history: [],
         };
       });
+    }
+
+    createPhysicalLink(source, index) {
+      const fromNode = this.networkNodeById.get(String(source.from ?? source.fromNodeId ?? ""));
+      const toNode = this.networkNodeById.get(String(source.to ?? source.toNodeId ?? ""));
+      if (!fromNode || !toNode || fromNode === toNode) throw new Error(`Invalid physical road endpoints for ${source.id || index}`);
+      const distanceKm = Math.max(0.001, firstFinite([source.distanceKm], haversineKm(fromNode, toNode)));
+      const baseDurationMin = Math.max(
+        0.001,
+        firstFinite([source.freeFlowMinutes, source.durationMin], (distanceKm / (distanceKm < 8 ? 45 : 70)) * 60)
+      );
+      const oneWay = String(source.oneway ?? source.oneWay ?? "").toLowerCase();
+      let allowAB = source.allowAB !== false;
+      let allowBA = source.allowBA !== false && source.bidirectional !== false;
+      if (["-1", "reverse", "backward"].includes(oneWay)) {
+        allowAB = false;
+        allowBA = true;
+      } else if (["1", "yes", "true", "forward"].includes(oneWay)) {
+        allowAB = true;
+        allowBA = false;
+      }
+      const hourlyFallback = firstFinite([source.capacityVehPerHour, source.capacityPerDirectionVehPerHour], 0);
+      const hourlyAB = Math.max(0, firstFinite([source.capacityVehPerHourAB, source.capacityABVehPerHour], hourlyFallback));
+      const hourlyBA = Math.max(0, firstFinite([source.capacityVehPerHourBA, source.capacityBAVehPerHour], hourlyFallback));
+      const aggregateFallback = firstFinite([source.capacityVehicles, source.capacity], 0);
+      const capacityAB = Math.max(
+        1,
+        firstFinite(
+          [source.capacityVehiclesAB, source.capacityAB],
+          hourlyAB > 0 ? hourlyAB * this.config.assignmentPeakHours : aggregateFallback || 30000
+        )
+      );
+      const capacityBA = Math.max(
+        1,
+        firstFinite(
+          [source.capacityVehiclesBA, source.capacityBA],
+          hourlyBA > 0 ? hourlyBA * this.config.assignmentPeakHours : aggregateFallback || 30000
+        )
+      );
+      const hidden = Boolean(source.hidden);
+      const displayClass = String(source.displayClass || (hidden ? "access" : "arterial"));
+      const roadClass = String(source.corridorType || source.roadClass || (hidden ? "local-access" : "urban-arterial"));
+      const roadNames = Array.isArray(source.roadNames) ? source.roadNames.map(String) : [];
+      return {
+        id: String(source.id || `road-edge-${index + 1}`),
+        index,
+        from: fromNode.id,
+        to: toNode.id,
+        fromIndex: fromNode.index,
+        toIndex: toNode.index,
+        fromZoneId: null,
+        toZoneId: null,
+        allowAB,
+        allowBA,
+        bidirectional: allowAB && allowBA,
+        distanceKm,
+        baseDurationMin,
+        capacityVehicles: Math.max(capacityAB, capacityBA),
+        capacityVehiclesAB: allowAB ? capacityAB : 0,
+        capacityVehiclesBA: allowBA ? capacityBA : 0,
+        capacityVehPerHour: Math.max(hourlyAB, hourlyBA),
+        capacityVehPerHourAB: allowAB ? hourlyAB : 0,
+        capacityVehPerHourBA: allowBA ? hourlyBA : 0,
+        capacityIsHourly: hourlyAB > 0 || hourlyBA > 0,
+        ptAllowedAB: false,
+        ptAllowedBA: false,
+        ptCapacityPassengers: 0,
+        ptCapacityPassengersAB: 0,
+        ptCapacityPassengersBA: 0,
+        ptCapacityIsHourly: true,
+        ptBaseDurationMin: Infinity,
+        ptBaseDurationABMin: Infinity,
+        ptBaseDurationBAMin: Infinity,
+        ptAverageWaitMin: Infinity,
+        ptAverageWaitABMin: Infinity,
+        ptAverageWaitBAMin: Infinity,
+        geometry: source.geometry || source.coordinates || null,
+        geometryFeatureId: source.geometryFeatureId || null,
+        hidden,
+        modelVisible: source.modelVisible !== false,
+        contextOnly: Boolean(source.contextOnly),
+        modelRole: source.modelRole || null,
+        displayClass,
+        loadBearing: source.loadBearing !== false && !hidden && displayClass !== "access" && roadClass !== "local-access",
+        roadClass,
+        primaryRoad: String(source.primaryRoad || source.name || roadNames[0] || (hidden ? "Zone access" : "Inter-district road")),
+        roadNames,
+        roadRefs: Array.isArray(source.roadRefs) ? source.roadRefs.map(String) : [],
+        lanesPerDirection: firstFinite([source.lanesPerDirection], null),
+        capacityPerLaneVehPerHour: firstFinite([source.capacityPerLaneVehPerHour], null),
+        capacityDirection: source.capacityDirection || "per direction",
+        candidateRouteIds: Array.isArray(source.candidateRouteIds) ? source.candidateRouteIds.map(String) : [],
+        sourceClass: source.sourceClass || null,
+        sourceClassByField: isPlainObject(source.sourceClassByField) ? deepClone(source.sourceClassByField) : null,
+        loadABVehicles: 0,
+        loadBAVehicles: 0,
+        loadABPassengers: 0,
+        loadBAPassengers: 0,
+        travelTimeABMin: baseDurationMin,
+        travelTimeBAMin: baseDurationMin,
+        history: [],
+      };
+    }
+
+    normalizePhysicalTraversals(source, candidate) {
+      const supplied = Array.isArray(source?.traversals) && source.traversals.length ? source.traversals : candidate?.traversals;
+      const edgeIds = Array.isArray(source?.edgeIds) && source.edgeIds.length ? source.edgeIds : candidate?.edgeIds;
+      const raw = Array.isArray(supplied) && supplied.length ? supplied : Array.isArray(edgeIds) ? edgeIds.map((edgeId) => ({ edgeId })) : [];
+      if (!raw.length) return [];
+      const fromZone = this.zoneById.get(String(source?.from ?? candidate?.from ?? ""));
+      let cursor = String(source?.fromNodeId ?? candidate?.fromNodeId ?? fromZone?.networkNodeId ?? "");
+      const traversals = [];
+      for (const item of raw) {
+        const edgeId = String(item?.edgeId ?? item?.id ?? item ?? "");
+        const link = this.linkById.get(edgeId);
+        if (!link) return [];
+        let direction = Number(item?.direction) === -1 ? -1 : Number(item?.direction) === 1 ? 1 : 0;
+        if (!direction && cursor) {
+          if (link.from === cursor) direction = 1;
+          else if (link.to === cursor) direction = -1;
+        }
+        if (!direction) direction = 1;
+        const stepFrom = direction === 1 ? link.from : link.to;
+        if (cursor && stepFrom !== cursor) {
+          const inferred = link.from === cursor ? 1 : link.to === cursor ? -1 : 0;
+          if (!inferred) return [];
+          direction = inferred;
+        }
+        if ((direction === 1 && !link.allowAB) || (direction === -1 && !link.allowBA)) return [];
+        traversals.push({ linkIndex: link.index, direction });
+        cursor = direction === 1 ? link.to : link.from;
+      }
+      return traversals;
+    }
+
+    configurePhysicalTransit(transitData, candidateRoutes) {
+      const candidates = Array.isArray(candidateRoutes) ? candidateRoutes : [];
+      const candidateById = new Map(candidates.map((candidate) => [String(candidate.id), candidate]));
+      const transitLinks = Array.isArray(transitData?.links) ? transitData.links : [];
+      for (const service of transitLinks) {
+        const candidate = candidateById.get(String(service.candidateRouteId || service.id || ""));
+        const outbound = this.normalizePhysicalTraversals(service, candidate);
+        if (!outbound.length) continue;
+        const hourlyCapacity = Math.max(0, firstFinite([service.capacityPaxPerHour], 0));
+        const assignmentCapacity = Math.max(
+          1,
+          firstFinite(
+            [service.capacityPassengers, service.ptCapacityPassengers],
+            hourlyCapacity > 0
+              ? hourlyCapacity * this.config.assignmentPeakHours * this.config.ptCorridorBundleFactor
+              : 1000 * this.config.ptCorridorBundleFactor
+          )
+        );
+        const inVehicleMinutes = Math.max(
+          0.001,
+          firstFinite(
+            [service.inVehicleMinutes],
+            (sumBy(outbound, (step) => this.links[step.linkIndex].distanceKm) / Math.max(1, this.config.ptAverageSpeedKmh)) * 60
+          )
+        );
+        const averageWaitMinutes = Math.max(0, firstFinite([service.averageWaitMinutes], this.config.ptAverageWaitMin));
+        this.applyPhysicalTransitDirection(outbound, assignmentCapacity, inVehicleMinutes, averageWaitMinutes);
+        if (service.bidirectional !== false && candidate?.bidirectional !== false) {
+          const inbound = [...outbound].reverse().map((step) => ({ linkIndex: step.linkIndex, direction: step.direction * -1 }));
+          this.applyPhysicalTransitDirection(inbound, assignmentCapacity, inVehicleMinutes, averageWaitMinutes);
+        }
+      }
+      for (const link of this.links) {
+        link.ptCapacityPassengers = Math.max(link.ptCapacityPassengersAB, link.ptCapacityPassengersBA);
+        link.ptBaseDurationMin = Math.min(link.ptBaseDurationABMin, link.ptBaseDurationBAMin);
+        link.ptAverageWaitMin = Math.min(link.ptAverageWaitABMin, link.ptAverageWaitBAMin);
+      }
+    }
+
+    applyPhysicalTransitDirection(traversals, capacityPassengers, inVehicleMinutes, averageWaitMinutes) {
+      const totalWeight = Math.max(
+        EPSILON,
+        sumBy(traversals, (step) => this.links[step.linkIndex].baseDurationMin)
+      );
+      for (const step of traversals) {
+        const link = this.links[step.linkIndex];
+        const allocatedMinutes = inVehicleMinutes * (link.baseDurationMin / totalWeight);
+        if (step.direction === 1) {
+          link.ptAllowedAB = true;
+          link.ptCapacityPassengersAB += capacityPassengers;
+          link.ptBaseDurationABMin = Math.min(link.ptBaseDurationABMin, allocatedMinutes);
+          link.ptAverageWaitABMin = Math.min(link.ptAverageWaitABMin, averageWaitMinutes);
+        } else {
+          link.ptAllowedBA = true;
+          link.ptCapacityPassengersBA += capacityPassengers;
+          link.ptBaseDurationBAMin = Math.min(link.ptBaseDurationBAMin, allocatedMinutes);
+          link.ptAverageWaitBAMin = Math.min(link.ptAverageWaitBAMin, averageWaitMinutes);
+        }
+      }
     }
 
     defaultLinkDefinitions() {
@@ -1197,19 +1614,69 @@
       return fallback;
     }
 
-    buildGraph() {
-      const graph = this.zones.map(() => []);
+    buildGraph(mode = "car") {
+      const graph = this.networkNodes.map(() => []);
       for (const link of this.links) {
-        graph[link.fromIndex].push({ linkIndex: link.index, toIndex: link.toIndex, direction: 1 });
-        graph[link.toIndex].push({ linkIndex: link.index, toIndex: link.fromIndex, direction: -1 });
+        const allowAB = mode === "pt" ? link.ptAllowedAB : link.allowAB;
+        const allowBA = mode === "pt" ? link.ptAllowedBA : link.allowBA;
+        if (allowAB) graph[link.fromIndex].push({ linkIndex: link.index, toIndex: link.toIndex, direction: 1 });
+        if (allowBA) graph[link.toIndex].push({ linkIndex: link.index, toIndex: link.fromIndex, direction: -1 });
       }
       return graph;
     }
 
-    allocateZoneByShare(kind) {
+    scaledZoneJobCapacityAgents(zone, multiplier = zone?.businessCapacityMultiplier ?? 1) {
+      const baseCapacity = Number(zone?.baseJobCapacityAgents);
+      if (!Number.isFinite(baseCapacity)) return Infinity;
+      return Math.max(1, Math.ceil(baseCapacity * Math.max(0, Number(multiplier) || 0)));
+    }
+
+    zonePlannedJobSlots(zone, excludedEnterpriseId = null) {
+      if (!zone) return 0;
+      let total = 0;
+      for (const enterpriseId of zone.enterpriseIds) {
+        if (enterpriseId === excludedEnterpriseId) continue;
+        const enterprise = this.enterpriseById?.get(enterpriseId);
+        if (enterprise) total += Math.max(0, Number(enterprise.maxJobSlots) || 0);
+      }
+      return total;
+    }
+
+    effectiveZoneJobCapacityAgents(zone) {
+      const effectiveCapacity = Number(zone?.jobCapacityAgents);
+      if (Number.isFinite(effectiveCapacity)) return effectiveCapacity;
+      return Number.isFinite(Number(zone?.requestedJobCapacityAgents)) ? Number(zone.requestedJobCapacityAgents) : Infinity;
+    }
+
+    reconcileZoneJobCapacity(zone) {
+      const requestedCapacity = Number(zone?.requestedJobCapacityAgents);
+      if (!Number.isFinite(requestedCapacity)) {
+        zone.jobCapacityAgents = Infinity;
+        return zone.jobCapacityAgents;
+      }
+      // Capture only the incumbent stock that exists when a policy is applied,
+      // and shrink that grandfathered ceiling whenever firms contract or leave.
+      // New growth and move-in remain gated by requested capacity below.
+      zone.jobCapacityAgents = Math.max(requestedCapacity, this.zonePlannedJobSlots(zone));
+      return zone.jobCapacityAgents;
+    }
+
+    zoneHasJobCapacity(zone, additionalJobSlots = 0, excludedEnterpriseId = null) {
+      const capacity = Number(zone?.requestedJobCapacityAgents ?? zone?.jobCapacityAgents);
+      if (!Number.isFinite(capacity)) return true;
+      return this.zonePlannedJobSlots(zone, excludedEnterpriseId) + Math.max(0, Number(additionalJobSlots) || 0) <= capacity;
+    }
+
+    zoneRemainingJobSlots(zone) {
+      const capacity = Number(zone?.requestedJobCapacityAgents ?? zone?.jobCapacityAgents);
+      if (!Number.isFinite(capacity)) return Infinity;
+      return Math.max(0, Math.floor(capacity - this.zonePlannedJobSlots(zone)));
+    }
+
+    allocateZoneByShare(kind, requiredJobSlots = 0) {
       const candidates = this.zones.filter((zone) => {
         if (kind === "resident") return this.zoneAcceptsResident(zone);
-        return zone.enterpriseIds.size < zone.enterprisePlaceCapacity;
+        return zone.enterpriseIds.size < zone.enterprisePlaceCapacity && this.zoneHasJobCapacity(zone, requiredJobSlots);
       });
       const weightKey = kind === "resident" ? "populationShare" : "firmShare";
       const selected = this.rng.weighted(candidates, (zone) => zone[weightKey]);
@@ -1223,7 +1690,18 @@
 
     createEnterprises() {
       for (let index = 0; index < this.config.enterpriseCount; index += 1) {
-        const zone = this.allocateZoneByShare("enterprise");
+        let initialJobSlots = this.rng.integer(this.config.firmInitialMinJobSlots, this.config.firmInitialMaxJobSlots);
+        const availableZones = this.zones.filter((zone) => zone.enterpriseIds.size < zone.enterprisePlaceCapacity);
+        const residuals = availableZones.map((zone) => this.zoneRemainingJobSlots(zone));
+        if (residuals.length && residuals.every(Number.isFinite)) {
+          const remainingEnterprises = this.config.enterpriseCount - index - 1;
+          const minimumFutureSlots = remainingEnterprises * Math.max(1, Number(this.config.firmMinimumJobSlots) || 1);
+          const availableForThisFirm = sumBy(residuals, (value) => value) - minimumFutureSlots;
+          const largestZoneResidual = Math.max(0, ...residuals);
+          initialJobSlots = Math.min(initialJobSlots, Math.floor(availableForThisFirm), largestZoneResidual);
+          if (initialJobSlots < 1) throw new Error("Zoned job capacity cannot place every requested enterprise agent");
+        }
+        const zone = this.allocateZoneByShare("enterprise", initialJobSlots);
         const sector =
           this.rng.weighted(this.config.sectorDistribution, (candidate) => Number(candidate.share) || 0) || this.config.sectorDistribution[0];
         const wageIndex = (zone.averageMonthlySalaryAed > 0 ? zone.averageMonthlySalaryAed / 10000 : 1) * (0.88 + this.rng.next() * 0.24);
@@ -1238,7 +1716,7 @@
           nextActionDay: null,
           stateExitDay: null,
           hiring: true,
-          maxJobSlots: this.rng.integer(this.config.firmInitialMinJobSlots, this.config.firmInitialMaxJobSlots),
+          maxJobSlots: initialJobSlots,
           employeeIds: new Set(),
           wageIndex,
           // Initial productivity/revenue and wages share the same local-sector
@@ -1283,22 +1761,31 @@
           homeZoneId: zone.id,
           workZoneId: null,
           enterpriseId: null,
+          laborForceParticipant: true,
           age: this.rng.integer(this.config.ageMin, this.config.ageMax),
           hasCar: this.rng.next() < zone.carOwnershipRate,
           salaryAed: 0,
           residentialRentAed: zone.residentialRentAed,
           monthlyTransportCostAed: 0,
           currentMonthTransportCostAed: 0,
+          monthlyNonLaborSupportAed: 0,
           netIncomeAed: 0,
           lastAccountedGrossSalaryAed: 0,
+          lastAccountedNonLaborSupportAed: 0,
           lastAccountedHousingCostAed: 0,
           lastAccountedTransportCostAed: 0,
           lastAccountedEmployed: false,
+          lastAccountedLaborForceParticipant: true,
           lastFinancialAccountingDate: this.clock.date,
           bankBalanceAed: 0,
           lastMonthlyBankBalanceDeltaAed: 0,
           mode: "none",
           routeLinkIds: [],
+          // Compact signed link indices retain the direction of the previous
+          // workday's round trip for congestion-aware warm starts. Positive
+          // values are AB and negative values are BA; indices are one-based so
+          // that both directions remain unambiguous at link index zero.
+          routeTraversalCodes: [],
           roundTripMinutes: 0,
           roundTripDistanceKm: 0,
           dailyTransportCostAed: 0,
@@ -1390,11 +1877,12 @@
     employ(citizen, enterprise, salaryAed, reason = "hire") {
       if (!citizen || !enterprise || enterprise.employeeIds.size >= enterprise.maxJobSlots || !enterprise.hiring) return false;
       if (citizen.enterpriseId === enterprise.id) return false;
+      if (citizen.laborForceParticipant === false && reason !== "initial-hire") return false;
       const formerEnterpriseId = citizen.enterpriseId;
       const formerWorkZoneId = citizen.workZoneId;
       if (!citizen.enterpriseId && reason !== "initial-hire") {
         const targetEmployed = Math.round(this.citizens.length * clamp(this.config.targetEmploymentRate, 0, 1));
-        const representedEmployedAgents = this.citizens.length - this.unemployedIds.size;
+        const representedEmployedAgents = this.employedCitizenAgentCount();
         if (representedEmployedAgents >= targetEmployed) return false;
       }
       if (citizen.enterpriseId) this.detachEmployment(citizen, reason === "better-job" ? "transfer" : "detach", false);
@@ -1402,7 +1890,10 @@
       citizen.enterpriseId = enterprise.id;
       citizen.workZoneId = enterprise.zoneId;
       citizen.salaryAed = Math.max(0, round(salaryAed, 0));
+      citizen.laborForceParticipant = true;
       this.unemployedIds.delete(citizen.id);
+      this.jobSeekerIds.delete(citizen.id);
+      this.nonParticipantIds.delete(citizen.id);
       if (reason === "initial-hire") this.eventsTotal.initialEmploymentAssignments += 1;
       else if (reason === "better-job") {
         this.eventsTotal.jobChanges += 1;
@@ -1435,10 +1926,14 @@
       citizen.salaryAed = 0;
       citizen.mode = "none";
       citizen.routeLinkIds = [];
+      citizen.routeTraversalCodes = [];
       citizen.roundTripMinutes = 0;
       citizen.roundTripDistanceKm = 0;
       citizen.dailyTransportCostAed = 0;
+      citizen.laborForceParticipant = true;
+      this.nonParticipantIds.delete(citizen.id);
       this.unemployedIds.add(citizen.id);
+      this.jobSeekerIds.add(citizen.id);
       if (countFire) this.eventsTotal.fires += 1;
       this.recordCitizenEvent(citizen, reason, { formerEnterpriseId });
       return true;
@@ -1456,71 +1951,183 @@
       }
     }
 
+    initializeLaborForceParticipation() {
+      const employed = this.citizens.filter((citizen) => citizen.enterpriseId);
+      const requestedParticipantTarget = this.laborForceParticipantTarget();
+      // Every employed resident is necessarily in the labor force. If a custom
+      // employment calibration exceeds the participation assumption, the actual
+      // employed stock therefore becomes the minimum feasible participant stock.
+      const participantTarget = Math.min(this.citizens.length, Math.max(employed.length, requestedParticipantTarget));
+      const additionalParticipants = Math.max(0, participantTarget - employed.length);
+      const candidates = this.laborForceRng.shuffle(this.citizens.filter((citizen) => !citizen.enterpriseId));
+      const activeUnemployedIds = new Set(candidates.slice(0, additionalParticipants).map((citizen) => citizen.id));
+
+      this.jobSeekerIds.clear();
+      this.nonParticipantIds.clear();
+      for (const citizen of this.citizens) {
+        citizen.laborForceParticipant = Boolean(citizen.enterpriseId) || activeUnemployedIds.has(citizen.id);
+        if (citizen.enterpriseId) continue;
+        if (citizen.laborForceParticipant) this.jobSeekerIds.add(citizen.id);
+        else this.nonParticipantIds.add(citizen.id);
+      }
+    }
+
+    laborForceParticipantTarget() {
+      const activeSeekerReserve = clamp(Number(this.config.activeJobSeekerResidentRate) || 0, 0, 1);
+      const configuredParticipation = clamp(Number(this.config.laborForceParticipationRate) || 0, 0, 1);
+      const initialEmployment = clamp(Number(this.config.initialEmploymentRate) || 0, 0, 1);
+      const targetEmployment = clamp(Number(this.config.targetEmploymentRate) || 0, 0, 1);
+      const effectiveParticipationRate = Math.min(
+        1,
+        Math.max(configuredParticipation, initialEmployment + activeSeekerReserve, targetEmployment + activeSeekerReserve)
+      );
+      return Math.round(this.citizens.length * effectiveParticipationRate);
+    }
+
+    ensureLaborForceParticipationForTargets() {
+      const currentParticipants = this.citizens.length - this.nonParticipantIds.size;
+      const requiredParticipants = Math.max(this.employedCitizenAgentCount(), this.laborForceParticipantTarget());
+      const promotionCount = Math.max(0, requiredParticipants - currentParticipants);
+      if (!promotionCount) return 0;
+      const candidates = this.laborForceRng.shuffle([...this.nonParticipantIds].map((id) => this.citizenById.get(id)).filter(Boolean));
+      let promoted = 0;
+      for (const citizen of candidates) {
+        if (promoted >= promotionCount) break;
+        citizen.laborForceParticipant = true;
+        this.nonParticipantIds.delete(citizen.id);
+        this.jobSeekerIds.add(citizen.id);
+        promoted += 1;
+      }
+      return promoted;
+    }
+
+    employedCitizenAgentCount() {
+      return this.citizens.length - this.unemployedIds.size;
+    }
+
+    citizenLaborForceStatus(citizen) {
+      if (citizen.enterpriseId) return "employed";
+      return citizen.laborForceParticipant === false ? "nonparticipant" : "unemployed";
+    }
+
+    citizenNonLaborSupportAed(citizen, housingCostAed = citizen.residentialRentAed) {
+      if (citizen.enterpriseId || citizen.laborForceParticipant !== false) return 0;
+      return round(
+        Math.max(0, Number(housingCostAed) || 0) +
+          Math.max(0, Number(this.config.monthlyEssentialConsumptionAed) || 0) +
+          Math.max(0, Number(this.config.nonParticipantMonthlySupportBufferAed) || 0),
+        2
+      );
+    }
+
     initializeCitizenFinances() {
       for (const citizen of this.citizens) {
         citizen.residentialRentAed = this.zoneById.get(citizen.homeZoneId).residentialRentAed;
         const expectedTransport = citizen.enterpriseId ? (citizen.hasCar ? 520 : 176) : 0;
+        const nonLaborSupportAed = this.citizenNonLaborSupportAed(citizen, citizen.residentialRentAed);
         citizen.monthlyTransportCostAed = expectedTransport;
-        citizen.netIncomeAed = citizen.salaryAed - citizen.residentialRentAed - expectedTransport;
+        citizen.monthlyNonLaborSupportAed = nonLaborSupportAed;
+        citizen.netIncomeAed = citizen.salaryAed + nonLaborSupportAed - citizen.residentialRentAed - expectedTransport;
         citizen.lastAccountedGrossSalaryAed = citizen.salaryAed;
+        citizen.lastAccountedNonLaborSupportAed = nonLaborSupportAed;
         citizen.lastAccountedHousingCostAed = citizen.residentialRentAed;
         citizen.lastAccountedTransportCostAed = expectedTransport;
         citizen.lastAccountedEmployed = Boolean(citizen.enterpriseId);
+        citizen.lastAccountedLaborForceParticipant = citizen.laborForceParticipant !== false;
         citizen.lastFinancialAccountingDate = this.clock.date;
-        citizen.bankBalanceAed = Math.max(this.config.extremeBankBalanceAed, citizen.salaryAed * this.config.initialBankMonthsOfSalary);
+        const openingResourceBase = citizen.enterpriseId
+          ? citizen.salaryAed
+          : citizen.laborForceParticipant === false
+            ? Math.max(0, Number(this.config.nonParticipantMonthlySupportBufferAed) || 0)
+            : 0;
+        citizen.bankBalanceAed = Math.max(this.config.extremeBankBalanceAed, openingResourceBase * this.config.initialBankMonthsOfSalary);
       }
     }
 
     buildPathMatrix(mode) {
-      const count = this.zones.length;
-      const matrix = Array.from({ length: count }, () => Array(count).fill(null));
-      for (let origin = 0; origin < count; origin += 1) {
-        const distances = Array(count).fill(Infinity);
-        const previous = Array(count).fill(null);
-        const visited = Array(count).fill(false);
-        distances[origin] = 0;
-        for (let pass = 0; pass < count; pass += 1) {
-          let current = -1;
-          let currentDistance = Infinity;
-          for (let index = 0; index < count; index += 1) {
-            if (!visited[index] && distances[index] < currentDistance) {
-              current = index;
-              currentDistance = distances[index];
-            }
-          }
-          if (current < 0) break;
-          visited[current] = true;
-          for (const edge of this.graph[current]) {
+      const zoneCount = this.zones.length;
+      const nodeCount = this.networkNodes.length;
+      const graph = mode === "pt" ? this.ptGraph : this.graph;
+      const matrix = Array.from({ length: zoneCount }, () => Array(zoneCount).fill(null));
+      for (let origin = 0; origin < zoneCount; origin += 1) {
+        const originNodeIndex = this.zones[origin].networkNodeIndex;
+        const distances = Array(nodeCount).fill(Infinity);
+        const previous = Array(nodeCount).fill(null);
+        const queue = new MinPriorityQueue();
+        distances[originNodeIndex] = 0;
+        queue.push(originNodeIndex, 0);
+        while (queue.length) {
+          const currentItem = queue.pop();
+          if (!currentItem || currentItem.priority > distances[currentItem.node] + EPSILON) continue;
+          for (const edge of graph[currentItem.node]) {
             const link = this.links[edge.linkIndex];
             const time = this.linkTravelTime(link, edge.direction, mode);
-            const candidate = currentDistance + time;
-            if (candidate < distances[edge.toIndex]) {
+            if (!Number.isFinite(time)) continue;
+            const candidate = currentItem.priority + time;
+            if (candidate + EPSILON < distances[edge.toIndex]) {
               distances[edge.toIndex] = candidate;
-              previous[edge.toIndex] = { from: current, edge };
+              previous[edge.toIndex] = { from: currentItem.node, edge };
+              queue.push(edge.toIndex, candidate);
             }
           }
         }
-        for (let destination = 0; destination < count; destination += 1) {
+        for (let destination = 0; destination < zoneCount; destination += 1) {
           if (destination === origin) {
             matrix[origin][destination] = { steps: [], oneWayMinutes: 0, distanceKm: 0 };
             continue;
           }
+          const destinationNodeIndex = this.zones[destination].networkNodeIndex;
           const steps = [];
-          let cursor = destination;
+          let cursor = destinationNodeIndex;
           while (previous[cursor]) {
             const part = previous[cursor];
             steps.unshift(part.edge);
             cursor = part.from;
           }
-          if (cursor !== origin || !steps.length) continue;
+          if (cursor !== originNodeIndex) continue;
           matrix[origin][destination] = {
             steps,
             oneWayMinutes: sumBy(steps, (step) => this.linkTravelTime(this.links[step.linkIndex], step.direction, mode)),
             distanceKm: sumBy(steps, (step) => this.links[step.linkIndex].distanceKm),
+            originNodeId: this.networkNodes[originNodeIndex].id,
+            destinationNodeId: this.networkNodes[destinationNodeIndex].id,
           };
         }
       }
       return matrix;
+    }
+
+    roundTripPath(matrix, originIndex, destinationIndex) {
+      const outbound = matrix?.[originIndex]?.[destinationIndex];
+      if (!outbound) return null;
+      if (!this.usesPhysicalRoadGraph) {
+        return {
+          steps: outbound.steps,
+          outboundSteps: outbound.steps,
+          returnSteps: [],
+          distanceKm: outbound.distanceKm * 2,
+          outboundDistanceKm: outbound.distanceKm,
+          returnDistanceKm: outbound.distanceKm,
+          mirroredLegacyReturn: true,
+        };
+      }
+      const inbound = matrix?.[destinationIndex]?.[originIndex];
+      if (!inbound) return null;
+      return {
+        steps: [...outbound.steps, ...inbound.steps],
+        outboundSteps: outbound.steps,
+        returnSteps: inbound.steps,
+        distanceKm: outbound.distanceKm + inbound.distanceKm,
+        outboundDistanceKm: outbound.distanceKm,
+        returnDistanceKm: inbound.distanceKm,
+        mirroredLegacyReturn: false,
+      };
+    }
+
+    pathTravelMinutes(path, mode) {
+      if (!path) return Infinity;
+      const minutes = sumBy(path.steps, (step) => this.linkTravelTime(this.links[step.linkIndex], step.direction, mode));
+      return path.mirroredLegacyReturn ? minutes * 2 : minutes;
     }
 
     linkDirectionalLoad(link, direction, mode) {
@@ -1528,47 +2135,92 @@
       return direction === 1 ? link.loadABPassengers : link.loadBAPassengers;
     }
 
-    linkCapacity(link, mode) {
+    linkCapacity(link, mode, direction = 1) {
+      if (!link.loadBearing) return Infinity;
       if (mode === "car") {
+        if (this.usesPhysicalRoadGraph) {
+          const capacity = direction === 1 ? link.capacityVehiclesAB : link.capacityVehiclesBA;
+          return Math.max(0, capacity) * this.config.roadCapacityMultiplier;
+        }
         const representationFactor = link.capacityIsHourly ? this.config.roadCorridorBundleFactor : 1;
         return link.capacityVehicles * representationFactor * this.config.roadCapacityMultiplier;
+      }
+      if (this.usesPhysicalRoadGraph) {
+        const capacity = direction === 1 ? link.ptCapacityPassengersAB : link.ptCapacityPassengersBA;
+        return Math.max(0, capacity) * this.config.ptCapacityMultiplier;
       }
       const representationFactor = link.ptCapacityIsHourly ? this.config.ptCorridorBundleFactor : 1;
       return link.ptCapacityPassengers * representationFactor * this.config.ptCapacityMultiplier;
     }
 
     linkHasResidualCapacity(link, direction, mode, addition) {
-      return this.linkDirectionalLoad(link, direction, mode) + addition <= this.linkCapacity(link, mode) + EPSILON;
+      return this.linkDirectionalLoad(link, direction, mode) + addition <= this.linkCapacity(link, mode, direction) + EPSILON;
     }
 
     linkTravelTime(link, direction, mode) {
       if (mode === "pt") {
-        const base = link.ptBaseDurationMin * (28 / Math.max(this.config.ptAverageSpeedKmh, 1));
-        const ratio = this.linkDirectionalLoad(link, direction, "pt") / Math.max(this.linkCapacity(link, "pt"), 1);
+        const allowed = direction === 1 ? link.ptAllowedAB : link.ptAllowedBA;
+        if (!allowed) return Infinity;
+        const directionalBase = direction === 1 ? link.ptBaseDurationABMin : link.ptBaseDurationBAMin;
+        const base = directionalBase * (28 / Math.max(this.config.ptAverageSpeedKmh, 1));
+        const ratio = link.loadBearing ? this.linkDirectionalLoad(link, direction, "pt") / Math.max(this.linkCapacity(link, "pt", direction), 1) : 0;
         const crowded = Math.max(0, ratio - 0.85);
+        if (this.usesPhysicalRoadGraph) {
+          const roadRatio = link.loadBearing
+            ? this.linkDirectionalLoad(link, direction, "car") / Math.max(this.linkCapacity(link, "car", direction), 1)
+            : 0;
+          const roadCongestionFactor = 1 + 0.3 * roadRatio;
+          // Passenger crowding affects dwell time and reliability, but cannot
+          // plausibly turn a short bus segment into hours of in-vehicle time.
+          // This smooth saturation approaches a 108% maximum crowding delay.
+          const crowdedSquared = crowded ** 2;
+          const crowdingFactor = 1 + 0.12 * (crowdedSquared / (1 + crowdedSquared / 9));
+          return base * roadCongestionFactor * crowdingFactor;
+        }
         return base * (1 + 0.12 * crowded ** 2);
       }
+      const allowed = direction === 1 ? link.allowAB : link.allowBA;
+      if (!allowed) return Infinity;
       const load = this.linkDirectionalLoad(link, direction, "car");
-      const ratio = load / Math.max(this.linkCapacity(link, "car"), 1);
-      // UDES link-time structure: 0.02 h + free-flow + 0.03 h * v/c.
+      const ratio = link.loadBearing ? load / Math.max(this.linkCapacity(link, "car", direction), 1) : 0;
       const freeFlow = link.baseDurationMin / 60 / Math.max(this.config.roadSpeedMultiplier, 0.1);
+      if (this.usesPhysicalRoadGraph) {
+        // A physical route may contain many split OSM segments. Keep congestion
+        // proportional to each segment's free-flow time so splitting geometry
+        // never adds a fixed penalty at every shape break.
+        return freeFlow * (1 + 0.3 * ratio) * 60;
+      }
+      // Legacy zone-pair fallback retains the published UDES link-time form.
       return (0.02 + freeFlow + ratio * 0.03) * 60;
     }
 
-    ptLinkWaitMinutes(link) {
-      const linkWait = Number(link?.ptAverageWaitMin);
+    ptLinkWaitMinutes(link, direction = 1) {
+      if (this.usesPhysicalRoadGraph) return Math.max(0, Number(this.config.ptAverageWaitMin) || 0);
+      const directionalWait = direction === 1 ? link?.ptAverageWaitABMin : link?.ptAverageWaitBAMin;
+      const linkWait = Number(Number.isFinite(directionalWait) ? directionalWait : link?.ptAverageWaitMin);
       if (Number.isFinite(linkWait)) return Math.max(0, linkWait);
       return Math.max(0, Number(this.config.ptAverageWaitMin) || 0);
     }
 
     ptPathRoundTripWaitMinutes(path) {
       if (!path?.steps?.length) return 0;
+      if (path.mirroredLegacyReturn === false) {
+        const outbound = path.outboundSteps?.[0];
+        const inbound = path.returnSteps?.[0];
+        return (
+          (outbound ? this.ptLinkWaitMinutes(this.links[outbound.linkIndex], outbound.direction) : 0) +
+          (inbound ? this.ptLinkWaitMinutes(this.links[inbound.linkIndex], inbound.direction) : 0)
+        );
+      }
       // The abstract corridor graph has no transfer representation. Model one
       // initial wait on each leg: the first outbound corridor and the first
       // return corridor (the final link of the stored outbound path).
-      const firstLink = this.links[path.steps[0].linkIndex];
-      const returnFirstLink = this.links[path.steps[path.steps.length - 1].linkIndex];
-      return this.ptLinkWaitMinutes(firstLink) + this.ptLinkWaitMinutes(returnFirstLink);
+      const firstStep = path.steps[0];
+      const returnFirstStep = path.steps[path.steps.length - 1];
+      return (
+        this.ptLinkWaitMinutes(this.links[firstStep.linkIndex], firstStep.direction) +
+        this.ptLinkWaitMinutes(this.links[returnFirstStep.linkIndex], returnFirstStep.direction * -1)
+      );
     }
 
     localPtRoundTripMinutes() {
@@ -1588,6 +2240,14 @@
     ptRoundTripFareAed(oneWayDistanceKm) {
       const oneWayFareAed = this.ptOneWayFareAed(oneWayDistanceKm);
       return Number.isFinite(oneWayFareAed) ? oneWayFareAed * 2 : Infinity;
+    }
+
+    ptPathRoundTripFareAed(path) {
+      if (!path) return Infinity;
+      if (path.mirroredLegacyReturn) return this.ptRoundTripFareAed(path.outboundDistanceKm);
+      const outboundFare = this.ptOneWayFareAed(path.outboundDistanceKm);
+      const returnFare = this.ptOneWayFareAed(path.returnDistanceKm);
+      return Number.isFinite(outboundFare) && Number.isFinite(returnFare) ? outboundFare + returnFare : Infinity;
     }
 
     transitFareEvidence() {
@@ -1610,23 +2270,95 @@
         link.loadBAVehicles = 0;
         link.loadABPassengers = 0;
         link.loadBAPassengers = 0;
+        // These zero-start counters are used only to measure how much of
+        // today's demand exceeds nominal capacity. Route choice itself may be
+        // warm-started from yesterday, so using the warm loads for this KPI
+        // would count incumbents repeatedly and make overflow order-dependent.
+        link.assignedTodayABVehicles = 0;
+        link.assignedTodayBAVehicles = 0;
+        link.assignedTodayABPassengers = 0;
+        link.assignedTodayBAPassengers = 0;
         link.travelTimeABMin = this.linkTravelTime(link, 1, "car");
         link.travelTimeBAMin = this.linkTravelTime(link, -1, "car");
       }
     }
 
+    storedRouteLoad(citizen, multiplier = 1) {
+      if (!citizen?.enterpriseId || (citizen.mode !== "car" && citizen.mode !== "pt")) return false;
+      const traversalCodes = Array.isArray(citizen.routeTraversalCodes) ? citizen.routeTraversalCodes : [];
+      if (!traversalCodes.length) return false;
+      const addition = citizen.mode === "car" ? (citizen.weight / Math.max(this.config.carOccupancy, 0.1)) * multiplier : citizen.weight * multiplier;
+      for (const code of traversalCodes) {
+        const numericCode = Number(code);
+        const linkIndex = Math.abs(numericCode) - 1;
+        const direction = numericCode > 0 ? 1 : -1;
+        const link = this.links[linkIndex];
+        if (!link?.loadBearing) continue;
+        if (citizen.mode === "car") {
+          if (direction === 1) link.loadABVehicles = Math.max(0, link.loadABVehicles + addition);
+          else link.loadBAVehicles = Math.max(0, link.loadBAVehicles + addition);
+        } else if (direction === 1) link.loadABPassengers = Math.max(0, link.loadABPassengers + addition);
+        else link.loadBAPassengers = Math.max(0, link.loadBAPassengers + addition);
+      }
+      return true;
+    }
+
+    seedPreviousWorkdayRoutes() {
+      let seededCitizens = 0;
+      for (const citizen of this.citizens) {
+        if (this.storedRouteLoad(citizen, 1)) seededCitizens += 1;
+      }
+      return seededCitizens;
+    }
+
     pathHasCapacity(path, mode, addition) {
-      return Boolean(path) && path.steps.every((step) => this.linkHasResidualCapacity(this.links[step.linkIndex], step.direction, mode, addition));
+      return (
+        Boolean(path) &&
+        path.steps.every((step) => {
+          const link = this.links[step.linkIndex];
+          return !link.loadBearing || this.linkHasResidualCapacity(link, step.direction, mode, addition);
+        })
+      );
+    }
+
+    pathHasDailyAssignmentCapacity(path, mode, addition) {
+      return (
+        Boolean(path) &&
+        path.steps.every((step) => {
+          const link = this.links[step.linkIndex];
+          if (!link.loadBearing) return true;
+          const assigned =
+            mode === "car"
+              ? step.direction === 1
+                ? link.assignedTodayABVehicles
+                : link.assignedTodayBAVehicles
+              : step.direction === 1
+                ? link.assignedTodayABPassengers
+                : link.assignedTodayBAPassengers;
+          return assigned + addition <= this.linkCapacity(link, mode, step.direction) + EPSILON;
+        })
+      );
     }
 
     addPathLoad(path, mode, addition) {
       for (const step of path.steps) {
         const link = this.links[step.linkIndex];
+        if (!link.loadBearing) continue;
         if (mode === "car") {
-          if (step.direction === 1) link.loadABVehicles += addition;
-          else link.loadBAVehicles += addition;
-        } else if (step.direction === 1) link.loadABPassengers += addition;
-        else link.loadBAPassengers += addition;
+          if (step.direction === 1) {
+            link.loadABVehicles += addition;
+            link.assignedTodayABVehicles += addition;
+          } else {
+            link.loadBAVehicles += addition;
+            link.assignedTodayBAVehicles += addition;
+          }
+        } else if (step.direction === 1) {
+          link.loadABPassengers += addition;
+          link.assignedTodayABPassengers += addition;
+        } else {
+          link.loadBAPassengers += addition;
+          link.assignedTodayBAPassengers += addition;
+        }
       }
     }
 
@@ -1664,6 +2396,8 @@
       if (!this.config.workdays.includes(this.clock.weekday)) return;
       this.daily = this.emptyDailyMetrics();
       this.resetDailyNetwork();
+      const warmStarted = Boolean(this.config.warmStartDailyRouteChoice && this.lastWorkdayAssignmentDate);
+      if (warmStarted) this.seedPreviousWorkdayRoutes();
       const order = this.rng.shuffle(this.citizens.filter((citizen) => citizen.enterpriseId));
       const assignments = [];
       let carPaths = this.buildPathMatrix("car");
@@ -1674,6 +2408,10 @@
           ptPaths = this.buildPathMatrix("pt");
         }
         const citizen = order[index];
+        // The warm-started network contains this citizen's preceding workday
+        // trip. Remove it before evaluating the citizen's current best response
+        // so neither capacity nor travel time double-counts their demand.
+        if (warmStarted) this.storedRouteLoad(citizen, -1);
         const home = this.zoneById.get(citizen.homeZoneId);
         const work = this.zoneById.get(citizen.workZoneId);
         if (!home || !work) continue;
@@ -1682,16 +2420,16 @@
           assignments.push({ citizen, mode: citizen.mode, path: null });
           continue;
         }
-        const carPath = carPaths[home.index][work.index];
-        const ptPath = ptPaths[home.index][work.index];
+        const carPath = this.roundTripPath(carPaths, home.index, work.index);
+        const ptPath = this.roundTripPath(ptPaths, home.index, work.index);
         const carDistance = carPath?.distanceKm || Infinity;
         const ptDistance = ptPath?.distanceKm || Infinity;
-        const carMinutes = carPath ? carPath.oneWayMinutes * 2 : Infinity;
-        const ptInVehicleMinutes = ptPath ? ptPath.oneWayMinutes * 2 : Infinity;
+        const carMinutes = carPath ? this.pathTravelMinutes(carPath, "car") : Infinity;
+        const ptInVehicleMinutes = ptPath ? this.pathTravelMinutes(ptPath, "pt") : Infinity;
         const ptWaitMinutes = ptPath ? this.ptPathRoundTripWaitMinutes(ptPath) : Infinity;
         const ptMinutes = ptPath ? ptInVehicleMinutes + ptWaitMinutes : Infinity;
-        const carCost = carPath ? carDistance * 2 * this.config.carFuelAndRunningCostAedPerKm + this.config.carFixedDailyCostAed : Infinity;
-        const ptCost = ptPath ? this.ptRoundTripFareAed(ptDistance) : Infinity;
+        const carCost = carPath ? carDistance * this.config.carFuelAndRunningCostAedPerKm + this.config.carFixedDailyCostAed : Infinity;
+        const ptCost = ptPath ? this.ptPathRoundTripFareAed(ptPath) : Infinity;
         const carUtility =
           this.config.carAlternativeConstant +
           this.config.modeCostCoefficient * (carCost / this.config.costScaleAed) +
@@ -1708,6 +2446,8 @@
         const ptPossible = Boolean(ptPath);
         const carAvailable = carPossible && this.pathHasCapacity(carPath, "car", carAddition);
         const ptAvailable = ptPossible && this.pathHasCapacity(ptPath, "pt", ptAddition);
+        const carOverflowsDailyCapacity = carPossible && !this.pathHasDailyAssignmentCapacity(carPath, "car", carAddition);
+        const ptOverflowsDailyCapacity = ptPossible && !this.pathHasDailyAssignmentCapacity(ptPath, "pt", ptAddition);
         if (this.config.allowCapacityOverflow) {
           if (mode === "car" && !carPossible) mode = ptPossible ? "pt" : "unserved";
           if (mode === "pt" && !ptPossible) mode = carPossible ? "car" : "unserved";
@@ -1716,18 +2456,18 @@
           if (mode === "pt" && !ptAvailable) mode = carAvailable ? "car" : "unserved";
         }
         if (mode === "car") {
-          const overflow = !carAvailable;
+          const overflow = carOverflowsDailyCapacity;
           this.addPathLoad(carPath, "car", carAddition);
-          this.applyCommute(citizen, mode, carPath, carMinutes, carDistance * 2, carCost, false, overflow);
+          this.applyCommute(citizen, mode, carPath, carMinutes, carDistance, carCost, false, overflow);
           assignments.push({ citizen, mode, path: carPath });
         } else if (mode === "pt") {
-          const overflow = !ptAvailable;
+          const overflow = ptOverflowsDailyCapacity;
           this.addPathLoad(ptPath, "pt", ptAddition);
-          this.applyCommute(citizen, mode, ptPath, ptMinutes, ptDistance * 2, ptCost, false, overflow);
+          this.applyCommute(citizen, mode, ptPath, ptMinutes, ptDistance, ptCost, false, overflow);
           assignments.push({ citizen, mode, path: ptPath });
         } else {
           const distance = Math.min(carDistance, ptDistance);
-          const walkDistance = Number.isFinite(distance) ? distance * 2 : haversineKm(home, work) * 2;
+          const walkDistance = Number.isFinite(distance) ? distance : haversineKm(home, work) * 2;
           if (walkDistance <= this.config.maxInterzoneWalkDistanceKm) {
             const walkMinutes = (walkDistance / this.config.walkSpeedKmh) * 60;
             this.applyCommute(citizen, "walk", null, walkMinutes, walkDistance, 0, false);
@@ -1755,9 +2495,9 @@
       for (const assignment of assignments) {
         const { citizen, mode, path } = assignment;
         if (path && (mode === "car" || mode === "pt")) {
-          const oneWayMinutes = sumBy(path.steps, (step) => this.linkTravelTime(this.links[step.linkIndex], step.direction, mode));
+          const inVehicleMinutes = this.pathTravelMinutes(path, mode);
           const waitMinutes = mode === "pt" ? this.ptPathRoundTripWaitMinutes(path) : 0;
-          citizen.roundTripMinutes = round(oneWayMinutes * 2 + waitMinutes, 2);
+          citizen.roundTripMinutes = round(inVehicleMinutes + waitMinutes, 2);
         }
         weightedRoundTripMinutes += citizen.weight * citizen.roundTripMinutes;
       }
@@ -1769,6 +2509,7 @@
     applyCommute(citizen, mode, path, minutes, distanceKm, costAed, forcedWalk, capacityOverflow = false) {
       citizen.mode = mode;
       citizen.routeLinkIds = path ? path.steps.map((step) => this.links[step.linkIndex].id) : [];
+      citizen.routeTraversalCodes = path ? path.steps.map((step) => (step.direction === 1 ? step.linkIndex + 1 : -(step.linkIndex + 1))) : [];
       citizen.roundTripMinutes = round(minutes, 2);
       citizen.roundTripDistanceKm = round(distanceKm, 2);
       citizen.dailyTransportCostAed = round(costAed, 2);
@@ -1793,6 +2534,7 @@
     applyUnservedCommute(citizen) {
       citizen.mode = "unserved";
       citizen.routeLinkIds = [];
+      citizen.routeTraversalCodes = [];
       citizen.roundTripMinutes = 0;
       citizen.roundTripDistanceKm = 0;
       citizen.dailyTransportCostAed = 0;
@@ -1964,21 +2706,19 @@
           roundTripMinutes: this.config.localWalkCommuteMin,
         });
       } else {
-        const carPath = this.lastCarPathMatrix?.[home.index]?.[work.index];
-        const ptPath = this.lastPtPathMatrix?.[home.index]?.[work.index];
+        const carPath = this.roundTripPath(this.lastCarPathMatrix, home.index, work.index);
+        const ptPath = this.roundTripPath(this.lastPtPathMatrix, home.index, work.index);
         if (citizen.hasCar && carPath) {
-          const minutes = sumBy(carPath.steps, (step) => this.linkTravelTime(this.links[step.linkIndex], step.direction, "car")) * 2;
-          const cashAed = carPath.distanceKm * 2 * this.config.carFuelAndRunningCostAedPerKm + this.config.carFixedDailyCostAed;
+          const minutes = this.pathTravelMinutes(carPath, "car");
+          const cashAed = carPath.distanceKm * this.config.carFuelAndRunningCostAedPerKm + this.config.carFixedDailyCostAed;
           options.push({ cashAed, generalizedAed: cashAed + (minutes / 60) * valueOfTime, roundTripMinutes: minutes });
         }
         if (ptPath) {
-          const minutes =
-            sumBy(ptPath.steps, (step) => this.linkTravelTime(this.links[step.linkIndex], step.direction, "pt")) * 2 +
-            this.ptPathRoundTripWaitMinutes(ptPath);
-          const cashAed = this.ptRoundTripFareAed(ptPath.distanceKm);
+          const minutes = this.pathTravelMinutes(ptPath, "pt") + this.ptPathRoundTripWaitMinutes(ptPath);
+          const cashAed = this.ptPathRoundTripFareAed(ptPath);
           options.push({ cashAed, generalizedAed: cashAed + (minutes / 60) * valueOfTime, roundTripMinutes: minutes });
         }
-        const walkDistanceKm = Math.min(carPath?.distanceKm ?? Infinity, ptPath?.distanceKm ?? Infinity) * 2;
+        const walkDistanceKm = Math.min(carPath?.distanceKm ?? Infinity, ptPath?.distanceKm ?? Infinity);
         if (walkDistanceKm <= this.config.maxInterzoneWalkDistanceKm) {
           options.push({
             cashAed: 0,
@@ -2111,33 +2851,29 @@
       let carMinutes;
       let carDistanceKm;
       let ptMinutes;
-      let ptOneWayDistanceKm;
+      let ptCashCostAed;
       let walkMinutes = Infinity;
       if (home.id === work.id) {
         carMinutes = this.config.localCarCommuteMin;
         carDistanceKm = this.config.localCarDistanceKm;
         ptMinutes = this.localPtRoundTripMinutes();
-        ptOneWayDistanceKm = Math.max(0, Number(this.config.localPtDistanceKm) || 0) / 2;
+        ptCashCostAed = this.ptRoundTripFareAed(Math.max(0, Number(this.config.localPtDistanceKm) || 0) / 2);
         walkMinutes = this.config.localWalkCommuteMin;
       } else {
-        const carPath = this.lastCarPathMatrix?.[home.index]?.[work.index];
-        const ptPath = this.lastPtPathMatrix?.[home.index]?.[work.index];
+        const carPath = this.roundTripPath(this.lastCarPathMatrix, home.index, work.index);
+        const ptPath = this.roundTripPath(this.lastPtPathMatrix, home.index, work.index);
         if (!carPath) return null;
-        carMinutes = sumBy(carPath.steps, (step) => this.linkTravelTime(this.links[step.linkIndex], step.direction, "car")) * 2;
-        carDistanceKm = carPath.distanceKm * 2;
-        ptMinutes = ptPath
-          ? sumBy(ptPath.steps, (step) => this.linkTravelTime(this.links[step.linkIndex], step.direction, "pt")) * 2 +
-            this.ptPathRoundTripWaitMinutes(ptPath)
-          : Infinity;
-        ptOneWayDistanceKm = ptPath?.distanceKm ?? Infinity;
-        const walkDistanceKm = Math.min(carPath.distanceKm, ptPath?.distanceKm ?? Infinity) * 2;
+        carMinutes = this.pathTravelMinutes(carPath, "car");
+        carDistanceKm = carPath.distanceKm;
+        ptMinutes = ptPath ? this.pathTravelMinutes(ptPath, "pt") + this.ptPathRoundTripWaitMinutes(ptPath) : Infinity;
+        ptCashCostAed = ptPath ? this.ptPathRoundTripFareAed(ptPath) : Infinity;
+        const walkDistanceKm = Math.min(carPath.distanceKm, ptPath?.distanceKm ?? Infinity);
         if (walkDistanceKm <= this.config.maxInterzoneWalkDistanceKm) {
           walkMinutes = (walkDistanceKm / Math.max(0.1, this.config.walkSpeedKmh)) * 60;
         }
       }
 
       const carCashCostAed = carDistanceKm * this.config.carFuelAndRunningCostAedPerKm + this.config.carFixedDailyCostAed;
-      const ptCashCostAed = this.ptRoundTripFareAed(ptOneWayDistanceKm);
       const carGeneralizedCostAed = Math.max(0, carCashCostAed + (carMinutes / 60) * valueOfTime - convenienceBenefit);
       const ptGeneralizedCostAed = ptCashCostAed + (ptMinutes / 60) * valueOfTime;
       const walkGeneralizedCostAed = (walkMinutes / 60) * valueOfTime;
@@ -2195,6 +2931,9 @@
     }
 
     searchBetterJob(citizen) {
+      // Nonparticipants are deliberately outside active job search. They can
+      // still make housing/quality decisions through the other state branches.
+      if (!citizen || citizen.laborForceParticipant === false) return false;
       const cooldownDays = Math.max(0, Number(this.config.voluntaryJobSwitchCooldownDays) || 0);
       if (this.day - Number(citizen.lastJobChangeDay ?? -Infinity) < cooldownDays) return false;
       const home = this.zoneById.get(citizen.homeZoneId);
@@ -2422,7 +3161,13 @@
         this.enterEnterpriseWorking(enterprise, "growth-paused-by-economics");
         return;
       }
-      enterprise.maxJobSlots = Math.min(this.config.firmMaximumJobSlots, enterprise.maxJobSlots + this.config.firmJobStepSlots);
+      const zone = this.zoneById.get(enterprise.zoneId);
+      const proposedJobSlots = Math.min(this.config.firmMaximumJobSlots, enterprise.maxJobSlots + this.config.firmJobStepSlots);
+      if (!this.zoneHasJobCapacity(zone, proposedJobSlots, enterprise.id)) {
+        this.enterEnterpriseWorking(enterprise, "growth-paused-by-zonal-job-capacity");
+        return;
+      }
+      enterprise.maxJobSlots = proposedJobSlots;
       const previousWageIndex = enterprise.wageIndex;
       enterprise.wageIndex = clamp(
         enterprise.wageIndex * (1 + this.config.firmGrowthWageIncrease),
@@ -2472,6 +3217,7 @@
         return;
       }
       enterprise.maxJobSlots = nextJobSlots;
+      this.reconcileZoneJobCapacity(this.zoneById.get(enterprise.zoneId));
       while (enterprise.employeeIds.size > enterprise.maxJobSlots) {
         const lowestPaid = [...enterprise.employeeIds].map((id) => this.citizenById.get(id)).sort((a, b) => a.salaryAed - b.salaryAed)[0];
         if (lowestPaid) this.detachEmployment(lowestPaid, "firm-contraction", true);
@@ -2495,14 +3241,15 @@
 
     restartEnterprise(enterprise) {
       const previousState = enterprise.state;
+      const restartJobSlots = Math.max(1, this.config.firmMinimumJobSlots);
       while (enterprise.employeeIds.size) {
         const citizen = this.citizenById.get(enterprise.employeeIds.values().next().value);
         this.detachEmployment(citizen, "firm-restart", true);
       }
       const target = [...this.zones]
-        .filter((zone) => zone.enterpriseIds.size < zone.enterprisePlaceCapacity)
+        .filter((zone) => zone.enterpriseIds.size < zone.enterprisePlaceCapacity && this.zoneHasJobCapacity(zone, restartJobSlots, enterprise.id))
         .sort((a, b) => a.businessRentAed - b.businessRentAed)[0];
-      if (target) this.moveEnterprise(enterprise, target.id, "restart-lowest-rent", true, "reentry");
+      if (target) this.moveEnterprise(enterprise, target.id, "restart-lowest-rent", true, "reentry", restartJobSlots);
       // A restarted enterprise begins a new location tenure even if the
       // cheapest available district is its existing district.
       enterprise.lastMoveDay = this.day;
@@ -2513,7 +3260,8 @@
       enterprise.nextLesserDay = null;
       enterprise.nextActionDay = null;
       enterprise.stateExitDay = null;
-      enterprise.maxJobSlots = Math.max(1, this.config.firmMinimumJobSlots);
+      enterprise.maxJobSlots = restartJobSlots;
+      this.reconcileZoneJobCapacity(this.zoneById.get(enterprise.zoneId));
       enterprise.consecutiveRestartLossMonths = 0;
       enterprise.demandShock = 0;
       const zone = this.zoneById.get(enterprise.zoneId);
@@ -2545,7 +3293,13 @@
       const minimumGain = Math.max(0, Number(this.config.firmMoveMinimumQualityGain) || 0);
       const currentRank = rank(current);
       const candidates = this.zones
-        .filter((zone) => zone.id !== current.id && rank(zone) - currentRank >= minimumGain && zone.enterpriseIds.size < zone.enterprisePlaceCapacity)
+        .filter(
+          (zone) =>
+            zone.id !== current.id &&
+            rank(zone) - currentRank >= minimumGain &&
+            zone.enterpriseIds.size < zone.enterprisePlaceCapacity &&
+            this.zoneHasJobCapacity(zone, enterprise.maxJobSlots, enterprise.id)
+        )
         .sort((a, b) => rank(b) - rank(a))
         .slice(0, 3);
       const target = this.config.endogenousEnterpriseDynamics
@@ -2565,7 +3319,10 @@
       const candidates = this.zones
         .filter(
           (zone) =>
-            zone.id !== current.id && zone.businessRentAed <= maximumTargetRent + EPSILON && zone.enterpriseIds.size < zone.enterprisePlaceCapacity
+            zone.id !== current.id &&
+            zone.businessRentAed <= maximumTargetRent + EPSILON &&
+            zone.enterpriseIds.size < zone.enterprisePlaceCapacity &&
+            this.zoneHasJobCapacity(zone, enterprise.maxJobSlots, enterprise.id)
         )
         .sort((a, b) => rank(b) - rank(a))
         .slice(0, 3);
@@ -2575,10 +3332,16 @@
       return target ? this.moveEnterprise(enterprise, target.id, "contraction-rent") : false;
     }
 
-    moveEnterprise(enterprise, targetZoneId, reason, force = false, eventClass = "relocation") {
+    moveEnterprise(enterprise, targetZoneId, reason, force = false, eventClass = "relocation", proposedJobSlots = enterprise.maxJobSlots) {
       const origin = this.zoneById.get(enterprise.zoneId);
       const target = this.zoneById.get(targetZoneId);
-      if (!target || target === origin || target.enterpriseIds.size >= target.enterprisePlaceCapacity) return false;
+      if (
+        !target ||
+        target === origin ||
+        target.enterpriseIds.size >= target.enterprisePlaceCapacity ||
+        !this.zoneHasJobCapacity(target, proposedJobSlots, enterprise.id)
+      )
+        return false;
       const cooldownDays = Math.max(0, Number(this.config.firmMoveCooldownDays) || 0);
       if (!force && this.day - Number(enterprise.lastMoveDay ?? -Infinity) < cooldownDays) return false;
       const affectedCitizenAgentCount = enterprise.employeeIds.size;
@@ -2586,6 +3349,8 @@
       origin.enterpriseIds.delete(enterprise.id);
       target.enterpriseIds.add(enterprise.id);
       enterprise.zoneId = target.id;
+      this.reconcileZoneJobCapacity(origin);
+      this.reconcileZoneJobCapacity(target);
       enterprise.lastMoveDay = this.day;
       enterprise.rentPerRepresentedWorkerAed = target.businessRentAed;
       for (const citizenId of enterprise.employeeIds) this.citizenById.get(citizenId).workZoneId = target.id;
@@ -2609,12 +3374,16 @@
     }
 
     matchUnemployedCitizens() {
-      if (!this.unemployedIds.size) return;
+      // A higher live employment target may draw residents into the labor
+      // force. Promotion is deterministic and one-way within a run; ordinary
+      // nonparticipants remain outside matching.
+      this.ensureLaborForceParticipationForTargets();
+      if (!this.jobSeekerIds.size) return;
       const targetEmployed = Math.round(this.citizens.length * clamp(this.config.targetEmploymentRate, 0, 1));
-      const employed = this.citizens.length - this.unemployedIds.size;
+      const employed = this.employedCitizenAgentCount();
       const gap = Math.max(0, targetEmployed - employed);
       if (!gap) return;
-      const unemployed = this.rng.shuffle([...this.unemployedIds]);
+      const unemployed = this.rng.shuffle([...this.jobSeekerIds]);
       const limit = Math.min(gap, unemployed.length, this.config.maxDailyLaborMatches);
       for (let index = 0; index < limit; index += 1) {
         const citizen = this.citizenById.get(unemployed[index]);
@@ -2629,11 +3398,17 @@
       for (const citizen of this.citizens) {
         citizen.monthlyTransportCostAed = round(citizen.currentMonthTransportCostAed, 2);
         citizen.residentialRentAed = this.zoneById.get(citizen.homeZoneId).residentialRentAed;
-        citizen.netIncomeAed = round(citizen.salaryAed - citizen.residentialRentAed - citizen.monthlyTransportCostAed, 2);
+        citizen.monthlyNonLaborSupportAed = this.citizenNonLaborSupportAed(citizen, citizen.residentialRentAed);
+        citizen.netIncomeAed = round(
+          citizen.salaryAed + citizen.monthlyNonLaborSupportAed - citizen.residentialRentAed - citizen.monthlyTransportCostAed,
+          2
+        );
         citizen.lastAccountedGrossSalaryAed = citizen.salaryAed;
+        citizen.lastAccountedNonLaborSupportAed = citizen.monthlyNonLaborSupportAed;
         citizen.lastAccountedHousingCostAed = citizen.residentialRentAed;
         citizen.lastAccountedTransportCostAed = citizen.monthlyTransportCostAed;
         citizen.lastAccountedEmployed = Boolean(citizen.enterpriseId);
+        citizen.lastAccountedLaborForceParticipant = citizen.laborForceParticipant !== false;
         citizen.lastFinancialAccountingDate = accountingClock.date;
         const residualAfterEssentials = citizen.netIncomeAed - Math.max(0, Number(this.config.monthlyEssentialConsumptionAed) || 0);
         const savingsRate = clamp(Number(this.config.positiveResidualSavingsRate) || 0, 0, 1);
@@ -2680,6 +3455,10 @@
 
     replaceCitizen(citizen) {
       const previousState = citizen.state;
+      // In the absence of an age/cohort participation transition model, a
+      // demographic replacement inherits the calibrated labor-force slot so
+      // mortality cannot silently drift the aggregate participation stock.
+      const replacementLaborForceParticipant = citizen.laborForceParticipant !== false;
       this.detachEmployment(citizen, "death", false);
       const currentZone = this.zoneById.get(citizen.homeZoneId);
       const target = [...this.zones]
@@ -2703,20 +3482,37 @@
       citizen.salaryAed = 0;
       citizen.workZoneId = null;
       citizen.enterpriseId = null;
+      citizen.laborForceParticipant = replacementLaborForceParticipant;
+      this.unemployedIds.add(citizen.id);
+      if (replacementLaborForceParticipant) {
+        this.jobSeekerIds.add(citizen.id);
+        this.nonParticipantIds.delete(citizen.id);
+      } else {
+        this.jobSeekerIds.delete(citizen.id);
+        this.nonParticipantIds.add(citizen.id);
+      }
       citizen.mode = "none";
       citizen.routeLinkIds = [];
+      citizen.routeTraversalCodes = [];
       citizen.roundTripMinutes = 0;
       citizen.roundTripDistanceKm = 0;
       citizen.monthlyTransportCostAed = 0;
       citizen.currentMonthTransportCostAed = 0;
       citizen.residentialRentAed = this.zoneById.get(citizen.homeZoneId).residentialRentAed;
-      citizen.netIncomeAed = -citizen.residentialRentAed;
+      citizen.monthlyNonLaborSupportAed = this.citizenNonLaborSupportAed(citizen, citizen.residentialRentAed);
+      citizen.netIncomeAed = round(citizen.monthlyNonLaborSupportAed - citizen.residentialRentAed, 2);
       citizen.lastAccountedGrossSalaryAed = 0;
+      citizen.lastAccountedNonLaborSupportAed = citizen.monthlyNonLaborSupportAed;
       citizen.lastAccountedHousingCostAed = citizen.residentialRentAed;
       citizen.lastAccountedTransportCostAed = 0;
       citizen.lastAccountedEmployed = false;
+      citizen.lastAccountedLaborForceParticipant = citizen.laborForceParticipant !== false;
       citizen.lastFinancialAccountingDate = this.clock.date;
-      citizen.bankBalanceAed = this.config.extremeBankBalanceAed;
+      citizen.bankBalanceAed = Math.max(
+        this.config.extremeBankBalanceAed,
+        (citizen.laborForceParticipant === false ? Math.max(0, Number(this.config.nonParticipantMonthlySupportBufferAed) || 0) : 0) *
+          this.config.initialBankMonthsOfSalary
+      );
       citizen.lastMonthlyBankBalanceDeltaAed = 0;
       citizen.daysDissatisfied = 0;
       citizen.lastMoveDay = this.day;
@@ -2776,7 +3572,7 @@
     computeZoneLaborAccessScores() {
       const decayKm = Math.max(1, Number(this.config.enterpriseLaborAccessDecayKm) || 12);
       const unemployedByZone = new Map(this.zones.map((zone) => [zone.id, 0]));
-      for (const citizenId of this.unemployedIds) {
+      for (const citizenId of this.jobSeekerIds) {
         const citizen = this.citizenById.get(citizenId);
         unemployedByZone.set(citizen.homeZoneId, (unemployedByZone.get(citizen.homeZoneId) || 0) + citizen.weight);
       }
@@ -2938,7 +3734,11 @@
               homeZoneId: citizen.homeZoneId,
               enterpriseId: citizen.enterpriseId,
               mode: citizen.mode,
+              laborForceParticipant: citizen.laborForceParticipant !== false,
+              laborForceStatus: this.citizenLaborForceStatus(citizen),
+              jobSeeking: this.jobSeekerIds.has(citizen.id),
               salaryAed: citizen.salaryAed,
+              nonLaborSupportAed: citizen.monthlyNonLaborSupportAed,
               netIncomeAed: citizen.netIncomeAed,
               netIncome: citizen.netIncomeAed,
               bankBalanceAed: citizen.bankBalanceAed,
@@ -2978,9 +3778,11 @@
 
     citizenFinancialAccount(citizen) {
       const grossSalaryAed = Math.max(0, Number(citizen.lastAccountedGrossSalaryAed ?? citizen.salaryAed) || 0);
+      const nonLaborSupportAed = Math.max(0, Number(citizen.lastAccountedNonLaborSupportAed ?? citizen.monthlyNonLaborSupportAed) || 0);
       const housingCostAed = Math.max(0, Number(citizen.lastAccountedHousingCostAed ?? citizen.residentialRentAed) || 0);
       const commutingCostAed = Math.max(0, Number(citizen.lastAccountedTransportCostAed ?? citizen.monthlyTransportCostAed) || 0);
-      const componentCashAfterHousingAndCommuteAed = round(grossSalaryAed - housingCostAed - commutingCostAed, 2);
+      const totalMonthlyResourcesAed = round(grossSalaryAed + nonLaborSupportAed, 2);
+      const componentCashAfterHousingAndCommuteAed = round(totalMonthlyResourcesAed - housingCostAed - commutingCostAed, 2);
       const cashAfterHousingAndCommuteAed = Number.isFinite(Number(citizen.netIncomeAed))
         ? Number(citizen.netIncomeAed)
         : componentCashAfterHousingAndCommuteAed;
@@ -2993,9 +3795,16 @@
       );
       let status = "savings-capacity";
       let statusLabel = "Savings capacity";
-      if (!(citizen.lastAccountedEmployed ?? Boolean(citizen.enterpriseId))) {
+      const employedDuringAccountingPeriod = Boolean(citizen.lastAccountedEmployed ?? citizen.enterpriseId);
+      const laborForceParticipantDuringAccountingPeriod = Boolean(
+        citizen.lastAccountedLaborForceParticipant ?? citizen.laborForceParticipant !== false
+      );
+      if (!laborForceParticipantDuringAccountingPeriod) {
+        status = "outside-labor-force";
+        statusLabel = "Outside modeled labor force";
+      } else if (!employedDuringAccountingPeriod) {
         status = "unemployed";
-        statusLabel = "Unemployed";
+        statusLabel = "Active job seeker";
       } else if (cashAfterHousingAndCommuteAed < 0) {
         status = "fixed-cost-deficit";
         statusLabel = "Pay below housing + commute";
@@ -3008,6 +3817,8 @@
       }
       return {
         grossSalaryAed,
+        nonLaborSupportAed,
+        totalMonthlyResourcesAed,
         housingCostAed,
         commutingCostAed,
         cashAfterHousingAndCommuteAed,
@@ -3018,7 +3829,9 @@
         positiveResidualSavingsRate: savingsRate,
         accountingDate: citizen.lastFinancialAccountingDate || this.clock.date,
         accountingCadence: "monthly-close",
-        employedDuringAccountingPeriod: Boolean(citizen.lastAccountedEmployed ?? citizen.enterpriseId),
+        employedDuringAccountingPeriod,
+        laborForceParticipantDuringAccountingPeriod,
+        laborForceStatus: employedDuringAccountingPeriod ? "employed" : laborForceParticipantDuringAccountingPeriod ? "unemployed" : "nonparticipant",
         status,
         statusLabel,
       };
@@ -3026,7 +3839,8 @@
 
     financialStatusDefinitions() {
       return [
-        { id: "unemployed", label: "Unemployed" },
+        { id: "outside-labor-force", label: "Outside modeled labor force" },
+        { id: "unemployed", label: "Active job seeker" },
         { id: "fixed-cost-deficit", label: "Pay below housing + commute" },
         { id: "essentials-gap", label: "Essentials not fully covered" },
         { id: "thin-positive-buffer", label: "Thin positive buffer" },
@@ -3040,11 +3854,15 @@
         name: zone.name,
         representedPopulation: 0,
         employed: 0,
+        laborForce: 0,
+        unemployed: 0,
+        nonparticipants: 0,
         carOwners: 0,
         state: { Happy: 0, Waiting: 0, Extreme: 0, Recovery: 0 },
         mode: { car: 0, pt: 0, walk: 0, none: 0 },
         netIncome: 0,
         grossSalary: 0,
+        nonLaborSupport: 0,
         housingCost: 0,
         monthlyTransportCost: 0,
         residualAfterEssentials: 0,
@@ -3069,9 +3887,13 @@
       const cityEnterpriseState = { Working: 0, Grow: 0, Lesser: 0, Starting: 0 };
       let representedPopulation = 0;
       let representedEmployed = 0;
+      let representedLaborForce = 0;
+      let representedUnemployed = 0;
+      let representedNonparticipants = 0;
       let representedCarOwners = 0;
       let netIncomeTotal = 0;
       let grossSalaryTotal = 0;
+      let nonLaborSupportTotal = 0;
       let housingCostTotal = 0;
       let monthlyTransportCostTotal = 0;
       let residualAfterEssentialsTotal = 0;
@@ -3095,6 +3917,17 @@
         const weight = citizen.weight;
         representedPopulation += weight;
         accumulator.representedPopulation += weight;
+        if (citizen.laborForceParticipant !== false) {
+          representedLaborForce += weight;
+          accumulator.laborForce += weight;
+          if (!citizen.enterpriseId) {
+            representedUnemployed += weight;
+            accumulator.unemployed += weight;
+          }
+        } else {
+          representedNonparticipants += weight;
+          accumulator.nonparticipants += weight;
+        }
         if (citizen.hasCar) {
           representedCarOwners += weight;
           accumulator.carOwners += weight;
@@ -3104,6 +3937,7 @@
         const financial = this.citizenFinancialAccount(citizen);
         netIncomeTotal += financial.cashAfterHousingAndCommuteAed * weight;
         grossSalaryTotal += financial.grossSalaryAed * weight;
+        nonLaborSupportTotal += financial.nonLaborSupportAed * weight;
         housingCostTotal += financial.housingCostAed * weight;
         monthlyTransportCostTotal += financial.commutingCostAed * weight;
         residualAfterEssentialsTotal += financial.residualAfterEssentialsAed * weight;
@@ -3113,6 +3947,7 @@
         rentTotal += citizen.residentialRentAed * weight;
         accumulator.netIncome += financial.cashAfterHousingAndCommuteAed * weight;
         accumulator.grossSalary += financial.grossSalaryAed * weight;
+        accumulator.nonLaborSupport += financial.nonLaborSupportAed * weight;
         accumulator.housingCost += financial.housingCostAed * weight;
         accumulator.monthlyTransportCost += financial.commutingCostAed * weight;
         accumulator.residualAfterEssentials += financial.residualAfterEssentialsAed * weight;
@@ -3176,12 +4011,21 @@
         const housingOvercapacityRepresented = Math.max(0, item.representedPopulation - housingCapacityRepresented);
         const averageNetIncomeAed = round(item.netIncome / population, 2);
         const averageGrossSalaryAed = round(item.grossSalary / population, 2);
+        const averageNonLaborSupportAed = round(item.nonLaborSupport / population, 2);
         const averageHousingCostAed = round(item.housingCost / population, 2);
         const averageMonthlyTransportCostAed = round(item.monthlyTransportCost / population, 2);
         const averageResidualAfterEssentialsAed = round(item.residualAfterEssentials / population, 2);
         const averageBankBalanceAed = round(item.bankBalance / population, 2);
         const averageMonthlyBankBalanceDeltaAed = round(item.monthlyBankBalanceDelta / population, 2);
         const averageRoundTripMinutes = round(item.commute / commuters, 2);
+        const requestedJobCapacityAgents = Number(zone.requestedJobCapacityAgents ?? zone.jobCapacityAgents);
+        const effectiveJobCapacityAgents = this.effectiveZoneJobCapacityAgents(zone);
+        const requestedZonedJobCapacityRepresented = Number.isFinite(requestedJobCapacityAgents)
+          ? requestedJobCapacityAgents * this.config.citizenWeight
+          : item.jobCapacity;
+        const zonedJobCapacityRepresented = Number.isFinite(effectiveJobCapacityAgents)
+          ? effectiveJobCapacityAgents * this.config.citizenWeight
+          : item.jobCapacity;
         return {
           id: zone.id,
           name: zone.name,
@@ -3207,11 +4051,27 @@
           appliedBusinessCapacityMultiplier: zone.businessCapacityMultiplier,
           effectiveBusinessCapacityMultiplier: round(zone.enterprisePlaceCapacity / Math.max(zone.baseEnterprisePlaceCapacity, 1), 4),
           representedEmployed: item.employed,
+          representedLaborForce: item.laborForce,
+          representedUnemployed: item.unemployed,
+          representedNonparticipants: item.nonparticipants,
           jobs: item.locatedJobs,
           representedJobCapacity: item.jobCapacity,
           jobCapacity: item.jobCapacity,
+          requestedZonedJobCapacityRepresented,
+          zonedJobCapacityRepresented,
+          zonedJobCapacityGrandfatheredRepresented: Math.max(0, zonedJobCapacityRepresented - requestedZonedJobCapacityRepresented),
+          requestedJobCapacityMultiplier: zone.businessCapacityMultiplier,
+          effectiveJobCapacityMultiplier: Number.isFinite(zone.baseJobCapacityAgents)
+            ? round(effectiveJobCapacityAgents / Math.max(zone.baseJobCapacityAgents, 1), 4)
+            : null,
+          zonedJobCapacityUtilizationPercent: round((item.jobCapacity / Math.max(zonedJobCapacityRepresented, 1)) * 100, 2),
+          locatedJobsToZonedCapacityPercent: round((item.locatedJobs / Math.max(zonedJobCapacityRepresented, 1)) * 100, 2),
           vacancies: item.vacancies,
           employmentRate: round((item.employed / population) * 100, 2),
+          laborForceParticipationRate: round((item.laborForce / population) * 100, 2),
+          unemploymentRate: round((item.unemployed / Math.max(item.laborForce, 1)) * 100, 2),
+          nonParticipationRate: round((item.nonparticipants / population) * 100, 2),
+          notEmployedResidentRate: round(((population - item.employed) / population) * 100, 2),
           stateCounts: { ...item.state },
           stateShares,
           states: {
@@ -3227,6 +4087,7 @@
           meanNetIncomeAed: averageNetIncomeAed,
           averageCashAfterHousingAndCommuteAed: averageNetIncomeAed,
           averageGrossSalaryAed,
+          averageNonLaborSupportAed,
           averageHousingCostAed,
           averageMonthlyTransportCostAed,
           averageResidualAfterEssentialsAed,
@@ -3249,45 +4110,89 @@
         };
       });
       const links = this.links.map((link) => {
-        const capacity = this.linkCapacity(link, "car");
-        const ptCapacity = this.linkCapacity(link, "pt");
-        const volumeCapacityAB = round(link.loadABVehicles / Math.max(capacity, 1), 4);
-        const volumeCapacityBA = round(link.loadBAVehicles / Math.max(capacity, 1), 4);
+        const capacityAB = link.loadBearing
+          ? this.linkCapacity(link, "car", 1)
+          : Math.max(0, link.capacityVehiclesAB) * this.config.roadCapacityMultiplier;
+        const capacityBA = link.loadBearing
+          ? this.linkCapacity(link, "car", -1)
+          : Math.max(0, link.capacityVehiclesBA) * this.config.roadCapacityMultiplier;
+        const ptCapacityAB = link.loadBearing
+          ? this.linkCapacity(link, "pt", 1)
+          : Math.max(0, link.ptCapacityPassengersAB) * this.config.ptCapacityMultiplier;
+        const ptCapacityBA = link.loadBearing
+          ? this.linkCapacity(link, "pt", -1)
+          : Math.max(0, link.ptCapacityPassengersBA) * this.config.ptCapacityMultiplier;
+        const volumeCapacityAB = link.loadBearing ? round(link.loadABVehicles / Math.max(capacityAB, 1), 4) : 0;
+        const volumeCapacityBA = link.loadBearing ? round(link.loadBAVehicles / Math.max(capacityBA, 1), 4) : 0;
         const loadRatio = Math.max(volumeCapacityAB, volumeCapacityBA);
+        const fromZone = this.zoneById.get(link.fromZoneId || link.from);
+        const toZone = this.zoneById.get(link.toZoneId || link.to);
+        const routeLabel = fromZone && toZone ? `${fromZone.name} – ${toZone.name}` : link.primaryRoad;
         return {
           id: link.id,
-          name: `${this.zoneById.get(link.from).name} – ${this.zoneById.get(link.to).name}`,
+          name: link.primaryRoad,
+          routeLabel,
           from: link.from,
           to: link.to,
+          fromNodeId: link.from,
+          toNodeId: link.to,
           roadClass: link.roadClass,
+          primaryRoad: link.primaryRoad,
+          roadNames: [...link.roadNames],
+          roadRefs: [...link.roadRefs],
+          lanesPerDirection: link.lanesPerDirection,
+          capacityPerLaneVehPerHour: link.capacityPerLaneVehPerHour,
+          capacityDirection: link.capacityDirection,
+          hidden: link.hidden,
+          modelVisible: link.modelVisible,
+          contextOnly: link.contextOnly,
+          modelRole: link.modelRole,
+          displayClass: link.displayClass,
+          loadBearing: link.loadBearing,
+          bidirectional: link.bidirectional,
+          geometryFeatureId: link.geometryFeatureId,
+          candidateRouteIds: [...link.candidateRouteIds],
+          sourceClass: link.sourceClass,
+          sourceClassByField: link.sourceClassByField ? deepClone(link.sourceClassByField) : null,
           distanceKm: round(link.distanceKm, 2),
           freeFlowMinutes: round(link.baseDurationMin, 2),
           loadABVehicles: round(link.loadABVehicles, 2),
           loadBAVehicles: round(link.loadBAVehicles, 2),
           loadABPassengers: round(link.loadABPassengers, 2),
           loadBAPassengers: round(link.loadBAPassengers, 2),
-          capacityVehiclesPerDirection: round(capacity, 2),
-          capacityVehPerHour: round(capacity / this.config.assignmentPeakHours, 2),
-          capacity: round(capacity, 2),
-          ptCapacityPassengersPerDirection: round(ptCapacity, 2),
+          capacityVehiclesPerDirection: round(Math.max(capacityAB, capacityBA), 2),
+          capacityVehiclesAB: round(capacityAB, 2),
+          capacityVehiclesBA: round(capacityBA, 2),
+          assignmentPeriodHours: this.config.assignmentPeakHours,
+          capacityVehPerHour: round(Math.max(link.capacityVehPerHourAB || 0, link.capacityVehPerHourBA || 0), 2),
+          capacityVehPerHourAB: round(link.capacityVehPerHourAB || capacityAB / this.config.assignmentPeakHours, 2),
+          capacityVehPerHourBA: round(link.capacityVehPerHourBA || capacityBA / this.config.assignmentPeakHours, 2),
+          capacity: round(Math.max(capacityAB, capacityBA), 2),
+          ptCapacityPassengersPerDirection: round(Math.max(ptCapacityAB, ptCapacityBA), 2),
+          ptCapacityPassengersAB: round(ptCapacityAB, 2),
+          ptCapacityPassengersBA: round(ptCapacityBA, 2),
           volumeCapacityAB,
           volumeCapacityBA,
           loadRatio,
           volumeCapacityRatio: loadRatio,
-          ptLoadFactorAB: round(link.loadABPassengers / Math.max(ptCapacity, 1), 4),
-          ptLoadFactorBA: round(link.loadBAPassengers / Math.max(ptCapacity, 1), 4),
+          ptLoadFactorAB: link.loadBearing ? round(link.loadABPassengers / Math.max(ptCapacityAB, 1), 4) : 0,
+          ptLoadFactorBA: link.loadBearing ? round(link.loadBAPassengers / Math.max(ptCapacityBA, 1), 4) : 0,
           travelTimeABMin: round(link.travelTimeABMin, 2),
           travelTimeBAMin: round(link.travelTimeBAMin, 2),
           travelTimeMinutes: round(Math.max(link.travelTimeABMin, link.travelTimeBAMin), 2),
         };
       });
-      const averageRoadLoad = links.length ? sumBy(links, (link) => (link.volumeCapacityAB + link.volumeCapacityBA) / 2) / links.length : 0;
+      const measuredRoadLinks = links.filter((link) => link.loadBearing && !link.hidden);
+      const averageRoadLoad = measuredRoadLinks.length
+        ? sumBy(measuredRoadLinks, (link) => (link.volumeCapacityAB + link.volumeCapacityBA) / 2) / measuredRoadLinks.length
+        : 0;
       const cityHousingCapacityRepresented = sumBy(this.zones, (zone) => zone.housingCapacityAgents * this.config.citizenWeight);
       const cityHousingOccupancyRatio = representedPopulation / Math.max(cityHousingCapacityRepresented, 1);
       const stateShares = this.shareObject(cityState, representedPopulation);
       const modeShares = this.modeShareObject(cityMode);
       const averageNetIncomeAed = round(netIncomeTotal / Math.max(representedPopulation, 1), 2);
       const averageGrossSalaryAed = round(grossSalaryTotal / Math.max(representedPopulation, 1), 2);
+      const averageNonLaborSupportAed = round(nonLaborSupportTotal / Math.max(representedPopulation, 1), 2);
       const averageHousingCostAed = round(housingCostTotal / Math.max(representedPopulation, 1), 2);
       const averageMonthlyTransportCostAed = round(monthlyTransportCostTotal / Math.max(representedPopulation, 1), 2);
       const averageResidualAfterEssentialsAed = round(residualAfterEssentialsTotal / Math.max(representedPopulation, 1), 2);
@@ -3332,13 +4237,26 @@
         representedPopulation,
         population: representedPopulation,
         representedEmployed,
+        representedLaborForce,
+        representedUnemployed,
+        representedNonparticipants,
         jobs: representedEmployed,
         representedJobCapacity,
         jobCapacity: representedJobCapacity,
         vacancies: representedVacancies,
         carOwnershipRate: round((representedCarOwners / Math.max(representedPopulation, 1)) * 100, 2),
         employmentRate: round((representedEmployed / Math.max(representedPopulation, 1)) * 100, 2),
-        unemploymentRate: round((1 - representedEmployed / Math.max(representedPopulation, 1)) * 100, 2),
+        laborForceParticipationRate: round((representedLaborForce / Math.max(representedPopulation, 1)) * 100, 2),
+        unemploymentRate: round((representedUnemployed / Math.max(representedLaborForce, 1)) * 100, 2),
+        nonParticipationRate: round((representedNonparticipants / Math.max(representedPopulation, 1)) * 100, 2),
+        notEmployedResidentRate: round((1 - representedEmployed / Math.max(representedPopulation, 1)) * 100, 2),
+        laborForceAccounting: {
+          employmentRateDenominator: "all represented residents",
+          participationRateDenominator: "all represented residents",
+          unemploymentRateDenominator: "represented labor-force participants",
+          activeJobSeekerReserveShareOfResidents: round(clamp(Number(this.config.activeJobSeekerResidentRate) || 0, 0, 1) * 100, 2),
+          configuredParticipationRate: round(clamp(Number(this.config.laborForceParticipationRate) || 0, 0, 1) * 100, 2),
+        },
         citizens: this.citizens.length,
         citizenWeight: this.config.citizenWeight,
         enterprises: this.enterprises.length,
@@ -3366,14 +4284,17 @@
         meanNetIncomeAed: averageNetIncomeAed,
         averageCashAfterHousingAndCommuteAed: averageNetIncomeAed,
         averageGrossSalaryAed,
+        averageNonLaborSupportAed,
         averageHousingCostAed,
         averageMonthlyTransportCostAed,
         averageResidualAfterEssentialsAed,
         financialStatusCounts: { ...cityFinancialStatus },
         financialStatusShares: this.shareObject(cityFinancialStatus, representedPopulation),
         financialAccounting: {
-          formula: "gross salary − housing − commuting = cash after housing and commute; then subtract essential consumption",
+          formula:
+            "earned salary + modeled household/non-labor support − housing − commuting = cash after housing and commute; then subtract essential consumption",
           averageGrossSalaryAed,
+          averageNonLaborSupportAed,
           averageHousingCostAed,
           averageMonthlyTransportCostAed,
           averageCashAfterHousingAndCommuteAed: averageNetIncomeAed,
@@ -3442,12 +4363,13 @@
       const completedModes = new Set(["car", "pt", "walk"]);
       for (const citizen of this.citizens) {
         const workZoneId = citizen.enterpriseId ? citizen.workZoneId : null;
-        const key = `${citizen.homeZoneId}|${workZoneId || "unemployed"}`;
+        const employmentStatus = this.citizenLaborForceStatus(citizen);
+        const key = `${citizen.homeZoneId}|${workZoneId || employmentStatus}`;
         if (!grouped.has(key)) {
           grouped.set(key, {
             homeZoneId: citizen.homeZoneId,
             workZoneId,
-            employmentStatus: workZoneId ? "employed" : "unemployed",
+            employmentStatus,
             citizenAgentCount: 0,
             representedResidents: 0,
             representedWorkers: 0,
@@ -3480,7 +4402,8 @@
         }))
         .sort(
           (a, b) =>
-            a.homeZoneId.localeCompare(b.homeZoneId) || String(a.workZoneId || "~unemployed").localeCompare(String(b.workZoneId || "~unemployed"))
+            a.homeZoneId.localeCompare(b.homeZoneId) ||
+            String(a.workZoneId || `~${a.employmentStatus}`).localeCompare(String(b.workZoneId || `~${b.employmentStatus}`))
         );
     }
 
@@ -3589,9 +4512,9 @@
           population: "all-citizens",
           metric: "cash-after-housing-and-commute",
           unit: "AED/month after housing and commuting, before essential consumption",
-          formula: "gross salary − housing − commuting",
+          formula: "earned salary + modeled household/non-labor support − housing − commuting",
           interpretation:
-            "This is not gross income and not final disposable income. Unemployed citizens remain in the distribution with zero salary and their housing cost.",
+            "This is not gross income and not final disposable income. Active unemployed citizens remain at zero earned salary; nonparticipants receive an explicit modeled household/non-labor resource amount.",
           sourceAgentCount: this.citizens.length,
           representedTotal: income.representedTotal,
           exactZeroAgentCount: exactZeroIncomeAgents.length,
@@ -3640,16 +4563,29 @@
         reviewPurpose = citizen.nextCarConsiderationDay <= citizen.nextQualityMoveDay ? "car ownership review" : "housing quality review";
       }
       const lastAction = citizen.events.length ? { ...citizen.events[citizen.events.length - 1] } : null;
+      const laborForceStatus = this.citizenLaborForceStatus(citizen);
+      const isNonparticipant = laborForceStatus === "nonparticipant";
       return {
         decisionModel: "rule-based UDES-style statechart",
-        primaryGoal: "Keep housing and access to work while maintaining an acceptable financial and commute buffer.",
-        goals: [
-          `Keep cash after housing and commuting above AED ${this.config.waitingNetIncomeAed.toLocaleString("en-US")}/month.`,
-          `Keep the round-trip commute below ${this.config.acceptableCommuteRoundTripMin} minutes.`,
-          "When dissatisfied, try a better job, cheaper housing, or housing closer to work; car and quality aspirations are reviewed less often.",
-        ],
+        primaryGoal: isNonparticipant
+          ? "Maintain stable housing and an adequate household financial buffer outside active job search."
+          : "Keep housing and access to work while maintaining an acceptable financial and commute buffer.",
+        goals: isNonparticipant
+          ? [
+              `Keep cash after housing above AED ${this.config.waitingNetIncomeAed.toLocaleString("en-US")}/month.`,
+              "Use modeled household/non-labor resources rather than earned salary while outside the labor force.",
+              "Review housing cost and quality; do not enter job matching unless participation changes.",
+            ]
+          : [
+              `Keep cash after housing and commuting above AED ${this.config.waitingNetIncomeAed.toLocaleString("en-US")}/month.`,
+              `Keep the round-trip commute below ${this.config.acceptableCommuteRoundTripMin} minutes.`,
+              "When dissatisfied, try a better job, cheaper housing, or housing closer to work; car and quality aspirations are reviewed less often.",
+            ],
         currentAssessment: {
           state: citizen.state,
+          laborForceParticipant: citizen.laborForceParticipant !== false,
+          laborForceStatus,
+          jobSeeking: this.jobSeekerIds.has(citizen.id),
           normal,
           severeFinancial,
           severeCommute,
@@ -3751,6 +4687,9 @@
         homeZoneId: citizen.homeZoneId,
         workZoneId: citizen.workZoneId,
         enterpriseId: citizen.enterpriseId,
+        laborForceParticipant: citizen.laborForceParticipant !== false,
+        laborForceStatus: this.citizenLaborForceStatus(citizen),
+        jobSeeking: this.jobSeekerIds.has(citizen.id),
         hasCar: citizen.hasCar,
         state: citizen.state,
         status: citizen.state,
@@ -3763,6 +4702,8 @@
         dailyTransportCostAed: citizen.dailyTransportCostAed,
         salaryAed: citizen.salaryAed,
         salaryMonthly: citizen.salaryAed,
+        nonLaborSupportAed: financialAccount.nonLaborSupportAed,
+        monthlyNonLaborSupportAed: financialAccount.nonLaborSupportAed,
         residentialRentAed: citizen.residentialRentAed,
         rentMonthly: citizen.residentialRentAed,
         monthlyTransportCostAed: citizen.monthlyTransportCostAed,
@@ -3849,6 +4790,9 @@
         homeZoneId: citizen.homeZoneId,
         workZoneId: citizen.workZoneId,
         enterpriseId: citizen.enterpriseId,
+        laborForceParticipant: citizen.laborForceParticipant !== false,
+        laborForceStatus: this.citizenLaborForceStatus(citizen),
+        jobSeeking: this.jobSeekerIds.has(citizen.id),
         state: citizen.state,
         status: citizen.state,
         mode: citizen.mode,
@@ -3872,6 +4816,62 @@
       };
     }
 
+    serializeMapFrame() {
+      const zoneCodes = new Map(this.zones.map((zone, index) => [zone.id, index]));
+      if (this.zones.length >= MAP_FRAME_NONE) throw new Error("Map-frame zone encoding supports at most 254 zones");
+      const citizenHomeZones = new Uint8Array(this.citizens.length);
+      const citizenWorkZones = new Uint8Array(this.citizens.length);
+      const citizenStates = new Uint8Array(this.citizens.length);
+      const citizenModes = new Uint8Array(this.citizens.length);
+      const citizenLaborForceStatuses = new Uint8Array(this.citizens.length);
+      const citizenGenerations = new Uint16Array(this.citizens.length);
+      for (let index = 0; index < this.citizens.length; index += 1) {
+        const citizen = this.citizens[index];
+        citizenHomeZones[index] = zoneCodes.get(citizen.homeZoneId) ?? MAP_FRAME_NONE;
+        citizenWorkZones[index] = zoneCodes.get(citizen.workZoneId) ?? MAP_FRAME_NONE;
+        citizenStates[index] = CITIZEN_STATE_CODES[citizen.state] ?? CITIZEN_STATE_CODES.Happy;
+        citizenModes[index] = CITIZEN_MODE_CODES[citizen.mode] ?? CITIZEN_MODE_CODES.none;
+        citizenLaborForceStatuses[index] = CITIZEN_LABOR_FORCE_CODES[this.citizenLaborForceStatus(citizen)];
+        citizenGenerations[index] = Math.min(65535, Math.max(0, Number(citizen.generation) || 0));
+      }
+      const enterpriseZones = new Uint8Array(this.enterprises.length);
+      const enterpriseStates = new Uint8Array(this.enterprises.length);
+      const enterpriseEmployeeCounts = new Uint16Array(this.enterprises.length);
+      for (let index = 0; index < this.enterprises.length; index += 1) {
+        const enterprise = this.enterprises[index];
+        enterpriseZones[index] = zoneCodes.get(enterprise.zoneId) ?? MAP_FRAME_NONE;
+        enterpriseStates[index] = ENTERPRISE_STATE_CODES[enterprise.state] ?? ENTERPRISE_STATE_CODES.Working;
+        enterpriseEmployeeCounts[index] = Math.min(65535, enterprise.employeeIds.size);
+      }
+      return {
+        encoding: "typed-arrays-v1",
+        noneCode: MAP_FRAME_NONE,
+        zoneIds: this.zones.map((zone) => zone.id),
+        citizenCount: this.citizens.length,
+        enterpriseCount: this.enterprises.length,
+        citizenWeight: this.config.citizenWeight,
+        citizens: {
+          homeZones: citizenHomeZones,
+          workZones: citizenWorkZones,
+          states: citizenStates,
+          modes: citizenModes,
+          laborForceStatuses: citizenLaborForceStatuses,
+          generations: citizenGenerations,
+        },
+        enterprises: {
+          zones: enterpriseZones,
+          states: enterpriseStates,
+          employeeCounts: enterpriseEmployeeCounts,
+        },
+        codes: {
+          citizenStates: Object.keys(CITIZEN_STATE_CODES),
+          citizenModes: Object.keys(CITIZEN_MODE_CODES),
+          citizenLaborForceStatuses: Object.keys(CITIZEN_LABOR_FORCE_CODES),
+          enterpriseStates: Object.keys(ENTERPRISE_STATE_CODES),
+        },
+      };
+    }
+
     snapshot(options = {}) {
       const historyLimit = Math.max(0, Number(options.historyLimit) || 0);
       const includeHistories = Boolean(options.includeHistories);
@@ -3887,6 +4887,7 @@
       const enterprises = enterpriseIds.map((id) => this.serializeEnterprise(this.enterpriseById.get(id), historyLimit)).filter(Boolean);
       const mapCitizens = (this.mapCitizenIds || []).map((id) => this.serializeMapCitizen(this.citizenById.get(id))).filter(Boolean);
       const mapEnterprises = (this.mapEnterpriseIds || []).map((id) => this.serializeMapEnterprise(this.enterpriseById.get(id))).filter(Boolean);
+      const mapFrame = options.mapFrame === "all" ? this.serializeMapFrame() : null;
       const commuteOd = this.computeCommuteOd();
       return {
         schemaVersion: SCHEMA_VERSION,
@@ -3902,7 +4903,8 @@
         commuteOdMetadata: {
           observationType: "current-stock",
           asOfDate: this.clock.date,
-          description: "Current home-to-work relationships; not relocation events and not daily trip counts.",
+          description:
+            "Current home-to-work relationships, with active unemployed and labor-force nonparticipants separated; not relocation events and not daily trip counts.",
           modeledCitizenAgents: sumBy(commuteOd, (row) => row.citizenAgentCount),
           representedResidents: sumBy(commuteOd, (row) => row.representedResidents),
           representedWorkers: sumBy(commuteOd, (row) => row.representedWorkers),
@@ -3914,6 +4916,7 @@
         samples: { citizens, enterprises },
         agents: { citizens, enterprises },
         mapAgents: { citizens: mapCitizens, enterprises: mapEnterprises },
+        mapFrame,
         histories: includeHistories
           ? {
               city: this.cityHistory.slice(-aggregateHistoryLimit),
@@ -3974,9 +4977,22 @@
           if (!enterprise?.employeeIds.has(citizen.id)) issues.push(`${citizen.id} missing from employer`);
           if (citizen.workZoneId !== enterprise?.zoneId) issues.push(`${citizen.id} work zone mismatch`);
           if (this.unemployedIds.has(citizen.id)) issues.push(`${citizen.id} both employed and unemployed`);
-        } else if (!this.unemployedIds.has(citizen.id)) issues.push(`${citizen.id} absent from unemployment pool`);
-        else if (citizen.mode !== "none" || citizen.routeLinkIds.length || citizen.roundTripMinutes !== 0) {
-          issues.push(`${citizen.id} retains a commute while unemployed`);
+          if (citizen.laborForceParticipant === false) issues.push(`${citizen.id} employed outside the labor force`);
+          if (this.jobSeekerIds.has(citizen.id)) issues.push(`${citizen.id} both employed and job-seeking`);
+          if (this.nonParticipantIds.has(citizen.id)) issues.push(`${citizen.id} both employed and nonparticipating`);
+        } else {
+          if (!this.unemployedIds.has(citizen.id)) issues.push(`${citizen.id} absent from non-employment pool`);
+          if (citizen.laborForceParticipant === false) {
+            if (!this.nonParticipantIds.has(citizen.id)) issues.push(`${citizen.id} absent from nonparticipant pool`);
+            if (this.jobSeekerIds.has(citizen.id)) issues.push(`${citizen.id} both nonparticipating and job-seeking`);
+          } else {
+            if (!this.jobSeekerIds.has(citizen.id)) issues.push(`${citizen.id} absent from active job-seeker pool`);
+            if (this.nonParticipantIds.has(citizen.id)) issues.push(`${citizen.id} both participating and nonparticipating`);
+          }
+          if (citizen.mode !== "none" || citizen.routeLinkIds.length || citizen.roundTripMinutes !== 0) {
+            issues.push(`${citizen.id} retains a commute while not employed`);
+          }
+          if (citizen.routeTraversalCodes?.length) issues.push(`${citizen.id} retains route traversals while not employed`);
         }
       }
       for (const enterprise of this.enterprises) {
@@ -3989,6 +5005,12 @@
         for (const citizenId of enterprise.employeeIds) {
           if (this.citizenById.get(citizenId)?.enterpriseId !== enterprise.id)
             issues.push(`${enterprise.id}/${citizenId} reverse employment mismatch`);
+        }
+      }
+      for (const zone of this.zones) {
+        const effectiveJobCapacityAgents = this.effectiveZoneJobCapacityAgents(zone);
+        if (Number.isFinite(effectiveJobCapacityAgents) && this.zonePlannedJobSlots(zone) > effectiveJobCapacityAgents) {
+          issues.push(`${zone.id} exceeds its zoned job-slot capacity`);
         }
       }
       return issues;
@@ -4041,7 +5063,8 @@
         }
         if (type === "configure") {
           runToken += 1;
-          const snapshot = engine.configure(payload.patch, Boolean(payload.reset));
+          engine.configure(payload.patch, Boolean(payload.reset));
+          const snapshot = engine.snapshot(payload.snapshot);
           reply("snapshot", requestId, snapshot);
           return;
         }

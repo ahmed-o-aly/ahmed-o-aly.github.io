@@ -27,8 +27,8 @@ assertContains(html, /data-worker-url="\/assets\/js\/udes-v2-worker\.js"/, "v2 e
 assertContains(html, /aria-label="Interactive map of Greater Abu Dhabi City/, "map has the correct city boundary description");
 assertContains(
   html,
-  /Official AD-SDI district groups · OSM-routed inter-district corridors only/,
-  "map provenance distinguishes official district groups and inter-district model corridors"
+  /Official AD-SDI district groups · OSM basemap and routed named arterials/,
+  "map provenance distinguishes official district groups and the routed named-arterial model layer"
 );
 assertContains(
   html,
@@ -116,18 +116,235 @@ for (const id of ["al-mushrif", "al-danah", "al-zahiyah", "al-khalidiyah", "al-b
     `${id} remains a distinct model district`
   );
 }
-assert.equal(baseline.roadGraph.edges.length, 31, "road graph contains 31 routed corridors");
+const roadNodes = baseline.roadGraph.nodes;
+const roadEdges = baseline.roadGraph.edges;
+const assignmentRoadEdges = roadEdges.filter((edge) => edge.loadBearing);
+const modelVisibleRoadEdges = roadEdges.filter((edge) => edge.modelVisible);
+const midRouteConnectors = roadEdges.filter((edge) => edge.loadBearing && !edge.modelVisible);
+const contextRoadEdges = roadEdges.filter((edge) => edge.contextOnly);
+const hiddenAccessEdges = roadEdges.filter((edge) => edge.hidden);
+const aggregatedZonePortals = roadEdges.filter((edge) => edge.hiddenReason === "aggregated-zone-portal");
+const roadNodeIds = new Set(roadNodes.map((node) => node.id));
+const roadEdgeIds = new Set(roadEdges.map((edge) => edge.id));
+const roadFeatureIds = new Set(roads.features.map((feature) => String(feature.id || feature.properties?.id)));
+assert.equal(roadNodeIds.size, roadNodes.length, "physical road-node IDs are unique");
+assert.equal(roadEdgeIds.size, roadEdges.length, "physical road-edge IDs are unique");
+assert.ok(roadNodes.length > baseline.zones.length, "the road graph contains physical junction nodes rather than one node per district");
+assert.ok(roadEdges.length > 31, "the road graph replaces 31 cosmetic routes with shared physical edges");
+assert.ok(assignmentRoadEdges.length > 100, "physical assignment retains a useful load-bearing segment network");
+assert.ok(modelVisibleRoadEdges.length > 100, "the public overlay retains a useful named arterial and gateway network");
+assert.ok(midRouteConnectors.length > 0, "unnamed mid-route OSM connectors remain load-bearing even when omitted from the public overlay");
+assert.ok(contextRoadEdges.length > 0, "named roads outside OD paths remain available as explicit map context");
+assert.ok(hiddenAccessEdges.length > 0, "zone access is explicit in the graph without being presented as a physical arterial");
+assert.ok(aggregatedZonePortals.length > 0, "shared centroid terminal chains are identified as aggregate-zone portals");
 assert.equal(zones.features.length, 18, "grouped official polygon geometry joins every model district");
-assert.equal(roads.features.length, 31, "each model road has actual routed geometry");
+assert.equal(roads.features.length, modelVisibleRoadEdges.length, "each model-visible physical road edge has one GeoJSON feature");
+assert.deepEqual(
+  [...roadFeatureIds].sort(),
+  modelVisibleRoadEdges.map((edge) => String(edge.geometryFeatureId)).sort(),
+  "model-visible physical edge IDs match the published GeoJSON IDs exactly"
+);
+assert.ok(
+  midRouteConnectors.every(
+    (edge) => !edge.hidden && edge.displayClass === "connector" && edge.modelRole === "mid-route-connector" && edge.geometryFeatureId === null
+  ),
+  "non-rendered mid-route connectors remain explicit physical assignment edges"
+);
+assert.ok(
+  hiddenAccessEdges.every(
+    (edge) => !edge.loadBearing && !edge.modelVisible && !edge.contextOnly && edge.geometryFeatureId === null && edge.displayClass === "access"
+  ),
+  "non-load-bearing access edges are explicitly distinguished from published and assigned road geometry"
+);
+for (const [zoneId, minimumPortalEdges] of [
+  ["rabdan-al-maqta", 7],
+  ["musaffah", 3],
+]) {
+  const zonePortals = aggregatedZonePortals.filter((edge) => edge.aggregatedZonePortalFor === zoneId);
+  assert.ok(
+    zonePortals.length >= minimumPortalEdges,
+    `${zoneId} centroid-terminal artifacts are classified by semantic zone identity instead of unstable edge IDs`
+  );
+  assert.ok(
+    zonePortals.every(
+      (edge) =>
+        edge.hidden &&
+        !edge.loadBearing &&
+        !edge.modelVisible &&
+        !edge.contextOnly &&
+        edge.modelRole === "zone-access" &&
+        edge.displayClass === "access" &&
+        edge.geometryFeatureId === null &&
+        edge.aggregatedZonePortalEvidence?.zoneId === zoneId &&
+        edge.aggregatedZonePortalEvidence?.candidateRouteCount > 1 &&
+        edge.aggregatedZonePortalEvidence?.sourceClass === "derived"
+    ),
+    `${zoneId} aggregate-zone portals are excluded from assignment and publication with auditable evidence`
+  );
+}
+assert.ok(
+  contextRoadEdges.every((edge) => edge.modelVisible && !edge.hidden && !edge.loadBearing && edge.geometryFeatureId === edge.id),
+  "context-only named roads are rendered but cannot receive OD demand or enter V/C metrics"
+);
 assert.equal(stops.features.length, 924, "official transit-stop snapshot is complete");
 assert.ok(
   roads.features.every((feature) => feature.geometry.coordinates.length >= 2),
-  "all road corridors contain routed coordinates"
+  "all physical road segments contain routed coordinates"
 );
 assert.ok(
-  roads.features.every((feature) => feature.properties.from && feature.properties.to && feature.properties.from !== feature.properties.to),
-  "the published road overlay contains only inter-district corridors"
+  roadEdges.every((edge) => edge.from !== edge.to && roadNodeIds.has(String(edge.from)) && roadNodeIds.has(String(edge.to))),
+  "every physical edge has two distinct endpoints that exist in the road-node table"
 );
+const roadNodeById = new Map(roadNodes.map((node) => [String(node.id), node]));
+assert.ok(
+  roadEdges.every((edge) => {
+    const coordinates = edge.geometry?.coordinates || [];
+    const fromCoord = roadNodeById.get(String(edge.from))?.coord;
+    const toCoord = roadNodeById.get(String(edge.to))?.coord;
+    return (
+      coordinates.length >= 2 &&
+      coordinates[0].every((value, index) => Math.abs(value - fromCoord[index]) <= 1e-6) &&
+      coordinates.at(-1).every((value, index) => Math.abs(value - toCoord[index]) <= 1e-6)
+    );
+  }),
+  "every edge geometry begins and ends at its declared physical graph nodes"
+);
+const physicalEdgesByNodePair = new Map();
+for (const edge of roadEdges) {
+  const key = [String(edge.from), String(edge.to)].sort().join("|");
+  const parallelEdges = physicalEdgesByNodePair.get(key) || [];
+  assert.ok(
+    parallelEdges.every((parallel) => !parallel.loadBearing && !edge.loadBearing && parallel.hidden && edge.hidden),
+    `${edge.id} does not create parallel assignment capacity between ${edge.from} and ${edge.to}`
+  );
+  parallelEdges.push(edge);
+  physicalEdgesByNodePair.set(key, parallelEdges);
+}
+const atomicGeometryOwners = new Map();
+for (const edge of roadEdges) {
+  const coordinates = edge.geometry.coordinates;
+  for (let index = 1; index < coordinates.length; index += 1) {
+    const first = coordinates[index - 1].map((value) => Number(value).toFixed(6)).join(",");
+    const second = coordinates[index].map((value) => Number(value).toFixed(6)).join(",");
+    if (first === second) continue;
+    const key = [first, second].sort().join("|");
+    const previousOwner = atomicGeometryOwners.get(key);
+    assert.ok(!previousOwner || previousOwner === edge.id, `${edge.id} does not duplicate a physical coordinate segment owned by ${previousOwner}`);
+    atomicGeometryOwners.set(key, edge.id);
+  }
+}
+assert.ok(
+  roads.features.every(
+    (feature) =>
+      roadNodeIds.has(String(feature.properties.fromNodeId)) &&
+      roadNodeIds.has(String(feature.properties.toNodeId)) &&
+      feature.properties.modelVisible === true &&
+      feature.properties.loadBearing === !feature.properties.contextOnly &&
+      feature.properties.capacityDirection === "per direction"
+  ),
+  "published roads distinguish assignment edges from context-only roads and label capacity as directional"
+);
+assert.ok(
+  roadEdges.every(
+    (edge) =>
+      edge.directionEvidence &&
+      edge.capacityDirection === "per direction" &&
+      (edge.allowAB ? edge.capacityVehPerHourAB > 0 : edge.capacityVehPerHourAB === 0) &&
+      (edge.allowBA ? edge.capacityVehPerHourBA > 0 : edge.capacityVehPerHourBA === 0)
+  ),
+  "each physical edge has auditable direction evidence and capacity only in permitted directions"
+);
+assert.ok(
+  modelVisibleRoadEdges.some((edge) => edge.officialMainRoadMatch),
+  "the visible road network retains strict AD-SDI main-road reference matches where available"
+);
+assert.ok(
+  roadEdges.some((edge) => Array.isArray(edge.candidateRouteIds) && edge.candidateRouteIds.length > 1),
+  "the graph records physical edges shared by multiple candidate district routes"
+);
+function edgeAllowsDirection(edge, direction) {
+  const oneWay = String(edge.oneway ?? edge.oneWay ?? "").toLowerCase();
+  let allowAB = edge.allowAB !== false;
+  let allowBA = edge.allowBA !== false && edge.bidirectional !== false;
+  if (["-1", "reverse", "backward"].includes(oneWay)) {
+    allowAB = false;
+    allowBA = true;
+  } else if (["1", "yes", "true", "forward"].includes(oneWay)) {
+    allowAB = true;
+    allowBA = false;
+  }
+  return Number(direction) === 1 ? allowAB : allowBA;
+}
+assert.ok(
+  assignmentRoadEdges.some((edge) => edgeAllowsDirection(edge, 1) !== edgeAllowsDirection(edge, -1)),
+  "the physical baseline retains observed one-way traversal instead of forcing every road bidirectional"
+);
+const roadEdgeById = new Map(roadEdges.map((edge) => [String(edge.id), edge]));
+assert.ok(
+  baseline.roadGraph.candidateRoutes.every(
+    (route) =>
+      route.fromNodeId &&
+      route.toNodeId &&
+      route.traversals.length > 0 &&
+      route.traversals.every((step) => {
+        const edge = roadEdgeById.get(String(step.edgeId));
+        return edge && [1, -1].includes(Number(step.direction)) && edgeAllowsDirection(edge, step.direction);
+      })
+  ),
+  "every candidate route is an auditable, directionally legal traversal of physical edge IDs"
+);
+const candidateById = new Map(baseline.roadGraph.candidateRoutes.map((route) => [String(route.id), route]));
+assert.ok(
+  baseline.roadGraph.candidateRoutes.every((route) => {
+    const paired = candidateById.get(String(route.pairedCandidateRouteId));
+    return (
+      route.bidirectional === false &&
+      paired &&
+      paired.from === route.to &&
+      paired.to === route.from &&
+      paired.directionalPairId === route.directionalPairId &&
+      paired.pairedCandidateRouteId === route.id
+    );
+  }),
+  "every one-way district candidate identifies a separately routed reciprocal candidate"
+);
+for (const route of baseline.roadGraph.candidateRoutes) {
+  let cursor = String(route.fromNodeId);
+  for (const traversal of route.traversals) {
+    const edge = roadEdgeById.get(String(traversal.edgeId));
+    assert.ok(edge.candidateRouteIds.includes(String(route.id)), `${traversal.edgeId} retains ${route.id} in its route-membership audit field`);
+    const traversalFrom = Number(traversal.direction) === 1 ? String(edge.from) : String(edge.to);
+    const traversalTo = Number(traversal.direction) === 1 ? String(edge.to) : String(edge.from);
+    assert.equal(traversalFrom, cursor, `${route.id} traversal is continuous at ${traversal.edgeId}`);
+    cursor = traversalTo;
+  }
+  assert.equal(cursor, String(route.toNodeId), `${route.id} traversal terminates at its destination access node`);
+}
+const accessNodeIds = baseline.zones.map((zone) => String(zone.networkNodeId || ""));
+assert.ok(
+  accessNodeIds.every((nodeId) => roadNodeIds.has(nodeId)),
+  "every district has an access node in the physical road graph"
+);
+const roadAdjacency = new Map(roadNodes.map((node) => [String(node.id), new Set()]));
+for (const edge of roadEdges) {
+  if (edgeAllowsDirection(edge, 1)) roadAdjacency.get(String(edge.from)).add(String(edge.to));
+  if (edgeAllowsDirection(edge, -1)) roadAdjacency.get(String(edge.to)).add(String(edge.from));
+}
+for (const origin of accessNodeIds) {
+  const reached = new Set([origin]);
+  const queue = [origin];
+  while (queue.length) {
+    for (const destination of roadAdjacency.get(queue.shift()) || []) {
+      if (reached.has(destination)) continue;
+      reached.add(destination);
+      queue.push(destination);
+    }
+  }
+  assert.ok(
+    accessNodeIds.every((nodeId) => reached.has(nodeId)),
+    `${origin} can reach every district access node`
+  );
+}
 assert.ok(
   baseline.zones.every((zone) => zone.sourceClassByField),
   "zone inputs expose field-level provenance"
@@ -160,14 +377,14 @@ assert.match(worker, /Working|Grow|Lesser/, "enterprise statechart is implemente
 assert.match(worker, /validateInvariants\(\)/, "engine exposes reciprocal-link validation");
 assert.match(worker, /housingCapacityIsSoft: true/, "housing overcrowding is an explicit soft-capacity assumption");
 assert.match(worker, /allowCapacityOverflow: true/, "network overflow is modeled as congestion instead of forced walking");
+assert.match(worker, /initialEmploymentRate: 0\.67/, "opening employment uses the evidence-anchored employed-resident share");
+assert.match(worker, /targetEmploymentRate: 0\.67/, "labor matching targets the same evidence-anchored employed-resident share");
+assert.match(worker, /assignmentPeakHours: 13/, "the documented daily assignment window is thirteen hours");
 assert.match(worker, /captureDaily/, "the engine can return one compact observation for each simulated day");
 assert.match(worker, /networkAssignmentStatus/, "daily output distinguishes current and retained workday network assignments");
 assert.match(worker, /policyScopeZoneId/, "land-use policy can target a named modeled district");
-assert.match(
-  worker,
-  /mapAgents: \{ citizens: mapCitizens, enterprises: mapEnterprises \}/,
-  "worker snapshots expose stable actual-agent map samples"
-);
+assert.match(worker, /serializeMapFrame\(\)/, "worker can serialize the complete citizen and enterprise map state");
+assert.match(worker, /const mapFrame = options\.mapFrame === "all"/, "the complete map frame is emitted only when requested");
 assert.match(worker, /residentialMoveCooldownDays: 365/, "household relocation uses a one-year default minimum stay");
 assert.match(worker, /firmMoveCooldownDays: 730/, "firm relocation uses a two-year default minimum stay");
 assert.match(worker, /betterJobMinimumRaise: 1\.08/, "voluntary job changes require a material gross raise");
@@ -224,19 +441,32 @@ assert.match(app, /Employed residents vs jobs located/, "district analysis disti
 assert.match(app, /rows = home, columns = work · not relocation events/, "the OD matrix states its direction and stock semantics");
 assert.match(app, /Residents working out/, "selected districts expose residents' external work destinations");
 assert.match(app, /Workers commuting in/, "selected districts expose workers' external home origins");
-assert.match(app, /filter: isInterDistrictCorridor/, "Leaflet excludes any road feature internal to one district");
-assert.match(app, /function syncRepresentativeAgentMarkers\(/, "citizen and enterprise map markers update through stable keyed layers");
-assert.match(app, /state\.snapshot\?\.mapAgents/, "map markers use stable actual-agent samples emitted by the worker");
-assert.doesNotMatch(app, /tile\.openstreetmap\.org/, "the detailed internal-street basemap is not rendered");
+assert.match(app, /tile\.openstreetmap\.org/, "the analyst map uses a labeled OpenStreetMap basemap beneath modeled overlays");
 assert.match(app, /state\.hoveredMapFeatureKey !== entry\.key/, "hovered agent and commute-flow features are not mutated during a daily update");
 assert.match(app, /topInterDistrictCommutes\(state\.snapshot\?\.commuteOd, 18\)/, "the agent map shows a bounded set of directed home-to-work flows");
-assert.match(app, /window\.L\.svg\(\{ pane: "udesV2Agents"/, "actual-agent markers use a dedicated SVG renderer for keyboard access");
-assert.match(app, /window\.L\.svg\(\{ pane: "udesV2CommuteFlows"/, "commute routes use a dedicated SVG renderer for keyboard access");
+assert.match(app, /function createAgentCanvasLayer\(/, "the complete modeled population uses one persistent canvas layer");
 assert.match(
   app,
-  /\[state\.mapFeatures\.citizenAgents, state\.mapFeatures\.enterpriseAgents, state\.mapFeatures\.commuteFlows\]/,
-  "both actual-agent markers and commute routes receive keyboard behavior"
+  /state\.worker\.request\("init", \{ data, config: activeConfig, seed: state\.seed, snapshot: \{ mapFrame: "all" \} \}\)/,
+  "the active worker requests the complete map frame"
 );
+assert.match(
+  app,
+  /state\.referenceWorker\.request\("init", \{ data, config: referenceConfig, seed: state\.seed, snapshot: \{ mapFrame: "none" \} \}\)/,
+  "the reference worker explicitly omits the full map frame"
+);
+assert.match(
+  app,
+  /state\.agentCanvas\.setFrame\(state\.snapshot\.mapFrame\)/,
+  "daily active snapshots update the persistent agent canvas from the full frame"
+);
+assert.match(app, /frame\.codes\?\.citizenLaborForceStatuses/, "the map frame decodes the worker's citizen labor-force status vocabulary");
+assert.match(app, /frame\.citizens\.laborForceStatuses/, "every mapped citizen receives its compact labor-force status code");
+assert.match(app, /point\.laborForceStatus === "nonparticipant"/, "map agent labels distinguish citizens outside the modeled labor force");
+assert.match(app, /Active job seeker/, "map and inspector copy identifies unemployed participants as active job seekers");
+assert.match(app, /requestAnimationFrame\(\(\) =>/, "agent-canvas redraws are coalesced through animation frames");
+assert.match(app, /this\.canvas\.tabIndex = 0/, "the all-agent canvas is one keyboard-reachable explorer rather than thousands of tab stops");
+assert.match(app, /window\.L\.svg\(\{ pane: "udesV2CommuteFlows"/, "commute routes use a dedicated SVG renderer for keyboard access");
 assert.match(app, /element\.setAttribute\("tabindex", "0"\)/, "interactive map features participate in sequential keyboard navigation");
 assert.match(app, /line\.udesV2PendingRemoval = true/, "an interacting commute route is retained when it leaves the top-route set");
 assert.match(
@@ -245,10 +475,17 @@ assert.match(
   "a stale hovered route is removed only after its interaction ends"
 );
 assert.match(app, /distributions\?\.financialStatus/, "citizen charts use mutually exclusive financial-status output");
+assert.match(app, /"outside-labor-force": "Outside labor force"/, "financial charts map nonparticipants to an explicit outside-labor-force bin");
 assert.match(app, /no [‘']net zero[’'] bucket/, "financial-status chart explicitly rejects a misleading net-zero bucket");
 assert.doesNotMatch(app, /Net-income distribution|agents:income/, "the ambiguous net-income histogram contract has been removed");
 assert.match(app, /stack: "citizen-state"/, "citizen Happy, Waiting, Extreme, and Recovery states are charted as a complete stock");
 assert.match(app, /stack: "enterprise-state"/, "enterprise Starting, Working, Grow, and Lesser states are charted as a complete stock");
+assert.match(app, /const corridors = new Map\(\)/, "named-corridor pressure groups physical road segments by road name");
+assert.match(
+  app,
+  /current\.roadPressure = Math\.max\(current\.roadPressure, roadPressure\)/,
+  "named-corridor pressure reports maximum directional V/C rather than duplicate segment bars"
+);
 assert.match(app, /captureDaily: true/, "controller requests consecutive daily observations from both workers");
 assert.match(app, /const HISTORY_POINT_LIMIT = 3654/, "controller retains Day 0 plus a full ten-year daily run");
 assert.match(app, /const FLOW_HISTORY_DETAIL_DAYS = 30/, "high-volume OD rows are retained only for the longest selectable flow window");
@@ -257,8 +494,14 @@ assert.match(app, /normalized\.zoneSeries = \[\]/, "unused reference-run distric
 assert.match(app, /function filterHistoryWindow\(/, "daily charts support bounded display windows without changing the run");
 assert.match(app, /function stagedEnginePatch\(/, "only explicitly changed intervention fields are applied to the live model");
 assert.match(app, /inspectionRequestToken/, "late inspection responses cannot overwrite the current agent selection");
-assert.match(app, /data-udes-v2-agent-search/, "inspectors support direct typed IDs beyond the sample navigator");
+assert.match(app, /data-udes-v2-agent-search/, "inspectors support direct typed IDs alongside the all-agent canvas explorer");
 assert.match(app, /\["representedVacancies"\]/, "enterprise inspector reads the hiring-aware vacancy field");
+assert.match(app, /sourceClassByField\.lanesPerDirection/, "road inspection reads field-level lane-count provenance");
+assert.match(
+  app,
+  /"AD-SDI observed" : "road-class assumption"/,
+  "road inspection distinguishes observed AD-SDI lanes from modeled road-class assumptions"
+);
 assert.match(app, /statechart\(\s*\["Happy", "Waiting", "Extreme", "Recovery"\]/, "citizen inspector exposes all satisfaction states");
 for (const helper of ["decisionSummary", "citizenAccounting", "agentEvents", "eventDescription"]) {
   assert.match(app, new RegExp(`function ${helper}\\(`), `${helper} keeps agent decisions and retained actions inspectable`);
@@ -364,6 +607,15 @@ for (const scenario of validation.scenarios) {
     "voluntary-job-switch-rate-below-provisional-churn-ceiling",
     "cross-district-job-switch-rate-reconciles-to-all-switches",
     "employer-carried-workplace-change-rate-below-provisional-churn-ceiling",
+    "full-agent-scale-resolved",
+    "labor-force-stocks-reconcile",
+    "labor-force-rates-use-disclosed-denominators",
+    "outside-labor-force-financial-bin-reconciles",
+    "extreme-state-not-dominated-by-nonparticipants",
+    "fresh-scenario-zoned-job-capacity-respected",
+    "capacity-overflow-within-horizon-stress-guard",
+    "maximum-directional-road-volume-capacity-within-horizon-stress-guard",
+    "aggregate-zone-portals-carry-no-assignment-load",
   ]) {
     assert.ok(scenarioCheckIds.has(requiredId), `${scenario.id} retains ${requiredId}`);
   }
@@ -377,8 +629,11 @@ const validationCrossCheckIds = new Set(validation.crossScenarioChecks.map((chec
 for (const requiredId of [
   "ten-year-transit-reduces-car-share",
   "ten-year-transit-increases-public-transport-share",
-  "ten-year-transit-reduces-car-ownership",
+  "ten-year-transit-ownership-stock-reconciles-with-agent-flows",
   "ten-year-housing-reduces-occupancy-pressure",
+  "ten-year-housing-lowers-mean-housing-rent",
+  "ten-year-housing-financial-tradeoff-remains-bounded",
+  "ten-year-housing-network-tradeoff-remains-served",
   "ten-year-balanced-increases-housing-capacity",
   "ten-year-balanced-increases-employment-space-capacity",
 ]) {

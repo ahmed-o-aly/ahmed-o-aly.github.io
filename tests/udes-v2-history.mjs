@@ -21,7 +21,6 @@ const {
   filterHistoryWindow,
   aggregateFlowRoutes,
   flowSeriesForZone,
-  isInterDistrictCorridor,
   topInterDistrictCommutes,
   commuteLiveWorkByDistrict,
   commuteOdMatrix,
@@ -39,12 +38,6 @@ const referencePatch = {
 assert.deepEqual(Object.keys(PUBLIC_PRESETS).sort(), ["balanced", "housing", "reference", "transit"], "all four public presets are exportable");
 assert.ok(Object.values(PUBLIC_PRESETS).every(Object.isFrozen), "public preset inputs are immutable shared validation contracts");
 
-assert.equal(isInterDistrictCorridor({ properties: { from: "mushrif", to: "reem" } }), true, "a corridor joining two districts remains visible");
-assert.equal(
-  isInterDistrictCorridor({ properties: { from: "mushrif", to: "mushrif" } }),
-  false,
-  "a road internal to one district is excluded from the public map"
-);
 assert.deepEqual(
   topInterDistrictCommutes(
     [

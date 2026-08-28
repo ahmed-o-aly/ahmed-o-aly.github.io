@@ -21,7 +21,7 @@ const deployWorkflow = projectFile(".github/workflows/deploy.yml");
 const axeWorkflow = projectFile(".github/workflows/axe.yml");
 
 const formatTargets = [
-  "tests/{projects-contract,reading-contract,site-contract,udes-contract,udes-v2-contract,udes-v2-engine,udes-v2-history,udes-v2-scenarios}.mjs",
+  "tests/{projects-contract,reading-contract,site-contract,udes-contract,udes-v2-contract,udes-v2-engine,udes-v2-history,udes-v2-job-capacity,udes-v2-scenarios}.mjs",
   "assets/js/{udes-v2-app,udes-v2-worker}.js",
   "assets/data/cnc-machine-inspector/portfolio-evidence.json",
   "assets/data/udes-v2/README.md",
@@ -60,7 +60,7 @@ assert.doesNotMatch(axeWorkflow, /^\s+inputs:\s*$/m, "axe manual dispatch has no
 assert.doesNotMatch(axeWorkflow, /^\s*URL:\s*/m, "axe has no unused global URL variable");
 assert.match(
   deployWorkflow,
-  /- name: Verify generated site\s+run: \|\s+test -f _site\/index\.html\s+node tests\/udes-v2-engine\.mjs\s+node tests\/udes-v2-scenarios\.mjs\s+node tests\/site-contract\.mjs/,
+  /- name: Verify generated site\s+run: \|\s+test -f _site\/index\.html\s+node tests\/udes-v2-engine\.mjs\s+node tests\/udes-v2-job-capacity\.mjs\s+node tests\/udes-v2-scenarios\.mjs\s+node tests\/site-contract\.mjs/,
   "deploy verifies the simulation and generated site contracts"
 );
 assert.match(

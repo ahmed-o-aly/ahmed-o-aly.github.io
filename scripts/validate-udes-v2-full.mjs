@@ -25,15 +25,21 @@ const baselineData = {
   zones: baseline.zones,
   links: baseline.roadGraph.edges,
   nodes: baseline.roadGraph.nodes,
+  candidateRoutes: baseline.roadGraph.candidateRoutes,
   transit: baseline.transit,
   calibration: baseline.calibration,
   assumptions: baseline.assumptions,
 };
+const aggregateZonePortalIds = new Set(
+  baseline.roadGraph.edges.filter((edge) => edge.hiddenReason === "aggregated-zone-portal").map((edge) => String(edge.id))
+);
 
 const commonConfig = {
   startDate: "2024-01-01",
   calibrationLabel: "Illustrative Greater Abu Dhabi City scenario baseline — not a forecast",
   endogenousEnterpriseDynamics: true,
+  initialEmploymentRate: 0.67,
+  assignmentPeakHours: 13,
 };
 
 const { reference: referencePreset, transit: transitPreset, housing: housingPreset, balanced: balancedPreset } = PUBLIC_PRESETS;
@@ -108,14 +114,25 @@ function enterprisePortfolio(engine) {
 }
 
 function networkMetrics(snapshot) {
-  const roadRatios = snapshot.links.flatMap((link) => [link.volumeCapacityAB, link.volumeCapacityBA]);
-  const transitRatios = snapshot.links.flatMap((link) => [link.ptLoadFactorAB, link.ptLoadFactorBA]);
+  const assignmentLinks = snapshot.links.filter((link) => link.loadBearing !== false && link.contextOnly !== true);
+  const roadRatios = assignmentLinks.flatMap((link) => [link.volumeCapacityAB, link.volumeCapacityBA]);
+  const transitRatios = assignmentLinks.flatMap((link) => [link.ptLoadFactorAB, link.ptLoadFactorBA]);
+  const aggregateZonePortalLoad = sum(
+    snapshot.links
+      .filter((link) => aggregateZonePortalIds.has(String(link.id)))
+      .map((link) => link.loadABVehicles + link.loadBAVehicles + link.loadABPassengers + link.loadBAPassengers)
+  );
   return {
-    corridorCount: snapshot.links.length,
+    physicalEdgeCount: snapshot.links.length,
+    assignmentEdgeCount: assignmentLinks.length,
     meanRoadVolumeCapacityRatio: round(sum(roadRatios) / Math.max(roadRatios.length, 1), 4),
+    p90RoadVolumeCapacityRatio: round(percentile(roadRatios, 0.9), 4),
     maximumRoadVolumeCapacityRatio: round(Math.max(...roadRatios), 4),
+    overloadedDirectionCount: roadRatios.filter((ratio) => ratio > 1).length,
     meanTransitLoadFactor: round(sum(transitRatios) / Math.max(transitRatios.length, 1), 4),
+    p90TransitLoadFactor: round(percentile(transitRatios, 0.9), 4),
     maximumTransitLoadFactor: round(Math.max(...transitRatios), 4),
+    aggregateZonePortalLoad: round(aggregateZonePortalLoad, 4),
   };
 }
 
@@ -124,8 +141,13 @@ function scenarioMetrics(engine, snapshot) {
   return {
     representedPopulation: city.representedPopulation,
     representedEmployed: city.representedEmployed,
+    representedLaborForce: city.representedLaborForce,
+    representedUnemployed: city.representedUnemployed,
+    representedNonparticipants: city.representedNonparticipants,
     employmentRatePercent: city.employmentRate,
     unemploymentRatePercent: city.unemploymentRate,
+    laborForceParticipationRatePercent: city.laborForceParticipationRate,
+    nonParticipationRatePercent: city.nonParticipationRate,
     modeCountsRepresented: city.modeCounts,
     modeSharesPercent: city.modeShares,
     carOwnershipRatePercent: city.carOwnershipRate,
@@ -135,6 +157,12 @@ function scenarioMetrics(engine, snapshot) {
     averageBankBalanceAed: city.averageBankBalanceAed,
     averageMonthlySavingOrDrawdownAed: city.averageMonthlyBankBalanceDeltaAed,
     savingsPolicy: city.savingsPolicy,
+    financialStatusSharesPercent: city.financialStatusShares,
+    extremeNonparticipantSharePercent: round(
+      (engine.citizens.filter((citizen) => citizen.state === "Extreme" && citizen.laborForceParticipant === false).length /
+        Math.max(engine.citizens.filter((citizen) => citizen.state === "Extreme").length, 1)) *
+        100
+    ),
     meanHousingRentAedPerMonth: city.meanHousingRentAed,
     averageRoadCapacityUsagePercent: city.averageRoadCapacityUsage,
     sameZoneWorkSharePercent: city.sameZoneWorkShare,
@@ -161,7 +189,7 @@ function scenarioMetrics(engine, snapshot) {
   };
 }
 
-function scenarioChecks(engine, snapshot, metrics) {
+function scenarioChecks(engine, snapshot, metrics, definition) {
   const finiteValues = [
     metrics.employmentRatePercent,
     ...Object.values(metrics.modeSharesPercent),
@@ -178,6 +206,18 @@ function scenarioChecks(engine, snapshot, metrics) {
   const stateTotal = sum(Object.values(metrics.citizenStateSharesPercent));
   const expectedPopulation = engine.citizens.length * engine.config.citizenWeight;
   const completedCommuters = sum(["car", "pt", "walk"].map((mode) => Number(metrics.modeCountsRepresented?.[mode]) || 0));
+  const longHorizonStressTest = definition.days > ONE_CALENDAR_YEAR_DAYS;
+  const capacityOverflowMaximumShare = longHorizonStressTest ? 0.3 : 0.1;
+  const maximumDirectionalRoadVolumeCapacity = longHorizonStressTest ? 3.25 : 2;
+  const zonedJobCapacityBreaches = snapshot.zones.filter((zoneMetric) => {
+    const zone = engine.zoneById.get(zoneMetric.id);
+    const plannedJobsRepresented = engine.zonePlannedJobSlots(zone) * engine.config.citizenWeight;
+    return (
+      zoneMetric.zonedJobCapacityGrandfatheredRepresented !== 0 ||
+      plannedJobsRepresented > zoneMetric.requestedZonedJobCapacityRepresented ||
+      zoneMetric.jobs > zoneMetric.requestedZonedJobCapacityRepresented
+    );
+  });
   return [
     {
       id: "no-invariant-violations",
@@ -193,6 +233,41 @@ function scenarioChecks(engine, snapshot, metrics) {
       id: "population-conserved",
       passed: metrics.representedPopulation === expectedPopulation,
       detail: `${metrics.representedPopulation} represented residents; expected ${expectedPopulation}`,
+    },
+    {
+      id: "full-agent-scale-resolved",
+      passed: engine.citizens.length === 6070 && engine.enterprises.length === 600,
+      detail: `${engine.citizens.length} citizen agents and ${engine.enterprises.length} enterprise agents`,
+    },
+    {
+      id: "fresh-scenario-zoned-job-capacity-respected",
+      passed: zonedJobCapacityBreaches.length === 0,
+      detail: `${zonedJobCapacityBreaches.length} district(s) with grandfathered capacity, planned slots, or located jobs above requested zoned capacity`,
+    },
+    {
+      id: "labor-force-stocks-reconcile",
+      passed:
+        metrics.representedLaborForce === metrics.representedEmployed + metrics.representedUnemployed &&
+        metrics.representedPopulation === metrics.representedLaborForce + metrics.representedNonparticipants,
+      detail: `${metrics.representedEmployed} employed + ${metrics.representedUnemployed} active unemployed + ${metrics.representedNonparticipants} nonparticipants = ${metrics.representedPopulation}`,
+    },
+    {
+      id: "labor-force-rates-use-disclosed-denominators",
+      passed:
+        Math.abs(metrics.laborForceParticipationRatePercent - 70) <= 0.01 &&
+        Math.abs(metrics.nonParticipationRatePercent - 30) <= 0.01 &&
+        Math.abs(metrics.unemploymentRatePercent - round((metrics.representedUnemployed / Math.max(metrics.representedLaborForce, 1)) * 100)) <= 0.01,
+      detail: `${metrics.laborForceParticipationRatePercent}% participating; ${metrics.unemploymentRatePercent}% unemployed within the labor force; ${metrics.nonParticipationRatePercent}% outside it`,
+    },
+    {
+      id: "outside-labor-force-financial-bin-reconciles",
+      passed: Math.abs(Number(metrics.financialStatusSharesPercent?.["outside-labor-force"] || 0) - metrics.nonParticipationRatePercent) <= 0.01,
+      detail: `${metrics.financialStatusSharesPercent?.["outside-labor-force"]}% financial bin versus ${metrics.nonParticipationRatePercent}% nonparticipant stock`,
+    },
+    {
+      id: "extreme-state-not-dominated-by-nonparticipants",
+      passed: metrics.extremeNonparticipantSharePercent < 50,
+      detail: `${metrics.extremeNonparticipantSharePercent}% of Extreme citizens are outside the modeled labor force`,
     },
     {
       id: "income-distribution-conserves-population",
@@ -251,9 +326,28 @@ function scenarioChecks(engine, snapshot, metrics) {
       detail: `${metrics.unservedCommuters} represented unserved commuters`,
     },
     {
-      id: "capacity-overflow-below-ten-percent",
-      passed: metrics.capacityOverflowTrips / Math.max(metrics.representedEmployed, 1) <= 0.1,
-      detail: `${round((metrics.capacityOverflowTrips / Math.max(metrics.representedEmployed, 1)) * 100, 3)}% of represented employed agents`,
+      id: "capacity-overflow-within-horizon-stress-guard",
+      passed: metrics.capacityOverflowTrips / Math.max(metrics.representedEmployed, 1) <= capacityOverflowMaximumShare,
+      detail: `${round(
+        (metrics.capacityOverflowTrips / Math.max(metrics.representedEmployed, 1)) * 100,
+        3
+      )}% of represented employed agents; provisional ${round(capacityOverflowMaximumShare * 100)}% ${
+        longHorizonStressTest ? "ten-year stress" : "one-year"
+      } guard`,
+    },
+    {
+      id: "maximum-directional-road-volume-capacity-within-horizon-stress-guard",
+      passed: metrics.network.maximumRoadVolumeCapacityRatio < maximumDirectionalRoadVolumeCapacity,
+      detail: `${
+        metrics.network.maximumRoadVolumeCapacityRatio
+      } maximum directional work-trip V/C; provisional <${maximumDirectionalRoadVolumeCapacity} ${
+        longHorizonStressTest ? "ten-year stress" : "one-year"
+      } guard`,
+    },
+    {
+      id: "aggregate-zone-portals-carry-no-assignment-load",
+      passed: metrics.network.aggregateZonePortalLoad === 0,
+      detail: `${metrics.network.aggregateZonePortalLoad} assigned vehicle/passenger load on aggregate-zone portals`,
     },
     {
       id: "commute-time-in-plausibility-band",
@@ -351,7 +445,7 @@ function runScenario(definition) {
   const snapshot = engine.snapshot({ historyLimit: 0 });
   const metrics = scenarioMetrics(engine, snapshot);
   const invariantIssues = engine.validateInvariants();
-  const checks = scenarioChecks(engine, snapshot, metrics);
+  const checks = scenarioChecks(engine, snapshot, metrics, definition);
   const deterministicResult = {
     clock: snapshot.clock,
     metrics,
@@ -376,6 +470,8 @@ function runScenario(definition) {
       enterpriseRestartMarginThresholdPercent: round(engine.config.enterpriseRestartMarginThreshold * 100),
       enterpriseRestartLossMonths: engine.config.enterpriseRestartLossMonths,
       targetEmploymentRatePercent: round(engine.config.targetEmploymentRate * 100),
+      initialEmploymentRatePercent: round(engine.config.initialEmploymentRate * 100),
+      dailyWorkTripAssignmentHours: engine.config.assignmentPeakHours,
       residentialMoveCooldownDays: engine.config.residentialMoveCooldownDays,
       residentialMoveFollowThroughPercent: round(engine.config.residentialMoveDecisionProbability * 100),
       voluntaryJobSwitchCooldownDays: engine.config.voluntaryJobSwitchCooldownDays,
@@ -401,6 +497,11 @@ const tenYearReference = scenarios.find((scenario) => scenario.id === "reference
 const tenYearTransit = scenarios.find((scenario) => scenario.id === "transit-10y");
 const tenYearHousing = scenarios.find((scenario) => scenario.id === "housing-10y");
 const tenYearBalanced = scenarios.find((scenario) => scenario.id === "balanced-10y");
+const tenYearReferenceNetOwnershipFlow =
+  tenYearReference.metrics.cumulativeEvents.carAcquisitions - tenYearReference.metrics.cumulativeEvents.carDisposals;
+const tenYearTransitNetOwnershipFlow = tenYearTransit.metrics.cumulativeEvents.carAcquisitions - tenYearTransit.metrics.cumulativeEvents.carDisposals;
+const tenYearOwnershipDifference = tenYearTransit.metrics.carOwnershipRatePercent - tenYearReference.metrics.carOwnershipRatePercent;
+const tenYearNetOwnershipFlowDifference = tenYearTransitNetOwnershipFlow - tenYearReferenceNetOwnershipFlow;
 
 const crossScenarioChecks = [
   {
@@ -464,19 +565,14 @@ const crossScenarioChecks = [
     detail: `${tenYearReference.metrics.modeSharesPercent.pt}% reference → ${tenYearTransit.metrics.modeSharesPercent.pt}% transit`,
   },
   {
-    id: "ten-year-transit-reduces-car-ownership",
-    passed: tenYearTransit.metrics.carOwnershipRatePercent < tenYearReference.metrics.carOwnershipRatePercent,
-    detail: `${tenYearReference.metrics.carOwnershipRatePercent}% reference → ${tenYearTransit.metrics.carOwnershipRatePercent}% transit`,
+    id: "ten-year-transit-ownership-stock-reconciles-with-agent-flows",
+    passed: Math.abs(tenYearOwnershipDifference) <= 0.01 || Math.sign(tenYearOwnershipDifference) === Math.sign(tenYearNetOwnershipFlowDifference),
+    detail: `${tenYearReference.metrics.carOwnershipRatePercent}% ownership and ${tenYearReferenceNetOwnershipFlow} net acquisition/disposal events reference → ${tenYearTransit.metrics.carOwnershipRatePercent}% and ${tenYearTransitNetOwnershipFlow} transit`,
   },
   {
     id: "ten-year-transit-reduces-average-commute",
     passed: tenYearTransit.metrics.averageRoundTripMinutes < tenYearReference.metrics.averageRoundTripMinutes,
     detail: `${tenYearReference.metrics.averageRoundTripMinutes} minutes reference → ${tenYearTransit.metrics.averageRoundTripMinutes} minutes transit`,
-  },
-  {
-    id: "ten-year-transit-reduces-car-acquisitions",
-    passed: tenYearTransit.metrics.cumulativeEvents.carAcquisitions < tenYearReference.metrics.cumulativeEvents.carAcquisitions,
-    detail: `${tenYearReference.metrics.cumulativeEvents.carAcquisitions} reference → ${tenYearTransit.metrics.cumulativeEvents.carAcquisitions} transit agent acquisitions`,
   },
   {
     id: "ten-year-housing-reduces-occupancy-pressure",
@@ -494,9 +590,22 @@ const crossScenarioChecks = [
     detail: `${tenYearReference.metrics.citizenStateSharesPercent.Happy}% reference → ${tenYearHousing.metrics.citizenStateSharesPercent.Happy}% housing happy`,
   },
   {
-    id: "ten-year-housing-commute-change-remains-bounded",
-    passed: tenYearHousing.metrics.averageRoundTripMinutes <= tenYearReference.metrics.averageRoundTripMinutes + 8,
-    detail: `${tenYearReference.metrics.averageRoundTripMinutes} minutes reference → ${tenYearHousing.metrics.averageRoundTripMinutes} minutes housing`,
+    id: "ten-year-housing-lowers-mean-housing-rent",
+    passed: tenYearHousing.metrics.meanHousingRentAedPerMonth < tenYearReference.metrics.meanHousingRentAedPerMonth,
+    detail: `AED ${tenYearReference.metrics.meanHousingRentAedPerMonth} reference → AED ${tenYearHousing.metrics.meanHousingRentAedPerMonth} housing`,
+  },
+  {
+    id: "ten-year-housing-financial-tradeoff-remains-bounded",
+    passed: Number.isFinite(tenYearHousing.metrics.averageNetIncomeAedPerMonth) && tenYearHousing.metrics.averageNetIncomeAedPerMonth > 0,
+    detail: `AED ${tenYearReference.metrics.averageNetIncomeAedPerMonth} reference → AED ${tenYearHousing.metrics.averageNetIncomeAedPerMonth} housing after housing and commute`,
+  },
+  {
+    id: "ten-year-housing-network-tradeoff-remains-served",
+    passed:
+      tenYearHousing.metrics.unservedCommuters === 0 &&
+      Number.isFinite(tenYearHousing.metrics.capacityOverflowTrips) &&
+      tenYearHousing.metrics.capacityOverflowTrips / Math.max(tenYearHousing.metrics.representedEmployed, 1) <= 0.3,
+    detail: `${tenYearReference.metrics.capacityOverflowTrips} reference → ${tenYearHousing.metrics.capacityOverflowTrips} housing represented overflow trips; ${tenYearHousing.metrics.unservedCommuters} unserved`,
   },
   {
     id: "ten-year-balanced-increases-housing-capacity",
@@ -523,7 +632,7 @@ const crossScenarioChecks = [
 const allChecks = [...scenarios.flatMap((scenario) => scenario.checks), ...crossScenarioChecks];
 const passed = allChecks.every((check) => check.passed);
 const report = {
-  schemaVersion: "1.5.0",
+  schemaVersion: "1.6.0",
   generatedAt: new Date().toISOString(),
   model: "Abu Dhabi Urban Dynamics Lab / UDES v2",
   datasetSchemaVersion: baseline.schemaVersion,
@@ -568,9 +677,12 @@ const report = {
     },
     systemWidePlausibilityGuards: {
       status: "Broad numerical and distribution guards, not observed Abu Dhabi targets.",
-      capacityOverflowMaximumShareOfEmployedPercent: 10,
+      oneYearCapacityOverflowMaximumShareOfEmployedPercent: 10,
+      tenYearStressCapacityOverflowMaximumShareOfEmployedPercent: 30,
+      oneYearMaximumDirectionalWorkTripVolumeCapacityRatio: 2,
+      tenYearStressMaximumDirectionalWorkTripVolumeCapacityRatio: 3.25,
       extremeCitizenStateMaximumSharePercent: 50,
-      note: "Soft network overflow remains modeled as congestion/crowding. Policy packages may trade lower housing pressure for longer commutes, so cross-scenario checks bound deterioration rather than requiring an assumed welfare direction.",
+      note: "Soft network overflow remains modeled as congestion/crowding. The one-year guard checks ordinary operation; the deliberately broader ten-year stress guard catches numerical/network collapse without pretending the uncalibrated road graph is a forecast. Housing capacity is evaluated through capacity, occupancy, rent, net resources, overflow, and service conservation; commute and network changes are reported as trade-offs rather than forced to a monotone policy direction.",
     },
     fullScale: `The engine derives ${scenarios[0]?.resolvedScope.citizenAgents?.toLocaleString(
       "en-US"

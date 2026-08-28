@@ -102,7 +102,7 @@
       acceptableCommuteRoundTripMin: 60,
       extremeCommuteRoundTripMin: 90,
       enterpriseTargetMargin: 0.12,
-      targetEmploymentRate: 0.8,
+      targetEmploymentRate: 0.67,
       residentialMoveDecisionProbability: 0.2,
       residentialMoveCooldownDays: 365,
       firmMoveProbabilityOnStateEntry: 0.1,
@@ -124,7 +124,7 @@
       acceptableCommuteRoundTripMin: 60,
       extremeCommuteRoundTripMin: 90,
       enterpriseTargetMargin: 0.12,
-      targetEmploymentRate: 0.8,
+      targetEmploymentRate: 0.67,
       residentialMoveDecisionProbability: 0.2,
       residentialMoveCooldownDays: 365,
       firmMoveProbabilityOnStateEntry: 0.1,
@@ -146,7 +146,7 @@
       acceptableCommuteRoundTripMin: 60,
       extremeCommuteRoundTripMin: 90,
       enterpriseTargetMargin: 0.12,
-      targetEmploymentRate: 0.8,
+      targetEmploymentRate: 0.67,
       residentialMoveDecisionProbability: 0.2,
       residentialMoveCooldownDays: 365,
       firmMoveProbabilityOnStateEntry: 0.1,
@@ -168,7 +168,7 @@
       acceptableCommuteRoundTripMin: 60,
       extremeCommuteRoundTripMin: 90,
       enterpriseTargetMargin: 0.12,
-      targetEmploymentRate: 0.8,
+      targetEmploymentRate: 0.67,
       residentialMoveDecisionProbability: 0.2,
       residentialMoveCooldownDays: 365,
       firmMoveProbabilityOnStateEntry: 0.1,
@@ -461,9 +461,18 @@
 
   function isInterDistrictCorridor(feature = {}) {
     const properties = feature?.properties || feature;
+    const contextOnly = properties?.contextOnly === true;
+    if (!contextOnly && (properties?.modelVisible === false || properties?.loadBearing === false)) return false;
     const fromZoneId = String(properties?.from || properties?.fromZoneId || "");
     const toZoneId = String(properties?.to || properties?.toZoneId || "");
-    return Boolean(fromZoneId && toZoneId && fromZoneId !== toZoneId);
+    const fromNodeId = String(properties?.fromNodeId || properties?.from || "");
+    const toNodeId = String(properties?.toNodeId || properties?.to || "");
+    return Boolean((fromZoneId && toZoneId && fromZoneId !== toZoneId) || (fromNodeId && toNodeId && fromNodeId !== toNodeId));
+  }
+
+  function isRenderedAnalysisLink(link = {}) {
+    const properties = link?.properties || link;
+    return properties.modelVisible !== false && properties.contextOnly !== true && properties.hidden !== true && properties.loadBearing !== false;
   }
 
   function topInterDistrictCommutes(rows, limit = 18) {
@@ -643,6 +652,7 @@
       aggregateFlowRoutes,
       flowSeriesForZone,
       isInterDistrictCorridor,
+      isRenderedAnalysisLink,
       topInterDistrictCommutes,
       commuteLiveWorkByDistrict,
       commuteOdMatrix,
@@ -683,6 +693,7 @@
     referenceHistory: [],
     map: null,
     mapRenderers: { agents: null, commuteFlows: null },
+    agentCanvas: null,
     mapMode: "agents",
     renderedMapMode: null,
     layers: {
@@ -692,6 +703,7 @@
       selection: null,
       citizenAgents: null,
       enterpriseAgents: null,
+      agentCanvas: null,
       commuteFlows: null,
       basemap: null,
     },
@@ -840,8 +852,10 @@
     return {
       schemaVersion: dataset.schemaVersion,
       zones: dataset.zones,
-      links: dataset.roadGraph?.edges || dataset.links || [],
+      links: dataset.roadGraph?.segments || dataset.roadGraph?.edges || dataset.links || [],
       nodes: dataset.roadGraph?.nodes || [],
+      zoneAccess: dataset.roadGraph?.zoneAccess || [],
+      candidateRoutes: dataset.roadGraph?.candidateRoutes || [],
       transit: dataset.transit,
       calibration: dataset.calibration,
       assumptions: dataset.assumptions,
@@ -1223,8 +1237,8 @@
     const referenceConfig = { ...structuralConfig(), ...enginePolicyPatch(fixedReferencePolicy) };
     const activeConfig = { ...structuralConfig(), ...enginePolicyPatch(activePolicy) };
     const [active, reference] = await Promise.all([
-      state.worker.request("init", { data, config: activeConfig, seed: state.seed }),
-      state.referenceWorker.request("init", { data, config: referenceConfig, seed: state.seed }),
+      state.worker.request("init", { data, config: activeConfig, seed: state.seed, snapshot: { mapFrame: "all" } }),
+      state.referenceWorker.request("init", { data, config: referenceConfig, seed: state.seed, snapshot: { mapFrame: "none" } }),
     ]);
     state.snapshot = snapshotFrom(active);
     state.referenceSnapshot = snapshotFrom(reference);
@@ -1336,6 +1350,7 @@
       includeHistories: false,
       citizenIds: samplesOf("citizen", snapshot).map((citizen) => citizen.id),
       enterpriseIds: samplesOf("enterprise", snapshot).map((enterprise) => enterprise.id),
+      mapFrame: "all",
     };
   }
 
@@ -1470,10 +1485,12 @@
         state.worker.request("configure", {
           patch: { ...enginePolicyPatch(activeResetBase), seed: state.seed, zonePolicies },
           reset: true,
+          snapshot: { mapFrame: "all" },
         }),
         state.referenceWorker.request("configure", {
           patch: { ...enginePolicyPatch(resetReferencePolicy), seed: state.seed },
           reset: true,
+          snapshot: { mapFrame: "none" },
         }),
       ]);
       state.snapshot = snapshotFrom(active);
@@ -1904,6 +1921,7 @@
       residualAfterEssentials: valueAt(city, ["averageResidualAfterEssentialsAed"]),
       bankBalance: valueAt(city, ["averageBankBalanceAed", "meanBankBalanceAed", "bankBalance"]),
       financialStatus: {
+        outsideLaborForce: percentToRatio(valueAt(financialStatus, ["outside-labor-force"], 0)),
         unemployed: percentToRatio(valueAt(financialStatus, ["unemployed"], 0)),
         fixedCostDeficit: percentToRatio(valueAt(financialStatus, ["fixed-cost-deficit"], 0)),
         essentialsGap: percentToRatio(valueAt(financialStatus, ["essentials-gap"], 0)),
@@ -2306,17 +2324,29 @@
       if (ui.mapStatus) ui.mapStatus.textContent = "Static geography preview";
       return;
     }
-    state.map = window.L.map(mount, { zoomControl: false, preferCanvas: true, attributionControl: true, minZoom: 8, maxZoom: 16 });
+    state.map = window.L.map(mount, { zoomControl: false, preferCanvas: true, attributionControl: true, minZoom: 8, maxZoom: 17 });
     state.map.createPane("udesV2CommuteFlows").style.zIndex = "440";
     state.map.createPane("udesV2Agents").style.zIndex = "450";
     state.mapRenderers.commuteFlows = window.L.svg({ pane: "udesV2CommuteFlows", padding: 0.5 });
     state.mapRenderers.agents = window.L.svg({ pane: "udesV2Agents", padding: 0.5 });
-    state.map.attributionControl?.addAttribution?.('&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>');
+    state.layers.basemap = window.L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      minZoom: 8,
+      maxZoom: 19,
+      maxNativeZoom: 19,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>',
+      crossOrigin: true,
+    }).addTo(state.map);
     if (state.geo.roads) {
       state.layers.roads = window.L.geoJSON(state.geo.roads, {
         filter: isInterDistrictCorridor,
         style: roadStyle,
         onEachFeature: (feature, layer) => {
+          layer.bindTooltip(roadTooltipHtml(feature), {
+            className: "udes-v2-agent-tooltip",
+            sticky: true,
+            direction: "top",
+            opacity: 0.98,
+          });
           layer.on("click", () => selectObject("link", feature.properties?.id || feature.id));
         },
       }).addTo(state.map);
@@ -2364,6 +2394,9 @@
     state.layers.commuteFlows = window.L.layerGroup();
     state.layers.citizenAgents = window.L.layerGroup();
     state.layers.enterpriseAgents = window.L.layerGroup();
+    state.agentCanvas = createAgentCanvasLayer();
+    state.layers.agentCanvas = state.agentCanvas;
+    state.agentCanvas?.addTo(state.map);
     if (placeholder) placeholder.hidden = true;
     fitMap();
     state.map.on("zoomend", updateTransitVisibility);
@@ -2425,12 +2458,12 @@
     const hovered = String(id) === String(state.hoveredZoneId);
     const corridorOrAgentMode = state.mapMode === "network" || state.mapMode === "agents";
     return {
-      color: selected ? palette.ink : "#65736f",
-      weight: selected ? 2.6 : hovered ? 2.2 : 1.1,
-      opacity: 0.9,
+      color: selected ? palette.ink : "#60736e",
+      weight: selected ? 2.5 : hovered ? 2 : corridorOrAgentMode ? 0.85 : 1.1,
+      opacity: corridorOrAgentMode ? 0.68 : 0.9,
       fillColor:
-        state.mapMode === "rent" ? mixColor("#f4ead4", "#a9673f", ratio) : corridorOrAgentMode ? "#edf2ef" : mixColor("#e9f0ed", "#277565", ratio),
-      fillOpacity: hovered ? 0.9 : corridorOrAgentMode ? 0.76 : 0.62,
+        state.mapMode === "rent" ? mixColor("#f4ead4", "#a9673f", ratio) : corridorOrAgentMode ? "#ffffff" : mixColor("#e9f0ed", "#277565", ratio),
+      fillOpacity: hovered ? (corridorOrAgentMode ? 0.16 : 0.78) : corridorOrAgentMode ? 0.06 : 0.5,
     };
   }
 
@@ -2440,6 +2473,412 @@
     const longitude = Number(centroid[0]);
     const latitude = Number(centroid[1]);
     return Number.isFinite(longitude) && Number.isFinite(latitude) ? [latitude, longitude] : null;
+  }
+
+  function featureForZone(zoneId) {
+    return state.geo.zones?.features?.find((feature) => String(zoneFeatureId(feature)) === String(zoneId)) || null;
+  }
+
+  function geometryPolygons(geometry) {
+    if (geometry?.type === "Polygon") return [geometry.coordinates];
+    if (geometry?.type === "MultiPolygon") return geometry.coordinates;
+    return [];
+  }
+
+  function pointInRing(point, ring) {
+    let inside = false;
+    for (let index = 0, previous = ring.length - 1; index < ring.length; previous = index, index += 1) {
+      const [x1, y1] = ring[index];
+      const [x2, y2] = ring[previous];
+      if (y1 > point[1] !== y2 > point[1] && point[0] < ((x2 - x1) * (point[1] - y1)) / (y2 - y1) + x1) {
+        inside = !inside;
+      }
+    }
+    return inside;
+  }
+
+  function pointInFeature(point, feature) {
+    return geometryPolygons(feature?.geometry).some(
+      (polygon) => pointInRing(point, polygon[0]) && !polygon.slice(1).some((hole) => pointInRing(point, hole))
+    );
+  }
+
+  function featureCoordinateBounds(feature) {
+    const coordinates = geometryPolygons(feature?.geometry).flat(2);
+    if (!coordinates.length) return null;
+    const longitudes = coordinates.map((point) => Number(point[0])).filter(Number.isFinite);
+    const latitudes = coordinates.map((point) => Number(point[1])).filter(Number.isFinite);
+    if (!longitudes.length || !latitudes.length) return null;
+    return {
+      west: Math.min(...longitudes),
+      east: Math.max(...longitudes),
+      south: Math.min(...latitudes),
+      north: Math.max(...latitudes),
+    };
+  }
+
+  const zoneDisplayGeometryCache = new Map();
+
+  function zoneDisplayGeometry(zoneId) {
+    const key = String(zoneId || "");
+    if (!zoneDisplayGeometryCache.has(key)) {
+      const feature = featureForZone(key);
+      zoneDisplayGeometryCache.set(key, { feature, bounds: featureCoordinateBounds(feature) });
+    }
+    return zoneDisplayGeometryCache.get(key);
+  }
+
+  function stableHash(value) {
+    let hash = 2166136261;
+    for (const character of String(value)) {
+      hash ^= character.charCodeAt(0);
+      hash = Math.imul(hash, 16777619) >>> 0;
+    }
+    return hash >>> 0;
+  }
+
+  function hashUnit(hash) {
+    let value = hash >>> 0;
+    value ^= value << 13;
+    value ^= value >>> 17;
+    value ^= value << 5;
+    return (value >>> 0) / 4294967296;
+  }
+
+  function stablePointInsideZone(zoneId, identity, kind, generation = 0) {
+    const { feature, bounds } = zoneDisplayGeometry(zoneId);
+    if (!feature || !bounds) return zoneCentroidLatLng(zoneId);
+    const seed = stableHash(`${kind}:${identity}:${generation}:${zoneId}`);
+    for (let attempt = 0; attempt < 36; attempt += 1) {
+      const longitude = bounds.west + (bounds.east - bounds.west) * hashUnit(seed + attempt * 0x9e3779b9);
+      const latitude = bounds.south + (bounds.north - bounds.south) * hashUnit(seed ^ (attempt * 0x85ebca6b));
+      if (pointInFeature([longitude, latitude], feature)) return [latitude, longitude];
+    }
+    return zoneCentroidLatLng(zoneId);
+  }
+
+  function mapAgentId(kind, index) {
+    return kind === "citizen" ? `c-${String(index + 1).padStart(5, "0")}` : `e-${String(index + 1).padStart(4, "0")}`;
+  }
+
+  function frameArray(value) {
+    return ArrayBuffer.isView(value) || Array.isArray(value) ? value : [];
+  }
+
+  function createAgentCanvasLayer() {
+    if (!window.L?.Layer || !state.map) return null;
+    const AgentCanvasLayer = window.L.Layer.extend({
+      initialize() {
+        this.frame = null;
+        this.visible = false;
+        this.points = [];
+        this.positionCache = new Map();
+        this.grid = new Map();
+        this.hoveredKey = null;
+        this.keyboardKey = null;
+        this.drawRequest = null;
+        this.tooltip = null;
+      },
+      onAdd(map) {
+        this.map = map;
+        this.canvas = window.L.DomUtil.create("canvas", "leaflet-zoom-animated udes-v2-agent-canvas");
+        this.canvas.tabIndex = 0;
+        this.canvas.setAttribute("role", "application");
+        this.canvas.setAttribute("aria-describedby", "udes-v2-map-caption");
+        this.canvas.setAttribute(
+          "aria-label",
+          "All modeled citizen and enterprise agents. Use the arrow keys to move between nearby agents and Enter to inspect."
+        );
+        map.getPane("udesV2Agents").appendChild(this.canvas);
+        window.L.DomEvent.on(this.canvas, "mousemove", this.onPointerMove, this);
+        window.L.DomEvent.on(this.canvas, "mouseleave", this.onPointerLeave, this);
+        window.L.DomEvent.on(this.canvas, "click", this.onClick, this);
+        window.L.DomEvent.on(this.canvas, "keydown", this.onKeyDown, this);
+        map.on("move zoomend resize viewreset", this.scheduleDraw, this);
+        this.scheduleDraw();
+      },
+      onRemove(map) {
+        map.off("move zoomend resize viewreset", this.scheduleDraw, this);
+        if (this.drawRequest) cancelAnimationFrame(this.drawRequest);
+        this.closeTooltip();
+        this.canvas?.remove();
+        this.canvas = null;
+      },
+      setFrame(frame) {
+        if (this.frame === frame) return;
+        this.frame = frame || null;
+        this.rebuildPoints();
+        this.scheduleDraw();
+      },
+      setVisible(visible) {
+        this.visible = Boolean(visible);
+        if (this.canvas) {
+          this.canvas.hidden = !this.visible;
+          this.canvas.tabIndex = this.visible ? 0 : -1;
+        }
+        if (!this.visible) this.closeTooltip();
+        this.scheduleDraw();
+      },
+      rebuildPoints() {
+        const frame = this.frame;
+        if (!frame?.citizens || !frame?.enterprises) {
+          this.points = [];
+          return;
+        }
+        const zoneIds = Array.isArray(frame.zoneIds) ? frame.zoneIds : [];
+        const noneCode = Number(frame.noneCode ?? 255);
+        const citizenStates = frame.codes?.citizenStates || ["Happy", "Waiting", "Extreme", "Recovery"];
+        const citizenModes = frame.codes?.citizenModes || ["none", "car", "pt", "walk", "unserved"];
+        const citizenLaborForceStatuses = frame.codes?.citizenLaborForceStatuses || ["nonparticipant", "unemployed", "employed"];
+        const enterpriseStates = frame.codes?.enterpriseStates || ["Starting", "Working", "Grow", "Lesser"];
+        const homeZones = frameArray(frame.citizens.homeZones);
+        const workZones = frameArray(frame.citizens.workZones);
+        const states = frameArray(frame.citizens.states);
+        const modes = frameArray(frame.citizens.modes);
+        const laborForceStatuses = frameArray(frame.citizens.laborForceStatuses);
+        const generations = frameArray(frame.citizens.generations);
+        const points = [];
+        for (let index = 0; index < homeZones.length; index += 1) {
+          const zoneCode = Number(homeZones[index]);
+          const zoneId = zoneCode === noneCode ? null : zoneIds[zoneCode];
+          if (!zoneId) continue;
+          const id = mapAgentId("citizen", index);
+          const generation = Number(generations[index]) || 0;
+          const cacheKey = `citizen:${id}:${generation}:${zoneId}`;
+          let latlng = this.positionCache.get(cacheKey);
+          if (!latlng) {
+            latlng = stablePointInsideZone(zoneId, id, "citizen", generation);
+            if (latlng) this.positionCache.set(cacheKey, latlng);
+          }
+          if (!latlng) continue;
+          const workCode = Number(workZones[index]);
+          points.push({
+            key: `citizen:${id}`,
+            kind: "citizen",
+            id,
+            index,
+            zoneId,
+            workZoneId: workCode === noneCode ? null : zoneIds[workCode],
+            state: citizenStates[Number(states[index])] || "Happy",
+            mode: citizenModes[Number(modes[index])] || "none",
+            laborForceStatus: citizenLaborForceStatuses[Number(laborForceStatuses[index])] || (workCode === noneCode ? "unemployed" : "employed"),
+            generation,
+            latlng,
+          });
+        }
+        const enterpriseZones = frameArray(frame.enterprises.zones);
+        const enterpriseStateCodes = frameArray(frame.enterprises.states);
+        const employeeCounts = frameArray(frame.enterprises.employeeCounts);
+        for (let index = 0; index < enterpriseZones.length; index += 1) {
+          const zoneCode = Number(enterpriseZones[index]);
+          const zoneId = zoneCode === noneCode ? null : zoneIds[zoneCode];
+          if (!zoneId) continue;
+          const id = mapAgentId("enterprise", index);
+          const cacheKey = `enterprise:${id}:${zoneId}`;
+          let latlng = this.positionCache.get(cacheKey);
+          if (!latlng) {
+            latlng = stablePointInsideZone(zoneId, id, "enterprise");
+            if (latlng) this.positionCache.set(cacheKey, latlng);
+          }
+          if (!latlng) continue;
+          points.push({
+            key: `enterprise:${id}`,
+            kind: "enterprise",
+            id,
+            index,
+            zoneId,
+            state: enterpriseStates[Number(enterpriseStateCodes[index])] || "Working",
+            employeeCount: Number(employeeCounts[index]) || 0,
+            latlng,
+          });
+        }
+        this.points = points;
+      },
+      scheduleDraw() {
+        if (this.drawRequest) return;
+        this.drawRequest = requestAnimationFrame(() => {
+          this.drawRequest = null;
+          this.draw();
+        });
+      },
+      draw() {
+        if (!this.canvas || !this.map || !this.visible) return;
+        const size = this.map.getSize();
+        const ratio = Math.min(2, window.devicePixelRatio || 1);
+        this.canvas.width = Math.max(1, Math.round(size.x * ratio));
+        this.canvas.height = Math.max(1, Math.round(size.y * ratio));
+        this.canvas.style.width = `${size.x}px`;
+        this.canvas.style.height = `${size.y}px`;
+        window.L.DomUtil.setPosition(this.canvas, this.map.containerPointToLayerPoint([0, 0]));
+        const context = this.canvas.getContext("2d");
+        context.setTransform(ratio, 0, 0, ratio, 0, 0);
+        context.clearRect(0, 0, size.x, size.y);
+        this.grid = new Map();
+        const zoom = this.map.getZoom();
+        const citizenRadius = zoom >= 13 ? 2.35 : zoom >= 11 ? 1.9 : 1.45;
+        const enterpriseRadius = zoom >= 13 ? 3.25 : zoom >= 11 ? 2.7 : 2.2;
+        for (const point of this.points) {
+          const screen = this.map.latLngToContainerPoint(point.latlng);
+          point.screen = screen;
+          if (screen.x < -8 || screen.y < -8 || screen.x > size.x + 8 || screen.y > size.y + 8) continue;
+          const cell = `${Math.floor(screen.x / 18)}:${Math.floor(screen.y / 18)}`;
+          if (!this.grid.has(cell)) this.grid.set(cell, []);
+          this.grid.get(cell).push(point);
+          const highlighted =
+            point.key === this.hoveredKey || point.key === this.keyboardKey || (state.selected.kind === point.kind && state.selected.id === point.id);
+          if (point.kind === "citizen") {
+            context.beginPath();
+            context.arc(screen.x, screen.y, highlighted ? citizenRadius + 2.2 : citizenRadius, 0, Math.PI * 2);
+            context.fillStyle =
+              point.state === "Extreme"
+                ? palette.red
+                : point.state === "Waiting"
+                  ? palette.amber
+                  : point.state === "Recovery"
+                    ? palette.teal
+                    : palette.green;
+            context.globalAlpha = highlighted ? 1 : 0.76;
+            context.fill();
+            if (highlighted) {
+              context.lineWidth = 1.6;
+              context.strokeStyle = "#ffffff";
+              context.stroke();
+            }
+          } else {
+            const radius = highlighted ? enterpriseRadius + 1.7 : enterpriseRadius;
+            context.globalAlpha = highlighted ? 1 : 0.9;
+            context.fillStyle = "#ffffff";
+            context.strokeStyle = point.state === "Starting" ? palette.muted : palette.blue;
+            context.lineWidth = highlighted ? 2.2 : 1.5;
+            context.fillRect(screen.x - radius, screen.y - radius, radius * 2, radius * 2);
+            context.strokeRect(screen.x - radius, screen.y - radius, radius * 2, radius * 2);
+          }
+        }
+        context.globalAlpha = 1;
+      },
+      nearestPoint(containerPoint, maximumDistance = 9) {
+        const cellX = Math.floor(containerPoint.x / 18);
+        const cellY = Math.floor(containerPoint.y / 18);
+        let nearest = null;
+        let nearestDistance = maximumDistance ** 2;
+        for (let xOffset = -1; xOffset <= 1; xOffset += 1) {
+          for (let yOffset = -1; yOffset <= 1; yOffset += 1) {
+            for (const point of this.grid.get(`${cellX + xOffset}:${cellY + yOffset}`) || []) {
+              const distance = (point.screen.x - containerPoint.x) ** 2 + (point.screen.y - containerPoint.y) ** 2;
+              if (distance <= nearestDistance) {
+                nearest = point;
+                nearestDistance = distance;
+              }
+            }
+          }
+        }
+        return nearest;
+      },
+      pointerPoint(event) {
+        const bounds = this.canvas.getBoundingClientRect();
+        return window.L.point(event.clientX - bounds.left, event.clientY - bounds.top);
+      },
+      tooltipHtml(point) {
+        if (point.kind === "citizen") {
+          const laborLabel =
+            point.laborForceStatus === "nonparticipant"
+              ? "Outside modeled labor force"
+              : point.laborForceStatus === "unemployed"
+                ? "Active job seeker"
+                : "Employed";
+          const work = point.workZoneId ? zoneLabel(point.workZoneId) : laborLabel;
+          return `<strong>${escapeHtml(point.id)} · citizen agent</strong><span>Lives: ${escapeHtml(zoneLabel(point.zoneId))} · works: ${escapeHtml(
+            work
+          )}</span><span>${escapeHtml(laborLabel)} · ${escapeHtml(point.state)} · ${escapeHtml(
+            humanizeEvent(point.mode)
+          )}</span><span>Represents ${escapeHtml(formatNumber(this.frame?.citizenWeight || 1))} residents</span>`;
+        }
+        return `<strong>${escapeHtml(point.id)} · enterprise agent</strong><span>${escapeHtml(zoneLabel(point.zoneId))} · ${escapeHtml(
+          point.state
+        )}</span><span>${escapeHtml(formatNumber(point.employeeCount))} modeled employee agents</span>`;
+      },
+      showTooltip(point) {
+        if (!point || !this.map) return;
+        if (!this.tooltip) this.tooltip = window.L.tooltip({ className: "udes-v2-agent-tooltip", direction: "top", opacity: 0.98 });
+        this.tooltip.setLatLng(point.latlng).setContent(this.tooltipHtml(point)).openOn(this.map);
+        this.canvas?.setAttribute("aria-label", `${point.id}, ${point.kind} agent in ${zoneLabel(point.zoneId)}. Press Enter to inspect.`);
+      },
+      closeTooltip() {
+        if (this.tooltip && this.map) this.map.closeTooltip(this.tooltip);
+        if (this.canvas) {
+          this.canvas.setAttribute(
+            "aria-label",
+            "All modeled citizen and enterprise agents. Use the arrow keys to move between nearby agents and Enter to inspect."
+          );
+        }
+      },
+      onPointerMove(event) {
+        const point = this.nearestPoint(this.pointerPoint(event));
+        const nextKey = point?.key || null;
+        if (nextKey === this.hoveredKey) return;
+        this.hoveredKey = nextKey;
+        if (point) this.showTooltip(point);
+        else this.closeTooltip();
+        this.scheduleDraw();
+      },
+      onPointerLeave() {
+        this.hoveredKey = null;
+        if (!this.keyboardKey) this.closeTooltip();
+        this.scheduleDraw();
+      },
+      onClick(event) {
+        const point = this.nearestPoint(this.pointerPoint(event), 10);
+        if (!point) return;
+        window.L.DomEvent.stopPropagation(event);
+        selectObject(point.kind, point.id);
+      },
+      directionalPoint(current, key) {
+        if (!current?.screen) return this.points.find((point) => point.screen) || null;
+        const direction = {
+          ArrowLeft: [-1, 0],
+          ArrowRight: [1, 0],
+          ArrowUp: [0, -1],
+          ArrowDown: [0, 1],
+        }[key];
+        let best = null;
+        let bestScore = Infinity;
+        for (const candidate of this.points) {
+          if (!candidate.screen || candidate === current) continue;
+          const dx = candidate.screen.x - current.screen.x;
+          const dy = candidate.screen.y - current.screen.y;
+          const forward = dx * direction[0] + dy * direction[1];
+          if (forward <= 0) continue;
+          const sideways = Math.abs(dx * direction[1] - dy * direction[0]);
+          const score = forward + sideways * 2.4;
+          if (score < bestScore) {
+            best = candidate;
+            bestScore = score;
+          }
+        }
+        return best || current;
+      },
+      onKeyDown(event) {
+        if (!["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Enter", " ", "Escape"].includes(event.key)) return;
+        event.preventDefault();
+        if (event.key === "Escape") {
+          this.keyboardKey = null;
+          this.closeTooltip();
+          this.scheduleDraw();
+          return;
+        }
+        const current = this.points.find((point) => point.key === this.keyboardKey) || this.points.find((point) => point.screen);
+        if (!current) return;
+        if (["Enter", " "].includes(event.key)) {
+          selectObject(current.kind, current.id);
+          return;
+        }
+        const next = this.directionalPoint(current, event.key);
+        this.keyboardKey = next.key;
+        this.showTooltip(next);
+        this.scheduleDraw();
+      },
+    });
+    return new AgentCanvasLayer();
   }
 
   function offsetAgentLatLng(latlng, kind) {
@@ -2484,7 +2923,13 @@
           if (!zoneId || !centroid) return null;
           const name = zoneLabel(zoneId);
           if (kind === "citizen") {
-            const workLabel = sample.workZoneId ? zoneLabel(sample.workZoneId) : "unemployed";
+            const laborLabel =
+              sample.laborForceStatus === "nonparticipant"
+                ? "outside modeled labor force"
+                : sample.laborForceStatus === "unemployed"
+                  ? "active job seeker"
+                  : "employed";
+            const workLabel = sample.workZoneId ? zoneLabel(sample.workZoneId) : laborLabel;
             return {
               key: `citizen:${sample.id}`,
               kind,
@@ -2495,7 +2940,7 @@
               ariaLabel: `${sample.id}: citizen agent living in ${name}, working in ${workLabel}`,
               tooltip: `<strong>${escapeHtml(sample.id)} · citizen agent</strong><span>Lives: ${escapeHtml(name)} · works: ${escapeHtml(
                 workLabel
-              )}</span><span>${escapeHtml(humanizeEvent(sample.state || "unknown"))} · ${escapeHtml(
+              )}</span><span>${escapeHtml(humanizeEvent(laborLabel))} · ${escapeHtml(humanizeEvent(sample.state || "unknown"))} · ${escapeHtml(
                 humanizeEvent(sample.mode || "none")
               )} · represents ${escapeHtml(formatNumber(sample.weight || citizenWeight))} residents</span>`,
             };
@@ -2652,7 +3097,7 @@
     }
   }
 
-  function commuteRouteLatLngs(fromZoneId, toZoneId) {
+  function fallbackCommuteRouteLatLngs(fromZoneId, toZoneId) {
     const from = zoneCentroidLatLng(fromZoneId);
     const to = zoneCentroidLatLng(toZoneId);
     if (!from || !to) return null;
@@ -2662,6 +3107,136 @@
     const bend = Math.min(0.014, length * 0.12);
     const midpoint = [(from[0] + to[0]) / 2 - (longitudeDelta / length) * bend, (from[1] + to[1]) / 2 + (latitudeDelta / length) * bend];
     return [from, midpoint, to];
+  }
+
+  function roadGraphEdges() {
+    return state.dataset?.roadGraph?.segments || state.dataset?.roadGraph?.edges || [];
+  }
+
+  function roadGraphNodeIdsForZone(zoneId) {
+    const accesses = state.dataset?.roadGraph?.zoneAccess || [];
+    const accessNodeIds = accesses
+      .filter((access) => String(access.zoneId) === String(zoneId))
+      .sort((left, right) => (Number(right.weight) || 0) - (Number(left.weight) || 0))
+      .map((access) => String(access.nodeId || access.node || ""))
+      .filter(Boolean);
+    if (accessNodeIds.length) return accessNodeIds;
+    const zone = (state.dataset?.zones || []).find((entry) => String(entry.id || entry.zoneId || "") === String(zoneId));
+    const zoneNodeId = String(zone?.networkNodeId || zone?.roadNodeId || "");
+    if (zoneNodeId) return [zoneNodeId];
+    return (state.dataset?.roadGraph?.nodes || [])
+      .filter((node) => String(node.zoneId || "") === String(zoneId))
+      .map((node) => String(node.id || node.nodeId || ""))
+      .filter(Boolean);
+  }
+
+  function roadFeature(id) {
+    return state.geo.roads?.features?.find((feature) => String(feature.id || feature.properties?.id || "") === String(id || ""));
+  }
+
+  function roadEdgeGeometry(edge, direction) {
+    const feature = roadFeature(edge.geometryFeatureId || edge.id);
+    const geometry = feature?.geometry || edge.geometry;
+    let coordinates =
+      geometry?.type === "LineString" ? geometry.coordinates : geometry?.type === "MultiLineString" ? geometry.coordinates.flat() : [];
+    if (!coordinates.length) return [];
+    if (direction < 0) coordinates = [...coordinates].reverse();
+    return coordinates.map((coordinate) => [Number(coordinate[1]), Number(coordinate[0])]);
+  }
+
+  function roadEdgeTravelMinutes(edge, direction) {
+    const current = roadSnapshot(edge.id) || {};
+    if (direction > 0) return valueAt(current, ["travelTimeABMin"], valueAt(edge, ["freeFlowMinutesAB", "freeFlowMinutes"], 1));
+    return valueAt(current, ["travelTimeBAMin"], valueAt(edge, ["freeFlowMinutesBA", "freeFlowMinutes"], 1));
+  }
+
+  function commuteRoadPath(fromZoneId, toZoneId) {
+    const startIds = roadGraphNodeIdsForZone(fromZoneId);
+    const destinationIds = new Set(roadGraphNodeIdsForZone(toZoneId));
+    const edges = roadGraphEdges();
+    if (!startIds.length || !destinationIds.size || !edges.length) {
+      return { latlngs: fallbackCommuteRouteLatLngs(fromZoneId, toZoneId), roadNames: [] };
+    }
+    const adjacency = new Map();
+    const addArc = (from, to, edge, direction) => {
+      if (!adjacency.has(from)) adjacency.set(from, []);
+      adjacency.get(from).push({ to, edge, direction });
+    };
+    for (const edge of edges) {
+      const from = String(edge.fromNodeId || edge.from || "");
+      const to = String(edge.toNodeId || edge.to || "");
+      if (!from || !to) continue;
+      const oneWay = String(edge.oneway ?? edge.oneWay ?? "").toLowerCase();
+      let allowAB = edge.allowAB !== false;
+      let allowBA = edge.allowBA !== false && edge.bidirectional !== false;
+      if (["-1", "reverse", "backward"].includes(oneWay)) {
+        allowAB = false;
+        allowBA = true;
+      } else if (["1", "yes", "true", "forward"].includes(oneWay)) {
+        allowAB = true;
+        allowBA = false;
+      }
+      if (allowAB) addArc(from, to, edge, 1);
+      if (allowBA) addArc(to, from, edge, -1);
+    }
+    const distances = new Map(startIds.map((id) => [id, 0]));
+    const previous = new Map();
+    const unvisited = new Set([...adjacency.keys(), ...[...adjacency.values()].flatMap((arcs) => arcs.map((arc) => arc.to))]);
+    let destination = null;
+    while (unvisited.size) {
+      let current = null;
+      let currentDistance = Infinity;
+      for (const nodeId of unvisited) {
+        const distance = distances.get(nodeId) ?? Infinity;
+        if (distance < currentDistance) {
+          current = nodeId;
+          currentDistance = distance;
+        }
+      }
+      if (current == null || !Number.isFinite(currentDistance)) break;
+      unvisited.delete(current);
+      if (destinationIds.has(current)) {
+        destination = current;
+        break;
+      }
+      for (const arc of adjacency.get(current) || []) {
+        if (!unvisited.has(arc.to)) continue;
+        const candidate = currentDistance + roadEdgeTravelMinutes(arc.edge, arc.direction);
+        if (candidate < (distances.get(arc.to) ?? Infinity)) {
+          distances.set(arc.to, candidate);
+          previous.set(arc.to, { from: current, ...arc });
+        }
+      }
+    }
+    if (!destination) return { latlngs: fallbackCommuteRouteLatLngs(fromZoneId, toZoneId), roadNames: [] };
+    const path = [];
+    let cursor = destination;
+    while (previous.has(cursor)) {
+      const step = previous.get(cursor);
+      path.unshift(step);
+      cursor = step.from;
+    }
+    const latlngs = [];
+    const roadNames = [];
+    for (const step of path) {
+      const coordinates = roadEdgeGeometry(step.edge, step.direction);
+      if (latlngs.length && coordinates.length) coordinates.shift();
+      latlngs.push(...coordinates);
+      const name = step.edge.primaryRoad || step.edge.roadNameEn || step.edge.name;
+      const displayClass = String(step.edge.displayClass || "");
+      const isNamedVisibleRoad =
+        step.edge.modelVisible !== false &&
+        step.edge.contextOnly !== true &&
+        step.edge.loadBearing !== false &&
+        ["arterial", "gateway"].includes(displayClass) &&
+        name &&
+        !/^unnamed\b|^zone access\b/i.test(String(name));
+      if (isNamedVisibleRoad && !roadNames.includes(name)) roadNames.push(name);
+    }
+    return {
+      latlngs: latlngs.length > 1 ? latlngs : fallbackCommuteRouteLatLngs(fromZoneId, toZoneId),
+      roadNames: roadNames.slice(0, 4),
+    };
   }
 
   function commuteFlowStyle(entry, maximum) {
@@ -2726,11 +3301,14 @@
     const layerGroup = state.layers.commuteFlows;
     if (!registry || !layerGroup || !window.L) return;
     const entries = topInterDistrictCommutes(state.snapshot?.commuteOd, 18)
-      .map((route) => ({
-        ...route,
-        key: `commute:${route.fromZoneId}:${route.toZoneId}`,
-        latlngs: commuteRouteLatLngs(route.fromZoneId, route.toZoneId),
-      }))
+      .map((route) => {
+        const roadPath = commuteRoadPath(route.fromZoneId, route.toZoneId);
+        return {
+          ...route,
+          ...roadPath,
+          key: `commute:${route.fromZoneId}:${route.toZoneId}`,
+        };
+      })
       .filter((route) => route.latlngs);
     const maximum = Math.max(1, ...entries.map((entry) => entry.value));
     const activeKeys = new Set();
@@ -2738,10 +3316,12 @@
       activeKeys.add(entry.key);
       entry.ariaLabel = `${zoneLabel(entry.fromZoneId)} to ${zoneLabel(entry.toZoneId)}: ${formatNumber(
         entry.value
-      )} represented home-to-work commuters. Activate to inspect the home district.`;
+      )} represented home-to-work commuters${
+        entry.roadNames.length ? ` via ${entry.roadNames.join(", ")}` : ""
+      }. Activate to inspect the home district.`;
       const tooltip = `<strong>${escapeHtml(zoneLabel(entry.fromZoneId))} → ${escapeHtml(zoneLabel(entry.toZoneId))}</strong><span>${escapeHtml(
         formatNumber(entry.value)
-      )} represented home-to-work commuters</span>`;
+      )} represented home-to-work commuters</span>${entry.roadNames.length ? `<span>Via ${entry.roadNames.map(escapeHtml).join(" · ")}</span>` : ""}`;
       let line = registry.get(entry.key);
       if (!line) {
         line = window.L.polyline(entry.latlngs, commuteFlowStyle(entry, maximum)).addTo(layerGroup);
@@ -2782,10 +3362,14 @@
   function updateAgentMapLayers() {
     if (!state.map) return;
     const visible = state.mapMode === "agents";
+    const fullFrameAvailable = Boolean(state.snapshot?.mapFrame?.citizens && state.snapshot?.mapFrame?.enterprises && state.agentCanvas);
     if (visible) {
       syncCommuteFlowLayers();
-      syncRepresentativeAgentMarkers("citizen");
-      syncRepresentativeAgentMarkers("enterprise");
+      if (fullFrameAvailable) state.agentCanvas.setFrame(state.snapshot.mapFrame);
+      else {
+        syncRepresentativeAgentMarkers("citizen");
+        syncRepresentativeAgentMarkers("enterprise");
+      }
     } else {
       state.hoveredMapFeatureKey = null;
       state.focusedMapFeatureKey = null;
@@ -2800,10 +3384,14 @@
       });
     }
     mapLayerVisible(state.layers.commuteFlows, visible);
-    mapLayerVisible(state.layers.citizenAgents, visible);
-    mapLayerVisible(state.layers.enterpriseAgents, visible);
+    mapLayerVisible(state.layers.citizenAgents, visible && !fullFrameAvailable);
+    mapLayerVisible(state.layers.enterpriseAgents, visible && !fullFrameAvailable);
+    state.agentCanvas?.setVisible(visible && fullFrameAvailable);
     if (visible) {
-      for (const registry of [state.mapFeatures.citizenAgents, state.mapFeatures.enterpriseAgents, state.mapFeatures.commuteFlows]) {
+      const registries = fullFrameAvailable
+        ? [state.mapFeatures.commuteFlows]
+        : [state.mapFeatures.citizenAgents, state.mapFeatures.enterpriseAgents, state.mapFeatures.commuteFlows];
+      for (const registry of registries) {
         registry.forEach((layer) => {
           syncMapFeatureAccessibility(layer);
         });
@@ -2812,7 +3400,10 @@
   }
 
   function roadSnapshot(id) {
-    return linksOf().find((link) => String(link.id || link.linkId) === String(id));
+    const current = linksOf().find((link) => String(link.id || link.linkId) === String(id));
+    const feature = roadFeature(id);
+    if (!feature?.properties) return current;
+    return { ...feature.properties, ...(current || {}), id: current?.id || feature.properties.id || feature.id };
   }
 
   function linkLoad(link = {}) {
@@ -2824,35 +3415,77 @@
   function roadStyle(feature) {
     const id = feature?.properties?.id || feature?.id;
     const link = roadSnapshot(id) || {};
+    const contextOnly = feature?.properties?.contextOnly === true || link.contextOnly === true;
     const load = linkLoad(link);
     const selected = state.selected.kind === "link" && String(state.selected.id) === String(id);
+    if (contextOnly) {
+      return {
+        color: "#7f8c89",
+        weight: selected ? 2.4 : 1.25,
+        opacity: state.mapMode === "network" ? 0.72 : 0.38,
+        dashArray: "4 5",
+        lineCap: "round",
+      };
+    }
     return {
       color: load > 0.9 ? palette.red : load > 0.65 ? palette.amber : palette.green,
       weight: selected ? 5 : Math.max(1.4, 2 + load * 2.2),
-      opacity: state.mapMode === "network" ? 0.82 : state.mapMode === "agents" ? 0.2 : 0.26,
+      opacity: state.mapMode === "network" ? 0.86 : state.mapMode === "agents" ? 0.58 : 0.34,
     };
+  }
+
+  function roadTooltipHtml(feature) {
+    const properties = feature?.properties || {};
+    const id = properties.id || feature?.id;
+    const current = roadSnapshot(id) || {};
+    const roadName = properties.primaryRoad || properties.roadNameEn || properties.name || "Modeled arterial";
+    const refs = properties.roadRefs || properties.refs || [];
+    const roadRefs = (Array.isArray(refs) ? refs.join(", ") : String(refs || properties.ref || "")).trim();
+    const ratioAB = valueAt(current, ["volumeCapacityAB"], 0);
+    const ratioBA = valueAt(current, ["volumeCapacityBA"], 0);
+    const vehiclesAB = valueAt(current, ["loadABVehicles"], 0);
+    const vehiclesBA = valueAt(current, ["loadBAVehicles"], 0);
+    const lanesObserved = textAt(current, ["sourceClassByField.lanesPerDirection"], "") === "observed";
+    const capacityBasis = lanesObserved ? "AD-SDI lane count · modeled per-lane capacity" : "Modeled road-class capacity";
+    if (properties.contextOnly === true || current.contextOnly === true) {
+      return `<strong>${escapeHtml(roadName)}${
+        roadRefs ? ` · ${escapeHtml(roadRefs)}` : ""
+      }</strong><span>Map context only · no assigned OD demand</span><span>Shown for orientation; excluded from modeled road load and capacity results.</span>`;
+    }
+    return `<strong>${escapeHtml(roadName)}${roadRefs ? ` · ${escapeHtml(roadRefs)}` : ""}</strong><span>Modeled work-trip V/C · A→B ${escapeHtml(
+      formatPercent(ratioAB)
+    )} · B→A ${escapeHtml(formatPercent(ratioBA))}</span><span>${escapeHtml(formatNumber(vehiclesAB))} / ${escapeHtml(
+      formatNumber(vehiclesBA)
+    )} assigned vehicles</span><span>${escapeHtml(capacityBasis)} · activate for assumptions</span>`;
   }
 
   function renderMapStatus(date = modelDate(), dailyStatus = state.latestDailyStatus || normalizeCity(state.snapshot)) {
     if (!ui.mapStatus) return;
     const districtCount = state.dataset?.zones?.length || 0;
-    const corridorCount = state.geo.roads?.features?.filter(isInterDistrictCorridor).length || 0;
+    const corridorCount =
+      state.geo.roads?.features?.filter((feature) => isInterDistrictCorridor(feature) && isRenderedAnalysisLink(feature)).length || 0;
     if (state.mapMode === "agents") {
       const citizenWeight = Math.max(1, Number(state.dataset?.calibration?.citizenAgentPersonsRecommended) || 250);
       const zones = zonesOf().map((zone) => ({ raw: zone, normalized: normalizeZone(zone, baselineZone(zone.id || zone.zoneId) || {}) }));
       const citizenAgents = Math.round(zones.reduce((total, zone) => total + zone.normalized.population, 0) / citizenWeight);
-      const activeEnterprises = zones.reduce((total, zone) => total + activeEnterpriseCount(zone.raw, zone.normalized), 0);
-      const trackedCitizens = state.snapshot?.mapAgents?.citizens?.length || state.mapFeatures.citizenAgents.size;
-      const trackedEnterprises = state.snapshot?.mapAgents?.enterprises?.length || state.mapFeatures.enterpriseAgents.size;
+      const trackedCitizens =
+        Number(state.snapshot?.mapFrame?.citizenCount) || state.snapshot?.mapAgents?.citizens?.length || state.mapFeatures.citizenAgents.size;
+      const trackedEnterprises =
+        Number(state.snapshot?.mapFrame?.enterpriseCount) ||
+        state.snapshot?.mapAgents?.enterprises?.length ||
+        state.mapFeatures.enterpriseAgents.size;
       const flowCount = topInterDistrictCommutes(state.snapshot?.commuteOd, 18).length;
-      ui.mapStatus.textContent = `${formatNumber(trackedCitizens)} tracked of ${formatNumber(citizenAgents)} citizen agents · ${formatNumber(
-        trackedEnterprises
-      )} tracked of ${formatNumber(activeEnterprises)} active firms · ${flowCount} strongest work flows`;
+      const agentScope = state.snapshot?.mapFrame
+        ? `All ${formatNumber(trackedCitizens)} citizen + ${formatNumber(trackedEnterprises)} enterprise agents shown`
+        : `${formatNumber(trackedCitizens)} of ${formatNumber(citizenAgents)} citizen agents + ${formatNumber(
+            trackedEnterprises
+          )} enterprise agents shown`;
+      ui.mapStatus.textContent = `${agentScope} · ${flowCount} strongest work flows on real routes`;
       return;
     }
     const assignmentDate = parseUtcDate(textAt(dailyStatus, ["networkAssignmentDate", "city.networkAssignmentDate"], ""));
     if (!assignmentDate) {
-      ui.mapStatus.textContent = `${districtCount} districts · ${corridorCount} inter-district corridors`;
+      ui.mapStatus.textContent = `${districtCount} districts · ${corridorCount} modeled arterial / gateway segments`;
       return;
     }
     const label = new Intl.DateTimeFormat("en-AE", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }).format(assignmentDate);
@@ -2861,7 +3494,7 @@
       ["networkAssignmentStatus"],
       assignmentDate.valueOf() === date.valueOf() ? "current" : "retained-last-workday"
     );
-    ui.mapStatus.textContent = `${districtCount} districts · ${corridorCount} inter-district corridors · ${
+    ui.mapStatus.textContent = `${districtCount} districts · ${corridorCount} modeled arterial / gateway segments · ${
       status === "retained-last-workday" ? `assignment retained from ${label}` : `network assigned ${label}`
     }`;
   }
@@ -2875,26 +3508,34 @@
     }
     state.layers.zones?.setStyle?.(zoneStyle);
     state.layers.roads?.setStyle?.(roadStyle);
+    state.layers.roads?.eachLayer?.((layer) => {
+      if (layer?.feature && layer.getTooltip?.()) layer.setTooltipContent(roadTooltipHtml(layer.feature));
+    });
     updateTransitVisibility();
     updateAgentMapLayers();
     renderMapStatus();
     if (ui.mapLegend && mapModeChanged) {
       const legend = {
-        network: ["Inter-district load", ["is-low", "Below 65%"], ["is-medium", "65–90%"], ["is-high", "Above 90%"]],
+        network: ["Road V/C", ["is-low", "Below 65%"], ["is-medium", "65–90%"], ["is-high", "Above 90%"], ["is-context-road", "Context only"]],
         population: ["Resident population", ["is-low", "Lower"], ["is-medium", "Middle"], ["is-high", "Higher"]],
         access: ["Shorter mean commute", ["is-high", "Longer"], ["is-medium", "Middle"], ["is-low", "Shorter"]],
         rent: ["Housing rent", ["is-low", "Lower"], ["is-medium", "Middle"], ["is-high", "Higher"]],
         agents: [
-          "Agent activity",
-          ["is-agent-citizen", "Tracked citizens"],
-          ["is-agent-enterprise", "Tracked firms"],
+          "All modeled agents",
+          ["is-agent-citizen", "Satisfied citizens"],
+          ["is-agent-pressure", "Waiting / Extreme"],
+          ["is-agent-recovery", "Recovery"],
+          ["is-agent-enterprise", "Enterprise agents"],
           ["is-agent-flow", "Home → work flow"],
         ],
       }[state.mapMode];
       const strong = $("strong", ui.mapLegend);
       if (strong) strong.textContent = legend[0];
       $$("span", ui.mapLegend).forEach((node, index) => {
-        const [className, label] = legend[index + 1];
+        const entry = legend[index + 1];
+        node.hidden = !entry;
+        if (!entry) return;
+        const [className, label] = entry;
         const swatch = $("i", node);
         if (swatch) swatch.className = className;
         node.lastChild.textContent = label;
@@ -2918,7 +3559,7 @@
 
   async function selectSample(kind) {
     const samples = samplesOf(kind);
-    const list = kind === "link" && !samples.length ? linksOf() : samples;
+    const list = kind === "link" ? (samples.length ? samples : linksOf()).filter(isRenderedAnalysisLink) : samples;
     if (!list.length) {
       renderEmptyInspection(kind, "No sample is available at this model step.");
       return;
@@ -2972,7 +3613,7 @@
   }
 
   function agentNavigation(kind, item) {
-    const samples = kind === "link" ? linksOf() : samplesOf(kind);
+    const samples = kind === "link" ? linksOf().filter(isRenderedAnalysisLink) : samplesOf(kind);
     const id = item.id || item[`${kind}Id`] || state.selected.id || "";
     const disabled = samples.length < 2 ? " disabled" : "";
     return `<div class="udes-v2-agent-nav"><button type="button" data-udes-v2-agent-nav="previous"${disabled}>Previous tracked</button><form data-udes-v2-agent-search><label class="udes-v2-sr-only" for="udes-v2-${escapeHtml(
@@ -3066,6 +3707,7 @@
   function citizenAccounting(item) {
     const account = item.financialAccount || {};
     const gross = valueAt(account, ["grossSalaryAed"], valueAt(item, ["salaryAed"], 0));
+    const nonLaborSupport = valueAt(account, ["nonLaborSupportAed"], valueAt(item, ["monthlyNonLaborSupportAed", "nonLaborSupportAed"], 0));
     const housing = valueAt(account, ["housingCostAed"], valueAt(item, ["residentialRentAed"], 0));
     const commute = valueAt(account, ["commutingCostAed"], valueAt(item, ["monthlyTransportCostAed"], 0));
     const fixedCash = valueAt(account, ["cashAfterHousingAndCommuteAed"], gross - housing - commute);
@@ -3078,12 +3720,17 @@
       )}</span><strong>${escapeHtml(formatAed(value))}</strong></div>`;
     return `<section class="udes-v2-accounting"><span>Last monthly household account · ${escapeHtml(
       textAt(account, ["accountingDate"], "current model month")
-    )}</span>${row("Gross salary", gross)}${row("− Housing", -housing, false, true)}${row("− Commute", -commute, false, true)}${row(
-      "Cash after housing + commute",
-      fixedCash,
-      true,
-      fixedCash < 0
-    )}${row("− Essentials", -essentials, false, true)}${row("Residual after essentials", residual, true, residual < 0)}${row(
+    )}</span>${row("Gross salary", gross)}${nonLaborSupport > 0 ? row("+ Modeled non-labor resources", nonLaborSupport) : ""}${row(
+      "− Housing",
+      -housing,
+      false,
+      true
+    )}${row("− Commute", -commute, false, true)}${row("Cash after housing + commute", fixedCash, true, fixedCash < 0)}${row(
+      "− Essentials",
+      -essentials,
+      false,
+      true
+    )}${row("Residual after essentials", residual, true, residual < 0)}${row(
       "Modeled saving / drawdown",
       bankChange,
       false,
@@ -3148,6 +3795,8 @@
     if (ui.selectionId) ui.selectionId.textContent = `${kind.toUpperCase()} ${id}`;
     if (kind === "citizen") {
       const status = textAt(item, ["status", "state"], "Happy");
+      const laborForceStatus = textAt(item, ["laborForceStatus", "financialAccount.laborForceStatus"], item.workZoneId ? "employed" : "unemployed");
+      const nonEmploymentLabel = laborForceStatus === "nonparticipant" ? "Outside modeled labor force" : "Active job seeker";
       const netIncome = valueAt(item, ["netIncomeAed", "netIncomeMonthly", "netIncome"]);
       const roundTrip = valueAt(item, ["roundTripMinutes", "commuteMinutes"]);
       const appliedPolicy = state.appliedPolicy || policyFromControls();
@@ -3158,12 +3807,14 @@
       )}${citizenAccounting(item)}${metricRows([
         ["Representative weight", `${formatNumber(valueAt(item, ["weight"], 1))} people`],
         ["Home district", zoneLabel(textAt(item, ["homeZoneId", "livingZoneId"]))],
-        ["Work district", item.workZoneId ? zoneLabel(item.workZoneId) : "Unemployed"],
-        ["Employer", textAt(item, ["enterpriseName", "enterpriseId"], "Unemployed")],
+        ["Labor-force status", humanizeEvent(laborForceStatus)],
+        ["Work district", item.workZoneId ? zoneLabel(item.workZoneId) : nonEmploymentLabel],
+        ["Employer", textAt(item, ["enterpriseName", "enterpriseId"], nonEmploymentLabel)],
         ["Age", textAt(item, ["age"])],
         ["Mode", textAt(item, ["mode"], "walk")],
         ["Owns car", valueAt(item, ["hasCar", "ownsCar"], 0) ? "Yes" : "No"],
         ["Salary", formatAed(valueAt(item, ["salaryAed", "salaryMonthly", "salary"]))],
+        ["Modeled non-labor resources", formatAed(valueAt(item, ["monthlyNonLaborSupportAed", "nonLaborSupportAed"], 0))],
         ["Housing rent", formatAed(valueAt(item, ["residentialRentAed", "rentMonthly", "rent"]))],
         ["Transport / month", formatAed(valueAt(item, ["monthlyTransportCostAed", "monthlyTransportCost", "transportCost"]))],
         ["Financial status", textAt(item, ["financialStatusLabel"], "Not classified")],
@@ -3220,22 +3871,65 @@
     } else {
       const current = item.current && typeof item.current === "object" ? { ...item, ...item.current } : item;
       const load = linkLoad(current);
+      const contextOnly = current.contextOnly === true;
+      const roadName = textAt(current, ["primaryRoad", "name", "roadName"], `Road segment ${id}`);
+      const roadRefs = Array.isArray(current.roadRefs) ? current.roadRefs.join(", ") : textAt(current, ["roadRef", "ref"], "");
+      const capacityAB = valueAt(current, ["capacityVehPerHourAB", "capacityVehPerHour", "capacityVehiclesPerDirection", "capacity"]);
+      const capacityBA = valueAt(current, ["capacityVehPerHourBA", "capacityVehPerHour", "capacityVehiclesPerDirection", "capacity"]);
+      const periodCapacityAB = valueAt(current, ["capacityVehiclesAB", "capacityVehiclesPerDirection", "capacity"]);
+      const periodCapacityBA = valueAt(current, ["capacityVehiclesBA", "capacityVehiclesPerDirection", "capacity"]);
+      const assignmentPeriodHours = valueAt(current, ["assignmentPeriodHours"], capacityAB > 0 ? Math.max(1, periodCapacityAB / capacityAB) : 1);
+      const officialRoad = current.officialMainRoadMatch || {};
+      const lanesObserved = textAt(current, ["sourceClassByField.lanesPerDirection"], "") === "observed" && officialRoad.capacityApplied === true;
+      const lanesAB = valueAt(current, ["lanesAB"], valueAt(current, ["lanesPerDirection"], 0));
+      const lanesBA = valueAt(current, ["lanesBA"], valueAt(current, ["lanesPerDirection"], 0));
+      const officialReference = [officialRoad.routeId, officialRoad.side, officialRoad.nameEnglish].filter(Boolean).join(" · ");
+      const officialMatchQuality = officialRoad.featureId
+        ? `${(valueAt(officialRoad, ["coverageWithin75m"], 0) * 100).toFixed(0)}% within 75 m · p90 ${valueAt(
+            officialRoad,
+            ["p90DistanceMeters"],
+            0
+          ).toFixed(0)} m · alignment ${(valueAt(officialRoad, ["alignment"], 0) * 100).toFixed(0)}%`
+        : "No official match retained";
+      if (ui.selectionName) ui.selectionName.textContent = roadName;
       html = `${agentNavigation(kind, item)}${metricRows([
-        ["From", zoneLabel(textAt(current, ["from"]))],
-        ["To", zoneLabel(textAt(current, ["to"]))],
+        ["Assignment role", contextOnly ? "Map context only · no assigned OD demand" : "Physical assignment edge"],
+        ["Road reference", roadRefs || "No signed route reference"],
         ["Road class", textAt(current, ["roadClass", "class"], "Urban arterial")],
-        ["Distance", `${valueAt(current, ["distanceKm", "lengthKm"]).toFixed(1)} km`],
-        ["Free-flow time", `${valueAt(current, ["freeFlowMinutes", "travelTimeFreeFlow"]).toFixed(1)} min`],
+        ["Segment", `${textAt(current, ["fromNodeId", "from"], "A")} → ${textAt(current, ["toNodeId", "to"], "B")}`],
+        ["Length", `${valueAt(current, ["distanceKm", "lengthKm"]).toFixed(2)} km`],
+        ["Free-flow", `${valueAt(current, ["freeFlowMinutes", "travelTimeFreeFlow"]).toFixed(2)} min`],
+        ["Lanes A→B / B→A", `${formatNumber(lanesAB)} / ${formatNumber(lanesBA)} · ${lanesObserved ? "AD-SDI observed" : "road-class assumption"}`],
+        ["Official road match", officialReference || "No strict AD-SDI capacity match"],
+        ["Match quality", officialMatchQuality],
         [
-          "Modeled time",
-          `${Math.max(
-            valueAt(current, ["travelTimeABMin"], 0),
-            valueAt(current, ["travelTimeBAMin"], 0),
-            valueAt(current, ["travelTimeMinutes", "travelTime"], 0)
-          ).toFixed(1)} min`,
+          "Capacity basis",
+          lanesObserved
+            ? `Observed lanes × assumed ${formatNumber(valueAt(current, ["capacityPerLaneVehPerHour"], 0))} veh/lane/h`
+            : `Assumed lanes × ${formatNumber(valueAt(current, ["capacityPerLaneVehPerHour"], 0))} veh/lane/h`,
         ],
-        ["Capacity", `${formatNumber(valueAt(current, ["capacityVehPerHour", "capacityVehiclesPerDirection", "capacity"]))} veh/h`],
-        ["Load / capacity", formatPercent(load)],
+        [
+          "Modeled time A→B / B→A",
+          `${valueAt(current, ["travelTimeABMin", "travelTimeMinutes", "travelTime"], 0).toFixed(2)} / ${valueAt(
+            current,
+            ["travelTimeBAMin", "travelTimeMinutes", "travelTime"],
+            0
+          ).toFixed(2)} min`,
+        ],
+        ["Hourly capacity A→B / B→A", `${formatNumber(capacityAB)} / ${formatNumber(capacityBA)} veh/h`],
+        [
+          `${assignmentPeriodHours.toFixed(0)}h assignment capacity`,
+          `${formatNumber(periodCapacityAB)} / ${formatNumber(periodCapacityBA)} vehicles`,
+        ],
+        [
+          "Assigned vehicles A→B / B→A",
+          `${formatNumber(valueAt(current, ["loadABVehicles"], 0))} / ${formatNumber(valueAt(current, ["loadBAVehicles"], 0))}`,
+        ],
+        [
+          "Work-trip V/C A→B / B→A",
+          `${formatPercent(valueAt(current, ["volumeCapacityAB"], load))} / ${formatPercent(valueAt(current, ["volumeCapacityBA"], load))}`,
+        ],
+        ["Connected candidate routes", formatNumber(Array.isArray(current.candidateRouteIds) ? current.candidateRouteIds.length : 0)],
       ])}${historyBars(item.history || item.histories, "Maximum load / capacity history", ["volumeCapacityRatio", "loadRatio"], "ratio")}`;
     }
     renderStablePanel(panel, `${kind}:${id}`, html, () => bindAgentNavigation(panel, kind));
@@ -3252,7 +3946,7 @@
   function bindAgentNavigation(panel, kind) {
     $$("[data-udes-v2-agent-nav]", panel).forEach((button) => {
       button.addEventListener("click", () => {
-        const count = kind === "link" ? linksOf().length : samplesOf(kind).length;
+        const count = kind === "link" ? linksOf().filter(isRenderedAnalysisLink).length : samplesOf(kind).length;
         const delta = button.dataset.udesV2AgentNav === "next" ? 1 : -1;
         state.selected.index[kind] = (state.selected.index[kind] + delta + count) % Math.max(1, count);
         selectSample(kind);
@@ -4022,7 +4716,7 @@
   function renderMobilityCharts() {
     const [modesNode, linksNode] = prepareChartPanel("mobility", [
       ["modes", "Workday commute mode share", "Completed workdays only · car, bus and walk"],
-      ["links", "Named corridor pressure", "Latest completed assignment · road and bus load/capacity"],
+      ["links", "Named corridor pressure", "Latest assignment · maximum directional V/C across each named road's modeled segments"],
     ]);
     const { history, labels } = chartSource({ workdaysOnly: true });
     const modes = baseChartOptions();
@@ -4060,16 +4754,23 @@
     addInterventionMarkers(modes, history, labels);
     mountChart(modesNode, "mobility:modes", modes);
 
-    const links = linksOf()
-      .map((link) => ({
-        ...link,
-        roadPressure: linkLoad(link),
-        ptPressure: Math.max(valueAt(link, ["ptLoadFactorAB"], 0), valueAt(link, ["ptLoadFactorBA"], 0)),
-      }))
-      .sort((a, b) => Math.max(b.roadPressure, b.ptPressure) - Math.max(a.roadPressure, a.ptPressure))
+    const corridors = new Map();
+    for (const link of linksOf().filter(isRenderedAnalysisLink)) {
+      const name = textAt(link, ["primaryRoad", "name"], "").trim();
+      if (!name || /^unnamed\b|^zone access\b/i.test(name)) continue;
+      const roadPressure = linkLoad(link);
+      const ptPressure = Math.max(valueAt(link, ["ptLoadFactorAB"], 0), valueAt(link, ["ptLoadFactorBA"], 0));
+      const current = corridors.get(name) || { name, roadPressure: 0, ptPressure: 0, segmentCount: 0 };
+      current.roadPressure = Math.max(current.roadPressure, roadPressure);
+      current.ptPressure = Math.max(current.ptPressure, ptPressure);
+      current.segmentCount += 1;
+      corridors.set(name, current);
+    }
+    const links = [...corridors.values()]
+      .sort((a, b) => Math.max(b.roadPressure, b.ptPressure) - Math.max(a.roadPressure, a.ptPressure) || a.name.localeCompare(b.name))
       .slice(0, 12);
     const linkChart = baseChartOptions();
-    linkChart.grid = { top: 24, left: 86, right: 14, bottom: 20 };
+    linkChart.grid = { top: 24, left: 126, right: 14, bottom: 20 };
     linkChart.xAxis = {
       ...linkChart.xAxis,
       type: "value",
@@ -4080,7 +4781,7 @@
       ...linkChart.yAxis,
       type: "category",
       data: links.map((link) => textAt(link, ["name", "id"], "Link")).reverse(),
-      axisLabel: { ...linkChart.yAxis.axisLabel, width: 76, overflow: "truncate" },
+      axisLabel: { ...linkChart.yAxis.axisLabel, width: 116, overflow: "truncate" },
     };
     linkChart.series = [
       {
@@ -4114,7 +4815,8 @@
       ? activeBins.map(
           (bin) =>
             ({
-              unemployed: "Unemployed",
+              "outside-labor-force": "Outside labor force",
+              unemployed: "Active job seeker",
               "fixed-cost-deficit": "Pay < housing + commute",
               "essentials-gap": "Essentials gap",
               "thin-positive-buffer": "Thin buffer",

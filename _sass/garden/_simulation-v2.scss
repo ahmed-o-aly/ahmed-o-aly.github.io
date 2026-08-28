@@ -43,6 +43,7 @@
   --udes-v2-accent-dark: #0e514a;
   --udes-v2-accent-soft: #e4f0ed;
   --udes-v2-blue: #326c91;
+  --udes-v2-teal: #2f7f85;
   --udes-v2-amber: #bd7b20;
   --udes-v2-red: #b34e49;
   width: 100%;
@@ -914,11 +915,21 @@
 }
 
 .udes-v2-map-mount .leaflet-tile-pane {
-  filter: grayscale(0.78) saturate(0.45) contrast(0.86) brightness(1.08);
+  filter: grayscale(0.42) saturate(0.62) contrast(0.94) brightness(1.04);
 }
 
 .udes-v2-map-mount[data-udes-v2-map-mode="agents"] .leaflet-tile-pane {
-  filter: grayscale(0.9) saturate(0.32) contrast(0.82) brightness(1.1);
+  filter: grayscale(0.58) saturate(0.5) contrast(0.91) brightness(1.05);
+}
+
+.udes-v2-agent-canvas {
+  pointer-events: auto;
+  cursor: crosshair;
+}
+
+.udes-v2-agent-canvas:focus-visible {
+  outline: 2px solid var(--udes-v2-text);
+  outline-offset: -4px;
 }
 
 .udes-v2-map-placeholder {
@@ -989,6 +1000,10 @@
   font-size: 8px;
 }
 
+.udes-v2-map-legend span[hidden] {
+  display: none;
+}
+
 .udes-v2-map-legend i {
   width: 18px;
   height: 3px;
@@ -1001,6 +1016,12 @@
 
 .udes-v2-map-legend i.is-high {
   background: var(--udes-v2-red);
+}
+
+.udes-v2-map-legend i.is-context-road {
+  height: 0;
+  border-top: 1px dashed #7f8c89;
+  background: transparent;
 }
 
 .udes-v2-map-legend i.is-agent-citizen,
@@ -1017,8 +1038,29 @@
   box-shadow: 0 0 0 1px var(--udes-v2-accent);
 }
 
+.udes-v2-map-legend i.is-agent-pressure {
+  width: 9px;
+  height: 9px;
+  margin-inline: 4px 5px;
+  border: 1px solid #fff;
+  border-radius: 50%;
+  background: linear-gradient(90deg, var(--udes-v2-amber) 0 50%, var(--udes-v2-red) 50% 100%);
+  box-shadow: 0 0 0 1px #9a6632;
+}
+
+.udes-v2-map-legend i.is-agent-recovery {
+  width: 9px;
+  height: 9px;
+  margin-inline: 4px 5px;
+  border: 1px solid #fff;
+  border-radius: 50%;
+  background: var(--udes-v2-teal);
+  box-shadow: 0 0 0 1px var(--udes-v2-teal);
+}
+
 .udes-v2-map-legend i.is-agent-enterprise {
-  border: 2px solid var(--udes-v2-amber);
+  border: 2px solid var(--udes-v2-blue);
+  border-radius: 1px;
   background: #fff;
 }
 

@@ -227,7 +227,7 @@ visual:
           <dl>
             <div>
               <dt>Citizen objective</dt>
-              <dd>Keep monthly net income—salary less housing and transport—above the buffer while keeping the round trip below the acceptable limit. Net income is distinct from saving: modeled essential consumption is deducted before any positive residual is added to the household's savings stock.</dd>
+              <dd>Employed citizens and active job seekers try to keep monthly resources—earned salary plus any explicitly modeled non-labor resources, less housing and transport—above the buffer while keeping a work trip below the acceptable limit. Citizens outside the modeled labor force do not search for jobs; they still review housing cost and place quality.</dd>
             </div>
             <div>
               <dt>Citizen response</dt>
@@ -243,7 +243,7 @@ visual:
             </div>
             <div>
               <dt>Labor market</dt>
-              <dd>Employment is held near an explicit 80% reference target rather than allowing every vacant job to drive the model mechanically to 100% employment.</dd>
+              <dd>The 6,070 citizen agents each represent 250 residents. The opening stock contains 4,067 employed agents, 182 active job seekers and 1,821 residents outside the modeled labor force. Employment is held near the SCAD-derived 67% employed-resident reference share. The separate 70% participation split—and its 3 percentage-point active-seeker reserve—is an explicit, replaceable scenario assumption, not an observed city calibration.</dd>
             </div>
             <div>
               <dt>Housing and network capacity</dt>
@@ -251,7 +251,7 @@ visual:
             </div>
             <div>
               <dt>Fixed reference assumptions</dt>
-              <dd>Severe net income: AED −500/month. Essential consumption: AED 2,500/month. Households save 25% of a positive residual after essentials and draw down the full negative residual. Relocation requires at least AED 600/month rent saving or a 10-minute commute improvement plus AED 500/month generalized benefit; a forced workplace-zone move instead requires a 20-minute commute improvement and no higher monthly cash cost. Job switches require an 8% raise and AED 500 net gain. Firm moves require a 10% rent saving or 0.05 composite quality/access gain.</dd>
+              <dd>Severe net income: AED −500/month. Essential consumption: AED 2,500/month. Nonparticipants receive an uncalibrated household/non-labor resource equal to current housing, essentials and an AED 1,500 residual buffer so zero wages do not automatically mean extreme distress. Households save 25% of a positive residual after essentials and draw down the full negative residual. Relocation requires at least AED 600/month rent saving or a 10-minute commute improvement plus AED 500/month generalized benefit; job switches require an 8% raise and AED 500 net gain.</dd>
             </div>
             <div>
               <dt>Validation boundary</dt>
@@ -289,10 +289,10 @@ visual:
         </label>
         <label class="udes-v2-form-row" for="udes-v2-employment-target">
           <span>
-            <span>Employment stock target</span>
-            <output for="udes-v2-employment-target" data-udes-v2-output="employmentTarget">80%</output>
+            <span>Employed-resident target</span>
+            <output for="udes-v2-employment-target" data-udes-v2-output="employmentTarget">67%</output>
           </span>
-          <input id="udes-v2-employment-target" type="range" min="65" max="95" step="1" value="80" data-udes-v2-lever="employmentTarget" data-udes-v2-assumption>
+          <input id="udes-v2-employment-target" type="range" min="55" max="85" step="1" value="67" data-udes-v2-lever="employmentTarget" data-udes-v2-assumption>
         </label>
         <label class="udes-v2-form-row" for="udes-v2-rent-pressure">
           <span>
@@ -337,25 +337,35 @@ visual:
           <span>Base 2024 · sources checked 2026</span>
         </div>
         <dl class="udes-v2-evidence-list">
+          <div><dt>Agent stock</dt><dd><b class="is-derived">Weighted</b> 6,070 citizen agents × 250 residents + 600 enterprise agents</dd></div>
           <div><dt>District geography</dt><dd><b class="is-derived">Derived</b> 18 groups from official AD-SDI polygons</dd></div>
           <div><dt>Bus-stop locations</dt><dd><b class="is-observed">Observed</b> 924 AD-SDI points</dd></div>
           <div><dt>District population</dt><dd><b class="is-mixed">SCAD-mapped</b> 12 direct + 6 grouped / relabeled mappings</dd></div>
+          <div><dt>Employed-resident anchor</dt><dd><b class="is-derived">SCAD-derived</b> 67% · 2.76m employed / 4.14m residents emirate-wide</dd></div>
+          <div><dt>Labor-force split</dt><dd><b class="is-synthetic">Assumed</b> 70% participating · 3% of residents active job seekers · 30% nonparticipants</dd></div>
           <div><dt>Standard bus fare</dt><dd><b class="is-observed">Observed</b> AED 2 + 0.05 / km · max 5</dd></div>
-          <div><dt>Road corridors</dt><dd><b class="is-derived">Derived</b> 31 OSM-routed links</dd></div>
+          <div><dt>Road assignment</dt><dd><b class="is-derived">OSM-routed</b> 536 nodes · 635 edges · 324 capacity-bearing edges · 241 visible arterial / gateway segments</dd></div>
+          <div><dt>Main-road lanes</dt><dd><b class="is-mixed">AD-SDI matched</b> observed lanes on 87 / 324 assignment edges; other lanes remain road-class assumptions</dd></div>
+          <div><dt>Zone portals</dt><dd><b class="is-synthetic">Excluded from V/C</b> 76 centroid-shared access edges remain routeable but cannot appear as fake bottlenecks</dd></div>
+          <div><dt>Work-trip capacity window</dt><dd><b class="is-synthetic">Assumed</b> 13 hours/day · outbound + return work trips</dd></div>
           <div><dt>Jobs, rents and incomes</dt><dd><b class="is-synthetic">Assumed</b> 18 / 18 districts</dd></div>
-          <div><dt>Bus routes and timetables</dt><dd><b class="is-synthetic">Assumed</b> service graph</dd></div>
+          <div><dt>Bus routes and timetables</dt><dd><b class="is-synthetic">Assumed</b> 31 service links · 48 service-equivalent capacity multiplier</dd></div>
           <div><dt>Household and firm churn</dt><dd><b class="is-derived">Guarded</b> annualized event-rate ceilings · not locally calibrated</dd></div>
         </dl>
         <div class="udes-v2-cadence-note udes-v2-cadence-note--warning">
           <strong>Interpretation boundary</strong>
-          <p>This is a transparent scenario model, not an Abu Dhabi forecast. It has real geography and stops, but no observed daily demand profile, holiday/Ramadan schedule, incidents, household travel survey, establishment census or district rent series.</p>
+          <p>This is a transparent scenario model, not an Abu Dhabi forecast. It has real geography, named routed arterials, directional road topology and stops, but no observed all-traffic link counts, daily demand profile, holiday/Ramadan schedule, incidents, household travel survey, establishment census or district rent series. Each district still uses an aggregate demand portal rather than address-level trip origins; shared portal chains are therefore excluded from road V/C until routes reach the physical network. Road V/C describes assigned modeled work trips over the stated 13-hour daily capacity window, not measured total or peak-hour traffic. Bus capacity is an aggregate service-equivalent assumption—not the capacity of one observed route.</p>
         </div>
         <nav class="udes-v2-source-links" aria-label="Model sources">
           <a href="https://www.anylogic.com/upload/iblock/198/1985a2d61b26c2d23acd158ab6e5d68e.pdf" target="_blank" rel="noreferrer">UDES paper</a>
           <a href="https://census.scad.gov.ae/home/population?lang=en" target="_blank" rel="noreferrer">SCAD Census</a>
+          <a href="https://census.scad.gov.ae/home/labourforce?lang=en" target="_blank" rel="noreferrer">SCAD employment</a>
           <a href="https://admobility.gov.ae/en/pb-bus-service/hafilat-public-buses-fees" target="_blank" rel="noreferrer">Bus tariff</a>
           <a href="https://adrec.gov.ae/en/market-data" target="_blank" rel="noreferrer">ADREC market data · future calibration</a>
           <a href="https://arcgis.sdi.abudhabi.ae/agspublish/rest/services/OpenData/ADSDI_OpenData/MapServer/2" target="_blank" rel="noreferrer">AD-SDI geography</a>
+          <a href="https://arcgis.sdi.abudhabi.ae/agspublish/rest/services/Pub/AD_Navigable_Roads/NAServer" target="_blank" rel="noreferrer">AD-SDI navigable roads · reference</a>
+          <a href="https://arcgis.sdi.abudhabi.ae/agshost/rest/services/Hosted/BaseMapEng_LightGray_GCS/MapServer/407" target="_blank" rel="noreferrer">AD-SDI main-road lanes</a>
+          <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap roads + basemap</a>
           <a href="{{ '/assets/data/udes-v2/validation-report.json' | relative_url }}" target="_blank">Validation report</a>
         </nav>
       </section>
@@ -375,10 +385,10 @@ visual:
     <div class="udes-v2-workspace-bar">
       <div>
         <span class="udes-v2-kicker">Spatial view</span>
-        <h2 id="udes-v2-map-title">Greater Abu Dhabi activity map</h2>
+        <h2 id="udes-v2-map-title">Abu Dhabi agents and arterial network</h2>
       </div>
       <div class="udes-v2-map-layers" role="group" aria-label="Map metric">
-        <button type="button" data-udes-v2-map-layer="network" aria-pressed="false">Network</button>
+        <button type="button" data-udes-v2-map-layer="network" aria-pressed="false">Road V/C</button>
         <button type="button" data-udes-v2-map-layer="population" aria-pressed="false">Population</button>
         <button type="button" data-udes-v2-map-layer="access" aria-pressed="false">Commute</button>
         <button type="button" data-udes-v2-map-layer="rent" aria-pressed="false">Rent</button>
@@ -392,13 +402,13 @@ visual:
         id="udes-v2-map"
         class="udes-v2-map-mount"
         role="region"
-        aria-label="Interactive map of Greater Abu Dhabi City districts, representative agents, home-to-work flows, and inter-district transport links"
+        aria-label="Interactive map of Greater Abu Dhabi City districts with a labeled basemap, all modeled citizen and enterprise agents, routed home-to-work flows, and named arterial road segments"
         aria-describedby="udes-v2-map-caption"
         data-udes-v2-map
       ></div>
 
       <div class="udes-v2-map-placeholder" data-udes-v2-map-placeholder aria-hidden="true">
-        <span>Loading official Abu Dhabi geography and the routed network…</span>
+        <span>Loading the labeled Abu Dhabi basemap, official districts, agents and routed arterial network…</span>
       </div>
 
       <div class="udes-v2-map-zoom" role="group" aria-label="Map zoom">
@@ -411,16 +421,18 @@ visual:
         <span><i class="is-low"></i>Below 65%</span>
         <span><i class="is-medium"></i>65–90%</span>
         <span><i class="is-high"></i>Above 90%</span>
+        <span hidden><i></i></span>
+        <span hidden><i></i></span>
       </div>
 
       <div class="udes-v2-map-readout" data-udes-v2-map-readout>
         <span data-udes-v2-map-status>Map controller not connected</span>
-        <span>Official AD-SDI district groups · OSM-routed inter-district corridors only</span>
+        <span>Official AD-SDI district groups · OSM basemap and routed named arterials</span>
       </div>
     </div>
 
     <p id="udes-v2-map-caption" class="udes-v2-sr-only">
-      Eighteen model districts, grouped from official AD-SDI community polygons, are shown with a stable stratified sample of actual citizen and enterprise agents, directional home-to-work flows, inter-district routed corridors, and public-transport stops. Marker positions are illustrative within each agent's modeled district, not geocoded addresses. Internal district streets and the detailed street basemap are suppressed. Al Ain and Al Dhafra are outside the model boundary.
+      Eighteen model districts, grouped from official AD-SDI community polygons, are shown over a labeled OpenStreetMap basemap with all 6,070 modeled citizen agents (250 represented residents each), all 600 enterprise agents, directional home-to-work flows, shared named arterial road segments, and public-transport stops. Agent positions are deterministic display locations inside each modeled district, not geocoded addresses. Load-colored roads carry assigned model demand; thin neutral dashed roads are map context only and carry no assigned origin-to-destination demand. Local streets appear only as muted basemap reference and are not simulation edges. Al Ain and Al Dhafra are outside the model boundary.
     </p>
 
   </section>

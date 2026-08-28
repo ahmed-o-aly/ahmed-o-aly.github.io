@@ -133,6 +133,7 @@ jobs:
         run: |
           test -f _site/index.html
           node tests/udes-v2-engine.mjs
+          node tests/udes-v2-job-capacity.mjs
           node tests/udes-v2-scenarios.mjs
           node tests/site-contract.mjs
 
