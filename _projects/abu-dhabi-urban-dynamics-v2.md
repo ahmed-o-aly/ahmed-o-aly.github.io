@@ -61,7 +61,7 @@ visual:
         </button>
         <button type="button" data-udes-v2-scenario="transit" aria-pressed="false">
           <span>Bus priority</span>
-          <small>AED 1 base · 45 km/h · 2× capacity</small>
+          <small>AED 1 · 45 km/h · 4 min wait · 2× capacity</small>
         </button>
         <button type="button" data-udes-v2-scenario="housing" aria-pressed="false">
           <span>Housing delivery</span>
@@ -149,6 +149,13 @@ visual:
           </span>
           <input id="udes-v2-transit-speed" type="range" min="15" max="50" step="1" value="28" data-udes-v2-lever="transitSpeed">
         </label>
+        <label class="udes-v2-form-row" for="udes-v2-transit-wait">
+          <span>
+            <span>Average bus wait</span>
+            <output for="udes-v2-transit-wait" data-udes-v2-output="transitWait">7 min</output>
+          </span>
+          <input id="udes-v2-transit-wait" type="range" min="2" max="20" step="1" value="7" data-udes-v2-lever="transitWait">
+        </label>
         <label class="udes-v2-form-row" for="udes-v2-transit-capacity">
           <span>
             <span>Bus service capacity</span>
@@ -170,7 +177,14 @@ visual:
           </span>
           <input id="udes-v2-car-cost" type="range" min="0.1" max="1.2" step="0.05" value="0.35" data-udes-v2-lever="carCost">
         </label>
-        <p class="udes-v2-control-explainer">The observed Abu Dhabi standard pay-as-you-go fare adds AED 0.05 per passenger-kilometre to this base in each direction, capped at AED 5 per journey. The distance component remains fixed; passes, transfers and exemptions are outside the model.</p>
+        <label class="udes-v2-form-row" for="udes-v2-parking-cost">
+          <span>
+            <span>Parking + fixed car cost</span>
+            <output for="udes-v2-parking-cost" data-udes-v2-output="parkingCost">AED 15/day</output>
+          </span>
+          <input id="udes-v2-parking-cost" type="range" min="0" max="60" step="2.5" value="15" data-udes-v2-lever="parkingCost">
+        </label>
+        <p class="udes-v2-control-explainer">Bus fare, speed, wait and capacity change generalized travel cost and mode choice. The car controls combine running cost with a transparent daily parking/fixed-cost proxy. The observed standard bus fare still adds AED 0.05 per passenger-kilometre, capped at AED 5 per journey.</p>
       </section>
 
       <section class="udes-v2-control-section" aria-labelledby="udes-v2-land-title">
@@ -217,7 +231,7 @@ visual:
             </div>
             <div>
               <dt>Citizen response</dt>
-              <dd>Happy agents pursue higher-quality locations. Waiting and Extreme agents search for better work or move toward lower rent and shorter commutes; financially severe agents may give up a car. Carless agents consider ownership only when income, savings, and generalized commute cost pass explicit affordability and service gates.</dd>
+              <dd>Happy agents pursue meaningfully higher-quality locations. Waiting and Extreme agents review better work, lower rent and shorter commutes daily through their statechart, but a review is not a completed move. Moves require a minimum benefit, a follow-through draw, a minimum stay and a return lockout; financially severe agents may give up a car.</dd>
             </div>
             <div>
               <dt>Enterprise objective</dt>
@@ -225,7 +239,7 @@ visual:
             </div>
             <div>
               <dt>Enterprise response</dt>
-              <dd>Working firms enter Grow or Lesser with economics-adjusted hazards, then change jobs and wages and may relocate for quality, rent, or labor access. A firm at minimum scale exits only after 12 consecutive months below a −20% margin; its agent slot re-enters after a 14-day setup period.</dd>
+              <dd>Working firms enter Grow or Lesser with economics-adjusted hazards, then change jobs and wages. Relocation is a separate, infrequent decision requiring a material quality/labor-access gain or rent saving and a minimum stay. A firm at minimum scale exits only after 12 consecutive months below a −20% margin; its agent slot re-enters after a 14-day setup period.</dd>
             </div>
             <div>
               <dt>Labor market</dt>
@@ -237,11 +251,11 @@ visual:
             </div>
             <div>
               <dt>Fixed reference assumptions</dt>
-              <dd>Severe net income: AED −500/month. Essential consumption: AED 2,500/month. Households save 25% of a positive residual after essentials and draw down the full negative residual. Commute-only escalation: 45 days. Car disposal: net income below AED −3,000 or negative savings. Car acquisition is a transparent Abu Dhabi calibration extension, not a rule taken from UDES. Firm state clocks: 80-day Working hazards and 30-day action means.</dd>
+              <dd>Severe net income: AED −500/month. Essential consumption: AED 2,500/month. Households save 25% of a positive residual after essentials and draw down the full negative residual. Relocation requires at least AED 600/month rent saving or a 10-minute commute improvement plus AED 500/month generalized benefit; a forced workplace-zone move instead requires a 20-minute commute improvement and no higher monthly cash cost. Job switches require an 8% raise and AED 500 net gain. Firm moves require a 10% rent saving or 0.05 composite quality/access gain.</dd>
             </div>
             <div>
               <dt>Validation boundary</dt>
-              <dd>Determinism, conservation, scenario direction, exact calendar horizons, capacity handling, and ten-year numerical stability are regression-tested. Synthetic behavioral inputs still require survey calibration before policy use.</dd>
+              <dd>Determinism, conservation, exact calendar horizons, capacity handling, ten-year stability, and movement-churn ceilings are regression-tested. The provisional ceilings are 30 residential events per 100 citizen-agent years and 20 firm moves per 100 firm-agent years; they are software sanity guards, not observed Abu Dhabi targets.</dd>
             </div>
           </dl>
         </details>
@@ -287,6 +301,34 @@ visual:
           </span>
           <input id="udes-v2-rent-pressure" type="range" min="85" max="115" step="1" value="100" data-udes-v2-lever="rentPressure" data-udes-v2-assumption>
         </label>
+        <label class="udes-v2-form-row" for="udes-v2-household-move-chance">
+          <span>
+            <span>Household move follow-through</span>
+            <output for="udes-v2-household-move-chance" data-udes-v2-output="householdMoveChance">20%</output>
+          </span>
+          <input id="udes-v2-household-move-chance" type="range" min="5" max="40" step="5" value="20" data-udes-v2-lever="householdMoveChance" data-udes-v2-assumption>
+        </label>
+        <label class="udes-v2-form-row" for="udes-v2-household-minimum-stay">
+          <span>
+            <span>Household minimum stay</span>
+            <output for="udes-v2-household-minimum-stay" data-udes-v2-output="householdMinimumStay">365 days</output>
+          </span>
+          <input id="udes-v2-household-minimum-stay" type="range" min="180" max="730" step="5" value="365" data-udes-v2-lever="householdMinimumStay" data-udes-v2-assumption>
+        </label>
+        <label class="udes-v2-form-row" for="udes-v2-firm-move-chance">
+          <span>
+            <span>Firm relocation consideration</span>
+            <output for="udes-v2-firm-move-chance" data-udes-v2-output="firmMoveChance">10%</output>
+          </span>
+          <input id="udes-v2-firm-move-chance" type="range" min="0" max="30" step="2.5" value="10" data-udes-v2-lever="firmMoveChance" data-udes-v2-assumption>
+        </label>
+        <label class="udes-v2-form-row" for="udes-v2-firm-minimum-stay">
+          <span>
+            <span>Firm minimum stay</span>
+            <output for="udes-v2-firm-minimum-stay" data-udes-v2-output="firmMinimumStay">730 days</output>
+          </span>
+          <input id="udes-v2-firm-minimum-stay" type="range" min="365" max="1095" step="5" value="730" data-udes-v2-lever="firmMinimumStay" data-udes-v2-assumption>
+        </label>
       </section>
 
       <section id="udes-v2-control-panel-evidence" class="udes-v2-control-section udes-v2-evidence-panel" role="tabpanel" aria-labelledby="udes-v2-control-tab-evidence" data-udes-v2-control-panel="evidence" hidden>
@@ -302,6 +344,7 @@ visual:
           <div><dt>Road corridors</dt><dd><b class="is-derived">Derived</b> 31 OSM-routed links</dd></div>
           <div><dt>Jobs, rents and incomes</dt><dd><b class="is-synthetic">Assumed</b> 18 / 18 districts</dd></div>
           <div><dt>Bus routes and timetables</dt><dd><b class="is-synthetic">Assumed</b> service graph</dd></div>
+          <div><dt>Household and firm churn</dt><dd><b class="is-derived">Guarded</b> annualized event-rate ceilings · not locally calibrated</dd></div>
         </dl>
         <div class="udes-v2-cadence-note udes-v2-cadence-note--warning">
           <strong>Interpretation boundary</strong>
@@ -332,13 +375,14 @@ visual:
     <div class="udes-v2-workspace-bar">
       <div>
         <span class="udes-v2-kicker">Spatial view</span>
-        <h2 id="udes-v2-map-title">Greater Abu Dhabi network</h2>
+        <h2 id="udes-v2-map-title">Greater Abu Dhabi activity map</h2>
       </div>
       <div class="udes-v2-map-layers" role="group" aria-label="Map metric">
-        <button type="button" data-udes-v2-map-layer="network" aria-pressed="true">Network</button>
+        <button type="button" data-udes-v2-map-layer="network" aria-pressed="false">Network</button>
         <button type="button" data-udes-v2-map-layer="population" aria-pressed="false">Population</button>
         <button type="button" data-udes-v2-map-layer="access" aria-pressed="false">Commute</button>
         <button type="button" data-udes-v2-map-layer="rent" aria-pressed="false">Rent</button>
+        <button type="button" data-udes-v2-map-layer="agents" aria-pressed="true">Agents + flows</button>
       </div>
       <button class="udes-v2-text-button" type="button" data-udes-v2-action="fit-emirate">Fit city</button>
     </div>
@@ -348,7 +392,7 @@ visual:
         id="udes-v2-map"
         class="udes-v2-map-mount"
         role="region"
-        aria-label="Interactive map of Greater Abu Dhabi City districts and transport links"
+        aria-label="Interactive map of Greater Abu Dhabi City districts, representative agents, home-to-work flows, and inter-district transport links"
         aria-describedby="udes-v2-map-caption"
         data-udes-v2-map
       ></div>
@@ -371,12 +415,12 @@ visual:
 
       <div class="udes-v2-map-readout" data-udes-v2-map-readout>
         <span data-udes-v2-map-status>Map controller not connected</span>
-        <span>District groups derived from official AD-SDI polygons · OSM-routed corridors</span>
+        <span>Official AD-SDI district groups · OSM-routed inter-district corridors only</span>
       </div>
     </div>
 
     <p id="udes-v2-map-caption" class="udes-v2-sr-only">
-      Eighteen model districts, grouped from official AD-SDI community polygons, are shown with routed road corridors and public-transport stops. Al Ain and Al Dhafra are outside the model boundary.
+      Eighteen model districts, grouped from official AD-SDI community polygons, are shown with a stable stratified sample of actual citizen and enterprise agents, directional home-to-work flows, inter-district routed corridors, and public-transport stops. Marker positions are illustrative within each agent's modeled district, not geocoded addresses. Internal district streets and the detailed street basemap are suppressed. Al Ain and Al Dhafra are outside the model boundary.
     </p>
 
   </section>
@@ -474,11 +518,20 @@ visual:
       <div class="udes-v2-tray-filter" data-udes-v2-flow-controls hidden>
         <label>
           <span>Flow</span>
-          <select aria-label="Movement type" data-udes-v2-flow-kind>
-            <option value="residential">Residential</option>
-            <option value="job">Job</option>
-            <option value="enterprise">Enterprise</option>
-            <option value="commute">Home → work stock</option>
+          <select aria-label="Flow dataset: relocation events or home-to-work stock" data-udes-v2-flow-kind>
+            <option value="residential">Residential moves (events)</option>
+            <option value="job">Cross-district job switches (events)</option>
+            <option value="workplace">Firm-carried workplace changes (events)</option>
+            <option value="enterprise">Enterprise moves (events)</option>
+            <option value="replacement">Replacement placements (events)</option>
+            <option value="commute">Home → work (stock)</option>
+          </select>
+        </label>
+        <label>
+          <span>Measure</span>
+          <select aria-label="Flow measure" data-udes-v2-flow-measure>
+            <option value="agents" selected>Modeled agents</option>
+            <option value="represented">Represented equivalents</option>
           </select>
         </label>
         <label>

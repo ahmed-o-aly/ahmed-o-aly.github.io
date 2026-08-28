@@ -66,7 +66,36 @@ assert.deepEqual(fareEngine.snapshot().transitFare, {
 
 assert.equal(first.citizens.length, 420);
 assert.equal(first.enterprises.length, 40);
-assert.equal(first.snapshot().city.representedPopulation, 10500);
+const openingSnapshot = first.snapshot();
+assert.equal(openingSnapshot.city.representedPopulation, 10500);
+assert.equal(
+  openingSnapshot.city.eventsTotal.initialEmploymentAssignments,
+  openingSnapshot.city.representedEmployed / compactConfig.citizenWeight,
+  "opening employment is classified as initialization rather than simulated hiring"
+);
+assert.equal(openingSnapshot.city.eventsTotal.hires, 0, "opening employment assignments do not inflate simulated hires");
+assert.equal(openingSnapshot.mapAgents.citizens.length, DEFAULT_ZONES.length * first.config.mapCitizenSamplesPerZone);
+assert.ok(
+  openingSnapshot.mapAgents.enterprises.length > 0 &&
+    openingSnapshot.mapAgents.enterprises.length <= DEFAULT_ZONES.length * first.config.mapEnterpriseSamplesPerZone,
+  "map snapshot carries a bounded stratified enterprise sample"
+);
+assert.ok(
+  openingSnapshot.mapAgents.citizens.every((agent) => first.citizenById.get(agent.id)?.homeZoneId === agent.homeZoneId),
+  "map citizen indicators are actual stable agents rather than fabricated district dots"
+);
+assert.ok(
+  openingSnapshot.mapAgents.enterprises.every((agent) => first.enterpriseById.get(agent.id)?.zoneId === agent.zoneId),
+  "map enterprise indicators are actual stable agents"
+);
+assert.equal(openingSnapshot.commuteOdMetadata.observationType, "current-stock");
+assert.equal(openingSnapshot.commuteOdMetadata.representedResidents, openingSnapshot.city.representedPopulation);
+assert.ok(
+  Object.values(openingSnapshot.city.mobilityEventRates)
+    .filter((value) => typeof value === "number")
+    .every(Number.isFinite),
+  "opening movement-rate diagnostics are finite"
+);
 assert.deepEqual(first.validateInvariants(), [], "initial employment and location references are reciprocal");
 
 first.step(120);
@@ -176,6 +205,7 @@ const monthBoundaryDailyEngine = new UdesV2Engine({
 });
 const boundaryCitizen = monthBoundaryDailyEngine.citizens.find((citizen) => citizen.enterpriseId);
 const boundaryTargetZone = monthBoundaryDailyEngine.zones.find((zone) => zone.id !== boundaryCitizen.homeZoneId);
+boundaryCitizen.lastMoveDay = monthBoundaryDailyEngine.day - monthBoundaryDailyEngine.config.residentialMoveCooldownDays;
 assert.ok(monthBoundaryDailyEngine.moveCitizen(boundaryCitizen, boundaryTargetZone.id, "daily-boundary-fixture"));
 assert.ok(monthBoundaryDailyEngine.detachEmployment(boundaryCitizen, "daily-boundary-fixture", true));
 let completedMonthAccountingClock = null;
@@ -342,6 +372,7 @@ const previousFlowEvents = { ...flowEngine.eventsTotal };
 const residentialMover = flowEngine.citizens[0];
 const residentialOriginId = residentialMover.homeZoneId;
 const residentialTarget = flowEngine.zones.find((zone) => zone.id !== residentialOriginId);
+residentialMover.lastMoveDay = flowEngine.day - flowEngine.config.residentialMoveCooldownDays;
 assert.ok(flowEngine.moveCitizen(residentialMover, residentialTarget.id, "test-residential-od"));
 
 const jobMover = flowEngine.citizens.find((citizen) => citizen.enterpriseId);
@@ -356,6 +387,7 @@ const relocatingEnterprise = flowEngine.enterprises.find((enterprise) => enterpr
 const enterpriseOriginId = relocatingEnterprise.zoneId;
 const enterpriseTarget = flowEngine.zones.find((zone) => zone.id !== enterpriseOriginId && zone.enterpriseIds.size < zone.enterprisePlaceCapacity);
 assert.ok(enterpriseTarget, "the OD fixture has a district with enterprise capacity");
+relocatingEnterprise.lastMoveDay = flowEngine.day - flowEngine.config.firmMoveCooldownDays;
 assert.ok(flowEngine.moveEnterprise(relocatingEnterprise, enterpriseTarget.id, "test-enterprise-od"));
 
 const flowObservation = flowEngine.dailyObservation(previousFlowEvents);
@@ -366,6 +398,12 @@ assert.equal(
   "residential OD totals reconcile to the daily represented move counter"
 );
 assert.ok(flowObservation.flows.totals.crossDistrictJobMoveAgents >= 1, "cross-district job changes are retained in daily OD totals");
+assert.equal(flowObservation.events.jobChanges, 1, "the voluntary-switch event counter includes the completed employer change");
+assert.equal(
+  flowObservation.events.crossDistrictJobChanges,
+  flowObservation.flows.totals.crossDistrictJobMoveAgents,
+  "the cross-district switch counter reconciles to the OD routes shown in the flow panel"
+);
 assert.equal(flowObservation.flows.totals.enterpriseMoves, 1, "an enterprise move is conserved in daily OD totals");
 assert.equal(
   flowObservation.zoneSeries.reduce((total, zone) => total + zone.residentialMoveNet, 0),
@@ -382,6 +420,84 @@ assert.equal(
   0,
   "district enterprise inflows and outflows balance citywide"
 );
+assert.equal(
+  flowObservation.flows.totals.crossDistrictJobMoveAgents,
+  1,
+  "job-move flow counts the citizen's voluntary employer change but not workers carried by a firm's relocation"
+);
+assert.equal(
+  flowObservation.events.workersAffectedByFirmMoves,
+  relocatingEnterprise.employeeIds.size,
+  "firm relocation reports affected workers in its own event taxonomy"
+);
+
+const frictionEngine = new UdesV2Engine({
+  seed: 16662,
+  config: { ...compactConfig, citizenCount: 120, enterpriseCount: 20, residentialMoveCooldownDays: 365, firmMoveCooldownDays: 730 },
+});
+const frictionCitizen = frictionEngine.citizens[0];
+const frictionHome = frictionCitizen.homeZoneId;
+const frictionTarget = frictionEngine.zones.find((zone) => zone.id !== frictionHome && frictionEngine.zoneAcceptsResident(zone));
+frictionCitizen.lastMoveDay = 0;
+frictionEngine.day = 364;
+assert.equal(frictionEngine.moveCitizen(frictionCitizen, frictionTarget.id, "cooldown-test"), false, "household cannot move one day before cooldown");
+frictionEngine.day = 365;
+assert.equal(frictionEngine.moveCitizen(frictionCitizen, frictionTarget.id, "cooldown-test"), true, "household can move on exact cooldown boundary");
+const frictionFirm = frictionEngine.enterprises[0];
+const frictionFirmTarget = frictionEngine.zones.find(
+  (zone) => zone.id !== frictionFirm.zoneId && zone.enterpriseIds.size < zone.enterprisePlaceCapacity
+);
+frictionFirm.lastMoveDay = 0;
+frictionEngine.day = 729;
+assert.equal(frictionEngine.moveEnterprise(frictionFirm, frictionFirmTarget.id, "cooldown-test"), false, "firm cannot move one day before cooldown");
+frictionEngine.day = 730;
+assert.equal(frictionEngine.moveEnterprise(frictionFirm, frictionFirmTarget.id, "cooldown-test"), true, "firm can move on exact cooldown boundary");
+
+const exposureEngine = new UdesV2Engine({
+  seed: 16663,
+  config: { ...compactConfig, citizenCount: 120, enterpriseCount: 20, maxDailyLaborMatches: 0, workdays: [] },
+});
+exposureEngine.step(1);
+assert.equal(
+  exposureEngine.employedAgentDays,
+  exposureEngine.citizens.length - exposureEngine.unemployedIds.size,
+  "employment exposure accumulates the exact end-of-day employed-agent stock"
+);
+const exposureCitizen = exposureEngine.citizens.find((citizen) => citizen.enterpriseId);
+assert.ok(exposureCitizen, "employment-exposure fixture has an employed citizen");
+exposureEngine.detachEmployment(exposureCitizen, "exposure-test", false);
+const secondDayEmployment = exposureEngine.citizens.length - exposureEngine.unemployedIds.size;
+const exposureBeforeSecondDay = exposureEngine.employedAgentDays;
+exposureEngine.step(1);
+assert.equal(
+  exposureEngine.employedAgentDays - exposureBeforeSecondDay,
+  secondDayEmployment,
+  "employment-based annualized rates integrate changing employment rather than using an endpoint stock"
+);
+exposureEngine.eventsTotal.jobChanges = 1;
+exposureEngine.eventsTotal.crossDistrictJobChanges = 1;
+exposureEngine.eventsTotal.workersAffectedByFirmMoves = 1;
+exposureEngine.employedAgentDays = 365.2425;
+exposureEngine.lastSnapshotCache = null;
+const exposureRates = exposureEngine.snapshot().city.mobilityEventRates;
+assert.equal(exposureRates.voluntaryJobSwitchesPer100EmployedAgentYears, 100);
+assert.equal(exposureRates.crossDistrictVoluntaryJobSwitchesPer100EmployedAgentYears, 100);
+assert.equal(exposureRates.employerCarriedWorkplaceChangesPer100EmployedAgentYears, 100);
+
+const reentryEngine = new UdesV2Engine({ seed: 16664, config: { ...compactConfig, citizenCount: 120, enterpriseCount: 20 } });
+const reentryFirm = reentryEngine.enterprises[0];
+const reentryTarget = reentryEngine.zones.find((zone) => zone.id !== reentryFirm.zoneId && zone.enterpriseIds.size < zone.enterprisePlaceCapacity);
+assert.ok(reentryTarget, "enterprise re-entry fixture has a different district with capacity");
+const incumbentMovesBeforeReentry = reentryEngine.eventsTotal.firmMoves;
+const reentryPlacementsBefore = reentryEngine.eventsTotal.enterpriseReentryPlacements;
+assert.equal(reentryEngine.moveEnterprise(reentryFirm, reentryTarget.id, "restart-lowest-rent", true, "reentry"), true);
+assert.equal(reentryEngine.eventsTotal.firmMoves, incumbentMovesBeforeReentry, "a restart placement is not an incumbent firm relocation");
+assert.equal(
+  reentryEngine.eventsTotal.enterpriseReentryPlacements,
+  reentryPlacementsBefore + 1,
+  "a cross-district restart placement has its own event counter"
+);
+assert.equal(reentryEngine.aggregateDailyFlows().totals.enterpriseMoves, 0, "restart placements do not enter the incumbent relocation OD chart");
 
 const transitionEngine = new UdesV2Engine({
   seed: 17171,
@@ -591,11 +707,11 @@ assert.deepEqual(
     averageRoundTripMinutes: baselineCity.averageRoundTripMinutes,
   },
   {
-    modeShares: { car: 61.29, pt: 28.72, walk: 9.99 },
-    stateShares: { Happy: 42.73, Waiting: 30.56, Extreme: 26.24, Recovery: 0.46 },
+    modeShares: { car: 61.59, pt: 26.05, walk: 12.36 },
+    stateShares: { Happy: 45.63, Waiting: 27.66, Extreme: 26.14, Recovery: 0.56 },
     forcedInterzoneWalkers: 0,
     carDisposals: 293,
-    averageRoundTripMinutes: 49,
+    averageRoundTripMinutes: 44.14,
   },
   "the seeded real-baseline 30-day scenario remains deterministic"
 );

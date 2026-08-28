@@ -20,7 +20,7 @@
 (function attachUdesV2(globalScope) {
   "use strict";
 
-  const SCHEMA_VERSION = "2.0";
+  const SCHEMA_VERSION = "2.1";
   const DAY_MS = 86400000;
   const EPSILON = 1e-9;
 
@@ -59,11 +59,14 @@
     workdays: [1, 2, 3, 4, 5],
     workdaysPerMonth: 22,
     agentSampleSize: 12,
+    mapCitizenSamplesPerZone: 3,
+    mapEnterpriseSamplesPerZone: 2,
     routingBatchSize: 512,
     maxDailyLaborMatches: 160,
     laborMarketVacancyBuffer: 0.08,
     betterJobSearchAttempts: 8,
-    betterJobMinimumRaise: 1.03,
+    betterJobMinimumRaise: 1.08,
+    betterJobMinimumNetGainAed: 500,
     initialHousingCapacityBuffer: 1.2,
     housingCapacityMultiplier: 1,
     // Published district capacity is treated as housing stock rather than a
@@ -106,6 +109,21 @@
     waitingDecisionMaxDays: 90,
     extremeDecisionMinDays: 10,
     extremeDecisionMaxDays: 60,
+    // A statechart review is not the same as a completed household move.
+    // These friction terms keep residential relocation at a plausible annual
+    // cadence and prevent the same weighted household from bouncing between
+    // districts while it remains dissatisfied. Emergency commute moves retain
+    // the same one-year minimum stay, with a stricter commute-improvement gate.
+    residentialMoveDecisionProbability: 0.2,
+    residentialMoveCooldownDays: 365,
+    forcedResidentialMoveCooldownDays: 365,
+    residentialPreviousZoneReturnLockoutDays: 730,
+    residentialMoveMinimumRentSavingAed: 600,
+    residentialMoveMinimumCommuteImprovementMin: 10,
+    residentialMoveMinimumGeneralizedBenefitAed: 500,
+    forcedResidentialMoveMinimumCommuteImprovementMin: 20,
+    residentialQualityMinimumGain: 0.05,
+    voluntaryJobSwitchCooldownDays: 180,
     // Happy carless agents reconsider ownership infrequently, but acquisition
     // is not automatic. It requires a post-purchase income buffer and savings,
     // then responds to the relative generalized cost of car and available PT.
@@ -180,7 +198,10 @@
     firmLesserActionMeanDays: 30,
     firmGrowReturnMeanDays: 80,
     firmLesserReturnMeanDays: 80,
-    firmMoveProbabilityOnStateEntry: 0.35,
+    firmMoveProbabilityOnStateEntry: 0.1,
+    firmMoveCooldownDays: 730,
+    firmMoveMinimumRentSavingRate: 0.1,
+    firmMoveMinimumQualityGain: 0.05,
     firmInitialMinJobSlots: 8,
     firmInitialMaxJobSlots: 16,
     firmJobStepSlots: 1,
@@ -410,7 +431,9 @@
     const aliases = {
       transitFareAed: "ptFareOneWayAed",
       transitSpeedKmh: "ptAverageSpeedKmh",
+      transitWaitMin: "ptAverageWaitMin",
       carCostPerKmAed: "carFuelAndRunningCostAedPerKm",
+      parkingDailyCostAed: "carFixedDailyCostAed",
     };
     for (const [alias, canonical] of Object.entries(aliases)) {
       if (output[alias] !== undefined && output[canonical] === undefined) output[canonical] = output[alias];
@@ -526,6 +549,9 @@
       // housing, mortality, or mode-choice draws.
       this.carOwnershipRng = new SeededRandom(this.seed ^ 0x9e3779b9);
       this.qualityAspirationRng = new SeededRandom(this.seed ^ 0x85ebca6b);
+      this.residentialMoveRng = new SeededRandom(this.seed ^ 0xc2b2ae35);
+      this.enterpriseMoveRng = new SeededRandom(this.seed ^ 0x27d4eb2f);
+      this.initialTenureRng = new SeededRandom(this.seed ^ 0x165667b1);
       this.initialOptions = {
         seed: this.seed,
         config: deepClone(suppliedConfig),
@@ -538,6 +564,7 @@
       this.startEpoch = Date.parse(`${this.config.startDate}T00:00:00Z`);
       if (!Number.isFinite(this.startEpoch)) throw new Error("config.startDate must use YYYY-MM-DD");
       this.clock = this.clockAt(0);
+      this.employedAgentDays = 0;
       this.eventsTotal = this.emptyEventCounters();
       this.lastHistoryEventTotals = this.emptyEventCounters();
       this.lastCompletedMonthEvents = this.emptyEventCounters();
@@ -565,6 +592,7 @@
       this.createEnterprises();
       this.createCitizens();
       this.assignInitialEmployment();
+      this.selectMapAgentIds();
       this.initializeCitizenFinances();
       this.updateZoneAndEnterpriseRents();
       this.updateEnterpriseSalaryBills();
@@ -642,15 +670,19 @@
 
     emptyEventCounters() {
       return {
+        initialEmploymentAssignments: 0,
         residentialMoves: 0,
         jobChanges: 0,
+        crossDistrictJobChanges: 0,
         hires: 0,
         fires: 0,
         carAcquisitions: 0,
         carDisposals: 0,
         replacements: 0,
         firmMoves: 0,
+        workersAffectedByFirmMoves: 0,
         firmRestarts: 0,
+        enterpriseReentryPlacements: 0,
       };
     }
 
@@ -840,9 +872,20 @@
 
     serializeEventDeltas(rawCounters) {
       const counters = { ...this.emptyEventCounters(), ...rawCounters };
-      const representedKeys = ["residentialMoves", "jobChanges", "hires", "fires", "carAcquisitions", "carDisposals", "replacements"];
+      const representedKeys = [
+        "initialEmploymentAssignments",
+        "residentialMoves",
+        "jobChanges",
+        "crossDistrictJobChanges",
+        "hires",
+        "fires",
+        "carAcquisitions",
+        "carDisposals",
+        "replacements",
+      ];
       const output = { ...counters };
       for (const key of representedKeys) output[`${key}Represented`] = counters[key] * this.config.citizenWeight;
+      output.workersAffectedByFirmMovesRepresented = counters.workersAffectedByFirmMoves * this.config.citizenWeight;
       return output;
     }
 
@@ -1219,6 +1262,7 @@
           lesserHazardMultiplier: 1,
           rentPerRepresentedWorkerAed: 0,
           salaryBillAed: 0,
+          lastMoveDay: -this.initialTenureRng.integer(0, Math.max(1, Number(this.config.firmMoveCooldownDays) || 1)),
           history: [],
           events: [],
         };
@@ -1264,6 +1308,9 @@
           nextCarConsiderationDay: this.carConsiderationDelayDays(),
           nextQualityMoveDay: this.rng.integer(this.config.qualityMoveMinDays, this.config.qualityMoveMaxDays),
           daysDissatisfied: 0,
+          lastMoveDay: -this.initialTenureRng.integer(0, Math.max(1, Number(this.config.residentialMoveCooldownDays) || 1)),
+          previousHomeZoneId: null,
+          lastJobChangeDay: -Math.max(1, Number(this.config.voluntaryJobSwitchCooldownDays) || 1),
           lastMoveReason: null,
           history: [],
           events: [],
@@ -1273,6 +1320,22 @@
         this.citizenById.set(citizen.id, citizen);
         this.unemployedIds.add(citizen.id);
       }
+    }
+
+    selectMapAgentIds() {
+      const stratifiedIds = (items, zoneKey, perZone) => {
+        const limit = Math.max(0, Math.floor(Number(perZone) || 0));
+        if (!limit) return [];
+        const grouped = new Map(this.zones.map((zone) => [zone.id, []]));
+        for (const item of items) {
+          const zoneId = item[zoneKey];
+          const bucket = grouped.get(zoneId);
+          if (bucket && bucket.length < limit) bucket.push(item.id);
+        }
+        return this.zones.flatMap((zone) => grouped.get(zone.id) || []);
+      };
+      this.mapCitizenIds = stratifiedIds(this.citizens, "homeZoneId", this.config.mapCitizenSamplesPerZone);
+      this.mapEnterpriseIds = stratifiedIds(this.enterprises, "zoneId", this.config.mapEnterpriseSamplesPerZone);
     }
 
     sampleSalary(enterprise, age) {
@@ -1340,9 +1403,10 @@
       citizen.workZoneId = enterprise.zoneId;
       citizen.salaryAed = Math.max(0, round(salaryAed, 0));
       this.unemployedIds.delete(citizen.id);
-      this.eventsTotal.hires += 1;
-      if (reason === "better-job") {
+      if (reason === "initial-hire") this.eventsTotal.initialEmploymentAssignments += 1;
+      else if (reason === "better-job") {
         this.eventsTotal.jobChanges += 1;
+        if (formerWorkZoneId && formerWorkZoneId !== enterprise.zoneId) this.eventsTotal.crossDistrictJobChanges += 1;
         this.recordDailyFlow("jobMoves", {
           fromZoneId: formerWorkZoneId,
           toZoneId: enterprise.zoneId,
@@ -1350,7 +1414,7 @@
           citizenAgentCount: 1,
           representedWorkers: citizen.weight,
         });
-      }
+      } else this.eventsTotal.hires += 1;
       this.recordCitizenEvent(citizen, reason, {
         formerEnterpriseId,
         enterpriseId: enterprise.id,
@@ -1872,8 +1936,8 @@
       }
     }
 
-    residentialOptionCosts(citizen, home) {
-      const work = this.zoneById.get(citizen.workZoneId);
+    residentialOptionCosts(citizen, home, workOverride = null) {
+      const work = typeof workOverride === "string" ? this.zoneById.get(workOverride) : workOverride || this.zoneById.get(citizen.workZoneId);
       if (!home || !work || !citizen.enterpriseId) return null;
       const valueOfTime = Math.max(0, Number(this.config.carAcquisitionValueOfTimeAedPerHour) || 0);
       const workdays = Math.max(1, Number(this.config.workdaysPerMonth) || 1);
@@ -1941,7 +2005,12 @@
         Math.max(0, Number(this.config.monthlyEssentialConsumptionAed) || 0) -
         Math.max(0, Number(this.config.waitingNetIncomeAed) || 0);
       return this.zones
-        .filter((zone) => zone.id !== current.id && zone.quality > current.quality && this.zoneAcceptsResident(zone))
+        .filter(
+          (zone) =>
+            zone.id !== current.id &&
+            zone.quality - current.quality >= Math.max(0, Number(this.config.residentialQualityMinimumGain) || 0) &&
+            this.zoneAcceptsResident(zone)
+        )
         .map((zone) => {
           const costs = this.residentialOptionCosts(citizen, zone);
           return costs ? { zone, ...costs } : null;
@@ -2103,6 +2172,7 @@
         this.searchBetterJob(citizen);
         return;
       }
+      if (this.residentialMoveRng.next() >= clamp(Number(this.config.residentialMoveDecisionProbability) || 0, 0, 1)) return;
       const choice = this.rng.next();
       if (choice < 0.5) this.moveToCheaperZone(citizen);
       else if (choice < 0.75) this.moveToLowerCommuteCostZone(citizen);
@@ -2118,31 +2188,53 @@
       // thirds are the explicit, replaceable implementation assumption here.
       const choice = this.rng.next();
       if (choice < 1 / 3) this.searchBetterJob(citizen);
-      else if (choice < 2 / 3) this.moveToCheaperZone(citizen);
-      else this.moveToWorkZone(citizen);
+      else if (this.residentialMoveRng.next() < clamp(Number(this.config.residentialMoveDecisionProbability) || 0, 0, 1)) {
+        if (choice < 2 / 3) this.moveToCheaperZone(citizen);
+        else this.moveToWorkZone(citizen);
+      }
     }
 
     searchBetterJob(citizen) {
+      const cooldownDays = Math.max(0, Number(this.config.voluntaryJobSwitchCooldownDays) || 0);
+      if (this.day - Number(citizen.lastJobChangeDay ?? -Infinity) < cooldownDays) return false;
+      const home = this.zoneById.get(citizen.homeZoneId);
+      const currentCosts = this.residentialOptionCosts(citizen, home);
+      const minimumNetGain = Math.max(0, Number(this.config.betterJobMinimumNetGainAed) || 0);
       let best = null;
       for (let attempt = 0; attempt < this.config.betterJobSearchAttempts; attempt += 1) {
         const enterprise = this.findHiringEnterprise(citizen.homeZoneId);
         if (!enterprise || enterprise.id === citizen.enterpriseId) continue;
         const salaryAed = this.sampleSalary(enterprise, citizen.age);
-        if (salaryAed > citizen.salaryAed * this.config.betterJobMinimumRaise && (!best || salaryAed > best.salaryAed)) {
-          best = { enterprise, salaryAed };
+        const candidateCosts = this.residentialOptionCosts(citizen, home, enterprise.zoneId);
+        const commuteCostChange = candidateCosts && currentCosts ? candidateCosts.cashMonthlyCostAed - currentCosts.cashMonthlyCostAed : 0;
+        const netGainAed = salaryAed - citizen.salaryAed - commuteCostChange;
+        if (
+          salaryAed > citizen.salaryAed * this.config.betterJobMinimumRaise &&
+          netGainAed >= minimumNetGain &&
+          (!best || netGainAed > best.netGainAed)
+        ) {
+          best = { enterprise, salaryAed, netGainAed };
         }
       }
-      return best ? this.employ(citizen, best.enterprise, best.salaryAed, "better-job") : false;
+      if (!best || !this.employ(citizen, best.enterprise, best.salaryAed, "better-job")) return false;
+      citizen.lastJobChangeDay = this.day;
+      return true;
     }
 
-    moveCitizen(citizen, targetZoneId, reason) {
+    moveCitizen(citizen, targetZoneId, reason, force = false) {
       const origin = this.zoneById.get(citizen.homeZoneId);
       const target = this.zoneById.get(targetZoneId);
       if (!target || target === origin || !this.zoneAcceptsResident(target)) return false;
+      const cooldownDays = Math.max(0, Number(force ? this.config.forcedResidentialMoveCooldownDays : this.config.residentialMoveCooldownDays) || 0);
+      if (this.day - Number(citizen.lastMoveDay ?? -Infinity) < cooldownDays) return false;
+      const returnLockoutDays = Math.max(0, Number(this.config.residentialPreviousZoneReturnLockoutDays) || 0);
+      if (citizen.previousHomeZoneId === target.id && this.day - Number(citizen.lastMoveDay ?? -Infinity) < returnLockoutDays) return false;
       origin.residentIds.delete(citizen.id);
       target.residentIds.add(citizen.id);
+      citizen.previousHomeZoneId = origin.id;
       citizen.homeZoneId = target.id;
       citizen.residentialRentAed = target.residentialRentAed;
+      citizen.lastMoveDay = this.day;
       citizen.lastMoveReason = reason;
       this.eventsTotal.residentialMoves += 1;
       this.recordDailyFlow("residentialMoves", {
@@ -2158,29 +2250,68 @@
 
     moveToCheaperZone(citizen) {
       const current = this.zoneById.get(citizen.homeZoneId);
+      const minimumSaving = Math.max(0, Number(this.config.residentialMoveMinimumRentSavingAed) || 0);
+      const minimumBenefit = Math.max(0, Number(this.config.residentialMoveMinimumGeneralizedBenefitAed) || 0);
+      const currentCosts = this.residentialOptionCosts(citizen, current);
       const candidates = this.zones
-        .filter((zone) => zone.id !== current.id && zone.residentialRentAed < current.residentialRentAed && this.zoneAcceptsResident(zone))
-        .sort((a, b) => a.residentialRentAed - b.residentialRentAed)
+        .filter(
+          (zone) => zone.id !== current.id && current.residentialRentAed - zone.residentialRentAed >= minimumSaving && this.zoneAcceptsResident(zone)
+        )
+        .map((zone) => ({ zone, costs: this.residentialOptionCosts(citizen, zone) }))
+        .filter(
+          (candidate) =>
+            !currentCosts ||
+            (candidate.costs &&
+              candidate.costs.cashMonthlyCostAed <= currentCosts.cashMonthlyCostAed + EPSILON &&
+              currentCosts.generalizedMonthlyCostAed - candidate.costs.generalizedMonthlyCostAed >= minimumBenefit)
+        )
+        .sort(
+          (a, b) =>
+            (a.costs?.generalizedMonthlyCostAed ?? a.zone.residentialRentAed) - (b.costs?.generalizedMonthlyCostAed ?? b.zone.residentialRentAed)
+        )
         .slice(0, 3);
-      const target = this.rng.pick(candidates);
-      return target ? this.moveCitizen(citizen, target.id, "cheaper-rent") : false;
+      const target = this.residentialMoveRng.pick(candidates);
+      return target ? this.moveCitizen(citizen, target.zone.id, "cheaper-rent") : false;
     }
 
     moveToLowerCommuteCostZone(citizen) {
       if (!citizen.workZoneId) return false;
       const current = this.zoneById.get(citizen.homeZoneId);
-      const work = this.zoneById.get(citizen.workZoneId);
-      const candidates = this.zones.filter((zone) => zone.residentialRentAed < current.residentialRentAed && this.zoneAcceptsResident(zone));
-      const target = candidates.sort((a, b) => haversineKm(a, work) - haversineKm(b, work))[0];
-      return target ? this.moveCitizen(citizen, target.id, "lower-commute-cost") : false;
+      const currentCosts = this.residentialOptionCosts(citizen, current);
+      if (!currentCosts) return false;
+      const minimumMinutes = Math.max(0, Number(this.config.residentialMoveMinimumCommuteImprovementMin) || 0);
+      const minimumBenefit = Math.max(0, Number(this.config.residentialMoveMinimumGeneralizedBenefitAed) || 0);
+      const candidates = this.zones
+        .filter((zone) => zone.id !== current.id && this.zoneAcceptsResident(zone))
+        .map((zone) => ({ zone, costs: this.residentialOptionCosts(citizen, zone) }))
+        .filter(
+          (candidate) =>
+            candidate.costs &&
+            candidate.costs.cashMonthlyCostAed <= currentCosts.cashMonthlyCostAed + EPSILON &&
+            currentCosts.roundTripMinutes - candidate.costs.roundTripMinutes >= minimumMinutes &&
+            currentCosts.generalizedMonthlyCostAed - candidate.costs.generalizedMonthlyCostAed >= minimumBenefit
+        )
+        .sort((a, b) => a.costs.generalizedMonthlyCostAed - b.costs.generalizedMonthlyCostAed || a.costs.roundTripMinutes - b.costs.roundTripMinutes);
+      return candidates[0] ? this.moveCitizen(citizen, candidates[0].zone.id, "lower-commute-cost") : false;
     }
 
     moveToWorkZone(citizen, force = false) {
       if (!citizen.workZoneId) return false;
       const current = this.zoneById.get(citizen.homeZoneId);
       const target = this.zoneById.get(citizen.workZoneId);
-      if (!target || (!force && target.residentialRentAed >= current.residentialRentAed)) return false;
-      return this.moveCitizen(citizen, target.id, "workplace-zone");
+      if (!target) return false;
+      const currentCosts = this.residentialOptionCosts(citizen, current);
+      const targetCosts = this.residentialOptionCosts(citizen, target);
+      if (!currentCosts || !targetCosts) return false;
+      const minimumMinutes = Math.max(
+        0,
+        Number(force ? this.config.forcedResidentialMoveMinimumCommuteImprovementMin : this.config.residentialMoveMinimumCommuteImprovementMin) || 0
+      );
+      const minimumBenefit = Math.max(0, Number(this.config.residentialMoveMinimumGeneralizedBenefitAed) || 0);
+      if (targetCosts.cashMonthlyCostAed > currentCosts.cashMonthlyCostAed + EPSILON) return false;
+      if (currentCosts.roundTripMinutes - targetCosts.roundTripMinutes < minimumMinutes) return false;
+      if (!force && currentCosts.generalizedMonthlyCostAed - targetCosts.generalizedMonthlyCostAed < minimumBenefit) return false;
+      return this.moveCitizen(citizen, target.id, "workplace-zone", force);
     }
 
     updateEnterprisesDaily() {
@@ -2245,7 +2376,7 @@
       enterprise.hiring = true;
       enterprise.nextActionDay = this.day + this.rng.exponential(this.config.firmGrowthActionMeanDays);
       enterprise.stateExitDay = this.day + this.rng.exponential(this.config.firmGrowReturnMeanDays);
-      if (this.rng.next() < this.config.firmMoveProbabilityOnStateEntry) this.moveEnterpriseHigherQuality(enterprise);
+      if (this.enterpriseMoveRng.next() < this.config.firmMoveProbabilityOnStateEntry) this.moveEnterpriseHigherQuality(enterprise);
       this.recordDailyTransition("enterprises", {
         zoneId: enterprise.zoneId,
         fromState: previousState,
@@ -2263,7 +2394,7 @@
       enterprise.hiring = false;
       enterprise.nextActionDay = this.day + this.rng.exponential(this.config.firmLesserActionMeanDays);
       enterprise.stateExitDay = this.day + this.rng.exponential(this.config.firmLesserReturnMeanDays);
-      if (this.rng.next() < this.config.firmMoveProbabilityOnStateEntry) this.moveEnterpriseLowerRent(enterprise);
+      if (this.enterpriseMoveRng.next() < this.config.firmMoveProbabilityOnStateEntry) this.moveEnterpriseLowerRent(enterprise);
       this.recordDailyTransition("enterprises", {
         zoneId: enterprise.zoneId,
         fromState: previousState,
@@ -2371,7 +2502,10 @@
       const target = [...this.zones]
         .filter((zone) => zone.enterpriseIds.size < zone.enterprisePlaceCapacity)
         .sort((a, b) => a.businessRentAed - b.businessRentAed)[0];
-      if (target) this.moveEnterprise(enterprise, target.id, "restart-lowest-rent");
+      if (target) this.moveEnterprise(enterprise, target.id, "restart-lowest-rent", true, "reentry");
+      // A restarted enterprise begins a new location tenure even if the
+      // cheapest available district is its existing district.
+      enterprise.lastMoveDay = this.day;
       enterprise.state = "Starting";
       enterprise.stateEnteredDay = this.day;
       enterprise.hiring = false;
@@ -2408,11 +2542,15 @@
       const rank = this.config.endogenousEnterpriseDynamics
         ? (zone) => zone.quality * 0.62 + (zone.laborAccessScore || 0) * 0.38
         : (zone) => zone.quality;
+      const minimumGain = Math.max(0, Number(this.config.firmMoveMinimumQualityGain) || 0);
+      const currentRank = rank(current);
       const candidates = this.zones
-        .filter((zone) => zone.quality > current.quality && zone.enterpriseIds.size < zone.enterprisePlaceCapacity)
+        .filter((zone) => zone.id !== current.id && rank(zone) - currentRank >= minimumGain && zone.enterpriseIds.size < zone.enterprisePlaceCapacity)
         .sort((a, b) => rank(b) - rank(a))
         .slice(0, 3);
-      const target = this.config.endogenousEnterpriseDynamics ? this.rng.weighted(candidates, rank) : this.rng.pick(candidates);
+      const target = this.config.endogenousEnterpriseDynamics
+        ? this.enterpriseMoveRng.weighted(candidates, rank)
+        : this.enterpriseMoveRng.pick(candidates);
       return target ? this.moveEnterprise(enterprise, target.id, "growth-quality") : false;
     }
 
@@ -2422,44 +2560,51 @@
       const rank = this.config.endogenousEnterpriseDynamics
         ? (zone) => (1 - zone.businessRentAed / maximumRent) * 0.68 + (zone.laborAccessScore || 0) * 0.32
         : (zone) => 1 - zone.businessRentAed / maximumRent;
+      const minimumSavingRate = clamp(Number(this.config.firmMoveMinimumRentSavingRate) || 0, 0, 1);
+      const maximumTargetRent = current.businessRentAed * (1 - minimumSavingRate);
       const candidates = this.zones
-        .filter((zone) => zone.businessRentAed < current.businessRentAed && zone.enterpriseIds.size < zone.enterprisePlaceCapacity)
+        .filter(
+          (zone) =>
+            zone.id !== current.id && zone.businessRentAed <= maximumTargetRent + EPSILON && zone.enterpriseIds.size < zone.enterprisePlaceCapacity
+        )
         .sort((a, b) => rank(b) - rank(a))
         .slice(0, 3);
-      const target = this.config.endogenousEnterpriseDynamics ? this.rng.weighted(candidates, rank) : this.rng.pick(candidates);
+      const target = this.config.endogenousEnterpriseDynamics
+        ? this.enterpriseMoveRng.weighted(candidates, rank)
+        : this.enterpriseMoveRng.pick(candidates);
       return target ? this.moveEnterprise(enterprise, target.id, "contraction-rent") : false;
     }
 
-    moveEnterprise(enterprise, targetZoneId, reason) {
+    moveEnterprise(enterprise, targetZoneId, reason, force = false, eventClass = "relocation") {
       const origin = this.zoneById.get(enterprise.zoneId);
       const target = this.zoneById.get(targetZoneId);
       if (!target || target === origin || target.enterpriseIds.size >= target.enterprisePlaceCapacity) return false;
+      const cooldownDays = Math.max(0, Number(this.config.firmMoveCooldownDays) || 0);
+      if (!force && this.day - Number(enterprise.lastMoveDay ?? -Infinity) < cooldownDays) return false;
       const affectedCitizenAgentCount = enterprise.employeeIds.size;
       const representedWorkersAffected = affectedCitizenAgentCount * this.config.citizenWeight;
       origin.enterpriseIds.delete(enterprise.id);
       target.enterpriseIds.add(enterprise.id);
       enterprise.zoneId = target.id;
+      enterprise.lastMoveDay = this.day;
       enterprise.rentPerRepresentedWorkerAed = target.businessRentAed;
       for (const citizenId of enterprise.employeeIds) this.citizenById.get(citizenId).workZoneId = target.id;
-      this.eventsTotal.firmMoves += 1;
-      this.recordDailyFlow("enterpriseMoves", {
-        fromZoneId: origin.id,
-        toZoneId: target.id,
-        reason,
-        enterpriseCount: 1,
-        affectedCitizenAgentCount,
-        representedWorkersAffected,
-      });
-      if (affectedCitizenAgentCount) {
-        this.recordDailyFlow("jobMoves", {
+      if (eventClass === "reentry") {
+        this.eventsTotal.enterpriseReentryPlacements += 1;
+        this.recordEnterpriseEvent(enterprise, "reentry-placement", { from: origin.id, to: target.id, reason });
+      } else {
+        this.eventsTotal.firmMoves += 1;
+        this.eventsTotal.workersAffectedByFirmMoves += affectedCitizenAgentCount;
+        this.recordDailyFlow("enterpriseMoves", {
           fromZoneId: origin.id,
           toZoneId: target.id,
-          reason: `enterprise-relocation:${reason}`,
-          citizenAgentCount: affectedCitizenAgentCount,
-          representedWorkers: representedWorkersAffected,
+          reason,
+          enterpriseCount: 1,
+          affectedCitizenAgentCount,
+          representedWorkersAffected,
         });
+        this.recordEnterpriseEvent(enterprise, "move", { from: origin.id, to: target.id, reason });
       }
-      this.recordEnterpriseEvent(enterprise, "move", { from: origin.id, to: target.id, reason });
       return true;
     }
 
@@ -2574,6 +2719,10 @@
       citizen.bankBalanceAed = this.config.extremeBankBalanceAed;
       citizen.lastMonthlyBankBalanceDeltaAed = 0;
       citizen.daysDissatisfied = 0;
+      citizen.lastMoveDay = this.day;
+      citizen.previousHomeZoneId = null;
+      citizen.lastJobChangeDay = this.day - Math.max(1, Number(this.config.voluntaryJobSwitchCooldownDays) || 1);
+      citizen.lastMoveReason = target && target !== currentZone ? "demographic-replacement" : null;
       citizen.history = [];
       citizen.events = [];
       citizen.state = "Happy";
@@ -2731,6 +2880,7 @@
       this.commuteCitizens();
       this.updateCitizenStates();
       this.updateEnterprisesDaily();
+      this.employedAgentDays += this.citizens.length - this.unemployedIds.size;
       this.lastSnapshotCache = null;
     }
 
@@ -3147,9 +3297,37 @@
       const averageRoadCapacityUsage = round(averageRoadLoad * 100, 2);
       const distributions = this.computeDistributions();
       const representedCitizenEventsTotal = {};
-      for (const key of ["residentialMoves", "jobChanges", "hires", "fires", "carAcquisitions", "carDisposals", "replacements"]) {
+      for (const key of [
+        "initialEmploymentAssignments",
+        "residentialMoves",
+        "jobChanges",
+        "crossDistrictJobChanges",
+        "hires",
+        "fires",
+        "carAcquisitions",
+        "carDisposals",
+        "replacements",
+      ]) {
         representedCitizenEventsTotal[key] = this.eventsTotal[key] * this.config.citizenWeight;
       }
+      representedCitizenEventsTotal.workersAffectedByFirmMoves = this.eventsTotal.workersAffectedByFirmMoves * this.config.citizenWeight;
+      const elapsedYears = Math.max(this.day / 365.2425, 1 / 365.2425);
+      const employedAgentYears = Math.max(this.employedAgentDays / 365.2425, 1 / 365.2425);
+      const mobilityEventRates = {
+        observationType: "cumulative-agent-event-rate",
+        elapsedDays: this.day,
+        denominatorNote:
+          "Events per 100 modeled actor-years; employment-based rates use accumulated employed-agent-days, and repeated events by one actor are counted separately.",
+        calibrationStatus: "Provisional sanity diagnostics, not empirical Abu Dhabi calibration.",
+        residentialMovesPer100CitizenAgentYears: round(
+          (this.eventsTotal.residentialMoves / Math.max(this.citizens.length * elapsedYears, 1)) * 100,
+          2
+        ),
+        voluntaryJobSwitchesPer100EmployedAgentYears: round((this.eventsTotal.jobChanges / employedAgentYears) * 100, 2),
+        crossDistrictVoluntaryJobSwitchesPer100EmployedAgentYears: round((this.eventsTotal.crossDistrictJobChanges / employedAgentYears) * 100, 2),
+        firmRelocationsPer100FirmAgentYears: round((this.eventsTotal.firmMoves / Math.max(this.enterprises.length * elapsedYears, 1)) * 100, 2),
+        employerCarriedWorkplaceChangesPer100EmployedAgentYears: round((this.eventsTotal.workersAffectedByFirmMoves / employedAgentYears) * 100, 2),
+      };
       const city = {
         representedPopulation,
         population: representedPopulation,
@@ -3239,6 +3417,7 @@
         distributions,
         eventsTotal: { ...this.eventsTotal },
         representedCitizenEventsTotal,
+        mobilityEventRates,
       };
       return { city, zones, links };
     }
@@ -3450,6 +3629,10 @@
       const severeFinancial = this.citizenIsFinanciallySevere(citizen);
       const severeCommute = this.citizenHasSevereCommute(citizen);
       const normal = this.citizenIsNormal(citizen);
+      const moveCooldownDays = Math.max(0, Number(this.config.residentialMoveCooldownDays) || 0);
+      const nextMoveEligibleDay = Math.max(this.day, Number(citizen.lastMoveDay ?? -moveCooldownDays) + moveCooldownDays);
+      const jobCooldownDays = Math.max(0, Number(this.config.voluntaryJobSwitchCooldownDays) || 0);
+      const nextJobSwitchEligibleDay = Math.max(this.day, Number(citizen.lastJobChangeDay ?? -jobCooldownDays) + jobCooldownDays);
       let nextReviewDay = citizen.stateDecisionDay;
       let reviewPurpose = "state recovery decision";
       if (citizen.state === "Happy") {
@@ -3480,6 +3663,11 @@
           acceptableRoundTripMinutes: this.config.acceptableCommuteRoundTripMin,
           extremeRoundTripMinutes: this.config.extremeCommuteRoundTripMin,
           daysDissatisfied: citizen.daysDissatisfied,
+          relocationFollowThroughPercent: round(clamp(Number(this.config.residentialMoveDecisionProbability) || 0, 0, 1) * 100, 1),
+          minimumRentSavingAedPerMonth: Math.max(0, Number(this.config.residentialMoveMinimumRentSavingAed) || 0),
+          minimumCommuteImprovementMinutes: Math.max(0, Number(this.config.residentialMoveMinimumCommuteImprovementMin) || 0),
+          nextResidentialMoveEligibleDate: this.clockAt(nextMoveEligibleDay).date,
+          nextVoluntaryJobSwitchEligibleDate: this.clockAt(nextJobSwitchEligibleDay).date,
         },
         nextScheduledReview:
           Number.isFinite(nextReviewDay) && nextReviewDay >= this.day
@@ -3496,6 +3684,8 @@
 
     enterpriseDecisionExplanation(enterprise) {
       const marginGap = round(enterprise.operatingMargin - this.config.enterpriseTargetMargin, 4);
+      const moveCooldownDays = Math.max(0, Number(this.config.firmMoveCooldownDays) || 0);
+      const nextMoveEligibleDay = Math.max(this.day, Number(enterprise.lastMoveDay ?? -moveCooldownDays) + moveCooldownDays);
       let nextDecisionDay = null;
       let nextDecision = null;
       if (enterprise.state === "Working") {
@@ -3532,6 +3722,10 @@
           laborAccessScore: enterprise.laborAccessScore,
           growHazardMultiplier: enterprise.growHazardMultiplier,
           lesserHazardMultiplier: enterprise.lesserHazardMultiplier,
+          relocationConsiderationPercent: round(clamp(Number(this.config.firmMoveProbabilityOnStateEntry) || 0, 0, 1) * 100, 1),
+          minimumRentSavingPercent: round(clamp(Number(this.config.firmMoveMinimumRentSavingRate) || 0, 0, 1) * 100, 1),
+          minimumQualityGain: Math.max(0, Number(this.config.firmMoveMinimumQualityGain) || 0),
+          nextRelocationEligibleDate: this.clockAt(nextMoveEligibleDay).date,
         },
         nextScheduledDecision:
           Number.isFinite(nextDecisionDay) && nextDecisionDay >= this.day
@@ -3584,6 +3778,9 @@
         bankBalance: citizen.bankBalanceAed,
         lastMonthlyBankBalanceDeltaAed: citizen.lastMonthlyBankBalanceDeltaAed,
         lastMoveReason: citizen.lastMoveReason,
+        lastMoveDay: citizen.lastMoveDay,
+        previousHomeZoneId: citizen.previousHomeZoneId,
+        lastJobChangeDay: citizen.lastJobChangeDay,
         decisionExplanation: this.citizenDecisionExplanation(citizen),
         history: historyLimit ? citizen.history.slice(-historyLimit) : undefined,
         events: historyLimit ? citizen.events.slice(-historyLimit) : undefined,
@@ -3636,9 +3833,42 @@
         consecutiveRestartLossMonths: enterprise.consecutiveRestartLossMonths,
         growHazardMultiplier: enterprise.growHazardMultiplier,
         lesserHazardMultiplier: enterprise.lesserHazardMultiplier,
+        lastMoveDay: enterprise.lastMoveDay,
         decisionExplanation: this.enterpriseDecisionExplanation(enterprise),
         history: historyLimit ? enterprise.history.slice(-historyLimit) : undefined,
         events: historyLimit ? enterprise.events.slice(-historyLimit) : undefined,
+      };
+    }
+
+    serializeMapCitizen(citizen) {
+      if (!citizen) return null;
+      return {
+        id: citizen.id,
+        generation: citizen.generation,
+        weight: citizen.weight,
+        homeZoneId: citizen.homeZoneId,
+        workZoneId: citizen.workZoneId,
+        enterpriseId: citizen.enterpriseId,
+        state: citizen.state,
+        status: citizen.state,
+        mode: citizen.mode,
+        lastMoveReason: citizen.lastMoveReason,
+        lastMoveDay: citizen.lastMoveDay,
+      };
+    }
+
+    serializeMapEnterprise(enterprise) {
+      if (!enterprise) return null;
+      return {
+        id: enterprise.id,
+        zoneId: enterprise.zoneId,
+        state: enterprise.state,
+        status: enterprise.state,
+        hiring: enterprise.hiring,
+        employeeAgentCount: enterprise.employeeIds.size,
+        representedEmployees: enterprise.employeeIds.size * this.config.citizenWeight,
+        operatingMargin: enterprise.operatingMargin,
+        lastMoveDay: enterprise.lastMoveDay,
       };
     }
 
@@ -3655,6 +3885,9 @@
         : this.enterprises.slice(0, this.config.agentSampleSize).map((enterprise) => enterprise.id);
       const citizens = citizenIds.map((id) => this.serializeCitizen(this.citizenById.get(id), historyLimit)).filter(Boolean);
       const enterprises = enterpriseIds.map((id) => this.serializeEnterprise(this.enterpriseById.get(id), historyLimit)).filter(Boolean);
+      const mapCitizens = (this.mapCitizenIds || []).map((id) => this.serializeMapCitizen(this.citizenById.get(id))).filter(Boolean);
+      const mapEnterprises = (this.mapEnterpriseIds || []).map((id) => this.serializeMapEnterprise(this.enterpriseById.get(id))).filter(Boolean);
+      const commuteOd = this.computeCommuteOd();
       return {
         schemaVersion: SCHEMA_VERSION,
         calibrationLabel: this.config.calibrationLabel,
@@ -3665,13 +3898,22 @@
         city: metrics.city,
         zones: metrics.zones,
         links: metrics.links,
-        commuteOd: this.computeCommuteOd(),
+        commuteOd,
+        commuteOdMetadata: {
+          observationType: "current-stock",
+          asOfDate: this.clock.date,
+          description: "Current home-to-work relationships; not relocation events and not daily trip counts.",
+          modeledCitizenAgents: sumBy(commuteOd, (row) => row.citizenAgentCount),
+          representedResidents: sumBy(commuteOd, (row) => row.representedResidents),
+          representedWorkers: sumBy(commuteOd, (row) => row.representedWorkers),
+        },
         citizens,
         enterprises,
         citizenSamples: citizens,
         enterpriseSamples: enterprises,
         samples: { citizens, enterprises },
         agents: { citizens, enterprises },
+        mapAgents: { citizens: mapCitizens, enterprises: mapEnterprises },
         histories: includeHistories
           ? {
               city: this.cityHistory.slice(-aggregateHistoryLimit),

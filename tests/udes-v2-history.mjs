@@ -21,6 +21,11 @@ const {
   filterHistoryWindow,
   aggregateFlowRoutes,
   flowSeriesForZone,
+  isInterDistrictCorridor,
+  topInterDistrictCommutes,
+  commuteLiveWorkByDistrict,
+  commuteOdMatrix,
+  selectedDistrictCommuteExchange,
   commuteRangeMessage,
   summarizeChart,
 } = require("../assets/js/udes-v2-app.js");
@@ -34,12 +39,84 @@ const referencePatch = {
 assert.deepEqual(Object.keys(PUBLIC_PRESETS).sort(), ["balanced", "housing", "reference", "transit"], "all four public presets are exportable");
 assert.ok(Object.values(PUBLIC_PRESETS).every(Object.isFrozen), "public preset inputs are immutable shared validation contracts");
 
+assert.equal(isInterDistrictCorridor({ properties: { from: "mushrif", to: "reem" } }), true, "a corridor joining two districts remains visible");
+assert.equal(
+  isInterDistrictCorridor({ properties: { from: "mushrif", to: "mushrif" } }),
+  false,
+  "a road internal to one district is excluded from the public map"
+);
+assert.deepEqual(
+  topInterDistrictCommutes(
+    [
+      { homeZoneId: "mushrif", workZoneId: "reem", representedWorkers: 500 },
+      { homeZoneId: "mushrif", workZoneId: "reem", representedWorkers: 250 },
+      { homeZoneId: "reem", workZoneId: "mushrif", representedWorkers: 600 },
+      { homeZoneId: "reem", workZoneId: "reem", representedWorkers: 900 },
+      { homeZoneId: "reem", workZoneId: null, representedResidents: 400 },
+    ],
+    2
+  ),
+  [
+    { fromZoneId: "mushrif", toZoneId: "reem", value: 750 },
+    { fromZoneId: "reem", toZoneId: "mushrif", value: 600 },
+  ],
+  "agent-map commute lines aggregate directed cross-district worker stocks and exclude same-district or unemployed rows"
+);
+
+const commuteStockFixture = [
+  { homeZoneId: "mushrif", workZoneId: "reem", representedWorkers: 600 },
+  { homeZoneId: "mushrif", workZoneId: "danah", representedWorkers: 200 },
+  { homeZoneId: "reem", workZoneId: "mushrif", representedWorkers: 350 },
+  { homeZoneId: "danah", workZoneId: "mushrif", representedWorkers: 150 },
+  { homeZoneId: "mushrif", workZoneId: "mushrif", representedWorkers: 100 },
+  { homeZoneId: "reem", workZoneId: null, representedResidents: 400, representedWorkers: 0 },
+];
+assert.deepEqual(
+  commuteLiveWorkByDistrict(commuteStockFixture, ["mushrif", "reem", "danah"]),
+  [
+    { districtId: "mushrif", employedResidents: 900, locatedJobs: 600, netJobBalance: -300 },
+    { districtId: "reem", employedResidents: 350, locatedJobs: 600, netJobBalance: 250 },
+    { districtId: "danah", employedResidents: 150, locatedJobs: 200, netJobBalance: 50 },
+  ],
+  "live/work district stocks count employed residents at home and the same workers at their job locations"
+);
+const commuteMatrixFixture = commuteOdMatrix(commuteStockFixture, ["mushrif", "reem", "danah"]);
+assert.deepEqual(commuteMatrixFixture.districtIds, ["mushrif", "reem", "danah"], "the OD matrix preserves the displayed district order");
+assert.equal(commuteMatrixFixture.cells.length, 9, "the OD matrix includes zero cells so all home/work combinations remain legible");
+assert.deepEqual(
+  commuteMatrixFixture.cells.find(([work, home]) => work === 1 && home === 0),
+  [1, 0, 600]
+);
+assert.deepEqual(
+  commuteMatrixFixture.cells.find(([work, home]) => work === 0 && home === 1),
+  [0, 1, 350]
+);
+assert.equal(commuteMatrixFixture.maximum, 600, "the OD matrix reports its observed maximum for a truthful color scale");
+assert.deepEqual(
+  selectedDistrictCommuteExchange(commuteStockFixture, "mushrif"),
+  {
+    districtId: "mushrif",
+    sameDistrict: 100,
+    destinations: [
+      { counterpartDistrictId: "reem", value: 600 },
+      { counterpartDistrictId: "danah", value: 200 },
+    ],
+    origins: [
+      { counterpartDistrictId: "reem", value: 350 },
+      { counterpartDistrictId: "danah", value: 150 },
+    ],
+    outboundWorkers: 800,
+    inboundWorkers: 500,
+  },
+  "selected-district commute exchange separates outward job destinations, inward home origins, and within-district work"
+);
+
 const changedPresetFields = (name) =>
   Object.keys(PUBLIC_PRESETS.reference).filter((field) => PUBLIC_PRESETS[name][field] !== PUBLIC_PRESETS.reference[field]);
 assert.deepEqual(
   changedPresetFields("transit"),
-  ["transitFareAed", "transitSpeedKmh", "ptCapacityMultiplier"],
-  "the bus template changes only fare, speed and capacity"
+  ["transitFareAed", "transitSpeedKmh", "transitWaitMin", "ptCapacityMultiplier"],
+  "the bus template changes only fare, speed, wait and capacity"
 );
 assert.deepEqual(changedPresetFields("housing"), ["housingCapacityMultiplier"], "the housing template changes only housing delivery");
 assert.deepEqual(
@@ -205,7 +282,7 @@ const replacementHistory = [
   },
 ];
 assert.deepEqual(
-  aggregateFlowRoutes(replacementHistory, "residential", 1, 1),
+  aggregateFlowRoutes(replacementHistory, "replacement", 1, 1),
   [
     {
       fromZoneId: "mushrif",
@@ -214,12 +291,41 @@ assert.deepEqual(
       reasons: { "replacement-lowest-rent": 250 },
     },
   ],
-  "residential OD charts include and label demographic replacement relocations"
+  "replacement placements remain available as their own event taxonomy"
 );
 assert.deepEqual(
-  flowSeriesForZone(replacementHistory, "residential", "mushrif", 1, 1),
+  flowSeriesForZone(replacementHistory, "replacement", "mushrif", 1, 1),
   [{ day: 1, date: "2024-01-01", inflow: 0, outflow: 250, net: -250 }],
-  "district residential stock-flow balances include replacement relocations"
+  "district replacement-placement balances remain separate from household moves"
+);
+assert.deepEqual(aggregateFlowRoutes(replacementHistory, "residential", 1, 1), [], "household relocation charts exclude demographic replacements");
+const actorMeasureHistory = [
+  {
+    day: 1,
+    date: "2024-01-01",
+    flows: {
+      residentialMoves: [{ fromZoneId: "mushrif", toZoneId: "danah", reason: "cheaper-rent", citizenAgentCount: 2, representedResidents: 500 }],
+      jobMoves: [],
+      enterpriseMoves: [
+        {
+          fromZoneId: "danah",
+          toZoneId: "reem",
+          reason: "growth-quality",
+          enterpriseCount: 1,
+          affectedCitizenAgentCount: 3,
+          representedWorkersAffected: 750,
+        },
+      ],
+      replacementRelocations: [],
+    },
+  },
+];
+assert.equal(aggregateFlowRoutes(actorMeasureHistory, "residential", 1, 1, "agents")[0].value, 2);
+assert.equal(aggregateFlowRoutes(actorMeasureHistory, "residential", 1, 1, "represented")[0].value, 500);
+assert.equal(
+  aggregateFlowRoutes(actorMeasureHistory, "workplace", 1, 1, "agents")[0].value,
+  3,
+  "workers carried by a firm move are counted separately from voluntary job switches"
 );
 
 assert.match(commuteRangeMessage(52, 45), /above the applied 45-minute/, "zone insight respects a non-default applied commute threshold");
@@ -247,6 +353,26 @@ const longBarSummary = summarizeChart("Daily transitions", {
 });
 assert.match(longBarSummary, /latest 89\.0, range 0\.0 to 89\.0/, "long temporal bars receive a compact accessible summary");
 assert.doesNotMatch(longBarSummary, /Day 45:/, "long temporal bars do not produce enormous screen-reader labels");
+assert.match(
+  summarizeChart("Home to work matrix", {
+    xAxis: { type: "category", data: ["Mushrif", "Reem"] },
+    yAxis: { type: "category", data: ["Mushrif", "Reem"] },
+    series: [
+      {
+        name: "Employed residents",
+        type: "heatmap",
+        data: [
+          [0, 0, 100],
+          [1, 0, 600],
+          [0, 1, 350],
+          [1, 1, 0],
+        ],
+      },
+    ],
+  }),
+  /range 0\.0 to 600\.0/,
+  "heatmap arrays contribute their worker values to the chart's accessible summary"
+);
 assert.match(
   summarizeChart("Policy trend", {
     xAxis: { type: "category", data: ["1 Jan 24", "2 Jan 24"] },
@@ -366,8 +492,8 @@ assert.match(app, /zoneSeries: \(Array\.isArray\(snapshot\?\.zoneSeries\)/, "dai
 assert.match(app, /const HISTORY_POINT_LIMIT = 3654/, "the full ten-year daily run plus Day 0 is retained");
 assert.match(
   app,
-  /transit: Object\.freeze\(\["transitFare", "transitSpeed", "transitCapacity"\]\)/,
-  "the bus template stages only its three service levers"
+  /transit: Object\.freeze\(\["transitFare", "transitSpeed", "transitWait", "transitCapacity"\]\)/,
+  "the bus template stages only its four service levers"
 );
 assert.match(app, /housing: Object\.freeze\(\["housing"\]\)/, "the housing template stages only housing delivery");
 assert.match(app, /balanced: Object\.freeze\(\["housing", "business", "placeQuality"\]\)/, "the co-located template stages only land-use levers");

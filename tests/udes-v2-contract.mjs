@@ -6,6 +6,7 @@ import { assertContains, readRoute } from "./helpers/site.mjs";
 const html = readRoute("/projects/abu-dhabi-urban-dynamics-v2/");
 const projects = readRoute("/projects/");
 const css = readFileSync(new URL("../_site/assets/css/garden.css", import.meta.url), "utf8");
+const scss = readFileSync(new URL("../_sass/garden/_simulation-v2.scss", import.meta.url), "utf8");
 const appBuffer = readFileSync(new URL("../assets/js/udes-v2-app.js", import.meta.url));
 const workerBuffer = readFileSync(new URL("../assets/js/udes-v2-worker.js", import.meta.url));
 const baselineBuffer = readFileSync(new URL("../assets/data/udes-v2/baseline.json", import.meta.url));
@@ -26,8 +27,13 @@ assertContains(html, /data-worker-url="\/assets\/js\/udes-v2-worker\.js"/, "v2 e
 assertContains(html, /aria-label="Interactive map of Greater Abu Dhabi City/, "map has the correct city boundary description");
 assertContains(
   html,
-  /District groups derived from official AD-SDI polygons · OSM-routed corridors/,
-  "map provenance distinguishes grouped model districts from their official source polygons"
+  /Official AD-SDI district groups · OSM-routed inter-district corridors only/,
+  "map provenance distinguishes official district groups and inter-district model corridors"
+);
+assertContains(
+  html,
+  /data-udes-v2-map-layer="agents"[^>]*aria-pressed="true"[^>]*>Agents \+ flows</,
+  "the default map exposes actual agents and commute flows"
 );
 assert.equal((html.match(/data-udes-v2-inspector-tab=/g) || []).length, 4, "four object inspectors are available");
 assert.equal((html.match(/data-udes-v2-control-tab=/g) || []).length, 4, "four focused control workspaces are available");
@@ -63,9 +69,11 @@ for (const name of chartWorkspaceNames) {
 }
 const flowControls = html.match(/<div[^>]+data-udes-v2-flow-controls[^>]*>[\s\S]*?<\/div>/)?.[0] || "";
 assert.ok(flowControls, "cross-district flow controls are rendered beside the analysis tabs");
-for (const kind of ["residential", "job", "enterprise", "commute"]) {
+for (const kind of ["residential", "job", "workplace", "enterprise", "replacement", "commute"]) {
   assertContains(flowControls, new RegExp(`<option value="${kind}"`), `${kind} flow analysis is selectable`);
 }
+assert.equal((flowControls.match(/<option value="commute"/g) || []).length, 1, "home-to-work stock appears once in the flow selector");
+assertContains(flowControls, /data-udes-v2-flow-measure/, "flow charts can switch between modeled agents and represented equivalents");
 for (const days of [1, 7, 30]) {
   assertContains(flowControls, new RegExp(`<option value="${days}"`), `${days}-day flow window is selectable`);
 }
@@ -78,6 +86,9 @@ assertContains(
   "daily agent cadence is disclosed"
 );
 assertContains(html, /Apply next day/, "policy changes are staged at a clear daily boundary");
+for (const lever of ["transitWait", "parkingCost", "householdMoveChance", "householdMinimumStay", "firmMoveChance", "firmMinimumStay"]) {
+  assertContains(html, new RegExp(`data-udes-v2-lever="${lever}"`), `${lever} is exposed as a transparent scenario or model control`);
+}
 assertContains(html, /12 direct \+ 6 grouped \/ relabeled mappings/, "the evidence panel distinguishes direct and derived SCAD mappings");
 assertContains(html, /validation-report\.json/, "the console links to its reproducible full-scale validation report");
 assertContains(html, /data-udes-v2-provenance/, "the inspector exposes field provenance");
@@ -114,6 +125,10 @@ assert.ok(
   "all road corridors contain routed coordinates"
 );
 assert.ok(
+  roads.features.every((feature) => feature.properties.from && feature.properties.to && feature.properties.from !== feature.properties.to),
+  "the published road overlay contains only inter-district corridors"
+);
+assert.ok(
   baseline.zones.every((zone) => zone.sourceClassByField),
   "zone inputs expose field-level provenance"
 );
@@ -148,6 +163,21 @@ assert.match(worker, /allowCapacityOverflow: true/, "network overflow is modeled
 assert.match(worker, /captureDaily/, "the engine can return one compact observation for each simulated day");
 assert.match(worker, /networkAssignmentStatus/, "daily output distinguishes current and retained workday network assignments");
 assert.match(worker, /policyScopeZoneId/, "land-use policy can target a named modeled district");
+assert.match(
+  worker,
+  /mapAgents: \{ citizens: mapCitizens, enterprises: mapEnterprises \}/,
+  "worker snapshots expose stable actual-agent map samples"
+);
+assert.match(worker, /residentialMoveCooldownDays: 365/, "household relocation uses a one-year default minimum stay");
+assert.match(worker, /firmMoveCooldownDays: 730/, "firm relocation uses a two-year default minimum stay");
+assert.match(worker, /betterJobMinimumRaise: 1\.08/, "voluntary job changes require a material gross raise");
+assert.match(worker, /this\.employedAgentDays \+=/, "employment-based movement rates integrate daily exposure");
+assert.match(
+  worker,
+  /crossDistrictVoluntaryJobSwitchesPer100EmployedAgentYears/,
+  "cross-district job-switch charts have a matching annualized event rate"
+);
+assert.match(worker, /eventClass === "reentry"/, "enterprise restart placements are separated from incumbent relocations");
 assert.match(worker, /applyExplicitZonePolicies\(/, "heterogeneous district policies survive model resets");
 assert.match(worker, /activeEnterpriseSharePercent/, "daily snapshots expose an aggregate enterprise outcome");
 assert.match(worker, /monthlyEssentialConsumptionAed: 2500/, "household essential-consumption assumption is explicit");
@@ -177,16 +207,43 @@ assert.match(app, /function districtHistory\(/, "selected districts have a dedic
 assert.match(app, /daily district trajectory/, "district analysis labels its daily population, jobs, and rent trajectory");
 assert.match(
   app,
-  /aggregateFlowRoutes\(state\.history, kind, state\.flowWindowDays, latestDay\)/,
+  /aggregateFlowRoutes\(state\.history, kind, state\.flowWindowDays, latestDay, state\.flowMeasure\)/,
   "flow charts aggregate exact OD rows over the chosen window"
 );
 assert.match(
   app,
-  /flowSeriesForZone\(state\.history, kind, selectedId, state\.flowWindowDays, latestDay\)/,
+  /flowSeriesForZone\(state\.history, kind, selectedId, state\.flowWindowDays, latestDay, state\.flowMeasure\)/,
   "selected districts receive daily in, out, and net movement series"
 );
 assert.match(app, /origin → destination/, "route charts state their origin-to-destination direction");
 assert.match(app, /state\.snapshot\?\.commuteOd/, "flow analysis can inspect the current home-to-work stock separately from relocation events");
+for (const helper of ["commuteLiveWorkByDistrict", "commuteOdMatrix", "selectedDistrictCommuteExchange"]) {
+  assert.match(app, new RegExp(`function ${helper}\\(`), `${helper} derives a focused commute-stock diagnostic`);
+}
+assert.match(app, /Employed residents vs jobs located/, "district analysis distinguishes where employed residents live from where jobs are located");
+assert.match(app, /rows = home, columns = work · not relocation events/, "the OD matrix states its direction and stock semantics");
+assert.match(app, /Residents working out/, "selected districts expose residents' external work destinations");
+assert.match(app, /Workers commuting in/, "selected districts expose workers' external home origins");
+assert.match(app, /filter: isInterDistrictCorridor/, "Leaflet excludes any road feature internal to one district");
+assert.match(app, /function syncRepresentativeAgentMarkers\(/, "citizen and enterprise map markers update through stable keyed layers");
+assert.match(app, /state\.snapshot\?\.mapAgents/, "map markers use stable actual-agent samples emitted by the worker");
+assert.doesNotMatch(app, /tile\.openstreetmap\.org/, "the detailed internal-street basemap is not rendered");
+assert.match(app, /state\.hoveredMapFeatureKey !== entry\.key/, "hovered agent and commute-flow features are not mutated during a daily update");
+assert.match(app, /topInterDistrictCommutes\(state\.snapshot\?\.commuteOd, 18\)/, "the agent map shows a bounded set of directed home-to-work flows");
+assert.match(app, /window\.L\.svg\(\{ pane: "udesV2Agents"/, "actual-agent markers use a dedicated SVG renderer for keyboard access");
+assert.match(app, /window\.L\.svg\(\{ pane: "udesV2CommuteFlows"/, "commute routes use a dedicated SVG renderer for keyboard access");
+assert.match(
+  app,
+  /\[state\.mapFeatures\.citizenAgents, state\.mapFeatures\.enterpriseAgents, state\.mapFeatures\.commuteFlows\]/,
+  "both actual-agent markers and commute routes receive keyboard behavior"
+);
+assert.match(app, /element\.setAttribute\("tabindex", "0"\)/, "interactive map features participate in sequential keyboard navigation");
+assert.match(app, /line\.udesV2PendingRemoval = true/, "an interacting commute route is retained when it leaves the top-route set");
+assert.match(
+  app,
+  /if \(line\.udesV2PendingRemoval\) removeCommuteFlowLayer\(line\)/,
+  "a stale hovered route is removed only after its interaction ends"
+);
 assert.match(app, /distributions\?\.financialStatus/, "citizen charts use mutually exclusive financial-status output");
 assert.match(app, /no [‘']net zero[’'] bucket/, "financial-status chart explicitly rejects a misleading net-zero bucket");
 assert.doesNotMatch(app, /Net-income distribution|agents:income/, "the ambiguous net-income histogram contract has been removed");
@@ -220,14 +277,41 @@ assert.match(
   /pointerleave[\s\S]*flushPendingPanelRender\(panel\)[\s\S]*focusout/,
   "queued inspector updates flush after pointer or focus interaction ends"
 );
-assert.match(app, /state\.pendingChartOptions\.set\(key, option\)/, "chart updates queue while a tooltip interaction is active");
+assert.match(app, /state\.pendingChartOptions\.set\(key, \{ option, structureKey \}\)/, "chart updates queue while a tooltip interaction is active");
 assert.match(
   app,
-  /firstRender[\s\S]*?\? \{ notMerge: true, lazyUpdate: true \}[\s\S]*?: \{ notMerge: false, lazyUpdate: true, silent: true, replaceMerge: \["series"\] \}/,
+  /firstRender \|\| structureChanged[\s\S]*?\? \{ notMerge: true, lazyUpdate: true \}[\s\S]*?: \{ notMerge: false, lazyUpdate: true, silent: true, replaceMerge: \["series"\] \}/,
   "normal chart ticks merge into existing instances and replace only series data"
 );
+assert.match(
+  app,
+  /mountChart\(routesNode, "flows:routes", routeChart, commuteStock \? "commute-od-heatmap" : "event-route-bars"\)/,
+  "switching between the OD heatmap and event bars declares an explicit chart structure boundary"
+);
+assert.match(app, /state\.chartStructureKeys\.get\(key\) !== structureKey/, "chart structure changes fully replace incompatible ECharts state");
+assert.match(
+  app,
+  /state\.chartInteractionLocks\.has\(key\) && !structureChanged/,
+  "an intentional chart-mode switch is applied immediately while ordinary daily updates remain interaction-locked"
+);
+assert.equal((app.match(/window\.echarts\.init\(/g) || []).length, 1, "chart mode changes reuse the existing ECharts instance");
 assert.match(app, /if \(!series\.id\)\s+series\.id = `\$\{key\}:/, "chart series receive stable IDs before incremental updates");
 assert.match(app, /function summarizeChart\(/, "rendered charts receive data-derived accessible summaries");
+assert.match(app, /function updateAccessibleOdTable\(/, "the OD heatmap has a nonvisual semantic table companion");
+assert.match(app, /document\.createElement\("table"\)/, "the OD companion uses native table semantics");
+assert.match(app, /header\.scope = "row"/, "OD matrix home districts are exposed as row headers");
+assert.match(app, /node\.setAttribute\("aria-describedby", detail\.id\)/, "the visible OD chart references its semantic table");
+assert.match(app, /This table is not relocation-event data/, "the accessible OD description distinguishes stock from relocation events");
+assert.match(app, /residential: "citizen-agent-years"/, "residential movement rates identify their citizen-agent exposure denominator");
+assert.match(app, /job: "employed-agent-years"/, "job movement rates identify its employed-agent exposure denominator");
+assert.match(app, /workplace: "employed-agent-years"/, "workplace movement rates identify its employed-agent exposure denominator");
+assert.match(app, /enterprise: "firm-agent-years"/, "enterprise movement rates identify their firm-agent exposure denominator");
+assert.doesNotMatch(app, /events \/ 100 actor-years/, "flow rates do not use an ambiguous generic denominator");
+assert.match(
+  scss,
+  /@media \(max-width: 1399px\) and \(min-width: 1100px\)[\s\S]*?grid-template-columns: 240px minmax\(0, 1fr\) 290px;[\s\S]*?data-udes-v2-flow-chart-mode="commute"[\s\S]*?minmax\(320px, 1\.35fr\)/,
+  "narrow desktop layouts reserve usable width and height for the OD matrix"
+);
 assert.match(app, /root\.dataset\.udesV2Mobile = compact\.matches \? "readonly" : "interactive"/, "compact simulation view is explicitly read-only");
 assert.match(app, /setMutationControlsDisabled\(true\)/, "scenario mutation controls are disabled during model initialization");
 assert.match(
@@ -249,7 +333,7 @@ assert.match(
   "validation conserves commute distributions against completed modes, including weekend snapshots"
 );
 
-assert.equal(validation.status, "passed-software-and-plausibility-checks", "full-scale validation report passes");
+assert.equal(validation.status, "passed-regression-and-provisional-sanity-checks", "full-scale validation report passes");
 assert.equal(validation.checkSummary.failed, 0, "full-scale validation report has no failed checks");
 assert.equal(
   validation.sourceScope.citizenAgents,
@@ -275,6 +359,11 @@ for (const scenario of validation.scenarios) {
     "loss-making-firms-broad-distribution-guard",
     "enterprise-median-margin-broad-plausibility-guard",
     "enterprise-severe-distress-below-ten-percent",
+    "residential-relocation-rate-below-provisional-churn-ceiling",
+    "firm-relocation-rate-below-provisional-churn-ceiling",
+    "voluntary-job-switch-rate-below-provisional-churn-ceiling",
+    "cross-district-job-switch-rate-reconciles-to-all-switches",
+    "employer-carried-workplace-change-rate-below-provisional-churn-ceiling",
   ]) {
     assert.ok(scenarioCheckIds.has(requiredId), `${scenario.id} retains ${requiredId}`);
   }

@@ -9,21 +9,29 @@
     "extremeCommuteRoundTripMin",
     "enterpriseTargetMargin",
     "targetEmploymentRate",
+    "residentialMoveDecisionProbability",
+    "residentialMoveCooldownDays",
+    "firmMoveProbabilityOnStateEntry",
+    "firmMoveCooldownDays",
   ]);
   const TARGETED_LAND_USE_FIELDS = Object.freeze(["housingCapacityMultiplier", "businessCapacityMultiplier", "placeQuality"]);
   const NETWORK_POLICY_FIELDS = Object.freeze([
     "transitFareAed",
     "transitSpeedKmh",
+    "transitWaitMin",
     "ptCapacityMultiplier",
     "roadCapacityMultiplier",
     "carCostPerKmAed",
+    "parkingDailyCostAed",
   ]);
   const LEVER_POLICY_FIELDS = Object.freeze({
     transitFare: "transitFareAed",
     transitSpeed: "transitSpeedKmh",
+    transitWait: "transitWaitMin",
     transitCapacity: "ptCapacityMultiplier",
     roadCapacity: "roadCapacityMultiplier",
     carCost: "carCostPerKmAed",
+    parkingCost: "parkingDailyCostAed",
     housing: "housingCapacityMultiplier",
     business: "businessCapacityMultiplier",
     placeQuality: "placeQuality",
@@ -33,19 +41,36 @@
     targetMargin: "enterpriseTargetMargin",
     employmentTarget: "targetEmploymentRate",
     rentPressure: "rentPressureMultiplier",
+    householdMoveChance: "residentialMoveDecisionProbability",
+    householdMinimumStay: "residentialMoveCooldownDays",
+    firmMoveChance: "firmMoveProbabilityOnStateEntry",
+    firmMinimumStay: "firmMoveCooldownDays",
   });
   const PRESET_LEVERS = Object.freeze({
-    reference: Object.freeze(["transitFare", "transitSpeed", "transitCapacity", "roadCapacity", "carCost", "housing", "business", "placeQuality"]),
-    transit: Object.freeze(["transitFare", "transitSpeed", "transitCapacity"]),
+    reference: Object.freeze([
+      "transitFare",
+      "transitSpeed",
+      "transitWait",
+      "transitCapacity",
+      "roadCapacity",
+      "carCost",
+      "parkingCost",
+      "housing",
+      "business",
+      "placeQuality",
+    ]),
+    transit: Object.freeze(["transitFare", "transitSpeed", "transitWait", "transitCapacity"]),
     housing: Object.freeze(["housing"]),
     balanced: Object.freeze(["housing", "business", "placeQuality"]),
   });
   const HISTORY_NUMERIC_POLICY_FIELDS = Object.freeze([
     "transitFareAed",
     "transitSpeedKmh",
+    "transitWaitMin",
     "ptCapacityMultiplier",
     "roadCapacityMultiplier",
     "carCostPerKmAed",
+    "parkingDailyCostAed",
     "housingCapacityMultiplier",
     "businessCapacityMultiplier",
     "rentPressureMultiplier",
@@ -55,14 +80,20 @@
     "extremeCommuteRoundTripMin",
     "enterpriseTargetMargin",
     "targetEmploymentRate",
+    "residentialMoveDecisionProbability",
+    "residentialMoveCooldownDays",
+    "firmMoveProbabilityOnStateEntry",
+    "firmMoveCooldownDays",
   ]);
   const PUBLIC_PRESETS = Object.freeze({
     reference: Object.freeze({
       transitFareAed: 2,
       transitSpeedKmh: 28,
+      transitWaitMin: 7,
       ptCapacityMultiplier: 1,
       roadCapacityMultiplier: 1,
       carCostPerKmAed: 0.35,
+      parkingDailyCostAed: 15,
       housingCapacityMultiplier: 1,
       businessCapacityMultiplier: 1,
       rentPressureMultiplier: 1,
@@ -72,13 +103,19 @@
       extremeCommuteRoundTripMin: 90,
       enterpriseTargetMargin: 0.12,
       targetEmploymentRate: 0.8,
+      residentialMoveDecisionProbability: 0.2,
+      residentialMoveCooldownDays: 365,
+      firmMoveProbabilityOnStateEntry: 0.1,
+      firmMoveCooldownDays: 730,
     }),
     transit: Object.freeze({
       transitFareAed: 1,
       transitSpeedKmh: 45,
+      transitWaitMin: 4,
       ptCapacityMultiplier: 2,
       roadCapacityMultiplier: 1,
       carCostPerKmAed: 0.35,
+      parkingDailyCostAed: 15,
       housingCapacityMultiplier: 1,
       businessCapacityMultiplier: 1,
       rentPressureMultiplier: 1,
@@ -88,13 +125,19 @@
       extremeCommuteRoundTripMin: 90,
       enterpriseTargetMargin: 0.12,
       targetEmploymentRate: 0.8,
+      residentialMoveDecisionProbability: 0.2,
+      residentialMoveCooldownDays: 365,
+      firmMoveProbabilityOnStateEntry: 0.1,
+      firmMoveCooldownDays: 730,
     }),
     housing: Object.freeze({
       transitFareAed: 2,
       transitSpeedKmh: 28,
+      transitWaitMin: 7,
       ptCapacityMultiplier: 1,
       roadCapacityMultiplier: 1,
       carCostPerKmAed: 0.35,
+      parkingDailyCostAed: 15,
       housingCapacityMultiplier: 1.3,
       businessCapacityMultiplier: 1,
       rentPressureMultiplier: 1,
@@ -104,13 +147,19 @@
       extremeCommuteRoundTripMin: 90,
       enterpriseTargetMargin: 0.12,
       targetEmploymentRate: 0.8,
+      residentialMoveDecisionProbability: 0.2,
+      residentialMoveCooldownDays: 365,
+      firmMoveProbabilityOnStateEntry: 0.1,
+      firmMoveCooldownDays: 730,
     }),
     balanced: Object.freeze({
       transitFareAed: 2,
       transitSpeedKmh: 28,
+      transitWaitMin: 7,
       ptCapacityMultiplier: 1,
       roadCapacityMultiplier: 1,
       carCostPerKmAed: 0.35,
+      parkingDailyCostAed: 15,
       housingCapacityMultiplier: 1.2,
       businessCapacityMultiplier: 1.15,
       rentPressureMultiplier: 1,
@@ -120,6 +169,10 @@
       extremeCommuteRoundTripMin: 90,
       enterpriseTargetMargin: 0.12,
       targetEmploymentRate: 0.8,
+      residentialMoveDecisionProbability: 0.2,
+      residentialMoveCooldownDays: 365,
+      firmMoveProbabilityOnStateEntry: 0.1,
+      firmMoveCooldownDays: 730,
     }),
   });
   const HISTORY_CSV_HEADERS = Object.freeze([
@@ -151,9 +204,11 @@
     "enterprise_portfolio_margin",
     "transit_fare_aed",
     "transit_speed_kmh",
+    "transit_wait_minutes",
     "pt_capacity_multiplier",
     "road_capacity_multiplier",
     "car_cost_per_km_aed",
+    "parking_and_fixed_car_cost_aed_per_day",
     "uniform_or_target_housing_capacity_multiplier",
     "uniform_or_target_business_capacity_multiplier",
     "rent_pressure_multiplier",
@@ -163,6 +218,10 @@
     "severe_round_trip_minutes",
     "enterprise_target_margin",
     "target_employment_rate",
+    "residential_move_follow_through_probability",
+    "residential_minimum_stay_days",
+    "firm_move_consideration_probability",
+    "firm_minimum_stay_days",
   ]);
 
   function resolveHistoryPolicy(patch = {}, fallback = {}, scenario = null) {
@@ -215,9 +274,11 @@
       entry.enterprisePortfolioMargin,
       entry.transitFareAed,
       entry.transitSpeedKmh,
+      entry.transitWaitMin,
       entry.ptCapacityMultiplier,
       entry.roadCapacityMultiplier,
       entry.carCostPerKmAed,
+      entry.parkingDailyCostAed,
       landUseScalar(entry.housingCapacityMultiplier),
       landUseScalar(entry.businessCapacityMultiplier),
       entry.rentPressureMultiplier,
@@ -227,6 +288,10 @@
       entry.extremeCommuteRoundTripMin,
       entry.enterpriseTargetMargin,
       entry.targetEmploymentRate,
+      entry.residentialMoveDecisionProbability,
+      entry.residentialMoveCooldownDays,
+      entry.firmMoveProbabilityOnStateEntry,
+      entry.firmMoveCooldownDays,
     ];
   }
 
@@ -314,34 +379,56 @@
     return history.filter((entry) => Number(entry.day) >= firstDay);
   }
 
-  function flowDefinition(kind) {
+  function flowDefinition(kind, measure = "represented") {
+    const represented = measure === "represented";
     return (
       {
-        residential: { collection: "residentialMoves", value: "representedResidents", unit: "represented residents" },
-        job: { collection: "jobMoves", value: "representedWorkers", unit: "represented workers" },
+        residential: {
+          collection: "residentialMoves",
+          value: represented ? "representedResidents" : "citizenAgentCount",
+          unit: represented ? "represented move-event equivalents" : "modeled household-agent events",
+        },
+        job: {
+          collection: "jobMoves",
+          value: represented ? "representedWorkers" : "citizenAgentCount",
+          unit: represented ? "represented job-switch equivalents" : "modeled citizen-agent job switches",
+        },
+        workplace: {
+          collection: "enterpriseMoves",
+          value: represented ? "representedWorkersAffected" : "affectedCitizenAgentCount",
+          unit: represented ? "represented workplace-change equivalents" : "modeled workers carried by firm moves",
+        },
         enterprise: { collection: "enterpriseMoves", value: "enterpriseCount", unit: "enterprises" },
-        commute: { collection: "commuteOd", value: "representedResidents", unit: "represented residents" },
-      }[kind] || { collection: "residentialMoves", value: "representedResidents", unit: "represented residents" }
+        replacement: {
+          collection: "replacementRelocations",
+          value: represented ? "representedResidents" : "citizenAgentCount",
+          unit: represented ? "represented replacement-placement equivalents" : "modeled replacement-agent placements",
+        },
+        commute: {
+          collection: "commuteOd",
+          value: represented ? "representedWorkers" : "citizenAgentCount",
+          unit: represented ? "represented employed residents (stock)" : "modeled employed citizen agents (stock)",
+        },
+      }[kind] || {
+        collection: "residentialMoves",
+        value: represented ? "representedResidents" : "citizenAgentCount",
+        unit: represented ? "represented move-event equivalents" : "modeled household-agent events",
+      }
     );
   }
 
-  function flowRowsForHistoryEntry(entry, kind = "residential") {
-    const definition = flowDefinition(kind);
+  function flowRowsForHistoryEntry(entry, kind = "residential", measure = "represented") {
+    const definition = flowDefinition(kind, measure);
     const rows = entry?.flows?.[definition.collection];
-    if (kind !== "residential") return Array.isArray(rows) ? rows : [];
-    const replacements = entry?.flows?.replacementRelocations;
-    return [
-      ...(Array.isArray(rows) ? rows : []),
-      ...(Array.isArray(replacements) ? replacements.map((row) => ({ reason: "demographic-replacement", ...row })) : []),
-    ];
+    return Array.isArray(rows) ? rows : [];
   }
 
-  function aggregateFlowRoutes(history, kind = "residential", windowDays = 30, latestDay = null) {
-    const definition = flowDefinition(kind);
+  function aggregateFlowRoutes(history, kind = "residential", windowDays = 30, latestDay = null, measure = "represented") {
+    const definition = flowDefinition(kind, measure);
     const points = filterHistoryWindow(history || [], windowDays, latestDay);
     const routes = new Map();
     for (const point of points) {
-      for (const row of flowRowsForHistoryEntry(point, kind)) {
+      for (const row of flowRowsForHistoryEntry(point, kind, measure)) {
         const fromZoneId = String(row.fromZoneId || "");
         const toZoneId = String(row.toZoneId || "");
         if (!fromZoneId || !toZoneId || fromZoneId === toZoneId) continue;
@@ -357,19 +444,136 @@
     return [...routes.values()].sort((a, b) => b.value - a.value || a.fromZoneId.localeCompare(b.fromZoneId));
   }
 
-  function flowSeriesForZone(history, kind, zoneId, windowDays = 30, latestDay = null) {
-    const definition = flowDefinition(kind);
+  function flowSeriesForZone(history, kind, zoneId, windowDays = 30, latestDay = null, measure = "represented") {
+    const definition = flowDefinition(kind, measure);
     const target = String(zoneId || "");
     return filterHistoryWindow(history || [], windowDays, latestDay).map((point) => {
       let inflow = 0;
       let outflow = 0;
-      for (const row of flowRowsForHistoryEntry(point, kind)) {
+      for (const row of flowRowsForHistoryEntry(point, kind, measure)) {
         const value = Math.max(0, Number(row[definition.value]) || 0);
         if (String(row.toZoneId || "") === target && String(row.fromZoneId || "") !== target) inflow += value;
         if (String(row.fromZoneId || "") === target && String(row.toZoneId || "") !== target) outflow += value;
       }
       return { day: Number(point.day) || 0, date: point.date, inflow, outflow, net: inflow - outflow };
     });
+  }
+
+  function isInterDistrictCorridor(feature = {}) {
+    const properties = feature?.properties || feature;
+    const fromZoneId = String(properties?.from || properties?.fromZoneId || "");
+    const toZoneId = String(properties?.to || properties?.toZoneId || "");
+    return Boolean(fromZoneId && toZoneId && fromZoneId !== toZoneId);
+  }
+
+  function topInterDistrictCommutes(rows, limit = 18) {
+    const routes = new Map();
+    for (const row of Array.isArray(rows) ? rows : []) {
+      if (!row || typeof row !== "object") continue;
+      const fromZoneId = String(row.homeZoneId || row.fromZoneId || "");
+      const toZoneId = String(row.workZoneId || row.toZoneId || "");
+      if (!fromZoneId || !toZoneId || fromZoneId === toZoneId) continue;
+      const key = `${fromZoneId}\u0000${toZoneId}`;
+      const value = Math.max(0, Number(row.representedWorkers ?? row.representedResidents ?? row.value) || 0);
+      const current = routes.get(key) || { fromZoneId, toZoneId, value: 0 };
+      current.value += value;
+      routes.set(key, current);
+    }
+    const count = Math.max(0, Math.floor(Number(limit) || 0));
+    return [...routes.values()]
+      .sort((a, b) => b.value - a.value || a.fromZoneId.localeCompare(b.fromZoneId) || a.toZoneId.localeCompare(b.toZoneId))
+      .slice(0, count);
+  }
+
+  function representedCommuteWorkers(row, measure = "represented") {
+    if (!row?.workZoneId) return 0;
+    if (measure === "agents") return Math.max(0, Number(row.citizenAgentCount) || 0);
+    const workers = Number(row.representedWorkers);
+    if (Number.isFinite(workers)) return Math.max(0, workers);
+    return Math.max(0, Number(row.representedResidents) || 0);
+  }
+
+  function commuteDistrictIds(rows, districtIds = []) {
+    const requested = [...new Set((Array.isArray(districtIds) ? districtIds : []).map(String).filter(Boolean))];
+    const discovered = new Set();
+    for (const row of Array.isArray(rows) ? rows : []) {
+      if (row?.homeZoneId) discovered.add(String(row.homeZoneId));
+      if (row?.workZoneId) discovered.add(String(row.workZoneId));
+    }
+    return [...requested, ...[...discovered].filter((id) => !requested.includes(id)).sort()];
+  }
+
+  function commuteLiveWorkByDistrict(rows, districtIds = [], measure = "represented") {
+    const ids = commuteDistrictIds(rows, districtIds);
+    const totals = new Map(ids.map((districtId) => [districtId, { districtId, employedResidents: 0, locatedJobs: 0, netJobBalance: 0 }]));
+    for (const row of Array.isArray(rows) ? rows : []) {
+      const homeZoneId = String(row?.homeZoneId || "");
+      const workZoneId = String(row?.workZoneId || "");
+      const workers = representedCommuteWorkers(row, measure);
+      if (!homeZoneId || !workZoneId || workers <= 0) continue;
+      if (!totals.has(homeZoneId)) totals.set(homeZoneId, { districtId: homeZoneId, employedResidents: 0, locatedJobs: 0, netJobBalance: 0 });
+      if (!totals.has(workZoneId)) totals.set(workZoneId, { districtId: workZoneId, employedResidents: 0, locatedJobs: 0, netJobBalance: 0 });
+      totals.get(homeZoneId).employedResidents += workers;
+      totals.get(workZoneId).locatedJobs += workers;
+    }
+    return [...totals.values()].map((row) => ({ ...row, netJobBalance: row.locatedJobs - row.employedResidents }));
+  }
+
+  function commuteOdMatrix(rows, districtIds = [], measure = "represented") {
+    const ids = commuteDistrictIds(rows, districtIds);
+    const indexById = new Map(ids.map((districtId, index) => [districtId, index]));
+    const totals = new Map();
+    for (const row of Array.isArray(rows) ? rows : []) {
+      const homeZoneId = String(row?.homeZoneId || "");
+      const workZoneId = String(row?.workZoneId || "");
+      const workers = representedCommuteWorkers(row, measure);
+      if (!indexById.has(homeZoneId) || !indexById.has(workZoneId) || workers <= 0) continue;
+      const key = `${homeZoneId}\u0000${workZoneId}`;
+      totals.set(key, (totals.get(key) || 0) + workers);
+    }
+    const cells = [];
+    let maximum = 0;
+    ids.forEach((homeZoneId, homeIndex) => {
+      ids.forEach((workZoneId, workIndex) => {
+        const value = totals.get(`${homeZoneId}\u0000${workZoneId}`) || 0;
+        maximum = Math.max(maximum, value);
+        cells.push([workIndex, homeIndex, value]);
+      });
+    });
+    return { districtIds: ids, cells, maximum };
+  }
+
+  function selectedDistrictCommuteExchange(rows, districtId, measure = "represented") {
+    const selectedId = String(districtId || "");
+    const destinations = new Map();
+    const origins = new Map();
+    let sameDistrict = 0;
+    for (const row of Array.isArray(rows) ? rows : []) {
+      const homeZoneId = String(row?.homeZoneId || "");
+      const workZoneId = String(row?.workZoneId || "");
+      const workers = representedCommuteWorkers(row, measure);
+      if (!selectedId || !homeZoneId || !workZoneId || workers <= 0) continue;
+      if (homeZoneId === selectedId && workZoneId === selectedId) {
+        sameDistrict += workers;
+      } else {
+        if (homeZoneId === selectedId) destinations.set(workZoneId, (destinations.get(workZoneId) || 0) + workers);
+        if (workZoneId === selectedId) origins.set(homeZoneId, (origins.get(homeZoneId) || 0) + workers);
+      }
+    }
+    const sortRows = (totals) =>
+      [...totals.entries()]
+        .map(([counterpartDistrictId, value]) => ({ counterpartDistrictId, value }))
+        .sort((a, b) => b.value - a.value || a.counterpartDistrictId.localeCompare(b.counterpartDistrictId));
+    const destinationRows = sortRows(destinations);
+    const originRows = sortRows(origins);
+    return {
+      districtId: selectedId,
+      sameDistrict,
+      destinations: destinationRows,
+      origins: originRows,
+      outboundWorkers: destinationRows.reduce((total, row) => total + row.value, 0),
+      inboundWorkers: originRows.reduce((total, row) => total + row.value, 0),
+    };
   }
 
   function commuteRangeMessage(roundTripMinutes, acceptableRoundTripMinutes) {
@@ -385,7 +589,9 @@
     const summaries = (option.series || [])
       .map((series) => {
         const points = (series.data || [])
-          .map((point) => (typeof point === "object" && point !== null ? Number(point.value) : Number(point)))
+          .map((point) =>
+            Array.isArray(point) ? Number(point.at(-1)) : typeof point === "object" && point !== null ? Number(point.value) : Number(point)
+          )
           .filter(Number.isFinite);
         if (!points.length) return null;
         if (series.type === "pie") {
@@ -436,6 +642,11 @@
       flowRowsForHistoryEntry,
       aggregateFlowRoutes,
       flowSeriesForZone,
+      isInterDistrictCorridor,
+      topInterDistrictCommutes,
+      commuteLiveWorkByDistrict,
+      commuteOdMatrix,
+      selectedDistrictCommuteExchange,
       commuteRangeMessage,
       summarizeChart,
     };
@@ -471,8 +682,20 @@
     history: [],
     referenceHistory: [],
     map: null,
-    mapMode: "network",
-    layers: { zones: null, roads: null, stops: null, selection: null },
+    mapRenderers: { agents: null, commuteFlows: null },
+    mapMode: "agents",
+    renderedMapMode: null,
+    layers: {
+      zones: null,
+      roads: null,
+      stops: null,
+      selection: null,
+      citizenAgents: null,
+      enterpriseAgents: null,
+      commuteFlows: null,
+      basemap: null,
+    },
+    mapFeatures: { citizenAgents: new Map(), enterpriseAgents: new Map(), commuteFlows: new Map() },
     selected: { kind: "city", id: null, index: { citizen: 0, enterprise: 0, link: 0 } },
     scenario: "reference",
     compare: true,
@@ -482,6 +705,7 @@
     horizonDays: 366,
     chartWindowDays: 90,
     flowKind: "residential",
+    flowMeasure: "agents",
     flowWindowDays: 30,
     elapsedDays: 0,
     seed: 240124,
@@ -497,9 +721,12 @@
     chartInteractionLocks: new Set(),
     pendingChartOptions: new Map(),
     chartDataSignatures: new Map(),
+    chartStructureKeys: new Map(),
     panelHtml: new WeakMap(),
     pendingPanelRenders: new WeakMap(),
     hoveredZoneId: null,
+    hoveredMapFeatureKey: null,
+    focusedMapFeatureKey: null,
     resizeObserver: null,
     requestCounter: 0,
     inspectionRequestToken: 0,
@@ -525,6 +752,7 @@
     horizon: $("[data-udes-v2-horizon]"),
     chartWindow: $("[data-udes-v2-window]"),
     flowKind: $("[data-udes-v2-flow-kind]"),
+    flowMeasure: $("[data-udes-v2-flow-measure]"),
     flowWindow: $("[data-udes-v2-flow-window]"),
     flowFilter: $("[data-udes-v2-flow-controls]"),
     seed: $("[data-udes-v2-seed]"),
@@ -674,9 +902,11 @@
     return {
       transitFareAed: values.transitFare,
       transitSpeedKmh: values.transitSpeed,
+      transitWaitMin: values.transitWait,
       ptCapacityMultiplier: values.transitCapacity / 100,
       roadCapacityMultiplier: values.roadCapacity / 100,
       carCostPerKmAed: values.carCost,
+      parkingDailyCostAed: values.parkingCost,
       housingCapacityMultiplier: values.housing / 100,
       businessCapacityMultiplier: values.business / 100,
       rentPressureMultiplier: values.rentPressure / 100,
@@ -686,6 +916,10 @@
       extremeCommuteRoundTripMin: values.extremeCommute,
       enterpriseTargetMargin: values.targetMargin / 100,
       targetEmploymentRate: values.employmentTarget / 100,
+      residentialMoveDecisionProbability: values.householdMoveChance / 100,
+      residentialMoveCooldownDays: values.householdMinimumStay,
+      firmMoveProbabilityOnStateEntry: values.firmMoveChance / 100,
+      firmMoveCooldownDays: values.firmMinimumStay,
       policyScopeZoneId: ui.policyScope?.value || "city",
       scenario: state.scenario,
     };
@@ -837,9 +1071,11 @@
     const transformed = {
       transitFare: value.transitFareAed,
       transitSpeed: value.transitSpeedKmh,
+      transitWait: value.transitWaitMin,
       transitCapacity: value.ptCapacityMultiplier * 100,
       roadCapacity: value.roadCapacityMultiplier * 100,
       carCost: value.carCostPerKmAed,
+      parkingCost: value.parkingDailyCostAed,
       housing: value.housingCapacityMultiplier * 100,
       business: value.businessCapacityMultiplier * 100,
       rentPressure: value.rentPressureMultiplier * 100,
@@ -849,6 +1085,10 @@
       extremeCommute: value.extremeCommuteRoundTripMin,
       targetMargin: value.enterpriseTargetMargin * 100,
       employmentTarget: value.targetEmploymentRate * 100,
+      householdMoveChance: value.residentialMoveDecisionProbability * 100,
+      householdMinimumStay: value.residentialMoveCooldownDays,
+      firmMoveChance: value.firmMoveProbabilityOnStateEntry * 100,
+      firmMinimumStay: value.firmMoveCooldownDays,
     }[name];
     if (Number.isFinite(transformed)) input.value = transformed;
     input.removeAttribute("aria-valuetext");
@@ -928,9 +1168,11 @@
     const labels = {
       transitFare: `AED ${value.toFixed(2)}`,
       transitSpeed: `${value.toFixed(0)} km/h`,
+      transitWait: `${value.toFixed(0)} min`,
       transitCapacity: `${value.toFixed(0)}%`,
       roadCapacity: `${value.toFixed(0)}%`,
       carCost: `AED ${value.toFixed(2)}`,
+      parkingCost: `AED ${value.toFixed(0)}/day`,
       housing: `${value.toFixed(0)}%`,
       business: `${value.toFixed(0)}%`,
       rentPressure: value === 100 ? "Neutral" : `${value > 100 ? "+" : ""}${value - 100}%`,
@@ -940,6 +1182,10 @@
       extremeCommute: `${value.toFixed(0)} min`,
       targetMargin: `${value.toFixed(0)}%`,
       employmentTarget: `${value.toFixed(0)}%`,
+      householdMoveChance: `${value.toFixed(0)}%`,
+      householdMinimumStay: `${value.toFixed(0)} days`,
+      firmMoveChance: `${value.toFixed(0)}%`,
+      firmMinimumStay: `${value.toFixed(0)} days`,
     };
     output.value = labels[name] || String(value);
     output.textContent = output.value;
@@ -1354,8 +1600,14 @@
       renderChartPanel($("[data-udes-v2-chart-tab][aria-selected='true']")?.dataset.udesV2ChartTab || "outcomes");
     });
     ui.flowKind?.addEventListener("change", () => {
-      state.flowKind = ["residential", "job", "enterprise", "commute"].includes(ui.flowKind.value) ? ui.flowKind.value : "residential";
+      state.flowKind = ["residential", "job", "workplace", "enterprise", "replacement", "commute"].includes(ui.flowKind.value)
+        ? ui.flowKind.value
+        : "residential";
       if (ui.flowWindow) ui.flowWindow.disabled = state.flowKind === "commute";
+      renderChartPanel("flows");
+    });
+    ui.flowMeasure?.addEventListener("change", () => {
+      state.flowMeasure = ui.flowMeasure.value === "represented" ? "represented" : "agents";
       renderChartPanel("flows");
     });
     ui.flowWindow?.addEventListener("change", () => {
@@ -1879,18 +2131,7 @@
     if (ui.progressLabel) ui.progressLabel.textContent = days;
     if (ui.horizonLabel) ui.horizonLabel.textContent = state.horizonDays;
     const dailyStatus = state.latestDailyStatus || normalizeCity(state.snapshot);
-    const assignmentDate = parseUtcDate(textAt(dailyStatus, ["networkAssignmentDate", "city.networkAssignmentDate"], ""));
-    if (state.map && ui.mapStatus && assignmentDate) {
-      const label = new Intl.DateTimeFormat("en-AE", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }).format(assignmentDate);
-      const status = textAt(
-        dailyStatus,
-        ["networkAssignmentStatus"],
-        assignmentDate.valueOf() === date.valueOf() ? "current" : "retained-last-workday"
-      );
-      ui.mapStatus.textContent = `${state.dataset.zones?.length || 0} district groups derived from official AD-SDI · ${
-        status === "retained-last-workday" ? `weekend/non-workday view, assignment retained from ${label}` : `network assigned ${label}`
-      }`;
-    }
+    if (state.map) renderMapStatus(date, dailyStatus);
   }
 
   function renderSummary() {
@@ -2066,12 +2307,14 @@
       return;
     }
     state.map = window.L.map(mount, { zoomControl: false, preferCanvas: true, attributionControl: true, minZoom: 8, maxZoom: 16 });
-    window.L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      maxZoom: 19,
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>',
-    }).addTo(state.map);
+    state.map.createPane("udesV2CommuteFlows").style.zIndex = "440";
+    state.map.createPane("udesV2Agents").style.zIndex = "450";
+    state.mapRenderers.commuteFlows = window.L.svg({ pane: "udesV2CommuteFlows", padding: 0.5 });
+    state.mapRenderers.agents = window.L.svg({ pane: "udesV2Agents", padding: 0.5 });
+    state.map.attributionControl?.addAttribution?.('&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>');
     if (state.geo.roads) {
       state.layers.roads = window.L.geoJSON(state.geo.roads, {
+        filter: isInterDistrictCorridor,
         style: roadStyle,
         onEachFeature: (feature, layer) => {
           layer.on("click", () => selectObject("link", feature.properties?.id || feature.id));
@@ -2118,10 +2361,11 @@
         pointToLayer: (_feature, latlng) => window.L.circleMarker(latlng, { radius: 1.7, color: palette.blue, weight: 0, fillOpacity: 0.55 }),
       });
     }
+    state.layers.commuteFlows = window.L.layerGroup();
+    state.layers.citizenAgents = window.L.layerGroup();
+    state.layers.enterpriseAgents = window.L.layerGroup();
     if (placeholder) placeholder.hidden = true;
     fitMap();
-    if (ui.mapStatus)
-      ui.mapStatus.textContent = `${state.dataset.zones?.length || 0} district groups derived from official AD-SDI · transparent agent baseline`;
     state.map.on("zoomend", updateTransitVisibility);
     updateTransitVisibility();
     setTimeout(() => state.map.invalidateSize(), 80);
@@ -2179,13 +2423,392 @@
     const id = zoneFeatureId(feature);
     const selected = String(id) === String(state.selected.id);
     const hovered = String(id) === String(state.hoveredZoneId);
+    const corridorOrAgentMode = state.mapMode === "network" || state.mapMode === "agents";
     return {
       color: selected ? palette.ink : "#65736f",
       weight: selected ? 2.6 : hovered ? 2.2 : 1.1,
       opacity: 0.9,
-      fillColor: state.mapMode === "rent" ? mixColor("#f4ead4", "#a9673f", ratio) : mixColor("#e9f0ed", "#277565", ratio),
-      fillOpacity: hovered ? 0.64 : state.mapMode === "network" ? 0.16 : 0.54,
+      fillColor:
+        state.mapMode === "rent" ? mixColor("#f4ead4", "#a9673f", ratio) : corridorOrAgentMode ? "#edf2ef" : mixColor("#e9f0ed", "#277565", ratio),
+      fillOpacity: hovered ? 0.9 : corridorOrAgentMode ? 0.76 : 0.62,
     };
+  }
+
+  function zoneCentroidLatLng(id) {
+    const centroid = baselineZone(id)?.centroid;
+    if (!Array.isArray(centroid) || centroid.length < 2) return null;
+    const longitude = Number(centroid[0]);
+    const latitude = Number(centroid[1]);
+    return Number.isFinite(longitude) && Number.isFinite(latitude) ? [latitude, longitude] : null;
+  }
+
+  function offsetAgentLatLng(latlng, kind) {
+    const [latitude, longitude] = latlng;
+    const longitudeScale = Math.max(0.35, Math.cos((latitude * Math.PI) / 180));
+    const eastWestOffset = 0.0042 / longitudeScale;
+    return kind === "citizen" ? [latitude + 0.0012, longitude - eastWestOffset] : [latitude - 0.0012, longitude + eastWestOffset];
+  }
+
+  function stableAgentLatLng(latlng, id, kind) {
+    let hash = kind === "citizen" ? 2166136261 : 16777619;
+    for (const character of String(id || kind)) {
+      hash ^= character.charCodeAt(0);
+      hash = Math.imul(hash, 16777619) >>> 0;
+    }
+    const angle = ((hash % 360) * Math.PI) / 180;
+    const radius = 0.0012 + ((hash >>> 9) % 5) * 0.00042;
+    const longitudeScale = Math.max(0.35, Math.cos((latlng[0] * Math.PI) / 180));
+    return [latlng[0] + Math.sin(angle) * radius, latlng[1] + (Math.cos(angle) * radius) / longitudeScale];
+  }
+
+  function mapLayerVisible(layer, visible) {
+    if (!state.map || !layer) return;
+    const isVisible = state.map.hasLayer(layer);
+    if (visible && !isVisible) layer.addTo(state.map);
+    else if (!visible && isVisible) state.map.removeLayer(layer);
+  }
+
+  function activeEnterpriseCount(zone, normalized) {
+    const activeShare = percentToRatio(valueAt(zone, ["activeEnterpriseSharePercent"], 100));
+    return Math.max(0, Math.round(normalized.enterprises * activeShare));
+  }
+
+  function representativeAgentEntries(kind) {
+    const citizenWeight = Math.max(1, Number(state.dataset?.calibration?.citizenAgentPersonsRecommended) || 250);
+    const mapSamples = Array.isArray(state.snapshot?.mapAgents?.[`${kind}s`]) ? state.snapshot.mapAgents[`${kind}s`] : [];
+    if (mapSamples.length) {
+      return mapSamples
+        .map((sample) => {
+          const zoneId = String(kind === "citizen" ? sample.homeZoneId || "" : sample.zoneId || "");
+          const centroid = zoneCentroidLatLng(zoneId);
+          if (!zoneId || !centroid) return null;
+          const name = zoneLabel(zoneId);
+          if (kind === "citizen") {
+            const workLabel = sample.workZoneId ? zoneLabel(sample.workZoneId) : "unemployed";
+            return {
+              key: `citizen:${sample.id}`,
+              kind,
+              zoneId,
+              latlng: stableAgentLatLng(centroid, sample.id, kind),
+              radius: 4.2,
+              representativeId: sample.id,
+              ariaLabel: `${sample.id}: citizen agent living in ${name}, working in ${workLabel}`,
+              tooltip: `<strong>${escapeHtml(sample.id)} · citizen agent</strong><span>Lives: ${escapeHtml(name)} · works: ${escapeHtml(
+                workLabel
+              )}</span><span>${escapeHtml(humanizeEvent(sample.state || "unknown"))} · ${escapeHtml(
+                humanizeEvent(sample.mode || "none")
+              )} · represents ${escapeHtml(formatNumber(sample.weight || citizenWeight))} residents</span>`,
+            };
+          }
+          return {
+            key: `enterprise:${sample.id}`,
+            kind,
+            zoneId,
+            latlng: stableAgentLatLng(centroid, sample.id, kind),
+            radius: 4.5,
+            representativeId: sample.id,
+            ariaLabel: `${sample.id}: enterprise agent located in ${name}`,
+            tooltip: `<strong>${escapeHtml(sample.id)} · enterprise agent</strong><span>Located: ${escapeHtml(name)} · ${escapeHtml(
+              humanizeEvent(sample.state || "unknown")
+            )}</span><span>${escapeHtml(formatNumber(sample.employeeAgentCount || 0))} modeled employees · ${escapeHtml(
+              formatNumber(sample.representedEmployees || 0)
+            )} represented</span>`,
+          };
+        })
+        .filter(Boolean);
+    }
+    const samples = samplesOf(kind);
+    return zonesOf()
+      .map((rawZone) => {
+        const baseline = baselineZone(rawZone.id || rawZone.zoneId) || {};
+        const zone = normalizeZone(rawZone, baseline);
+        const centroid = zoneCentroidLatLng(zone.id);
+        if (!centroid) return null;
+        const representative = samples.find((sample) => {
+          const sampleZoneId = kind === "citizen" ? sample.homeZoneId || sample.livingZoneId : sample.zoneId;
+          if (String(sampleZoneId) !== String(zone.id)) return false;
+          return kind !== "enterprise" || textAt(sample, ["status", "state"], "Working") !== "Starting";
+        });
+        if (kind === "citizen") {
+          const agentCount = Math.max(0, Math.round(zone.population / citizenWeight));
+          if (!agentCount) return null;
+          return {
+            key: `citizen:${zone.id}`,
+            kind,
+            zoneId: String(zone.id),
+            latlng: offsetAgentLatLng(centroid, kind),
+            radius: Math.min(11, 4.5 + Math.sqrt(agentCount) / 7),
+            representativeId: representative?.id || null,
+            ariaLabel: `${zone.name}: ${formatNumber(agentCount)} citizen agents representing ${formatNumber(zone.population)} residents`,
+            tooltip: `<strong>${escapeHtml(zone.name)} · citizen agents</strong><span>${escapeHtml(
+              formatNumber(agentCount)
+            )} agents represent ${escapeHtml(formatNumber(zone.population))} residents</span><span>${escapeHtml(
+              formatPercent(zone.satisfaction)
+            )} satisfied · ${escapeHtml(zone.commute.toFixed(1))} min mean round trip</span>`,
+          };
+        }
+        const activeCount = activeEnterpriseCount(rawZone, zone);
+        if (!activeCount) return null;
+        return {
+          key: `enterprise:${zone.id}`,
+          kind,
+          zoneId: String(zone.id),
+          latlng: offsetAgentLatLng(centroid, kind),
+          radius: Math.min(10, 4.5 + Math.sqrt(activeCount) / 2.2),
+          representativeId: representative?.id || null,
+          ariaLabel: `${zone.name}: ${formatNumber(activeCount)} active enterprise agents`,
+          tooltip: `<strong>${escapeHtml(zone.name)} · enterprises</strong><span>${escapeHtml(formatNumber(activeCount))} active of ${escapeHtml(
+            formatNumber(zone.enterprises)
+          )} enterprise agents</span><span>${escapeHtml(formatCompact(zone.jobs))} represented jobs · ${escapeHtml(
+            formatCompact(zone.vacancies)
+          )} vacancies</span>`,
+        };
+      })
+      .filter(Boolean);
+  }
+
+  function representativeAgentStyle(kind) {
+    return kind === "citizen"
+      ? {
+          pane: "udesV2Agents",
+          renderer: state.mapRenderers.agents,
+          color: "#ffffff",
+          weight: 1.8,
+          fillColor: palette.green,
+          fillOpacity: 0.92,
+          opacity: 1,
+        }
+      : {
+          pane: "udesV2Agents",
+          renderer: state.mapRenderers.agents,
+          color: palette.amber,
+          weight: 2.2,
+          fillColor: "#ffffff",
+          fillOpacity: 0.96,
+          opacity: 1,
+        };
+  }
+
+  function removeRepresentativeAgentLayer(marker, registry, layerGroup) {
+    const key = marker?.udesV2Entry?.key;
+    if (!key) return;
+    if (state.hoveredMapFeatureKey === key || state.focusedMapFeatureKey === key) {
+      marker.udesV2PendingRemoval = true;
+      return;
+    }
+    layerGroup.removeLayer(marker);
+    registry.delete(key);
+    marker.udesV2PendingRemoval = false;
+  }
+
+  function syncRepresentativeAgentMarkers(kind) {
+    const registryKey = kind === "citizen" ? "citizenAgents" : "enterpriseAgents";
+    const registry = state.mapFeatures[registryKey];
+    const layerGroup = state.layers[registryKey];
+    if (!registry || !layerGroup || !window.L) return;
+    const activeKeys = new Set();
+    for (const entry of representativeAgentEntries(kind)) {
+      activeKeys.add(entry.key);
+      let marker = registry.get(entry.key);
+      if (!marker) {
+        marker = window.L.circleMarker(entry.latlng, representativeAgentStyle(kind)).addTo(layerGroup);
+        marker.bindTooltip(entry.tooltip, { className: "udes-v2-agent-tooltip", direction: "top", sticky: true, opacity: 0.98 });
+        marker.on({
+          mouseover: () => {
+            state.hoveredMapFeatureKey = entry.key;
+            marker.udesV2Signature = null;
+            marker.setStyle({ weight: kind === "citizen" ? 3 : 3.2, fillOpacity: 1 });
+            marker.bringToFront?.();
+          },
+          mouseout: () => {
+            const key = marker.udesV2Entry?.key || entry.key;
+            if (state.hoveredMapFeatureKey === key) state.hoveredMapFeatureKey = null;
+            if (marker.udesV2PendingRemoval) marker.udesV2RemoveWhenIdle?.();
+            updateAgentMapLayers();
+          },
+          click: () => {
+            const current = marker.udesV2Entry;
+            if (current?.representativeId) selectObject(kind, current.representativeId);
+            else if (current?.zoneId) selectObject("zone", current.zoneId);
+          },
+        });
+        registry.set(entry.key, marker);
+      }
+      marker.udesV2Entry = entry;
+      marker.udesV2PendingRemoval = false;
+      marker.udesV2RemoveWhenIdle = () => removeRepresentativeAgentLayer(marker, registry, layerGroup);
+      const signature = JSON.stringify([entry.latlng, entry.radius, entry.tooltip]);
+      if (state.hoveredMapFeatureKey !== entry.key && state.focusedMapFeatureKey !== entry.key && marker.udesV2Signature !== signature) {
+        marker.setLatLng(entry.latlng);
+        marker.setRadius(entry.radius);
+        marker.setStyle(representativeAgentStyle(kind));
+        marker.setTooltipContent(entry.tooltip);
+        marker.udesV2Signature = signature;
+      }
+    }
+    for (const [key, marker] of registry.entries()) {
+      if (activeKeys.has(key)) continue;
+      removeRepresentativeAgentLayer(marker, registry, layerGroup);
+    }
+  }
+
+  function commuteRouteLatLngs(fromZoneId, toZoneId) {
+    const from = zoneCentroidLatLng(fromZoneId);
+    const to = zoneCentroidLatLng(toZoneId);
+    if (!from || !to) return null;
+    const latitudeDelta = to[0] - from[0];
+    const longitudeDelta = to[1] - from[1];
+    const length = Math.max(0.0001, Math.hypot(latitudeDelta, longitudeDelta));
+    const bend = Math.min(0.014, length * 0.12);
+    const midpoint = [(from[0] + to[0]) / 2 - (longitudeDelta / length) * bend, (from[1] + to[1]) / 2 + (latitudeDelta / length) * bend];
+    return [from, midpoint, to];
+  }
+
+  function commuteFlowStyle(entry, maximum) {
+    const strength = Math.sqrt(entry.value / Math.max(1, maximum));
+    const selectedZoneId = state.selected.kind === "zone" ? String(state.selected.id) : "";
+    const selected = selectedZoneId && [entry.fromZoneId, entry.toZoneId].includes(selectedZoneId);
+    return {
+      pane: "udesV2CommuteFlows",
+      renderer: state.mapRenderers.commuteFlows,
+      color: selected ? palette.teal : palette.blue,
+      weight: 1.1 + strength * 4.2 + (selected ? 0.7 : 0),
+      opacity: selected ? 0.9 : 0.3 + strength * 0.42,
+      dashArray: "4 5",
+      lineCap: "round",
+      lineJoin: "round",
+    };
+  }
+
+  function removeCommuteFlowLayer(line) {
+    const key = line?.udesV2Entry?.key;
+    if (!key) return;
+    if (state.hoveredMapFeatureKey === key || state.focusedMapFeatureKey === key) {
+      line.udesV2PendingRemoval = true;
+      return;
+    }
+    state.layers.commuteFlows?.removeLayer(line);
+    state.mapFeatures.commuteFlows.delete(key);
+    line.udesV2PendingRemoval = false;
+  }
+
+  function syncMapFeatureAccessibility(layer) {
+    const element = layer?.getElement?.();
+    const entry = layer?.udesV2Entry;
+    if (!element || !entry) return;
+    element.setAttribute("role", "button");
+    element.setAttribute("tabindex", "0");
+    element.setAttribute("aria-label", entry.ariaLabel || entry.key);
+    if (layer.udesV2KeyboardElement === element) return;
+    element.addEventListener("keydown", (event) => {
+      if (!["Enter", " "].includes(event.key)) return;
+      event.preventDefault();
+      layer.fire("click");
+    });
+    element.addEventListener("focus", () => {
+      const key = layer.udesV2Entry?.key;
+      if (!key) return;
+      state.focusedMapFeatureKey = key;
+      layer.openTooltip?.();
+    });
+    element.addEventListener("blur", () => {
+      const key = layer.udesV2Entry?.key;
+      if (state.focusedMapFeatureKey === key) state.focusedMapFeatureKey = null;
+      layer.closeTooltip?.();
+      if (layer.udesV2PendingRemoval) (layer.udesV2RemoveWhenIdle || removeCommuteFlowLayer)(layer);
+      updateAgentMapLayers();
+    });
+    layer.udesV2KeyboardElement = element;
+  }
+
+  function syncCommuteFlowLayers() {
+    const registry = state.mapFeatures.commuteFlows;
+    const layerGroup = state.layers.commuteFlows;
+    if (!registry || !layerGroup || !window.L) return;
+    const entries = topInterDistrictCommutes(state.snapshot?.commuteOd, 18)
+      .map((route) => ({
+        ...route,
+        key: `commute:${route.fromZoneId}:${route.toZoneId}`,
+        latlngs: commuteRouteLatLngs(route.fromZoneId, route.toZoneId),
+      }))
+      .filter((route) => route.latlngs);
+    const maximum = Math.max(1, ...entries.map((entry) => entry.value));
+    const activeKeys = new Set();
+    for (const entry of entries) {
+      activeKeys.add(entry.key);
+      entry.ariaLabel = `${zoneLabel(entry.fromZoneId)} to ${zoneLabel(entry.toZoneId)}: ${formatNumber(
+        entry.value
+      )} represented home-to-work commuters. Activate to inspect the home district.`;
+      const tooltip = `<strong>${escapeHtml(zoneLabel(entry.fromZoneId))} → ${escapeHtml(zoneLabel(entry.toZoneId))}</strong><span>${escapeHtml(
+        formatNumber(entry.value)
+      )} represented home-to-work commuters</span>`;
+      let line = registry.get(entry.key);
+      if (!line) {
+        line = window.L.polyline(entry.latlngs, commuteFlowStyle(entry, maximum)).addTo(layerGroup);
+        line.bindTooltip(tooltip, { className: "udes-v2-agent-tooltip", sticky: true, opacity: 0.98 });
+        line.on({
+          mouseover: () => {
+            state.hoveredMapFeatureKey = entry.key;
+            line.udesV2Signature = null;
+            line.setStyle({ color: palette.teal, opacity: 1, weight: Number(line.options.weight || 1) + 1.3 });
+            line.bringToFront?.();
+          },
+          mouseout: () => {
+            const key = line.udesV2Entry?.key || entry.key;
+            if (state.hoveredMapFeatureKey === key) state.hoveredMapFeatureKey = null;
+            if (line.udesV2PendingRemoval) removeCommuteFlowLayer(line);
+            updateAgentMapLayers();
+          },
+          click: () => selectObject("zone", line.udesV2Entry?.fromZoneId),
+        });
+        registry.set(entry.key, line);
+      }
+      line.udesV2Entry = entry;
+      line.udesV2PendingRemoval = false;
+      const signature = JSON.stringify([entry.latlngs, entry.value, maximum, state.selected.kind === "zone" ? state.selected.id : null]);
+      if (state.hoveredMapFeatureKey !== entry.key && state.focusedMapFeatureKey !== entry.key && line.udesV2Signature !== signature) {
+        line.setLatLngs(entry.latlngs);
+        line.setStyle(commuteFlowStyle(entry, maximum));
+        line.setTooltipContent(tooltip);
+        line.udesV2Signature = signature;
+      }
+    }
+    for (const [key, line] of registry.entries()) {
+      if (activeKeys.has(key)) continue;
+      removeCommuteFlowLayer(line);
+    }
+  }
+
+  function updateAgentMapLayers() {
+    if (!state.map) return;
+    const visible = state.mapMode === "agents";
+    if (visible) {
+      syncCommuteFlowLayers();
+      syncRepresentativeAgentMarkers("citizen");
+      syncRepresentativeAgentMarkers("enterprise");
+    } else {
+      state.hoveredMapFeatureKey = null;
+      state.focusedMapFeatureKey = null;
+      state.mapFeatures.commuteFlows.forEach((line) => {
+        line.udesV2Signature = null;
+      });
+      state.mapFeatures.citizenAgents.forEach((marker) => {
+        marker.udesV2Signature = null;
+      });
+      state.mapFeatures.enterpriseAgents.forEach((marker) => {
+        marker.udesV2Signature = null;
+      });
+    }
+    mapLayerVisible(state.layers.commuteFlows, visible);
+    mapLayerVisible(state.layers.citizenAgents, visible);
+    mapLayerVisible(state.layers.enterpriseAgents, visible);
+    if (visible) {
+      for (const registry of [state.mapFeatures.citizenAgents, state.mapFeatures.enterpriseAgents, state.mapFeatures.commuteFlows]) {
+        registry.forEach((layer) => {
+          syncMapFeatureAccessibility(layer);
+        });
+      }
+    }
   }
 
   function roadSnapshot(id) {
@@ -2206,25 +2829,75 @@
     return {
       color: load > 0.9 ? palette.red : load > 0.65 ? palette.amber : palette.green,
       weight: selected ? 5 : Math.max(1.4, 2 + load * 2.2),
-      opacity: state.mapMode === "network" ? 0.82 : 0.26,
+      opacity: state.mapMode === "network" ? 0.82 : state.mapMode === "agents" ? 0.2 : 0.26,
     };
   }
 
+  function renderMapStatus(date = modelDate(), dailyStatus = state.latestDailyStatus || normalizeCity(state.snapshot)) {
+    if (!ui.mapStatus) return;
+    const districtCount = state.dataset?.zones?.length || 0;
+    const corridorCount = state.geo.roads?.features?.filter(isInterDistrictCorridor).length || 0;
+    if (state.mapMode === "agents") {
+      const citizenWeight = Math.max(1, Number(state.dataset?.calibration?.citizenAgentPersonsRecommended) || 250);
+      const zones = zonesOf().map((zone) => ({ raw: zone, normalized: normalizeZone(zone, baselineZone(zone.id || zone.zoneId) || {}) }));
+      const citizenAgents = Math.round(zones.reduce((total, zone) => total + zone.normalized.population, 0) / citizenWeight);
+      const activeEnterprises = zones.reduce((total, zone) => total + activeEnterpriseCount(zone.raw, zone.normalized), 0);
+      const trackedCitizens = state.snapshot?.mapAgents?.citizens?.length || state.mapFeatures.citizenAgents.size;
+      const trackedEnterprises = state.snapshot?.mapAgents?.enterprises?.length || state.mapFeatures.enterpriseAgents.size;
+      const flowCount = topInterDistrictCommutes(state.snapshot?.commuteOd, 18).length;
+      ui.mapStatus.textContent = `${formatNumber(trackedCitizens)} tracked of ${formatNumber(citizenAgents)} citizen agents · ${formatNumber(
+        trackedEnterprises
+      )} tracked of ${formatNumber(activeEnterprises)} active firms · ${flowCount} strongest work flows`;
+      return;
+    }
+    const assignmentDate = parseUtcDate(textAt(dailyStatus, ["networkAssignmentDate", "city.networkAssignmentDate"], ""));
+    if (!assignmentDate) {
+      ui.mapStatus.textContent = `${districtCount} districts · ${corridorCount} inter-district corridors`;
+      return;
+    }
+    const label = new Intl.DateTimeFormat("en-AE", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }).format(assignmentDate);
+    const status = textAt(
+      dailyStatus,
+      ["networkAssignmentStatus"],
+      assignmentDate.valueOf() === date.valueOf() ? "current" : "retained-last-workday"
+    );
+    ui.mapStatus.textContent = `${districtCount} districts · ${corridorCount} inter-district corridors · ${
+      status === "retained-last-workday" ? `assignment retained from ${label}` : `network assigned ${label}`
+    }`;
+  }
+
   function updateMapStyles() {
+    const mapModeChanged = state.renderedMapMode !== state.mapMode;
+    if (mapModeChanged) {
+      const mapMount = $("[data-udes-v2-map]");
+      if (mapMount) mapMount.dataset.udesV2MapMode = state.mapMode;
+      state.renderedMapMode = state.mapMode;
+    }
     state.layers.zones?.setStyle?.(zoneStyle);
     state.layers.roads?.setStyle?.(roadStyle);
     updateTransitVisibility();
-    if (ui.mapLegend) {
-      const labels = {
-        network: ["Road load", "Below 65%", "65–90%", "Above 90%"],
-        population: ["Resident population", "Lower", "Middle", "Higher"],
-        access: ["Shorter mean commute", "Longer", "Middle", "Shorter"],
-        rent: ["Housing rent", "Lower", "Middle", "Higher"],
+    updateAgentMapLayers();
+    renderMapStatus();
+    if (ui.mapLegend && mapModeChanged) {
+      const legend = {
+        network: ["Inter-district load", ["is-low", "Below 65%"], ["is-medium", "65–90%"], ["is-high", "Above 90%"]],
+        population: ["Resident population", ["is-low", "Lower"], ["is-medium", "Middle"], ["is-high", "Higher"]],
+        access: ["Shorter mean commute", ["is-high", "Longer"], ["is-medium", "Middle"], ["is-low", "Shorter"]],
+        rent: ["Housing rent", ["is-low", "Lower"], ["is-medium", "Middle"], ["is-high", "Higher"]],
+        agents: [
+          "Agent activity",
+          ["is-agent-citizen", "Tracked citizens"],
+          ["is-agent-enterprise", "Tracked firms"],
+          ["is-agent-flow", "Home → work flow"],
+        ],
       }[state.mapMode];
       const strong = $("strong", ui.mapLegend);
-      if (strong) strong.textContent = labels[0];
+      if (strong) strong.textContent = legend[0];
       $$("span", ui.mapLegend).forEach((node, index) => {
-        node.lastChild.textContent = labels[index + 1];
+        const [className, label] = legend[index + 1];
+        const swatch = $("i", node);
+        if (swatch) swatch.className = className;
+        node.lastChild.textContent = label;
       });
     }
   }
@@ -2500,6 +3173,8 @@
         ["Last monthly saving / drawdown", formatAed(valueAt(item, ["lastMonthlyBankBalanceDeltaAed"]))],
         ["Round trip", `${roundTrip.toFixed(1)} min`],
         ["Commute goal margin", `${(appliedPolicy.acceptableCommuteRoundTripMin - roundTrip).toFixed(1)} min`],
+        ["Residential move eligible", textAt(item, ["decisionExplanation.currentAssessment.nextResidentialMoveEligibleDate"], "Now")],
+        ["Voluntary job switch eligible", textAt(item, ["decisionExplanation.currentAssessment.nextVoluntaryJobSwitchEligibleDate"], "Now")],
       ])}${historyBars(
         item.history || item.histories,
         "Monthly cash-after-fixed-cost history",
@@ -2531,6 +3206,11 @@
         ["Operating margin", formatPercent(valueAt(item, ["operatingMargin", "margin"]))],
         ["Sector demand", valueAt(item, ["demandIndex"], 1).toFixed(2)],
         ["Labor accessibility", formatPercent(valueAt(item, ["laborAccessScore", "labourAccessibility", "accessibility"]))],
+        ["Relocation eligible", textAt(item, ["decisionExplanation.currentAssessment.nextRelocationEligibleDate"], "Now")],
+        [
+          "Relocation gate",
+          `${valueAt(item, ["decisionExplanation.currentAssessment.relocationConsiderationPercent"], 0).toFixed(0)}% consideration`,
+        ],
       ])}${historyBars(
         item.history || item.histories,
         "Employee-agent count history",
@@ -2716,6 +3396,67 @@
     return $("[data-udes-v2-live-chart]", section);
   }
 
+  function clearAccessibleOdTable(node) {
+    if (!node) return;
+    const detail = node.parentElement?.querySelector("[data-udes-v2-od-table]");
+    if (detail) detail.remove();
+    node.removeAttribute("aria-describedby");
+  }
+
+  function updateAccessibleOdTable(node, matrix, labels, unit) {
+    if (!node || !matrix || !Array.isArray(labels)) return;
+    const signature = JSON.stringify([matrix.cells, labels, unit]);
+    let detail = node.parentElement?.querySelector("[data-udes-v2-od-table]");
+    if (!detail) {
+      detail = document.createElement("div");
+      detail.id = `udes-v2-od-detail-${String(node.dataset.udesV2LiveChart || "matrix").replace(/[^a-z0-9]+/gi, "-")}`;
+      detail.className = "udes-v2-sr-only";
+      detail.dataset.udesV2OdTable = "true";
+      node.after(detail);
+    }
+    node.setAttribute("aria-describedby", detail.id);
+    if (detail.dataset.renderedSignature === signature) return;
+
+    const values = new Map((matrix.cells || []).map(([workIndex, homeIndex, value]) => [`${homeIndex}:${workIndex}`, value]));
+    const table = document.createElement("table");
+    const caption = document.createElement("caption");
+    caption.textContent = `Home-to-work origin-destination stock. Rows are home districts and columns are work districts. Values are ${unit}. This table is not relocation-event data.`;
+    table.append(caption);
+
+    const head = document.createElement("thead");
+    const headRow = document.createElement("tr");
+    const corner = document.createElement("th");
+    corner.scope = "col";
+    corner.textContent = "Home district by work district";
+    headRow.append(corner);
+    labels.forEach((label) => {
+      const header = document.createElement("th");
+      header.scope = "col";
+      header.textContent = label;
+      headRow.append(header);
+    });
+    head.append(headRow);
+    table.append(head);
+
+    const body = document.createElement("tbody");
+    labels.forEach((label, homeIndex) => {
+      const row = document.createElement("tr");
+      const header = document.createElement("th");
+      header.scope = "row";
+      header.textContent = label;
+      row.append(header);
+      labels.forEach((_workLabel, workIndex) => {
+        const cell = document.createElement("td");
+        cell.textContent = formatNumber(values.get(`${homeIndex}:${workIndex}`) || 0);
+        row.append(cell);
+      });
+      body.append(row);
+    });
+    table.append(body);
+    detail.replaceChildren(table);
+    detail.dataset.renderedSignature = signature;
+  }
+
   function chartDataSignature(option) {
     return JSON.stringify({
       xAxis: option.xAxis,
@@ -2732,16 +3473,20 @@
     });
   }
 
-  function applyChartOption(chart, key, option) {
+  function applyChartOption(chart, key, option, structureKey = "default") {
     if (!chart || chart.isDisposed?.()) return;
-    const signature = chartDataSignature(option);
+    const signature = `${structureKey}:${chartDataSignature(option)}`;
     if (state.chartDataSignatures.get(key) === signature) return;
     const firstRender = !state.chartDataSignatures.has(key);
+    const structureChanged = state.chartStructureKeys.has(key) && state.chartStructureKeys.get(key) !== structureKey;
     chart.setOption(
       option,
-      firstRender ? { notMerge: true, lazyUpdate: true } : { notMerge: false, lazyUpdate: true, silent: true, replaceMerge: ["series"] }
+      firstRender || structureChanged
+        ? { notMerge: true, lazyUpdate: true }
+        : { notMerge: false, lazyUpdate: true, silent: true, replaceMerge: ["series"] }
     );
     state.chartDataSignatures.set(key, signature);
+    state.chartStructureKeys.set(key, structureKey);
   }
 
   function bindChartInteraction(node, key, chart) {
@@ -2753,11 +3498,11 @@
       const pending = state.pendingChartOptions.get(key);
       if (!pending) return;
       state.pendingChartOptions.delete(key);
-      requestAnimationFrame(() => applyChartOption(chart, key, pending));
+      requestAnimationFrame(() => applyChartOption(chart, key, pending.option, pending.structureKey));
     });
   }
 
-  function mountChart(node, key, option) {
+  function mountChart(node, key, option, structureKey = "default") {
     if (!node) return;
     (option.series || []).forEach((series, index) => {
       if (!series.id)
@@ -2777,17 +3522,19 @@
       state.charts.set(key, chart);
     }
     bindChartInteraction(node, key, chart);
-    if (state.chartInteractionLocks.has(key)) {
-      state.pendingChartOptions.set(key, option);
+    const structureChanged = state.chartStructureKeys.has(key) && state.chartStructureKeys.get(key) !== structureKey;
+    if (state.chartInteractionLocks.has(key) && !structureChanged) {
+      state.pendingChartOptions.set(key, { option, structureKey });
       return;
     }
-    applyChartOption(chart, key, option);
+    state.pendingChartOptions.delete(key);
+    applyChartOption(chart, key, option, structureKey);
   }
 
   function prepareChartPanel(kind, definitions) {
     const mount = $(`[data-udes-v2-chart='${kind}']`);
     if (!mount) return [];
-    const signature = definitions.map((definition) => definition.join("::")).join("|");
+    const signature = definitions.map(([key]) => key).join("|");
     if (mount.dataset.renderedSignature !== signature) {
       for (const [key, chart] of state.charts.entries()) {
         if (key.startsWith(`${kind}:`)) {
@@ -2796,6 +3543,7 @@
           state.chartInteractionLocks.delete(key);
           state.pendingChartOptions.delete(key);
           state.chartDataSignatures.delete(key);
+          state.chartStructureKeys.delete(key);
         }
       }
       mount.replaceChildren();
@@ -2803,7 +3551,16 @@
       definitions.forEach(([key, title, subtitle]) => createChartCell(mount, `${kind}:${key}`, title, subtitle));
       mount.dataset.renderedSignature = signature;
     }
-    return definitions.map(([key]) => $(`[data-udes-v2-live-chart='${kind}:${key}']`, mount));
+    return definitions.map(([key, title, subtitle]) => {
+      const chartNode = $(`[data-udes-v2-live-chart='${kind}:${key}']`, mount);
+      const section = chartNode?.closest(".udes-v2-live-chart");
+      const titleNode = section ? $("header strong", section) : null;
+      const subtitleNode = section ? $("header span", section) : null;
+      if (titleNode && titleNode.textContent !== title) titleNode.textContent = title;
+      if (subtitleNode && subtitleNode.textContent !== subtitle) subtitleNode.textContent = subtitle;
+      if (chartNode) chartNode.dataset.udesV2ChartTitle = title;
+      return chartNode;
+    });
   }
 
   function renderChartPanel(kind) {
@@ -2899,17 +3656,22 @@
     const selectedId = selectedDistrictId();
     const selectedName = selectedId ? zoneLabel(selectedId) : null;
     const [stocksNode, districtNode] = prepareChartPanel("districts", [
-      ["stocks", "Residents and located jobs by district", "Current day · all modeled Abu Dhabi City districts"],
+      [
+        "stocks",
+        "Employed residents vs jobs located",
+        "Current home → work stock · residence district vs workplace district · not relocation events",
+      ],
       [
         "selected",
         selectedName ? `${selectedName}: daily district trajectory` : "Choose a district for its daily trajectory",
         selectedName ? "Population and jobs daily · housing rent changes annually" : "Use Inspect district in Setup or click a district on the map",
       ],
     ]);
-    const zones = normalizeCity(state.snapshot)
-      .zoneSeries.map((zone) => ({ ...zone, name: zoneLabel(zone.id) }))
-      .sort((a, b) => a.population - b.population || a.name.localeCompare(b.name));
-    const labels = zones.map((zone) => zone.name);
+    const zoneIds = normalizeCity(state.snapshot).zoneSeries.map((zone) => String(zone.id));
+    const liveWork = commuteLiveWorkByDistrict(state.snapshot?.commuteOd, zoneIds)
+      .map((row) => ({ ...row, name: zoneLabel(row.districtId) }))
+      .sort((a, b) => a.employedResidents - b.employedResidents || a.name.localeCompare(b.name));
+    const labels = liveWork.map((row) => row.name);
     const stocks = baseChartOptions();
     stocks.grid = { top: 22, left: 112, right: 18, bottom: 20 };
     stocks.xAxis = { ...stocks.xAxis, type: "value", axisLabel: { ...stocks.xAxis.axisLabel, formatter: (value) => formatCompact(value) } };
@@ -2920,8 +3682,20 @@
       axisLabel: { ...stocks.yAxis.axisLabel, width: 102, overflow: "truncate", interval: 0 },
     };
     stocks.series = [
-      { name: "Residents", type: "bar", data: zones.map((zone) => zone.population), barMaxWidth: 7, itemStyle: { color: palette.green } },
-      { name: "Located jobs", type: "bar", data: zones.map((zone) => zone.jobs), barMaxWidth: 7, itemStyle: { color: palette.blue } },
+      {
+        name: "Employed residents (live)",
+        type: "bar",
+        data: liveWork.map((row) => row.employedResidents),
+        barMaxWidth: 7,
+        itemStyle: { color: palette.green },
+      },
+      {
+        name: "Jobs located (work)",
+        type: "bar",
+        data: liveWork.map((row) => row.locatedJobs),
+        barMaxWidth: 7,
+        itemStyle: { color: palette.blue },
+      },
     ];
     mountChart(stocksNode, "districts:stocks", stocks);
 
@@ -2981,98 +3755,187 @@
     const latestDay = state.history.at(-1)?.day || 0;
     const kind = state.flowKind;
     const commuteStock = kind === "commute";
-    const definition = flowDefinition(kind);
+    const definition = flowDefinition(kind, state.flowMeasure);
+    const mobilityRates = cityOf(state.snapshot).mobilityEventRates || {};
+    const eventRate = valueAt(
+      mobilityRates,
+      [
+        {
+          residential: "residentialMovesPer100CitizenAgentYears",
+          job: "crossDistrictVoluntaryJobSwitchesPer100EmployedAgentYears",
+          workplace: "employerCarriedWorkplaceChangesPer100EmployedAgentYears",
+          enterprise: "firmRelocationsPer100FirmAgentYears",
+        }[kind],
+      ].filter(Boolean),
+      Number.NaN
+    );
+    const rateDenominator = {
+      residential: "citizen-agent-years",
+      job: "employed-agent-years",
+      workplace: "employed-agent-years",
+      enterprise: "firm-agent-years",
+    }[kind];
+    const rateLabel = Number.isFinite(eventRate) && rateDenominator ? ` · cumulative ${eventRate.toFixed(1)} events / 100 ${rateDenominator}` : "";
     const kindLabel = {
       residential: "Residential moves",
-      job: "Workplace changes",
+      job: "Cross-district job switches",
+      workplace: "Firm-carried workplace changes",
       enterprise: "Enterprise relocations",
-      commute: "Home-to-work relationships",
+      replacement: "Replacement placements",
+      commute: "Home-to-work stock",
     }[kind];
     const selectedId = selectedDistrictId();
     const selectedName = selectedId ? zoneLabel(selectedId) : null;
     const [routesNode, districtNode] = prepareChartPanel("flows", [
       [
         "routes",
-        `Top cross-district ${kindLabel.toLowerCase()}`,
+        commuteStock ? "Home → work OD matrix" : `Top cross-district ${kindLabel.toLowerCase()}`,
         commuteStock
-          ? "Current resident stock · home → work · employed residents"
-          : `${state.flowWindowDays}-day sum · ${definition.unit} · origin → destination${kind === "residential" ? " · replacements labeled" : ""}`,
+          ? "Current employed-resident stock · rows = home, columns = work · not relocation events"
+          : `${state.flowWindowDays}-day sum · ${definition.unit} · origin → destination${rateLabel}`,
       ],
       [
         "district",
         commuteStock
           ? selectedName
-            ? `${selectedName}: residents’ work destinations`
-            : "Where residents work today"
+            ? `${selectedName}: work destinations and worker origins`
+            : "Select a district for its commute exchange"
           : selectedName
             ? `${selectedName}: incoming, outgoing, and net`
             : `${kindLabel} by decision reason`,
         commuteStock
           ? selectedName
-            ? "Current stock · includes same-district work and unemployment"
-            : "Citywide same-district, cross-district, and unemployment split"
+            ? "Current worker stock · out = residents’ jobs; in = workers’ homes · not relocation events"
+            : "Use Inspect district in Setup or click a district on the map"
           : selectedName
-            ? `Exact daily OD flows · ${definition.unit}${kind === "residential" ? " · replacements included" : ""}`
+            ? `Exact daily OD flows · ${definition.unit}`
             : `${state.flowWindowDays}-day citywide totals · choose a district for its daily balance`,
       ],
     ]);
+    const flowMount = routesNode?.closest("[data-udes-v2-chart='flows']");
+    if (flowMount) flowMount.dataset.udesV2FlowChartMode = commuteStock ? "commute" : "events";
     const commuteOd = Array.isArray(state.snapshot?.commuteOd) ? state.snapshot.commuteOd : [];
-    const routes = (
-      commuteStock
-        ? commuteOd
-            .filter((row) => row.workZoneId && String(row.homeZoneId) !== String(row.workZoneId))
-            .map((row) => ({ fromZoneId: row.homeZoneId, toZoneId: row.workZoneId, value: Number(row.representedWorkers) || 0, reasons: {} }))
-            .sort((a, b) => b.value - a.value)
-        : aggregateFlowRoutes(state.history, kind, state.flowWindowDays, latestDay)
-    )
-      .slice(0, 12)
-      .reverse();
     const routeChart = baseChartOptions();
-    routeChart.grid = { top: 22, left: 142, right: 20, bottom: 20 };
-    routeChart.xAxis = {
-      ...routeChart.xAxis,
-      type: "value",
-      axisLabel: { ...routeChart.xAxis.axisLabel, formatter: (value) => formatCompact(value) },
-    };
-    routeChart.yAxis = {
-      ...routeChart.yAxis,
-      type: "category",
-      data: routes.length
-        ? routes.map((route) => `${zoneLabel(route.fromZoneId)} → ${zoneLabel(route.toZoneId)}`)
-        : ["No cross-district changes yet"],
-      axisLabel: { ...routeChart.yAxis.axisLabel, width: 132, overflow: "truncate", interval: 0 },
-    };
-    routeChart.series = [
-      {
-        name: kindLabel,
-        type: "bar",
-        data: routes.length ? routes.map((route) => route.value) : [0],
-        barMaxWidth: 10,
-        itemStyle: { color: kind === "enterprise" ? palette.amber : kind === "job" || commuteStock ? palette.blue : palette.green },
-      },
-    ];
-    mountChart(routesNode, "flows:routes", routeChart);
+    if (commuteStock) {
+      const districtIds = normalizeCity(state.snapshot)
+        .zoneSeries.map((zone) => String(zone.id))
+        .sort((a, b) => zoneLabel(a).localeCompare(zoneLabel(b)));
+      const matrix = commuteOdMatrix(commuteOd, districtIds, state.flowMeasure);
+      const labels = matrix.districtIds.map(zoneLabel);
+      const shortLabel = (value) =>
+        String(value)
+          .replace(/^Al\s+/i, "")
+          .replace(/\s+Island$/i, "");
+      routeChart.animationDuration = 0;
+      routeChart.grid = { top: 10, left: 83, right: 12, bottom: 69 };
+      routeChart.legend = { show: false };
+      routeChart.tooltip = {
+        ...routeChart.tooltip,
+        trigger: "item",
+        formatter: (params) => {
+          const [workIndex, homeIndex, value] = params.value || [];
+          return `${escapeHtml(labels[homeIndex] || "Home district")} → ${escapeHtml(labels[workIndex] || "Work district")}<br><strong>${formatNumber(
+            value
+          )}</strong> ${escapeHtml(definition.unit)}`;
+        },
+      };
+      routeChart.xAxis = {
+        ...routeChart.xAxis,
+        name: "work district",
+        nameLocation: "middle",
+        nameGap: 56,
+        data: labels,
+        splitArea: { show: true },
+        axisLabel: { ...routeChart.xAxis.axisLabel, interval: 0, rotate: 48, formatter: shortLabel },
+      };
+      routeChart.yAxis = {
+        ...routeChart.yAxis,
+        type: "category",
+        name: "home district",
+        nameLocation: "middle",
+        nameGap: 71,
+        data: labels,
+        splitArea: { show: true },
+        axisLabel: { ...routeChart.yAxis.axisLabel, width: 68, overflow: "truncate", interval: 0, formatter: shortLabel },
+      };
+      routeChart.visualMap = {
+        min: 0,
+        max: Math.max(1, matrix.maximum),
+        calculable: false,
+        orient: "horizontal",
+        left: "center",
+        bottom: 1,
+        itemWidth: 105,
+        itemHeight: 7,
+        text: ["more", "0"],
+        textStyle: { color: palette.muted, fontSize: 8 },
+        inRange: { color: ["#edf4f1", palette.green] },
+      };
+      routeChart.series = [
+        {
+          name: "Employed residents",
+          type: "heatmap",
+          data: matrix.cells,
+          itemStyle: { borderColor: "#ffffff", borderWidth: 1 },
+          emphasis: { itemStyle: { borderColor: palette.ink, borderWidth: 1 } },
+        },
+      ];
+      updateAccessibleOdTable(routesNode, matrix, labels, definition.unit);
+    } else {
+      clearAccessibleOdTable(routesNode);
+      const routes = aggregateFlowRoutes(state.history, kind, state.flowWindowDays, latestDay, state.flowMeasure).slice(0, 12).reverse();
+      routeChart.grid = { top: 22, left: 142, right: 20, bottom: 20 };
+      routeChart.xAxis = {
+        ...routeChart.xAxis,
+        type: "value",
+        axisLabel: { ...routeChart.xAxis.axisLabel, formatter: (value) => formatCompact(value) },
+      };
+      routeChart.yAxis = {
+        ...routeChart.yAxis,
+        type: "category",
+        data: routes.length
+          ? routes.map((route) => `${zoneLabel(route.fromZoneId)} → ${zoneLabel(route.toZoneId)}`)
+          : ["No cross-district changes yet"],
+        axisLabel: { ...routeChart.yAxis.axisLabel, width: 132, overflow: "truncate", interval: 0 },
+      };
+      routeChart.series = [
+        {
+          name: kindLabel,
+          type: "bar",
+          data: routes.length ? routes.map((route) => route.value) : [0],
+          barMaxWidth: 10,
+          itemStyle: {
+            color:
+              kind === "enterprise"
+                ? palette.amber
+                : kind === "job" || kind === "workplace"
+                  ? palette.blue
+                  : kind === "replacement"
+                    ? palette.sand
+                    : palette.green,
+          },
+        },
+      ];
+    }
+    mountChart(routesNode, "flows:routes", routeChart, commuteStock ? "commute-od-heatmap" : "event-route-bars");
 
     const districtChart = baseChartOptions();
     if (commuteStock) {
-      const groups = new Map();
-      const relevant = selectedId ? commuteOd.filter((row) => String(row.homeZoneId) === selectedId) : commuteOd;
-      if (selectedId) {
-        for (const row of relevant) {
-          const label = row.workZoneId ? zoneLabel(row.workZoneId) : "Unemployed";
-          groups.set(label, (groups.get(label) || 0) + (Number(row.representedResidents) || 0));
-        }
-      } else {
-        for (const row of relevant) {
-          const label = !row.workZoneId
-            ? "Unemployed"
-            : String(row.homeZoneId) === String(row.workZoneId)
-              ? "Works in home district"
-              : "Works in another district";
-          groups.set(label, (groups.get(label) || 0) + (Number(row.representedResidents) || 0));
-        }
-      }
-      const workDestinations = [...groups.entries()].sort((a, b) => a[1] - b[1]);
+      const exchange = selectedDistrictCommuteExchange(commuteOd, selectedId, state.flowMeasure);
+      const outboundByDistrict = new Map(exchange.destinations.map((row) => [row.counterpartDistrictId, row.value]));
+      const inboundByDistrict = new Map(exchange.origins.map((row) => [row.counterpartDistrictId, row.value]));
+      const counterpartIds = [...new Set([...outboundByDistrict.keys(), ...inboundByDistrict.keys()])];
+      const exchangeRows = selectedId
+        ? [
+            ...counterpartIds.map((districtId) => ({
+              label: zoneLabel(districtId),
+              outbound: outboundByDistrict.get(districtId) || 0,
+              inbound: inboundByDistrict.get(districtId) || 0,
+              within: 0,
+            })),
+            { label: "Lives + works here", outbound: 0, inbound: 0, within: exchange.sameDistrict },
+          ].sort((a, b) => a.outbound + a.inbound + a.within - (b.outbound + b.inbound + b.within) || a.label.localeCompare(b.label))
+        : [{ label: "Select a district", outbound: 0, inbound: 0, within: 0 }];
       districtChart.grid = { top: 22, left: 124, right: 20, bottom: 20 };
       districtChart.xAxis = {
         ...districtChart.xAxis,
@@ -3082,20 +3945,34 @@
       districtChart.yAxis = {
         ...districtChart.yAxis,
         type: "category",
-        data: workDestinations.length ? workDestinations.map(([label]) => label) : ["No commute stock available"],
+        data: exchangeRows.map((row) => row.label),
         axisLabel: { ...districtChart.yAxis.axisLabel, width: 114, overflow: "truncate", interval: 0 },
       };
       districtChart.series = [
         {
-          name: "Residents",
+          name: "Residents working out",
           type: "bar",
-          data: workDestinations.length ? workDestinations.map(([, value]) => value) : [0],
-          barMaxWidth: 11,
+          data: exchangeRows.map((row) => row.outbound),
+          barMaxWidth: 7,
           itemStyle: { color: palette.blue },
+        },
+        {
+          name: "Workers commuting in",
+          type: "bar",
+          data: exchangeRows.map((row) => row.inbound),
+          barMaxWidth: 7,
+          itemStyle: { color: palette.green },
+        },
+        {
+          name: "Live + work here",
+          type: "bar",
+          data: exchangeRows.map((row) => row.within),
+          barMaxWidth: 7,
+          itemStyle: { color: palette.sand },
         },
       ];
     } else if (selectedId) {
-      const points = flowSeriesForZone(state.history, kind, selectedId, state.flowWindowDays, latestDay);
+      const points = flowSeriesForZone(state.history, kind, selectedId, state.flowWindowDays, latestDay, state.flowMeasure);
       districtChart.xAxis.data = points.map((point) => formatChartDayUtc(point.date));
       districtChart.yAxis.axisLabel = { ...districtChart.yAxis.axisLabel, formatter: (value) => formatCompact(value) };
       districtChart.series = [
@@ -3112,7 +3989,7 @@
       ];
     } else {
       const reasonTotals = new Map();
-      for (const route of aggregateFlowRoutes(state.history, kind, state.flowWindowDays, latestDay)) {
+      for (const route of aggregateFlowRoutes(state.history, kind, state.flowWindowDays, latestDay, state.flowMeasure)) {
         for (const [reason, value] of Object.entries(route.reasons)) reasonTotals.set(reason, (reasonTotals.get(reason) || 0) + value);
       }
       const reasons = [...reasonTotals.entries()].sort((a, b) => b[1] - a[1]);
@@ -3138,7 +4015,8 @@
         },
       ];
     }
-    mountChart(districtNode, "flows:district", districtChart);
+    const districtStructure = commuteStock ? "commute-district-exchange" : selectedId ? "event-district-timeseries" : "event-reason-bars";
+    mountChart(districtNode, "flows:district", districtChart, districtStructure);
   }
 
   function renderMobilityCharts() {
@@ -3228,7 +4106,7 @@
     const referenceStatus = cityOf(state.referenceSnapshot).distributions?.financialStatus || {};
     const [financeNode, statesNode] = prepareChartPanel("citizens", [
       ["finance", "Why household finances differ", "Latest monthly account · all represented residents · mutually exclusive · no ‘net zero’ bucket"],
-      ["states", "Citizen decision states", "Daily weighted shares · transition count on right axis"],
+      ["states", "Citizen decision states", "Daily weighted shares · modeled-agent transition count on right axis"],
     ]);
     const activeBins = Array.isArray(activeStatus.bins) ? activeStatus.bins : [];
     const referenceBins = new Map((referenceStatus.bins || []).map((bin) => [bin.id, bin]));
@@ -3320,10 +4198,10 @@
         itemStyle: { color: palette.blue },
       },
       {
-        name: "Transitions",
+        name: "Agent transitions",
         type: "bar",
         yAxisIndex: 1,
-        data: history.map((entry) => Number(entry.transitions?.totals?.representedCitizenTransitions) || 0),
+        data: history.map((entry) => Number(entry.transitions?.totals?.citizenAgentTransitions) || 0),
         barMaxWidth: 5,
         itemStyle: { color: "rgba(29,42,42,0.28)" },
       },

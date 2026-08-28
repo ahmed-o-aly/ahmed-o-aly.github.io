@@ -584,6 +584,7 @@ assert.equal(
 adverseFirmEngine.enterEnterpriseWorking(adverseFirm, "vacancy-regression-complete");
 const displacedEmployeeIds = [...adverseFirm.employeeIds];
 const restartCountBefore = adverseFirmEngine.eventsTotal.firmRestarts;
+const incumbentMoveCountBeforeRestart = adverseFirmEngine.eventsTotal.firmMoves;
 for (const enterprise of adverseFirmEngine.enterprises) {
   if (enterprise !== adverseFirm) enterprise.maxJobSlots = adverseFirmEngine.config.firmMaximumJobSlots;
 }
@@ -602,6 +603,11 @@ assert.equal(adverseFirm.hiring, false, "replacement firm cannot hire during sta
 assert.equal(adverseFirm.maxJobSlots, adverseFirmEngine.config.firmMinimumJobSlots, "replacement reopens at minimum scale");
 assert.equal(adverseFirm.consecutiveRestartLossMonths, 0, "restart clears the predecessor's loss streak");
 assert.equal(adverseFirmEngine.eventsTotal.firmRestarts, restartCountBefore + 1, "restart increments the aggregate event count once");
+assert.equal(
+  adverseFirmEngine.eventsTotal.firmMoves,
+  incumbentMoveCountBeforeRestart,
+  "a restarted enterprise's placement is not classified as an incumbent firm relocation"
+);
 const startingFirm = adverseFirmEngine.serializeEnterprise(adverseFirm);
 assert.equal(startingFirm.activeJobSlots, 0, "Starting firm exposes no active labor capacity");
 assert.equal(startingFirm.representedJobCapacity, 0, "Starting firm exposes zero represented active capacity");
@@ -690,6 +696,7 @@ const monthBoundaryEngine = new UdesV2Engine({
 });
 const boundaryCitizen = monthBoundaryEngine.citizens.find((citizen) => citizen.enterpriseId);
 const boundaryTargetZone = monthBoundaryEngine.zones.find((zone) => zone.id !== boundaryCitizen.homeZoneId);
+boundaryCitizen.lastMoveDay = monthBoundaryEngine.day - monthBoundaryEngine.config.residentialMoveCooldownDays;
 assert.ok(monthBoundaryEngine.moveCitizen(boundaryCitizen, boundaryTargetZone.id, "month-boundary-fixture"));
 assert.ok(monthBoundaryEngine.detachEmployment(boundaryCitizen, "month-boundary-fixture", true));
 monthBoundaryEngine.step(1);
@@ -771,6 +778,7 @@ destinationBusinessZone.enterprisePlaceCapacity = Math.max(
   destinationBusinessZone.enterpriseIds.size + 1
 );
 relocatedFirm.rentPerRepresentedWorkerAed = originBusinessZone.businessRentAed;
+relocatedFirm.lastMoveDay = relocationEngine.day - relocationEngine.config.firmMoveCooldownDays;
 assert.ok(
   relocationEngine.moveEnterprise(relocatedFirm, destinationBusinessZone.id, "rent-regression"),
   "firm relocates to the forced low-rent zone"

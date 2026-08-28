@@ -910,6 +910,15 @@
 
 .udes-v2-map-mount {
   z-index: 1;
+  background: #dce8eb;
+}
+
+.udes-v2-map-mount .leaflet-tile-pane {
+  filter: grayscale(0.78) saturate(0.45) contrast(0.86) brightness(1.08);
+}
+
+.udes-v2-map-mount[data-udes-v2-map-mode="agents"] .leaflet-tile-pane {
+  filter: grayscale(0.9) saturate(0.32) contrast(0.82) brightness(1.1);
 }
 
 .udes-v2-map-placeholder {
@@ -992,6 +1001,64 @@
 
 .udes-v2-map-legend i.is-high {
   background: var(--udes-v2-red);
+}
+
+.udes-v2-map-legend i.is-agent-citizen,
+.udes-v2-map-legend i.is-agent-enterprise {
+  width: 9px;
+  height: 9px;
+  margin-inline: 4px 5px;
+  border-radius: 50%;
+}
+
+.udes-v2-map-legend i.is-agent-citizen {
+  border: 1px solid #fff;
+  background: var(--udes-v2-accent);
+  box-shadow: 0 0 0 1px var(--udes-v2-accent);
+}
+
+.udes-v2-map-legend i.is-agent-enterprise {
+  border: 2px solid var(--udes-v2-amber);
+  background: #fff;
+}
+
+.udes-v2-map-legend i.is-agent-flow {
+  height: 0;
+  border-top: 2px dashed var(--udes-v2-blue);
+  background: transparent;
+}
+
+.udes-v2-map-mount .leaflet-tooltip.udes-v2-agent-tooltip {
+  min-width: 150px;
+  padding: 7px 8px;
+  border: 1px solid #aebbc0;
+  border-radius: 2px;
+  background: rgb(255 255 255 / 97%);
+  box-shadow: 0 2px 7px rgb(39 56 62 / 10%);
+  color: var(--udes-v2-text);
+  font: 500 9px / 1.35 var(--garden-sans);
+}
+
+.udes-v2-map-mount .leaflet-tooltip.udes-v2-agent-tooltip strong,
+.udes-v2-map-mount .leaflet-tooltip.udes-v2-agent-tooltip span {
+  display: block;
+}
+
+.udes-v2-map-mount .leaflet-tooltip.udes-v2-agent-tooltip strong {
+  margin-bottom: 3px;
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.udes-v2-map-mount .leaflet-tooltip.udes-v2-agent-tooltip span {
+  color: var(--udes-v2-muted);
+  font-size: 8px;
+}
+
+.udes-v2-map-mount .leaflet-interactive[role="button"]:focus-visible {
+  outline: 2px solid var(--udes-v2-text);
+  outline-offset: 2px;
+  filter: drop-shadow(0 0 2px rgb(255 255 255 / 95%));
 }
 
 .udes-v2-map-readout {
@@ -1293,6 +1360,14 @@
   border-color: var(--udes-v2-accent);
   outline: 2px solid var(--udes-v2-accent-soft);
   outline-offset: 1px;
+}
+
+.udes-v2-tray-filter select:disabled {
+  border-color: var(--udes-v2-line);
+  background: #f2f5f3;
+  color: var(--udes-v2-faint);
+  cursor: not-allowed;
+  opacity: 1;
 }
 
 .udes-v2-chart-panels {
@@ -1994,6 +2069,11 @@
 }
 
 @media (max-width: 1399px) and (min-width: 1100px) {
+  .udes-v2-console {
+    grid-template-columns: 240px minmax(0, 1fr) 290px;
+    grid-template-rows: minmax(0, 1fr) 320px;
+  }
+
   .udes-v2-commandbar__run {
     gap: 9px;
     padding-inline: 9px;
@@ -2015,6 +2095,22 @@
 
   .udes-v2-tray-filter label > span {
     display: none;
+  }
+
+  .udes-v2-tray-filter select[data-udes-v2-flow-kind] {
+    max-width: 148px;
+  }
+
+  .udes-v2-tray-filter select[data-udes-v2-flow-measure] {
+    max-width: 108px;
+  }
+
+  .udes-v2-tray-filter select[data-udes-v2-flow-window] {
+    max-width: 76px;
+  }
+
+  .udes-v2-chart-mount[data-udes-v2-chart="flows"][data-udes-v2-flow-chart-mode="commute"] {
+    grid-template-columns: minmax(320px, 1.35fr) minmax(200px, 0.65fr);
   }
 }
 
