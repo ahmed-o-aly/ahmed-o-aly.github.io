@@ -60,7 +60,7 @@ Household finance distinguishes monthly net income from saving. Net income is sa
 
 `validation-report.json` records reproducible full-scale checks using the committed baseline, one weighted citizen agent per 250 SCAD-mapped residents, 600 enterprise agents, and seed `240124`. The current mapped population produces 6,070 citizen agents. The companion script runs one-year reference and transit-first scenarios plus all four public policy packages over the exact ten-calendar-year horizon ending on 2034-01-01. Regression tests separately cover deterministic replay, reciprocal agent references, finite outputs, population conservation, dissatisfaction-episode reset, weekend network consistency, housing-policy order independence, final-load congestion and crowding, long-run scenario direction, zero forced or unserved inter-district trips, enterprise exit/re-entry, and long-run enterprise stability.
 
-These are software, structural, and plausibility checks—not empirical validation of a forecast. Current household travel, establishment, rent, income, and longitudinal relocation data are still required to estimate parameters and test predictive accuracy before policy use.
+These are software, structural, and provisional sanity checks—not empirical validation of a forecast. Current household travel, establishment, rent, income, and longitudinal relocation data are still required to estimate parameters and test predictive accuracy before policy use.
 
 ## Sources
 
