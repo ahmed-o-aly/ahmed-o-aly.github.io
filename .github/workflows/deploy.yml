@@ -99,11 +99,8 @@ jobs:
           node-version: "22"
           cache: "npm"
 
-      - name: Install Node dependencies, validate the model, and generate project previews
-        run: |
-          npm ci
-          npm run validate:udes-v2-full
-          npm run build:project-previews
+      - name: Install Node dependencies
+        run: npm ci
 
       - name: Prepare build config
         run: |
@@ -134,7 +131,7 @@ jobs:
           test -f _site/index.html
           node tests/udes-v2-engine.mjs
           node tests/udes-v2-job-capacity.mjs
-          node tests/udes-v2-scenarios.mjs
+          node tests/udes-v2-contract.mjs
           node tests/site-contract.mjs
 
       - name: Upload built site

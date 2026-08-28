@@ -60,13 +60,14 @@ assert.doesNotMatch(axeWorkflow, /^\s+inputs:\s*$/m, "axe manual dispatch has no
 assert.doesNotMatch(axeWorkflow, /^\s*URL:\s*/m, "axe has no unused global URL variable");
 assert.match(
   deployWorkflow,
-  /- name: Verify generated site\s+run: \|\s+test -f _site\/index\.html\s+node tests\/udes-v2-engine\.mjs\s+node tests\/udes-v2-job-capacity\.mjs\s+node tests\/udes-v2-scenarios\.mjs\s+node tests\/site-contract\.mjs/,
+  /- name: Verify generated site\s+run: \|\s+test -f _site\/index\.html\s+node tests\/udes-v2-engine\.mjs\s+node tests\/udes-v2-job-capacity\.mjs\s+node tests\/udes-v2-contract\.mjs\s+node tests\/site-contract\.mjs/,
   "deploy verifies the simulation and generated site contracts"
 );
-assert.match(
+assert.match(deployWorkflow, /- name: Install Node dependencies\s+run: npm ci/, "deploy installs the locked Node dependencies");
+assert.doesNotMatch(
   deployWorkflow,
-  /npm ci\s+npm run validate:udes-v2-full\s+npm run build:project-previews/,
-  "deploy regenerates full-scale model evidence before producing public previews"
+  /npm run (?:validate:udes-v2-full|build:project-previews)/,
+  "deploy uses committed validation evidence and previews instead of repeating long simulations"
 );
 
 const expectedAxePaths = [
