@@ -20,6 +20,8 @@ if (!Number.isInteger(dmuComponentCount) || dmuComponentCount < 1) {
 const engineData = {
   zones: baseline.zones,
   links: baseline.roadGraph.edges,
+  nodes: baseline.roadGraph.nodes,
+  candidateRoutes: baseline.roadGraph.candidateRoutes,
   transit: baseline.transit,
   calibration: baseline.calibration,
 };
