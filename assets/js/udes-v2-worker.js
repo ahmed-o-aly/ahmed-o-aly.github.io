@@ -49,6 +49,9 @@
     // a negative residual draws down the balance in full.
     monthlyEssentialConsumptionAed: 2500,
     positiveResidualSavingsRate: 0.25,
+    // Reporting-only threshold used to distinguish a thin positive monthly
+    // buffer from stronger savings capacity after modeled essentials.
+    financialThinBufferAed: 1500,
     ageMin: 20,
     ageMax: 80,
     retirementSalaryFactorAfterAge: 60,
@@ -538,6 +541,8 @@
       this.eventsTotal = this.emptyEventCounters();
       this.lastHistoryEventTotals = this.emptyEventCounters();
       this.lastCompletedMonthEvents = this.emptyEventCounters();
+      this.dailyFlows = this.emptyDailyFlows();
+      this.dailyTransitions = this.emptyDailyTransitions();
       this.cityHistory = [];
       this.zones = this.createZones(options.data?.zones || DEFAULT_ZONES);
       this.zoneById = new Map(this.zones.map((zone) => [zone.id, zone]));
@@ -649,6 +654,184 @@
       };
     }
 
+    emptyDailyFlows() {
+      return {
+        residentialMoves: [],
+        jobMoves: [],
+        enterpriseMoves: [],
+        replacementRelocations: [],
+      };
+    }
+
+    resetDailyFlows() {
+      this.dailyFlows = this.emptyDailyFlows();
+    }
+
+    emptyDailyTransitions() {
+      return { citizens: [], enterprises: [] };
+    }
+
+    resetDailyTransitions() {
+      this.dailyTransitions = this.emptyDailyTransitions();
+    }
+
+    recordDailyTransition(kind, transition) {
+      const collection = this.dailyTransitions?.[kind];
+      if (!Array.isArray(collection) || !transition?.fromState || !transition?.toState || transition.fromState === transition.toState) return;
+      collection.push({ ...transition });
+    }
+
+    aggregateDailyTransitions() {
+      const aggregate = (rows, numericFields) => {
+        const grouped = new Map();
+        for (const row of rows) {
+          const reason = String(row.reason || "unspecified");
+          const zoneId = String(row.zoneId || "unknown");
+          const key = `${zoneId}|${row.fromState}|${row.toState}|${reason}`;
+          if (!grouped.has(key)) {
+            grouped.set(key, {
+              zoneId,
+              fromState: row.fromState,
+              toState: row.toState,
+              reason,
+              ...Object.fromEntries(numericFields.map((field) => [field, 0])),
+            });
+          }
+          const target = grouped.get(key);
+          for (const field of numericFields) target[field] += Math.max(0, Number(row[field]) || 0);
+        }
+        return [...grouped.values()].sort(
+          (a, b) =>
+            a.zoneId.localeCompare(b.zoneId) ||
+            a.fromState.localeCompare(b.fromState) ||
+            a.toState.localeCompare(b.toState) ||
+            a.reason.localeCompare(b.reason)
+        );
+      };
+      const citizens = aggregate(this.dailyTransitions.citizens, ["citizenAgentCount", "representedResidents"]);
+      const enterprises = aggregate(this.dailyTransitions.enterprises, ["enterpriseCount"]);
+      return {
+        citizens,
+        enterprises,
+        totals: {
+          citizenAgentTransitions: sumBy(citizens, (row) => row.citizenAgentCount),
+          representedCitizenTransitions: sumBy(citizens, (row) => row.representedResidents),
+          enterpriseTransitions: sumBy(enterprises, (row) => row.enterpriseCount),
+        },
+      };
+    }
+
+    recordDailyFlow(kind, flow) {
+      const collection = this.dailyFlows?.[kind];
+      if (!Array.isArray(collection) || !flow?.fromZoneId || !flow?.toZoneId || flow.fromZoneId === flow.toZoneId) return;
+      collection.push({ ...flow });
+    }
+
+    aggregateDailyFlows() {
+      const aggregate = (rows, numericFields) => {
+        const grouped = new Map();
+        for (const row of rows) {
+          const reason = String(row.reason || "unspecified");
+          const key = `${row.fromZoneId}|${row.toZoneId}|${reason}`;
+          if (!grouped.has(key)) {
+            grouped.set(key, {
+              fromZoneId: row.fromZoneId,
+              toZoneId: row.toZoneId,
+              reason,
+              ...Object.fromEntries(numericFields.map((field) => [field, 0])),
+            });
+          }
+          const target = grouped.get(key);
+          for (const field of numericFields) target[field] += Math.max(0, Number(row[field]) || 0);
+        }
+        return [...grouped.values()].sort(
+          (a, b) => a.fromZoneId.localeCompare(b.fromZoneId) || a.toZoneId.localeCompare(b.toZoneId) || a.reason.localeCompare(b.reason)
+        );
+      };
+      const residentialMoves = aggregate(this.dailyFlows.residentialMoves, ["citizenAgentCount", "representedResidents"]);
+      const jobMoves = aggregate(this.dailyFlows.jobMoves, ["citizenAgentCount", "representedWorkers"]);
+      const enterpriseMoves = aggregate(this.dailyFlows.enterpriseMoves, [
+        "enterpriseCount",
+        "affectedCitizenAgentCount",
+        "representedWorkersAffected",
+      ]);
+      const replacementRelocations = aggregate(this.dailyFlows.replacementRelocations, ["citizenAgentCount", "representedResidents"]);
+      return {
+        residentialMoves,
+        jobMoves,
+        enterpriseMoves,
+        replacementRelocations,
+        totals: {
+          residentialMoveAgents: sumBy(residentialMoves, (row) => row.citizenAgentCount),
+          representedResidentialMoves: sumBy(residentialMoves, (row) => row.representedResidents),
+          crossDistrictJobMoveAgents: sumBy(jobMoves, (row) => row.citizenAgentCount),
+          representedCrossDistrictJobMoves: sumBy(jobMoves, (row) => row.representedWorkers),
+          enterpriseMoves: sumBy(enterpriseMoves, (row) => row.enterpriseCount),
+          representedWorkersAffectedByEnterpriseMoves: sumBy(enterpriseMoves, (row) => row.representedWorkersAffected),
+          replacementRelocationAgents: sumBy(replacementRelocations, (row) => row.citizenAgentCount),
+          representedReplacementRelocations: sumBy(replacementRelocations, (row) => row.representedResidents),
+        },
+      };
+    }
+
+    dailyZoneFlowDiagnostics(flows) {
+      const diagnostics = new Map(
+        this.zones.map((zone) => [
+          zone.id,
+          {
+            residentialMoveInflows: 0,
+            residentialMoveOutflows: 0,
+            residentialMoveNet: 0,
+            jobMoveInflows: 0,
+            jobMoveOutflows: 0,
+            jobMoveNet: 0,
+            enterpriseMoveInflows: 0,
+            enterpriseMoveOutflows: 0,
+            enterpriseMoveNet: 0,
+            workersAffectedByEnterpriseMoveInflows: 0,
+            workersAffectedByEnterpriseMoveOutflows: 0,
+            enterpriseWorkerMoveNet: 0,
+            replacementRelocationInflows: 0,
+            replacementRelocationOutflows: 0,
+            replacementRelocationNet: 0,
+          },
+        ])
+      );
+      const apply = (rows, valueField, inflowField, outflowField, netField) => {
+        for (const row of rows) {
+          const value = Math.max(0, Number(row[valueField]) || 0);
+          const origin = diagnostics.get(row.fromZoneId);
+          const target = diagnostics.get(row.toZoneId);
+          if (origin) {
+            origin[outflowField] += value;
+            origin[netField] -= value;
+          }
+          if (target) {
+            target[inflowField] += value;
+            target[netField] += value;
+          }
+        }
+      };
+      apply(flows.residentialMoves, "representedResidents", "residentialMoveInflows", "residentialMoveOutflows", "residentialMoveNet");
+      apply(flows.jobMoves, "representedWorkers", "jobMoveInflows", "jobMoveOutflows", "jobMoveNet");
+      apply(flows.enterpriseMoves, "enterpriseCount", "enterpriseMoveInflows", "enterpriseMoveOutflows", "enterpriseMoveNet");
+      apply(
+        flows.enterpriseMoves,
+        "representedWorkersAffected",
+        "workersAffectedByEnterpriseMoveInflows",
+        "workersAffectedByEnterpriseMoveOutflows",
+        "enterpriseWorkerMoveNet"
+      );
+      apply(
+        flows.replacementRelocations,
+        "representedResidents",
+        "replacementRelocationInflows",
+        "replacementRelocationOutflows",
+        "replacementRelocationNet"
+      );
+      return diagnostics;
+    }
+
     eventCounterDelta(current, previous) {
       const delta = this.emptyEventCounters();
       for (const key of Object.keys(delta)) delta[key] = Math.max(0, Number(current[key] || 0) - Number(previous[key] || 0));
@@ -665,6 +848,9 @@
 
     dailyObservation(previousEventTotals) {
       const metrics = this.computeMetrics();
+      const flows = this.aggregateDailyFlows();
+      const transitions = this.aggregateDailyTransitions();
+      const zoneFlows = this.dailyZoneFlowDiagnostics(flows);
       const isWorkday = this.config.workdays.includes(this.clock.weekday);
       const networkAssignmentDate = this.lastWorkdayAssignmentDate;
       const networkAssignmentStatus = !networkAssignmentDate
@@ -685,11 +871,44 @@
         zoneSeries: metrics.zones.map((zone) => ({
           id: zone.id,
           satisfaction: zone.stateShares.Happy,
+          waitingSharePercent: zone.stateShares.Waiting,
+          extremeSharePercent: zone.stateShares.Extreme,
+          recoverySharePercent: zone.stateShares.Recovery,
           averageRoundTripMinutes: zone.averageRoundTripMinutes,
           housingOccupancyRate: zone.housingOccupancyRate,
+          residentialRentAed: zone.residentialRentAed,
           jobs: zone.jobs,
+          jobCapacity: zone.jobCapacity,
+          vacancies: zone.vacancies,
           population: zone.population,
+          representedEmployed: zone.representedEmployed,
+          employmentRate: zone.employmentRate,
+          carOwnershipRate: zone.carOwnershipRate,
+          carModeSharePercent: zone.modeShares.car,
+          ptModeSharePercent: zone.modeShares.pt,
+          walkModeSharePercent: zone.modeShares.walk,
+          sameZoneWorkShare: zone.sameZoneWorkShare,
+          averageGrossSalaryAed: zone.averageGrossSalaryAed,
+          averageHousingCostAed: zone.averageHousingCostAed,
+          averageMonthlyTransportCostAed: zone.averageMonthlyTransportCostAed,
+          averageCashAfterHousingAndCommuteAed: zone.averageCashAfterHousingAndCommuteAed,
+          averageResidualAfterEssentialsAed: zone.averageResidualAfterEssentialsAed,
+          averageBankBalanceAed: zone.averageBankBalanceAed,
+          housingCapacity: zone.housingCapacity,
+          enterprises: zone.enterprises,
+          enterprisePlaceCapacity: zone.enterprisePlaceCapacity,
+          businessRentAedPerRepresentedWorker: zone.businessRentAedPerRepresentedWorker,
+          citizenStateCounts: zone.stateCounts,
+          citizenModeCounts: zone.modeCounts,
+          financialStatusShares: zone.financialStatusShares,
+          enterpriseStateShares: zone.enterpriseStateShares,
+          activeEnterpriseSharePercent: zone.activeEnterpriseSharePercent,
+          lossMakingEnterpriseSharePercent: zone.lossMakingEnterpriseSharePercent,
+          enterprisePortfolioOperatingMarginPercent: zone.enterprisePortfolioOperatingMarginPercent,
+          ...zoneFlows.get(zone.id),
         })),
+        flows,
+        transitions,
         events: this.serializeEventDeltas(this.eventCounterDelta(this.eventsTotal, previousEventTotals)),
         monthToDateEvents: this.serializeEventDeltas(this.eventCounterDelta(this.eventsTotal, this.lastHistoryEventTotals)),
       };
@@ -1027,6 +1246,11 @@
           monthlyTransportCostAed: 0,
           currentMonthTransportCostAed: 0,
           netIncomeAed: 0,
+          lastAccountedGrossSalaryAed: 0,
+          lastAccountedHousingCostAed: 0,
+          lastAccountedTransportCostAed: 0,
+          lastAccountedEmployed: false,
+          lastFinancialAccountingDate: this.clock.date,
           bankBalanceAed: 0,
           lastMonthlyBankBalanceDeltaAed: 0,
           mode: "none",
@@ -1103,6 +1327,8 @@
     employ(citizen, enterprise, salaryAed, reason = "hire") {
       if (!citizen || !enterprise || enterprise.employeeIds.size >= enterprise.maxJobSlots || !enterprise.hiring) return false;
       if (citizen.enterpriseId === enterprise.id) return false;
+      const formerEnterpriseId = citizen.enterpriseId;
+      const formerWorkZoneId = citizen.workZoneId;
       if (!citizen.enterpriseId && reason !== "initial-hire") {
         const targetEmployed = Math.round(this.citizens.length * clamp(this.config.targetEmploymentRate, 0, 1));
         const representedEmployedAgents = this.citizens.length - this.unemployedIds.size;
@@ -1115,8 +1341,23 @@
       citizen.salaryAed = Math.max(0, round(salaryAed, 0));
       this.unemployedIds.delete(citizen.id);
       this.eventsTotal.hires += 1;
-      if (reason === "better-job") this.eventsTotal.jobChanges += 1;
-      this.recordCitizenEvent(citizen, reason, { enterpriseId: enterprise.id, salaryAed: citizen.salaryAed });
+      if (reason === "better-job") {
+        this.eventsTotal.jobChanges += 1;
+        this.recordDailyFlow("jobMoves", {
+          fromZoneId: formerWorkZoneId,
+          toZoneId: enterprise.zoneId,
+          reason,
+          citizenAgentCount: 1,
+          representedWorkers: citizen.weight,
+        });
+      }
+      this.recordCitizenEvent(citizen, reason, {
+        formerEnterpriseId,
+        enterpriseId: enterprise.id,
+        fromWorkZoneId: formerWorkZoneId,
+        toWorkZoneId: enterprise.zoneId,
+        salaryAed: citizen.salaryAed,
+      });
       return true;
     }
 
@@ -1157,6 +1398,11 @@
         const expectedTransport = citizen.enterpriseId ? (citizen.hasCar ? 520 : 176) : 0;
         citizen.monthlyTransportCostAed = expectedTransport;
         citizen.netIncomeAed = citizen.salaryAed - citizen.residentialRentAed - expectedTransport;
+        citizen.lastAccountedGrossSalaryAed = citizen.salaryAed;
+        citizen.lastAccountedHousingCostAed = citizen.residentialRentAed;
+        citizen.lastAccountedTransportCostAed = expectedTransport;
+        citizen.lastAccountedEmployed = Boolean(citizen.enterpriseId);
+        citizen.lastFinancialAccountingDate = this.clock.date;
         citizen.bankBalanceAed = Math.max(this.config.extremeBankBalanceAed, citizen.salaryAed * this.config.initialBankMonthsOfSalary);
       }
     }
@@ -1532,6 +1778,7 @@
 
     enterCitizenState(citizen, state, reason) {
       if (citizen.state === state) return;
+      const previousState = citizen.state;
       citizen.state = state;
       citizen.stateEnteredDay = this.day;
       if (state === "Waiting") {
@@ -1553,6 +1800,14 @@
       } else {
         citizen.stateDecisionDay = this.day + 1;
       }
+      this.recordDailyTransition("citizens", {
+        zoneId: citizen.homeZoneId,
+        fromState: previousState,
+        toState: state,
+        reason,
+        citizenAgentCount: 1,
+        representedResidents: citizen.weight,
+      });
       this.recordCitizenEvent(citizen, "state", { state, reason });
     }
 
@@ -1890,6 +2145,13 @@
       citizen.residentialRentAed = target.residentialRentAed;
       citizen.lastMoveReason = reason;
       this.eventsTotal.residentialMoves += 1;
+      this.recordDailyFlow("residentialMoves", {
+        fromZoneId: origin.id,
+        toZoneId: target.id,
+        reason,
+        citizenAgentCount: 1,
+        representedResidents: citizen.weight,
+      });
       this.recordCitizenEvent(citizen, "move", { from: origin.id, to: target.id, reason });
       return true;
     }
@@ -1945,12 +2207,20 @@
     }
 
     enterEnterpriseWorking(enterprise, reason) {
+      const previousState = enterprise.state;
       enterprise.state = "Working";
       enterprise.stateEnteredDay = this.day;
       enterprise.hiring = true;
       this.scheduleEnterpriseWorkingHazards(enterprise);
       enterprise.nextActionDay = null;
       enterprise.stateExitDay = null;
+      this.recordDailyTransition("enterprises", {
+        zoneId: enterprise.zoneId,
+        fromState: previousState,
+        toState: "Working",
+        reason,
+        enterpriseCount: 1,
+      });
       this.recordEnterpriseEvent(enterprise, "state", { state: "Working", reason });
     }
 
@@ -1969,22 +2239,38 @@
     }
 
     enterEnterpriseGrow(enterprise) {
+      const previousState = enterprise.state;
       enterprise.state = "Grow";
       enterprise.stateEnteredDay = this.day;
       enterprise.hiring = true;
       enterprise.nextActionDay = this.day + this.rng.exponential(this.config.firmGrowthActionMeanDays);
       enterprise.stateExitDay = this.day + this.rng.exponential(this.config.firmGrowReturnMeanDays);
       if (this.rng.next() < this.config.firmMoveProbabilityOnStateEntry) this.moveEnterpriseHigherQuality(enterprise);
+      this.recordDailyTransition("enterprises", {
+        zoneId: enterprise.zoneId,
+        fromState: previousState,
+        toState: "Grow",
+        reason: "grow-hazard",
+        enterpriseCount: 1,
+      });
       this.recordEnterpriseEvent(enterprise, "state", { state: "Grow" });
     }
 
     enterEnterpriseLesser(enterprise) {
+      const previousState = enterprise.state;
       enterprise.state = "Lesser";
       enterprise.stateEnteredDay = this.day;
       enterprise.hiring = false;
       enterprise.nextActionDay = this.day + this.rng.exponential(this.config.firmLesserActionMeanDays);
       enterprise.stateExitDay = this.day + this.rng.exponential(this.config.firmLesserReturnMeanDays);
       if (this.rng.next() < this.config.firmMoveProbabilityOnStateEntry) this.moveEnterpriseLowerRent(enterprise);
+      this.recordDailyTransition("enterprises", {
+        zoneId: enterprise.zoneId,
+        fromState: previousState,
+        toState: "Lesser",
+        reason: "lesser-hazard",
+        enterpriseCount: 1,
+      });
       this.recordEnterpriseEvent(enterprise, "state", { state: "Lesser" });
     }
 
@@ -2077,6 +2363,7 @@
     }
 
     restartEnterprise(enterprise) {
+      const previousState = enterprise.state;
       while (enterprise.employeeIds.size) {
         const citizen = this.citizenById.get(enterprise.employeeIds.values().next().value);
         this.detachEmployment(citizen, "firm-restart", true);
@@ -2106,6 +2393,13 @@
       enterprise.operatingCostAed = 0;
       enterprise.operatingMargin = 0;
       this.eventsTotal.firmRestarts += 1;
+      this.recordDailyTransition("enterprises", {
+        zoneId: enterprise.zoneId,
+        fromState: previousState,
+        toState: "Starting",
+        reason: "sustained-loss-restart",
+        enterpriseCount: 1,
+      });
       this.recordEnterpriseEvent(enterprise, "restart", { startupDays: Math.max(1, this.config.firmStartupDays) });
     }
 
@@ -2140,12 +2434,31 @@
       const origin = this.zoneById.get(enterprise.zoneId);
       const target = this.zoneById.get(targetZoneId);
       if (!target || target === origin || target.enterpriseIds.size >= target.enterprisePlaceCapacity) return false;
+      const affectedCitizenAgentCount = enterprise.employeeIds.size;
+      const representedWorkersAffected = affectedCitizenAgentCount * this.config.citizenWeight;
       origin.enterpriseIds.delete(enterprise.id);
       target.enterpriseIds.add(enterprise.id);
       enterprise.zoneId = target.id;
       enterprise.rentPerRepresentedWorkerAed = target.businessRentAed;
       for (const citizenId of enterprise.employeeIds) this.citizenById.get(citizenId).workZoneId = target.id;
       this.eventsTotal.firmMoves += 1;
+      this.recordDailyFlow("enterpriseMoves", {
+        fromZoneId: origin.id,
+        toZoneId: target.id,
+        reason,
+        enterpriseCount: 1,
+        affectedCitizenAgentCount,
+        representedWorkersAffected,
+      });
+      if (affectedCitizenAgentCount) {
+        this.recordDailyFlow("jobMoves", {
+          fromZoneId: origin.id,
+          toZoneId: target.id,
+          reason: `enterprise-relocation:${reason}`,
+          citizenAgentCount: affectedCitizenAgentCount,
+          representedWorkers: representedWorkersAffected,
+        });
+      }
       this.recordEnterpriseEvent(enterprise, "move", { from: origin.id, to: target.id, reason });
       return true;
     }
@@ -2172,6 +2485,11 @@
         citizen.monthlyTransportCostAed = round(citizen.currentMonthTransportCostAed, 2);
         citizen.residentialRentAed = this.zoneById.get(citizen.homeZoneId).residentialRentAed;
         citizen.netIncomeAed = round(citizen.salaryAed - citizen.residentialRentAed - citizen.monthlyTransportCostAed, 2);
+        citizen.lastAccountedGrossSalaryAed = citizen.salaryAed;
+        citizen.lastAccountedHousingCostAed = citizen.residentialRentAed;
+        citizen.lastAccountedTransportCostAed = citizen.monthlyTransportCostAed;
+        citizen.lastAccountedEmployed = Boolean(citizen.enterpriseId);
+        citizen.lastFinancialAccountingDate = accountingClock.date;
         const residualAfterEssentials = citizen.netIncomeAed - Math.max(0, Number(this.config.monthlyEssentialConsumptionAed) || 0);
         const savingsRate = clamp(Number(this.config.positiveResidualSavingsRate) || 0, 0, 1);
         citizen.lastMonthlyBankBalanceDeltaAed = round(
@@ -2216,6 +2534,7 @@
     }
 
     replaceCitizen(citizen) {
+      const previousState = citizen.state;
       this.detachEmployment(citizen, "death", false);
       const currentZone = this.zoneById.get(citizen.homeZoneId);
       const target = [...this.zones]
@@ -2225,6 +2544,13 @@
         currentZone.residentIds.delete(citizen.id);
         target.residentIds.add(citizen.id);
         citizen.homeZoneId = target.id;
+        this.recordDailyFlow("replacementRelocations", {
+          fromZoneId: currentZone.id,
+          toZoneId: target.id,
+          reason: "replacement-lowest-rent",
+          citizenAgentCount: 1,
+          representedResidents: citizen.weight,
+        });
       }
       citizen.generation += 1;
       citizen.age = 20;
@@ -2240,6 +2566,11 @@
       citizen.currentMonthTransportCostAed = 0;
       citizen.residentialRentAed = this.zoneById.get(citizen.homeZoneId).residentialRentAed;
       citizen.netIncomeAed = -citizen.residentialRentAed;
+      citizen.lastAccountedGrossSalaryAed = 0;
+      citizen.lastAccountedHousingCostAed = citizen.residentialRentAed;
+      citizen.lastAccountedTransportCostAed = 0;
+      citizen.lastAccountedEmployed = false;
+      citizen.lastFinancialAccountingDate = this.clock.date;
       citizen.bankBalanceAed = this.config.extremeBankBalanceAed;
       citizen.lastMonthlyBankBalanceDeltaAed = 0;
       citizen.daysDissatisfied = 0;
@@ -2250,6 +2581,14 @@
       citizen.stateDecisionDay = null;
       citizen.nextCarConsiderationDay = this.day + this.carConsiderationDelayDays();
       citizen.nextQualityMoveDay = this.day + this.rng.integer(this.config.qualityMoveMinDays, this.config.qualityMoveMaxDays);
+      this.recordDailyTransition("citizens", {
+        zoneId: citizen.homeZoneId,
+        fromState: previousState,
+        toState: "Happy",
+        reason: "demographic-replacement",
+        citizenAgentCount: 1,
+        representedResidents: citizen.weight,
+      });
       this.eventsTotal.replacements += 1;
       this.recordCitizenEvent(citizen, "replacement", { generation: citizen.generation });
     }
@@ -2383,6 +2722,8 @@
       const previousClock = this.clock;
       this.day += 1;
       this.clock = this.clockAt(this.day);
+      this.resetDailyFlows();
+      this.resetDailyTransitions();
       const monthChanged = this.clock.month !== previousClock.month || this.clock.year !== previousClock.year;
       const yearChanged = this.clock.year !== previousClock.year;
       if (monthChanged) this.closeMonth(previousClock);
@@ -2485,6 +2826,64 @@
       }
     }
 
+    citizenFinancialAccount(citizen) {
+      const grossSalaryAed = Math.max(0, Number(citizen.lastAccountedGrossSalaryAed ?? citizen.salaryAed) || 0);
+      const housingCostAed = Math.max(0, Number(citizen.lastAccountedHousingCostAed ?? citizen.residentialRentAed) || 0);
+      const commutingCostAed = Math.max(0, Number(citizen.lastAccountedTransportCostAed ?? citizen.monthlyTransportCostAed) || 0);
+      const componentCashAfterHousingAndCommuteAed = round(grossSalaryAed - housingCostAed - commutingCostAed, 2);
+      const cashAfterHousingAndCommuteAed = Number.isFinite(Number(citizen.netIncomeAed))
+        ? Number(citizen.netIncomeAed)
+        : componentCashAfterHousingAndCommuteAed;
+      const essentialConsumptionAed = Math.max(0, Number(this.config.monthlyEssentialConsumptionAed) || 0);
+      const residualAfterEssentialsAed = round(cashAfterHousingAndCommuteAed - essentialConsumptionAed, 2);
+      const savingsRate = clamp(Number(this.config.positiveResidualSavingsRate) || 0, 0, 1);
+      const modeledBankChangeAtMonthEndAed = round(
+        residualAfterEssentialsAed > 0 ? residualAfterEssentialsAed * savingsRate : residualAfterEssentialsAed,
+        2
+      );
+      let status = "savings-capacity";
+      let statusLabel = "Savings capacity";
+      if (!(citizen.lastAccountedEmployed ?? Boolean(citizen.enterpriseId))) {
+        status = "unemployed";
+        statusLabel = "Unemployed";
+      } else if (cashAfterHousingAndCommuteAed < 0) {
+        status = "fixed-cost-deficit";
+        statusLabel = "Pay below housing + commute";
+      } else if (residualAfterEssentialsAed < 0) {
+        status = "essentials-gap";
+        statusLabel = "Essentials not fully covered";
+      } else if (residualAfterEssentialsAed < Math.max(0, Number(this.config.financialThinBufferAed) || 0)) {
+        status = "thin-positive-buffer";
+        statusLabel = "Thin positive buffer";
+      }
+      return {
+        grossSalaryAed,
+        housingCostAed,
+        commutingCostAed,
+        cashAfterHousingAndCommuteAed,
+        accountingReconciliationDifferenceAed: round(cashAfterHousingAndCommuteAed - componentCashAfterHousingAndCommuteAed, 2),
+        essentialConsumptionAed,
+        residualAfterEssentialsAed,
+        modeledBankChangeAtMonthEndAed,
+        positiveResidualSavingsRate: savingsRate,
+        accountingDate: citizen.lastFinancialAccountingDate || this.clock.date,
+        accountingCadence: "monthly-close",
+        employedDuringAccountingPeriod: Boolean(citizen.lastAccountedEmployed ?? citizen.enterpriseId),
+        status,
+        statusLabel,
+      };
+    }
+
+    financialStatusDefinitions() {
+      return [
+        { id: "unemployed", label: "Unemployed" },
+        { id: "fixed-cost-deficit", label: "Pay below housing + commute" },
+        { id: "essentials-gap", label: "Essentials not fully covered" },
+        { id: "thin-positive-buffer", label: "Thin positive buffer" },
+        { id: "savings-capacity", label: "Savings capacity" },
+      ];
+    }
+
     computeMetrics() {
       const zoneAccumulators = this.zones.map((zone) => ({
         id: zone.id,
@@ -2495,6 +2894,11 @@
         state: { Happy: 0, Waiting: 0, Extreme: 0, Recovery: 0 },
         mode: { car: 0, pt: 0, walk: 0, none: 0 },
         netIncome: 0,
+        grossSalary: 0,
+        housingCost: 0,
+        monthlyTransportCost: 0,
+        residualAfterEssentials: 0,
+        financialStatus: Object.fromEntries(this.financialStatusDefinitions().map((status) => [status.id, 0])),
         bankBalance: 0,
         monthlyBankBalanceDelta: 0,
         commute: 0,
@@ -2503,13 +2907,25 @@
         locatedJobs: 0,
         jobCapacity: 0,
         vacancies: 0,
+        enterpriseState: { Working: 0, Grow: 0, Lesser: 0, Starting: 0 },
+        enterpriseCount: 0,
+        activeEnterpriseCount: 0,
+        lossMakingEnterpriseCount: 0,
+        enterpriseRevenue: 0,
+        enterpriseCost: 0,
       }));
       const cityState = { Happy: 0, Waiting: 0, Extreme: 0, Recovery: 0 };
       const cityMode = { car: 0, pt: 0, walk: 0, none: 0 };
+      const cityEnterpriseState = { Working: 0, Grow: 0, Lesser: 0, Starting: 0 };
       let representedPopulation = 0;
       let representedEmployed = 0;
       let representedCarOwners = 0;
       let netIncomeTotal = 0;
+      let grossSalaryTotal = 0;
+      let housingCostTotal = 0;
+      let monthlyTransportCostTotal = 0;
+      let residualAfterEssentialsTotal = 0;
+      const cityFinancialStatus = Object.fromEntries(this.financialStatusDefinitions().map((status) => [status.id, 0]));
       let bankTotal = 0;
       let monthlyBankBalanceDeltaTotal = 0;
       let commuteTotal = 0;
@@ -2535,11 +2951,22 @@
         }
         cityState[citizen.state] += weight;
         accumulator.state[citizen.state] += weight;
-        netIncomeTotal += citizen.netIncomeAed * weight;
+        const financial = this.citizenFinancialAccount(citizen);
+        netIncomeTotal += financial.cashAfterHousingAndCommuteAed * weight;
+        grossSalaryTotal += financial.grossSalaryAed * weight;
+        housingCostTotal += financial.housingCostAed * weight;
+        monthlyTransportCostTotal += financial.commutingCostAed * weight;
+        residualAfterEssentialsTotal += financial.residualAfterEssentialsAed * weight;
+        cityFinancialStatus[financial.status] += weight;
         bankTotal += citizen.bankBalanceAed * weight;
         monthlyBankBalanceDeltaTotal += citizen.lastMonthlyBankBalanceDeltaAed * weight;
         rentTotal += citizen.residentialRentAed * weight;
-        accumulator.netIncome += citizen.netIncomeAed * weight;
+        accumulator.netIncome += financial.cashAfterHousingAndCommuteAed * weight;
+        accumulator.grossSalary += financial.grossSalaryAed * weight;
+        accumulator.housingCost += financial.housingCostAed * weight;
+        accumulator.monthlyTransportCost += financial.commutingCostAed * weight;
+        accumulator.residualAfterEssentials += financial.residualAfterEssentialsAed * weight;
+        accumulator.financialStatus[financial.status] += weight;
         accumulator.bankBalance += citizen.bankBalanceAed * weight;
         accumulator.monthlyBankBalanceDelta += citizen.lastMonthlyBankBalanceDeltaAed * weight;
         if (citizen.enterpriseId) {
@@ -2563,6 +2990,9 @@
       }
       for (const enterprise of this.enterprises) {
         const accumulator = zoneAccumulators[this.zoneById.get(enterprise.zoneId).index];
+        accumulator.enterpriseState[enterprise.state] = (accumulator.enterpriseState[enterprise.state] || 0) + 1;
+        cityEnterpriseState[enterprise.state] = (cityEnterpriseState[enterprise.state] || 0) + 1;
+        accumulator.enterpriseCount += 1;
         const activeSlots = this.activeJobSlots(enterprise);
         const activeCapacity = activeSlots * this.config.citizenWeight;
         const vacancies = this.openVacancySlots(enterprise) * this.config.citizenWeight;
@@ -2574,9 +3004,15 @@
         const isActiveEnterprise = enterprise.employeeIds.size > 0 && enterprise.monthlyRevenueAed > 0;
         if (isActiveEnterprise) {
           activeEnterpriseCount += 1;
+          accumulator.activeEnterpriseCount += 1;
           enterpriseRevenueTotal += enterprise.monthlyRevenueAed;
           enterpriseCostTotal += enterprise.operatingCostAed;
-          if (enterprise.operatingMargin < 0) lossMakingEnterpriseCount += 1;
+          accumulator.enterpriseRevenue += enterprise.monthlyRevenueAed;
+          accumulator.enterpriseCost += enterprise.operatingCostAed;
+          if (enterprise.operatingMargin < 0) {
+            lossMakingEnterpriseCount += 1;
+            accumulator.lossMakingEnterpriseCount += 1;
+          }
         }
       }
       const zones = zoneAccumulators.map((item) => {
@@ -2589,6 +3025,10 @@
         const housingOccupancyRatio = item.representedPopulation / Math.max(housingCapacityRepresented, 1);
         const housingOvercapacityRepresented = Math.max(0, item.representedPopulation - housingCapacityRepresented);
         const averageNetIncomeAed = round(item.netIncome / population, 2);
+        const averageGrossSalaryAed = round(item.grossSalary / population, 2);
+        const averageHousingCostAed = round(item.housingCost / population, 2);
+        const averageMonthlyTransportCostAed = round(item.monthlyTransportCost / population, 2);
+        const averageResidualAfterEssentialsAed = round(item.residualAfterEssentials / population, 2);
         const averageBankBalanceAed = round(item.bankBalance / population, 2);
         const averageMonthlyBankBalanceDeltaAed = round(item.monthlyBankBalanceDelta / population, 2);
         const averageRoundTripMinutes = round(item.commute / commuters, 2);
@@ -2622,6 +3062,7 @@
           jobCapacity: item.jobCapacity,
           vacancies: item.vacancies,
           employmentRate: round((item.employed / population) * 100, 2),
+          stateCounts: { ...item.state },
           stateShares,
           states: {
             happy: stateShares.Happy,
@@ -2629,16 +3070,32 @@
             extreme: stateShares.Extreme,
             recovery: stateShares.Recovery,
           },
+          modeCounts: { ...item.mode },
           modeShares,
           modeShare: modeShares,
           averageNetIncomeAed,
           meanNetIncomeAed: averageNetIncomeAed,
+          averageCashAfterHousingAndCommuteAed: averageNetIncomeAed,
+          averageGrossSalaryAed,
+          averageHousingCostAed,
+          averageMonthlyTransportCostAed,
+          averageResidualAfterEssentialsAed,
+          financialStatusCounts: { ...item.financialStatus },
+          financialStatusShares: this.shareObject(item.financialStatus, population),
           averageBankBalanceAed,
           meanBankBalanceAed: averageBankBalanceAed,
           averageMonthlyBankBalanceDeltaAed,
           averageRoundTripMinutes,
           meanCommuteMinutes: averageRoundTripMinutes,
           sameZoneWorkShare: round((item.sameZoneWorkers / commuters) * 100, 2),
+          enterpriseStateCounts: { ...item.enterpriseState },
+          enterpriseStateShares: this.shareObject(item.enterpriseState, item.enterpriseCount),
+          activeEnterpriseSharePercent: round((item.activeEnterpriseCount / Math.max(item.enterpriseCount, 1)) * 100, 2),
+          lossMakingEnterpriseSharePercent: round((item.lossMakingEnterpriseCount / Math.max(item.activeEnterpriseCount, 1)) * 100, 2),
+          enterprisePortfolioOperatingMarginPercent: round(
+            item.enterpriseRevenue > 0 ? ((item.enterpriseRevenue - item.enterpriseCost) / item.enterpriseRevenue) * 100 : 0,
+            2
+          ),
         };
       });
       const links = this.links.map((link) => {
@@ -2680,6 +3137,10 @@
       const stateShares = this.shareObject(cityState, representedPopulation);
       const modeShares = this.modeShareObject(cityMode);
       const averageNetIncomeAed = round(netIncomeTotal / Math.max(representedPopulation, 1), 2);
+      const averageGrossSalaryAed = round(grossSalaryTotal / Math.max(representedPopulation, 1), 2);
+      const averageHousingCostAed = round(housingCostTotal / Math.max(representedPopulation, 1), 2);
+      const averageMonthlyTransportCostAed = round(monthlyTransportCostTotal / Math.max(representedPopulation, 1), 2);
+      const averageResidualAfterEssentialsAed = round(residualAfterEssentialsTotal / Math.max(representedPopulation, 1), 2);
       const averageBankBalanceAed = round(bankTotal / Math.max(representedPopulation, 1), 2);
       const averageMonthlyBankBalanceDeltaAed = round(monthlyBankBalanceDeltaTotal / Math.max(representedPopulation, 1), 2);
       const averageRoundTripMinutes = round(commuteTotal / Math.max(commuterWeight, 1), 2);
@@ -2709,6 +3170,8 @@
           enterpriseRevenueTotal > 0 ? ((enterpriseRevenueTotal - enterpriseCostTotal) / enterpriseRevenueTotal) * 100 : 0,
           2
         ),
+        enterpriseStateCounts: { ...cityEnterpriseState },
+        enterpriseStateShares: this.shareObject(cityEnterpriseState, this.enterprises.length),
         stateCounts: cityState,
         stateShares,
         states: {
@@ -2723,6 +3186,22 @@
         modeShare: modeShares,
         averageNetIncomeAed,
         meanNetIncomeAed: averageNetIncomeAed,
+        averageCashAfterHousingAndCommuteAed: averageNetIncomeAed,
+        averageGrossSalaryAed,
+        averageHousingCostAed,
+        averageMonthlyTransportCostAed,
+        averageResidualAfterEssentialsAed,
+        financialStatusCounts: { ...cityFinancialStatus },
+        financialStatusShares: this.shareObject(cityFinancialStatus, representedPopulation),
+        financialAccounting: {
+          formula: "gross salary − housing − commuting = cash after housing and commute; then subtract essential consumption",
+          averageGrossSalaryAed,
+          averageHousingCostAed,
+          averageMonthlyTransportCostAed,
+          averageCashAfterHousingAndCommuteAed: averageNetIncomeAed,
+          monthlyEssentialConsumptionAed: Math.max(0, Number(this.config.monthlyEssentialConsumptionAed) || 0),
+          averageResidualAfterEssentialsAed,
+        },
         averageBankBalanceAed,
         meanBankBalanceAed: averageBankBalanceAed,
         averageMonthlyBankBalanceDeltaAed,
@@ -2779,6 +3258,53 @@
       };
     }
 
+    computeCommuteOd() {
+      const grouped = new Map();
+      const completedModes = new Set(["car", "pt", "walk"]);
+      for (const citizen of this.citizens) {
+        const workZoneId = citizen.enterpriseId ? citizen.workZoneId : null;
+        const key = `${citizen.homeZoneId}|${workZoneId || "unemployed"}`;
+        if (!grouped.has(key)) {
+          grouped.set(key, {
+            homeZoneId: citizen.homeZoneId,
+            workZoneId,
+            employmentStatus: workZoneId ? "employed" : "unemployed",
+            citizenAgentCount: 0,
+            representedResidents: 0,
+            representedWorkers: 0,
+            modeCounts: { car: 0, pt: 0, walk: 0, unserved: 0, none: 0 },
+            completedCommuteWeight: 0,
+            weightedRoundTripMinutes: 0,
+          });
+        }
+        const row = grouped.get(key);
+        row.citizenAgentCount += 1;
+        row.representedResidents += citizen.weight;
+        if (workZoneId) row.representedWorkers += citizen.weight;
+        row.modeCounts[citizen.mode] = (row.modeCounts[citizen.mode] || 0) + citizen.weight;
+        if (workZoneId && completedModes.has(citizen.mode)) {
+          row.completedCommuteWeight += citizen.weight;
+          row.weightedRoundTripMinutes += citizen.roundTripMinutes * citizen.weight;
+        }
+      }
+      return [...grouped.values()]
+        .map((row) => ({
+          homeZoneId: row.homeZoneId,
+          workZoneId: row.workZoneId,
+          employmentStatus: row.employmentStatus,
+          citizenAgentCount: row.citizenAgentCount,
+          representedResidents: row.representedResidents,
+          representedWorkers: row.representedWorkers,
+          modeCounts: row.modeCounts,
+          modeShares: this.modeShareObject(row.modeCounts),
+          averageRoundTripMinutes: round(row.weightedRoundTripMinutes / Math.max(row.completedCommuteWeight, 1), 2),
+        }))
+        .sort(
+          (a, b) =>
+            a.homeZoneId.localeCompare(b.homeZoneId) || String(a.workZoneId || "~unemployed").localeCompare(String(b.workZoneId || "~unemployed"))
+        );
+    }
+
     weightedHistogram(items, bins, valueSelector, weightSelector) {
       const output = bins.map((bin) => ({
         label: bin.label,
@@ -2818,6 +3344,24 @@
         (citizen) => citizen.netIncomeAed,
         (citizen) => citizen.weight
       );
+      const exactZeroIncomeAgents = this.citizens.filter((citizen) => citizen.netIncomeAed === 0);
+      const financialStatusBins = this.financialStatusDefinitions().map((definition) => ({
+        ...definition,
+        agentCount: 0,
+        representedCount: 0,
+        sharePercent: 0,
+      }));
+      const financialStatusById = new Map(financialStatusBins.map((bin) => [bin.id, bin]));
+      for (const citizen of this.citizens) {
+        const financial = this.citizenFinancialAccount(citizen);
+        const bin = financialStatusById.get(financial.status);
+        bin.agentCount += 1;
+        bin.representedCount += citizen.weight;
+      }
+      const representedFinancialPopulation = sumBy(financialStatusBins, (bin) => bin.representedCount);
+      for (const bin of financialStatusBins) {
+        bin.sharePercent = round((bin.representedCount / Math.max(representedFinancialPopulation, 1)) * 100, 2);
+      }
       const completedCommuters = this.citizens.filter(
         (citizen) => citizen.enterpriseId && (citizen.mode === "car" || citizen.mode === "pt" || citizen.mode === "walk")
       );
@@ -2864,10 +3408,25 @@
       return {
         income: {
           population: "all-citizens",
-          unit: "AED/month net income",
+          metric: "cash-after-housing-and-commute",
+          unit: "AED/month after housing and commuting, before essential consumption",
+          formula: "gross salary − housing − commuting",
+          interpretation:
+            "This is not gross income and not final disposable income. Unemployed citizens remain in the distribution with zero salary and their housing cost.",
           sourceAgentCount: this.citizens.length,
           representedTotal: income.representedTotal,
+          exactZeroAgentCount: exactZeroIncomeAgents.length,
+          exactZeroRepresentedCount: sumBy(exactZeroIncomeAgents, (citizen) => citizen.weight),
           bins: income.bins,
+        },
+        financialStatus: {
+          population: "all-citizens",
+          unit: "represented residents",
+          monthlyEssentialConsumptionAed: Math.max(0, Number(this.config.monthlyEssentialConsumptionAed) || 0),
+          thinPositiveBufferUpperBoundAed: Math.max(0, Number(this.config.financialThinBufferAed) || 0),
+          categoriesAreMutuallyExclusive: true,
+          representedTotal: representedFinancialPopulation,
+          bins: financialStatusBins,
         },
         commute: {
           population: "completed-employed-commuters",
@@ -2886,8 +3445,110 @@
       };
     }
 
+    citizenDecisionExplanation(citizen) {
+      const financial = this.citizenFinancialAccount(citizen);
+      const severeFinancial = this.citizenIsFinanciallySevere(citizen);
+      const severeCommute = this.citizenHasSevereCommute(citizen);
+      const normal = this.citizenIsNormal(citizen);
+      let nextReviewDay = citizen.stateDecisionDay;
+      let reviewPurpose = "state recovery decision";
+      if (citizen.state === "Happy") {
+        nextReviewDay = Math.min(citizen.nextCarConsiderationDay, citizen.nextQualityMoveDay);
+        reviewPurpose = citizen.nextCarConsiderationDay <= citizen.nextQualityMoveDay ? "car ownership review" : "housing quality review";
+      }
+      const lastAction = citizen.events.length ? { ...citizen.events[citizen.events.length - 1] } : null;
+      return {
+        decisionModel: "rule-based UDES-style statechart",
+        primaryGoal: "Keep housing and access to work while maintaining an acceptable financial and commute buffer.",
+        goals: [
+          `Keep cash after housing and commuting above AED ${this.config.waitingNetIncomeAed.toLocaleString("en-US")}/month.`,
+          `Keep the round-trip commute below ${this.config.acceptableCommuteRoundTripMin} minutes.`,
+          "When dissatisfied, try a better job, cheaper housing, or housing closer to work; car and quality aspirations are reviewed less often.",
+        ],
+        currentAssessment: {
+          state: citizen.state,
+          normal,
+          severeFinancial,
+          severeCommute,
+          financialStatus: financial.status,
+          financialStatusLabel: financial.statusLabel,
+          financialAccountingDate: financial.accountingDate,
+          financialAccountingCadence: financial.accountingCadence,
+          waitingCashThresholdAed: this.config.waitingNetIncomeAed,
+          extremeCashThresholdAed: this.config.extremeNetIncomeAed,
+          extremeBankBalanceThresholdAed: this.config.extremeBankBalanceAed,
+          acceptableRoundTripMinutes: this.config.acceptableCommuteRoundTripMin,
+          extremeRoundTripMinutes: this.config.extremeCommuteRoundTripMin,
+          daysDissatisfied: citizen.daysDissatisfied,
+        },
+        nextScheduledReview:
+          Number.isFinite(nextReviewDay) && nextReviewDay >= this.day
+            ? {
+                day: nextReviewDay,
+                date: this.clockAt(nextReviewDay).date,
+                daysFromNow: nextReviewDay - this.day,
+                purpose: reviewPurpose,
+              }
+            : null,
+        lastAction,
+      };
+    }
+
+    enterpriseDecisionExplanation(enterprise) {
+      const marginGap = round(enterprise.operatingMargin - this.config.enterpriseTargetMargin, 4);
+      let nextDecisionDay = null;
+      let nextDecision = null;
+      if (enterprise.state === "Working") {
+        nextDecisionDay = Math.min(enterprise.nextGrowDay, enterprise.nextLesserDay);
+        nextDecision = enterprise.nextGrowDay <= enterprise.nextLesserDay ? "growth-state hazard" : "contraction-state hazard";
+      } else if (enterprise.state === "Grow") {
+        nextDecisionDay = Math.min(enterprise.nextActionDay, enterprise.stateExitDay);
+        nextDecision = enterprise.nextActionDay <= enterprise.stateExitDay ? "growth action" : "return to Working";
+      } else if (enterprise.state === "Lesser") {
+        nextDecisionDay = Math.min(enterprise.nextActionDay, enterprise.stateExitDay);
+        nextDecision = enterprise.nextActionDay <= enterprise.stateExitDay ? "contraction action" : "return to Working";
+      } else if (enterprise.state === "Starting") {
+        nextDecisionDay = enterprise.stateEnteredDay + Math.max(1, this.config.firmStartupDays);
+        nextDecision = "complete startup";
+      }
+      const lastAction = enterprise.events.length ? { ...enterprise.events[enterprise.events.length - 1] } : null;
+      return {
+        decisionModel: this.config.endogenousEnterpriseDynamics
+          ? "UDES-style statechart with margin, vacancy-fill, demand, and labor-access hazards"
+          : "reference UDES-style independent state hazards",
+        primaryGoal: "Maintain a viable operating margin and staffed capacity while responding to local demand and labor access.",
+        goals: [
+          `Work toward a ${(this.config.enterpriseTargetMargin * 100).toFixed(0)}% operating-margin target.`,
+          "Grow capacity when margin, demand, and vacancy fill are strong; contract when they are weak.",
+          "In Grow, prefer higher-quality and labor-accessible districts; in Lesser, prefer lower-rent accessible districts.",
+        ],
+        currentAssessment: {
+          state: enterprise.state,
+          operatingMarginPercent: round(enterprise.operatingMargin * 100, 2),
+          targetOperatingMarginPercent: round(this.config.enterpriseTargetMargin * 100, 2),
+          marginGapPercentagePoints: round(marginGap * 100, 2),
+          vacancyFillRatePercent: round(enterprise.vacancyFillRate * 100, 2),
+          demandIndex: enterprise.demandIndex,
+          laborAccessScore: enterprise.laborAccessScore,
+          growHazardMultiplier: enterprise.growHazardMultiplier,
+          lesserHazardMultiplier: enterprise.lesserHazardMultiplier,
+        },
+        nextScheduledDecision:
+          Number.isFinite(nextDecisionDay) && nextDecisionDay >= this.day
+            ? {
+                day: nextDecisionDay,
+                date: this.clockAt(nextDecisionDay).date,
+                daysFromNow: nextDecisionDay - this.day,
+                purpose: nextDecision,
+              }
+            : null,
+        lastAction,
+      };
+    }
+
     serializeCitizen(citizen, historyLimit = 0) {
       if (!citizen) return null;
+      const financialAccount = this.citizenFinancialAccount(citizen);
       return {
         id: citizen.id,
         generation: citizen.generation,
@@ -2914,10 +3575,16 @@
         monthlyTransportCost: citizen.monthlyTransportCostAed,
         netIncomeAed: citizen.netIncomeAed,
         netIncomeMonthly: citizen.netIncomeAed,
+        cashAfterHousingAndCommuteAed: financialAccount.cashAfterHousingAndCommuteAed,
+        residualAfterEssentialsAed: financialAccount.residualAfterEssentialsAed,
+        financialStatus: financialAccount.status,
+        financialStatusLabel: financialAccount.statusLabel,
+        financialAccount,
         bankBalanceAed: citizen.bankBalanceAed,
         bankBalance: citizen.bankBalanceAed,
         lastMonthlyBankBalanceDeltaAed: citizen.lastMonthlyBankBalanceDeltaAed,
         lastMoveReason: citizen.lastMoveReason,
+        decisionExplanation: this.citizenDecisionExplanation(citizen),
         history: historyLimit ? citizen.history.slice(-historyLimit) : undefined,
         events: historyLimit ? citizen.events.slice(-historyLimit) : undefined,
       };
@@ -2969,6 +3636,7 @@
         consecutiveRestartLossMonths: enterprise.consecutiveRestartLossMonths,
         growHazardMultiplier: enterprise.growHazardMultiplier,
         lesserHazardMultiplier: enterprise.lesserHazardMultiplier,
+        decisionExplanation: this.enterpriseDecisionExplanation(enterprise),
         history: historyLimit ? enterprise.history.slice(-historyLimit) : undefined,
         events: historyLimit ? enterprise.events.slice(-historyLimit) : undefined,
       };
@@ -2997,6 +3665,7 @@
         city: metrics.city,
         zones: metrics.zones,
         links: metrics.links,
+        commuteOd: this.computeCommuteOd(),
         citizens,
         enterprises,
         citizenSamples: citizens,

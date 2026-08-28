@@ -432,17 +432,17 @@ visual:
 
       <section id="udes-v2-panel-citizen" class="udes-v2-tab-panel" role="tabpanel" aria-labelledby="udes-v2-tab-citizen" data-udes-v2-inspector-panel="citizen" hidden>
         <div class="udes-v2-empty-state">
-          <span>Citizen sample</span>
-          <strong>Citizen inspector loading</strong>
-          <p>The model will expose home, work, finances, commute, mode choice, and the live satisfaction statechart here.</p>
+          <span>Tracked citizen</span>
+          <strong>Citizen decision record loading</strong>
+          <p>The model will show this citizen's goal, decision rule, next review, last action, home and work districts, finances, commute, mode, and live state.</p>
         </div>
       </section>
 
       <section id="udes-v2-panel-enterprise" class="udes-v2-tab-panel" role="tabpanel" aria-labelledby="udes-v2-tab-enterprise" data-udes-v2-inspector-panel="enterprise" hidden>
         <div class="udes-v2-empty-state">
-          <span>Enterprise sample</span>
-          <strong>Enterprise inspector loading</strong>
-          <p>The model will expose sector, employment, wages, rent, operating margin, accessibility, and the live enterprise statechart here.</p>
+          <span>Tracked enterprise</span>
+          <strong>Enterprise decision record loading</strong>
+          <p>The model will show this enterprise's goal, decision rule, next review, last action, district, workforce, costs, margin, accessibility, and live state.</p>
         </div>
       </section>
 
@@ -460,14 +460,35 @@ visual:
   <section class="udes-v2-tray" aria-labelledby="udes-v2-tray-title" data-udes-v2-tray>
     <div class="udes-v2-tray__bar">
       <div class="udes-v2-tray__label">
-        <span class="udes-v2-kicker">Time series</span>
-        <h2 id="udes-v2-tray-title">Scenario outcomes</h2>
+        <span class="udes-v2-kicker">Diagnostics</span>
+        <h2 id="udes-v2-tray-title">Scenario evidence</h2>
       </div>
       <div class="udes-v2-chart-tabs" role="tablist" aria-label="Outcome chart views">
         <button id="udes-v2-chart-tab-outcomes" type="button" role="tab" aria-selected="true" aria-controls="udes-v2-chart-panel-outcomes" data-udes-v2-chart-tab="outcomes">Outcomes</button>
-        <button id="udes-v2-chart-tab-places" type="button" role="tab" aria-selected="false" aria-controls="udes-v2-chart-panel-places" tabindex="-1" data-udes-v2-chart-tab="places">Places</button>
+        <button id="udes-v2-chart-tab-districts" type="button" role="tab" aria-selected="false" aria-controls="udes-v2-chart-panel-districts" tabindex="-1" data-udes-v2-chart-tab="districts">Districts</button>
+        <button id="udes-v2-chart-tab-flows" type="button" role="tab" aria-selected="false" aria-controls="udes-v2-chart-panel-flows" tabindex="-1" data-udes-v2-chart-tab="flows">Moves</button>
         <button id="udes-v2-chart-tab-mobility" type="button" role="tab" aria-selected="false" aria-controls="udes-v2-chart-panel-mobility" tabindex="-1" data-udes-v2-chart-tab="mobility">Mobility</button>
-        <button id="udes-v2-chart-tab-agents" type="button" role="tab" aria-selected="false" aria-controls="udes-v2-chart-panel-agents" tabindex="-1" data-udes-v2-chart-tab="agents">Households &amp; economy</button>
+        <button id="udes-v2-chart-tab-citizens" type="button" role="tab" aria-selected="false" aria-controls="udes-v2-chart-panel-citizens" tabindex="-1" data-udes-v2-chart-tab="citizens">Citizens</button>
+        <button id="udes-v2-chart-tab-enterprises" type="button" role="tab" aria-selected="false" aria-controls="udes-v2-chart-panel-enterprises" tabindex="-1" data-udes-v2-chart-tab="enterprises">Enterprises</button>
+      </div>
+      <div class="udes-v2-tray-filter" data-udes-v2-flow-controls hidden>
+        <label>
+          <span>Flow</span>
+          <select aria-label="Movement type" data-udes-v2-flow-kind>
+            <option value="residential">Residential</option>
+            <option value="job">Job</option>
+            <option value="enterprise">Enterprise</option>
+            <option value="commute">Home → work stock</option>
+          </select>
+        </label>
+        <label>
+          <span>Window</span>
+          <select aria-label="Movement window" data-udes-v2-flow-window>
+            <option value="1">1 day</option>
+            <option value="7">7 days</option>
+            <option value="30" selected>30 days</option>
+          </select>
+        </label>
       </div>
       <button class="udes-v2-text-button" type="button" data-udes-v2-action="export" data-udes-v2-export>Export CSV</button>
     </div>
@@ -484,14 +505,20 @@ visual:
         <div class="udes-v2-chart-canvas" data-udes-v2-chart="outcomes"><p class="udes-v2-chart-empty">Daily outcome and same-seed reference trends are loading.</p></div>
       </section>
 
-      <section id="udes-v2-chart-panel-places" class="udes-v2-chart-panel" role="tabpanel" aria-labelledby="udes-v2-chart-tab-places" data-udes-v2-chart-panel="places" hidden>
-        <div class="udes-v2-chart-mount" data-udes-v2-chart="places"><p class="udes-v2-chart-empty">All-district housing, jobs and rent impacts are loading.</p></div>
+      <section id="udes-v2-chart-panel-districts" class="udes-v2-chart-panel" role="tabpanel" aria-labelledby="udes-v2-chart-tab-districts" data-udes-v2-chart-panel="districts" hidden>
+        <div class="udes-v2-chart-mount" data-udes-v2-chart="districts"><p class="udes-v2-chart-empty">District comparisons and selected-district daily trends are loading.</p></div>
+      </section>
+      <section id="udes-v2-chart-panel-flows" class="udes-v2-chart-panel" role="tabpanel" aria-labelledby="udes-v2-chart-tab-flows" data-udes-v2-chart-panel="flows" hidden>
+        <div class="udes-v2-chart-mount" data-udes-v2-chart="flows"><p class="udes-v2-chart-empty">Cross-district routes and origin–destination totals are loading.</p></div>
       </section>
       <section id="udes-v2-chart-panel-mobility" class="udes-v2-chart-panel" role="tabpanel" aria-labelledby="udes-v2-chart-tab-mobility" data-udes-v2-chart-panel="mobility" hidden>
         <div class="udes-v2-chart-mount" data-udes-v2-chart="mobility"><p class="udes-v2-chart-empty">Daily mode choice, commute burden and named-corridor pressure are loading.</p></div>
       </section>
-      <section id="udes-v2-chart-panel-agents" class="udes-v2-chart-panel" role="tabpanel" aria-labelledby="udes-v2-chart-tab-agents" data-udes-v2-chart-panel="agents" hidden>
-        <div class="udes-v2-chart-mount" data-udes-v2-chart="agents"><p class="udes-v2-chart-empty">Household distributions and daily labor-market events are loading.</p></div>
+      <section id="udes-v2-chart-panel-citizens" class="udes-v2-chart-panel" role="tabpanel" aria-labelledby="udes-v2-chart-tab-citizens" data-udes-v2-chart-panel="citizens" hidden>
+        <div class="udes-v2-chart-mount" data-udes-v2-chart="citizens"><p class="udes-v2-chart-empty">Citizen states, financial position, and daily decisions are loading.</p></div>
+      </section>
+      <section id="udes-v2-chart-panel-enterprises" class="udes-v2-chart-panel" role="tabpanel" aria-labelledby="udes-v2-chart-tab-enterprises" data-udes-v2-chart-panel="enterprises" hidden>
+        <div class="udes-v2-chart-mount" data-udes-v2-chart="enterprises"><p class="udes-v2-chart-empty">Enterprise states, margins, and daily decisions are loading.</p></div>
       </section>
     </div>
 

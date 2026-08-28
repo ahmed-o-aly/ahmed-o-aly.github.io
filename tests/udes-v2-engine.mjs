@@ -114,6 +114,32 @@ for (const observation of dailySeriesSnapshot.dailySeries) {
   }
   assert.equal(observation.zonePolicies.length, DEFAULT_ZONES.length, "daily observations preserve every district policy state");
   assert.equal(observation.zoneSeries.length, DEFAULT_ZONES.length, "daily observations preserve compact district outcome series");
+  assert.ok(Array.isArray(observation.flows.residentialMoves), "daily observations expose residential origin-destination rows");
+  assert.ok(Array.isArray(observation.flows.jobMoves), "daily observations expose workplace origin-destination rows");
+  assert.ok(Array.isArray(observation.flows.enterpriseMoves), "daily observations expose enterprise origin-destination rows");
+  assert.ok(Array.isArray(observation.transitions.citizens), "daily observations expose citizen state transitions with reasons");
+  assert.ok(Array.isArray(observation.transitions.enterprises), "daily observations expose enterprise state transitions with reasons");
+  for (const zone of observation.zoneSeries) {
+    for (const field of [
+      "averageGrossSalaryAed",
+      "averageHousingCostAed",
+      "averageMonthlyTransportCostAed",
+      "averageCashAfterHousingAndCommuteAed",
+      "averageResidualAfterEssentialsAed",
+      "residentialMoveInflows",
+      "residentialMoveOutflows",
+      "residentialMoveNet",
+      "jobMoveInflows",
+      "jobMoveOutflows",
+      "jobMoveNet",
+      "enterpriseMoveInflows",
+      "enterpriseMoveOutflows",
+      "enterpriseMoveNet",
+    ]) {
+      assert.ok(Number.isFinite(zone[field]), `${field} is a finite district-day diagnostic`);
+    }
+    assert.ok(zone.financialStatusShares && zone.enterpriseStateShares, "district days retain household and enterprise state diagnostics");
+  }
   assert.ok(Number.isFinite(observation.city.activeEnterpriseSharePercent), "daily active-enterprise share is finite");
   assert.ok(Number.isFinite(observation.city.enterprisePortfolioOperatingMarginPercent), "daily enterprise portfolio margin is finite");
 }
@@ -259,6 +285,13 @@ const citizenInspection = first.inspect("citizen", first.citizens[0].id, 8);
 assert.equal(citizenInspection.id, first.citizens[0].id);
 assert.ok(Array.isArray(citizenInspection.history));
 assert.ok(Array.isArray(citizenInspection.events));
+assert.equal(
+  citizenInspection.financialAccount.accountingReconciliationDifferenceAed,
+  0,
+  "citizen accounting reconciles the formerly ambiguous net-income measure to its named components"
+);
+assert.match(citizenInspection.decisionExplanation.decisionModel, /statechart/i, "citizen inspection explains its decision mechanism");
+assert.ok(citizenInspection.decisionExplanation.currentAssessment.financialStatus, "citizen inspection exposes the active financial guard");
 
 const enterpriseInspection = first.inspect("enterprise", first.enterprises[0].id, 8);
 assert.ok(Array.isArray(enterpriseInspection.employeeIds));
@@ -266,9 +299,132 @@ assert.ok(enterpriseInspection.sector, "firms carry a persistent sector");
 assert.ok(Number.isFinite(enterpriseInspection.monthlyRevenueAed), "monthly enterprise revenue is exposed");
 assert.ok(Number.isFinite(enterpriseInspection.operatingMargin), "enterprise operating margin is exposed");
 assert.ok(enterpriseInspection.laborAccessScore >= 0 && enterpriseInspection.laborAccessScore <= 1);
+assert.match(enterpriseInspection.decisionExplanation.primaryGoal, /operating margin/i, "enterprise inspection states its implemented goal");
+assert.ok(
+  Number.isFinite(enterpriseInspection.decisionExplanation.currentAssessment.marginGapPercentagePoints),
+  "enterprise inspection exposes the economic signal governing its state hazards"
+);
 for (const citizenId of enterpriseInspection.employeeIds) {
   assert.equal(first.citizenById.get(citizenId).enterpriseId, enterpriseInspection.id);
 }
+
+const accountingSnapshot = first.snapshot();
+assert.equal(
+  accountingSnapshot.commuteOd.reduce((total, row) => total + row.representedResidents, 0),
+  accountingSnapshot.city.representedPopulation,
+  "the current home-to-work OD stock accounts for employed and unemployed residents"
+);
+assert.equal(
+  accountingSnapshot.commuteOd.reduce((total, row) => total + row.representedWorkers, 0),
+  accountingSnapshot.city.representedEmployed,
+  "the current home-to-work OD stock reconciles to city employment"
+);
+const financialBins = accountingSnapshot.city.distributions.financialStatus.bins;
+assert.equal(
+  financialBins.reduce((total, bin) => total + bin.representedCount, 0),
+  accountingSnapshot.city.representedPopulation,
+  "mutually exclusive financial-status groups account for the entire represented population"
+);
+assert.equal(
+  accountingSnapshot.city.distributions.income.exactZeroAgentCount,
+  first.citizens.filter((citizen) => citizen.netIncomeAed === 0).length,
+  "the income contract reports exact zeros separately instead of implying that a broad AED bin is zero"
+);
+assert.match(
+  accountingSnapshot.city.distributions.income.unit,
+  /after housing and commuting, before essential consumption/i,
+  "the distribution names the accounting boundary that users are looking at"
+);
+
+const flowEngine = new UdesV2Engine({ seed: 16661, config: { ...compactConfig, citizenCount: 160, enterpriseCount: 24 } });
+flowEngine.resetDailyFlows();
+const previousFlowEvents = { ...flowEngine.eventsTotal };
+const residentialMover = flowEngine.citizens[0];
+const residentialOriginId = residentialMover.homeZoneId;
+const residentialTarget = flowEngine.zones.find((zone) => zone.id !== residentialOriginId);
+assert.ok(flowEngine.moveCitizen(residentialMover, residentialTarget.id, "test-residential-od"));
+
+const jobMover = flowEngine.citizens.find((citizen) => citizen.enterpriseId);
+const formerWorkZoneId = jobMover.workZoneId;
+const targetEmployer = flowEngine.enterprises.find(
+  (enterprise) => enterprise.zoneId !== formerWorkZoneId && enterprise.hiring && enterprise.employeeIds.size < enterprise.maxJobSlots
+);
+assert.ok(targetEmployer, "the OD fixture has a cross-district hiring enterprise");
+assert.ok(flowEngine.employ(jobMover, targetEmployer, jobMover.salaryAed * 1.1, "better-job"));
+
+const relocatingEnterprise = flowEngine.enterprises.find((enterprise) => enterprise.employeeIds.size > 0);
+const enterpriseOriginId = relocatingEnterprise.zoneId;
+const enterpriseTarget = flowEngine.zones.find((zone) => zone.id !== enterpriseOriginId && zone.enterpriseIds.size < zone.enterprisePlaceCapacity);
+assert.ok(enterpriseTarget, "the OD fixture has a district with enterprise capacity");
+assert.ok(flowEngine.moveEnterprise(relocatingEnterprise, enterpriseTarget.id, "test-enterprise-od"));
+
+const flowObservation = flowEngine.dailyObservation(previousFlowEvents);
+assert.equal(flowObservation.flows.totals.residentialMoveAgents, 1, "a residential move is conserved in daily OD totals");
+assert.equal(
+  flowObservation.flows.totals.representedResidentialMoves,
+  flowObservation.events.residentialMovesRepresented,
+  "residential OD totals reconcile to the daily represented move counter"
+);
+assert.ok(flowObservation.flows.totals.crossDistrictJobMoveAgents >= 1, "cross-district job changes are retained in daily OD totals");
+assert.equal(flowObservation.flows.totals.enterpriseMoves, 1, "an enterprise move is conserved in daily OD totals");
+assert.equal(
+  flowObservation.zoneSeries.reduce((total, zone) => total + zone.residentialMoveNet, 0),
+  0,
+  "district residential inflows and outflows balance citywide"
+);
+assert.equal(
+  flowObservation.zoneSeries.reduce((total, zone) => total + zone.jobMoveNet, 0),
+  0,
+  "district workplace inflows and outflows balance citywide"
+);
+assert.equal(
+  flowObservation.zoneSeries.reduce((total, zone) => total + zone.enterpriseMoveNet, 0),
+  0,
+  "district enterprise inflows and outflows balance citywide"
+);
+
+const transitionEngine = new UdesV2Engine({
+  seed: 17171,
+  config: {
+    ...compactConfig,
+    citizenCount: 120,
+    enterpriseCount: 16,
+    workdays: [],
+    waitingNetIncomeAed: -1e9,
+    extremeNetIncomeAed: -1e9,
+    extremeBankBalanceAed: -1e9,
+    acceptableCommuteRoundTripMin: 1e9,
+    extremeCommuteRoundTripMin: 1e9,
+  },
+});
+assert.ok(
+  transitionEngine.citizens.every((citizen) => citizen.state === "Happy"),
+  "the transition fixture begins in Happy"
+);
+transitionEngine.configure({ waitingNetIncomeAed: 1e9 });
+const transitionObservation = transitionEngine.step(1, { captureDaily: true }).dailySeries[0];
+assert.equal(
+  transitionObservation.transitions.totals.representedCitizenTransitions,
+  transitionEngine.citizens.length * transitionEngine.config.citizenWeight,
+  "daily state-transition rows account for every represented citizen that changes state"
+);
+assert.ok(
+  transitionObservation.transitions.citizens.every(
+    (transition) => transition.fromState === "Happy" && transition.toState === "Waiting" && transition.reason === "dissatisfaction-guard"
+  ),
+  "state-transition rows preserve the implemented source, destination, and guard reason"
+);
+transitionEngine.resetDailyTransitions();
+const replacedCitizen = transitionEngine.citizens[0];
+replacedCitizen.state = "Extreme";
+transitionEngine.replaceCitizen(replacedCitizen);
+const replacementTransition = transitionEngine
+  .aggregateDailyTransitions()
+  .citizens.find((transition) => transition.reason === "demographic-replacement");
+assert.ok(replacementTransition, "demographic replacement records the state-stock transition to the new citizen generation");
+assert.equal(replacementTransition.fromState, "Extreme");
+assert.equal(replacementTransition.toState, "Happy");
+assert.equal(replacementTransition.representedResidents, transitionEngine.config.citizenWeight);
 
 const waitingEngine = new UdesV2Engine({
   seed: 7,

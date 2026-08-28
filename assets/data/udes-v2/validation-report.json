@@ -1,13 +1,13 @@
 {
   "schemaVersion": "1.3.1",
-  "generatedAt": "2026-08-27T22:24:36.882Z",
+  "generatedAt": "2026-08-28T11:47:55.088Z",
   "model": "Abu Dhabi Urban Dynamics Lab / UDES v2",
   "datasetSchemaVersion": "2.0.0",
   "engineSchemaVersion": "2.0",
   "sourceHashes": {
-    "engineSha256": "f50c632bc7c2a7aac2b62e097ca0182aa6b02388fd53157ab0a13f5e95ce7330",
+    "engineSha256": "b80cdc2e34ed7acc9495738d2e3b3337b255e7c04db6e4d5760585df5be9f871",
     "baselineSha256": "773e0d85aa9f58ffac78f477ac273f7fcf9f5ba7e0e06aecd7122a6332ee71f6",
-    "publicControllerSha256": "1ffd3718bd75067026fa6cd02bff6b7891c2c94ed550b008a0ed25761a75579c",
+    "publicControllerSha256": "151bb851b385cbda8d0d6d38ae5bb1d433096722b47f1062943cf0bbc8de8468",
     "validationHarnessSha256": "06837a75186177518f15814db8bac878f65dc643722a82b4f4914f2a8f138ced"
   },
   "seed": 240124,
@@ -169,9 +169,14 @@
         "distributions": {
           "income": {
             "population": "all-citizens",
-            "unit": "AED/month net income",
+            "metric": "cash-after-housing-and-commute",
+            "unit": "AED/month after housing and commuting, before essential consumption",
+            "formula": "gross salary − housing − commuting",
+            "interpretation": "This is not gross income and not final disposable income. Unemployed citizens remain in the distribution with zero salary and their housing cost.",
             "sourceAgentCount": 6070,
             "representedTotal": 1517500,
+            "exactZeroAgentCount": 0,
+            "exactZeroRepresentedCount": 0,
             "bins": [
               {
                 "label": "Below AED 0",
@@ -228,6 +233,51 @@
                 "agentCount": 148,
                 "representedCount": 37000,
                 "sharePercent": 2.44
+              }
+            ]
+          },
+          "financialStatus": {
+            "population": "all-citizens",
+            "unit": "represented residents",
+            "monthlyEssentialConsumptionAed": 2500,
+            "thinPositiveBufferUpperBoundAed": 1500,
+            "categoriesAreMutuallyExclusive": true,
+            "representedTotal": 1517500,
+            "bins": [
+              {
+                "id": "unemployed",
+                "label": "Unemployed",
+                "agentCount": 1232,
+                "representedCount": 308000,
+                "sharePercent": 20.3
+              },
+              {
+                "id": "fixed-cost-deficit",
+                "label": "Pay below housing + commute",
+                "agentCount": 55,
+                "representedCount": 13750,
+                "sharePercent": 0.91
+              },
+              {
+                "id": "essentials-gap",
+                "label": "Essentials not fully covered",
+                "agentCount": 447,
+                "representedCount": 111750,
+                "sharePercent": 7.36
+              },
+              {
+                "id": "thin-positive-buffer",
+                "label": "Thin positive buffer",
+                "agentCount": 625,
+                "representedCount": 156250,
+                "sharePercent": 10.3
+              },
+              {
+                "id": "savings-capacity",
+                "label": "Savings capacity",
+                "agentCount": 3711,
+                "representedCount": 927750,
+                "sharePercent": 61.14
               }
             ]
           },
@@ -501,7 +551,7 @@
         }
       ],
       "status": "passed",
-      "resultDigestSha256": "2db91870c00b76b5ca3fc63c9e2744cbfd4f9f121260649f0256b2267dca8374"
+      "resultDigestSha256": "b9dc237b9b6bb87836fd3e309a627b6ac1b76b3afb435ca6e591f5e5748f610a"
     },
     {
       "id": "transit-1y",
@@ -622,9 +672,14 @@
         "distributions": {
           "income": {
             "population": "all-citizens",
-            "unit": "AED/month net income",
+            "metric": "cash-after-housing-and-commute",
+            "unit": "AED/month after housing and commuting, before essential consumption",
+            "formula": "gross salary − housing − commuting",
+            "interpretation": "This is not gross income and not final disposable income. Unemployed citizens remain in the distribution with zero salary and their housing cost.",
             "sourceAgentCount": 6070,
             "representedTotal": 1517500,
+            "exactZeroAgentCount": 0,
+            "exactZeroRepresentedCount": 0,
             "bins": [
               {
                 "label": "Below AED 0",
@@ -681,6 +736,51 @@
                 "agentCount": 169,
                 "representedCount": 42250,
                 "sharePercent": 2.78
+              }
+            ]
+          },
+          "financialStatus": {
+            "population": "all-citizens",
+            "unit": "represented residents",
+            "monthlyEssentialConsumptionAed": 2500,
+            "thinPositiveBufferUpperBoundAed": 1500,
+            "categoriesAreMutuallyExclusive": true,
+            "representedTotal": 1517500,
+            "bins": [
+              {
+                "id": "unemployed",
+                "label": "Unemployed",
+                "agentCount": 1237,
+                "representedCount": 309250,
+                "sharePercent": 20.38
+              },
+              {
+                "id": "fixed-cost-deficit",
+                "label": "Pay below housing + commute",
+                "agentCount": 31,
+                "representedCount": 7750,
+                "sharePercent": 0.51
+              },
+              {
+                "id": "essentials-gap",
+                "label": "Essentials not fully covered",
+                "agentCount": 362,
+                "representedCount": 90500,
+                "sharePercent": 5.96
+              },
+              {
+                "id": "thin-positive-buffer",
+                "label": "Thin positive buffer",
+                "agentCount": 573,
+                "representedCount": 143250,
+                "sharePercent": 9.44
+              },
+              {
+                "id": "savings-capacity",
+                "label": "Savings capacity",
+                "agentCount": 3867,
+                "representedCount": 966750,
+                "sharePercent": 63.71
               }
             ]
           },
@@ -954,7 +1054,7 @@
         }
       ],
       "status": "passed",
-      "resultDigestSha256": "a5bb92c59e7ae7f67db4ba7249aa745e126a76819991eeb6291ef41d9de3daea"
+      "resultDigestSha256": "30138d55f3d43935624873f40c135738a9a2b63cd342673788c2309311b40f5d"
     },
     {
       "id": "reference-10y",
@@ -1075,9 +1175,14 @@
         "distributions": {
           "income": {
             "population": "all-citizens",
-            "unit": "AED/month net income",
+            "metric": "cash-after-housing-and-commute",
+            "unit": "AED/month after housing and commuting, before essential consumption",
+            "formula": "gross salary − housing − commuting",
+            "interpretation": "This is not gross income and not final disposable income. Unemployed citizens remain in the distribution with zero salary and their housing cost.",
             "sourceAgentCount": 6070,
             "representedTotal": 1517500,
+            "exactZeroAgentCount": 0,
+            "exactZeroRepresentedCount": 0,
             "bins": [
               {
                 "label": "Below AED 0",
@@ -1134,6 +1239,51 @@
                 "agentCount": 1390,
                 "representedCount": 347500,
                 "sharePercent": 22.9
+              }
+            ]
+          },
+          "financialStatus": {
+            "population": "all-citizens",
+            "unit": "represented residents",
+            "monthlyEssentialConsumptionAed": 2500,
+            "thinPositiveBufferUpperBoundAed": 1500,
+            "categoriesAreMutuallyExclusive": true,
+            "representedTotal": 1517500,
+            "bins": [
+              {
+                "id": "unemployed",
+                "label": "Unemployed",
+                "agentCount": 1284,
+                "representedCount": 321000,
+                "sharePercent": 21.15
+              },
+              {
+                "id": "fixed-cost-deficit",
+                "label": "Pay below housing + commute",
+                "agentCount": 10,
+                "representedCount": 2500,
+                "sharePercent": 0.16
+              },
+              {
+                "id": "essentials-gap",
+                "label": "Essentials not fully covered",
+                "agentCount": 63,
+                "representedCount": 15750,
+                "sharePercent": 1.04
+              },
+              {
+                "id": "thin-positive-buffer",
+                "label": "Thin positive buffer",
+                "agentCount": 145,
+                "representedCount": 36250,
+                "sharePercent": 2.39
+              },
+              {
+                "id": "savings-capacity",
+                "label": "Savings capacity",
+                "agentCount": 4568,
+                "representedCount": 1142000,
+                "sharePercent": 75.26
               }
             ]
           },
@@ -1408,7 +1558,7 @@
         }
       ],
       "status": "passed",
-      "resultDigestSha256": "f8ce6e7dee0c56ff9fbdb2759f5d343559db7c031674266a01b54005c22cd13b"
+      "resultDigestSha256": "a5d0cd73d3a5b180206725391ae007a4a48aa0c4c8849e0e64fc8d129a6fe08a"
     },
     {
       "id": "transit-10y",
@@ -1529,9 +1679,14 @@
         "distributions": {
           "income": {
             "population": "all-citizens",
-            "unit": "AED/month net income",
+            "metric": "cash-after-housing-and-commute",
+            "unit": "AED/month after housing and commuting, before essential consumption",
+            "formula": "gross salary − housing − commuting",
+            "interpretation": "This is not gross income and not final disposable income. Unemployed citizens remain in the distribution with zero salary and their housing cost.",
             "sourceAgentCount": 6070,
             "representedTotal": 1517500,
+            "exactZeroAgentCount": 0,
+            "exactZeroRepresentedCount": 0,
             "bins": [
               {
                 "label": "Below AED 0",
@@ -1588,6 +1743,51 @@
                 "agentCount": 2049,
                 "representedCount": 512250,
                 "sharePercent": 33.76
+              }
+            ]
+          },
+          "financialStatus": {
+            "population": "all-citizens",
+            "unit": "represented residents",
+            "monthlyEssentialConsumptionAed": 2500,
+            "thinPositiveBufferUpperBoundAed": 1500,
+            "categoriesAreMutuallyExclusive": true,
+            "representedTotal": 1517500,
+            "bins": [
+              {
+                "id": "unemployed",
+                "label": "Unemployed",
+                "agentCount": 1273,
+                "representedCount": 318250,
+                "sharePercent": 20.97
+              },
+              {
+                "id": "fixed-cost-deficit",
+                "label": "Pay below housing + commute",
+                "agentCount": 3,
+                "representedCount": 750,
+                "sharePercent": 0.05
+              },
+              {
+                "id": "essentials-gap",
+                "label": "Essentials not fully covered",
+                "agentCount": 39,
+                "representedCount": 9750,
+                "sharePercent": 0.64
+              },
+              {
+                "id": "thin-positive-buffer",
+                "label": "Thin positive buffer",
+                "agentCount": 49,
+                "representedCount": 12250,
+                "sharePercent": 0.81
+              },
+              {
+                "id": "savings-capacity",
+                "label": "Savings capacity",
+                "agentCount": 4706,
+                "representedCount": 1176500,
+                "sharePercent": 77.53
               }
             ]
           },
@@ -1862,7 +2062,7 @@
         }
       ],
       "status": "passed",
-      "resultDigestSha256": "5a9517c7ea8d11ee186e7ca4b9762847066cd55f3980592c7cb90e1e56ed390f"
+      "resultDigestSha256": "42be80fc2b2ebd8c5b1b80bfadaa5033e6258a8f1b9826f2775fab378621dad7"
     },
     {
       "id": "housing-10y",
@@ -1983,9 +2183,14 @@
         "distributions": {
           "income": {
             "population": "all-citizens",
-            "unit": "AED/month net income",
+            "metric": "cash-after-housing-and-commute",
+            "unit": "AED/month after housing and commuting, before essential consumption",
+            "formula": "gross salary − housing − commuting",
+            "interpretation": "This is not gross income and not final disposable income. Unemployed citizens remain in the distribution with zero salary and their housing cost.",
             "sourceAgentCount": 6070,
             "representedTotal": 1517500,
+            "exactZeroAgentCount": 0,
+            "exactZeroRepresentedCount": 0,
             "bins": [
               {
                 "label": "Below AED 0",
@@ -2042,6 +2247,51 @@
                 "agentCount": 1410,
                 "representedCount": 352500,
                 "sharePercent": 23.23
+              }
+            ]
+          },
+          "financialStatus": {
+            "population": "all-citizens",
+            "unit": "represented residents",
+            "monthlyEssentialConsumptionAed": 2500,
+            "thinPositiveBufferUpperBoundAed": 1500,
+            "categoriesAreMutuallyExclusive": true,
+            "representedTotal": 1517500,
+            "bins": [
+              {
+                "id": "unemployed",
+                "label": "Unemployed",
+                "agentCount": 1268,
+                "representedCount": 317000,
+                "sharePercent": 20.89
+              },
+              {
+                "id": "fixed-cost-deficit",
+                "label": "Pay below housing + commute",
+                "agentCount": 8,
+                "representedCount": 2000,
+                "sharePercent": 0.13
+              },
+              {
+                "id": "essentials-gap",
+                "label": "Essentials not fully covered",
+                "agentCount": 69,
+                "representedCount": 17250,
+                "sharePercent": 1.14
+              },
+              {
+                "id": "thin-positive-buffer",
+                "label": "Thin positive buffer",
+                "agentCount": 147,
+                "representedCount": 36750,
+                "sharePercent": 2.42
+              },
+              {
+                "id": "savings-capacity",
+                "label": "Savings capacity",
+                "agentCount": 4578,
+                "representedCount": 1144500,
+                "sharePercent": 75.42
               }
             ]
           },
@@ -2315,7 +2565,7 @@
         }
       ],
       "status": "passed",
-      "resultDigestSha256": "595b618a182a99d65560d83cd2637e75f6b0cab6e7191130846abca7846f1719"
+      "resultDigestSha256": "60c057a97f28c770ead91a554575f5b1bf430dbf66a65b9e27a4ebe0fffffa47"
     },
     {
       "id": "balanced-10y",
@@ -2436,9 +2686,14 @@
         "distributions": {
           "income": {
             "population": "all-citizens",
-            "unit": "AED/month net income",
+            "metric": "cash-after-housing-and-commute",
+            "unit": "AED/month after housing and commuting, before essential consumption",
+            "formula": "gross salary − housing − commuting",
+            "interpretation": "This is not gross income and not final disposable income. Unemployed citizens remain in the distribution with zero salary and their housing cost.",
             "sourceAgentCount": 6070,
             "representedTotal": 1517500,
+            "exactZeroAgentCount": 0,
+            "exactZeroRepresentedCount": 0,
             "bins": [
               {
                 "label": "Below AED 0",
@@ -2495,6 +2750,51 @@
                 "agentCount": 1467,
                 "representedCount": 366750,
                 "sharePercent": 24.17
+              }
+            ]
+          },
+          "financialStatus": {
+            "population": "all-citizens",
+            "unit": "represented residents",
+            "monthlyEssentialConsumptionAed": 2500,
+            "thinPositiveBufferUpperBoundAed": 1500,
+            "categoriesAreMutuallyExclusive": true,
+            "representedTotal": 1517500,
+            "bins": [
+              {
+                "id": "unemployed",
+                "label": "Unemployed",
+                "agentCount": 1275,
+                "representedCount": 318750,
+                "sharePercent": 21
+              },
+              {
+                "id": "fixed-cost-deficit",
+                "label": "Pay below housing + commute",
+                "agentCount": 6,
+                "representedCount": 1500,
+                "sharePercent": 0.1
+              },
+              {
+                "id": "essentials-gap",
+                "label": "Essentials not fully covered",
+                "agentCount": 79,
+                "representedCount": 19750,
+                "sharePercent": 1.3
+              },
+              {
+                "id": "thin-positive-buffer",
+                "label": "Thin positive buffer",
+                "agentCount": 143,
+                "representedCount": 35750,
+                "sharePercent": 2.36
+              },
+              {
+                "id": "savings-capacity",
+                "label": "Savings capacity",
+                "agentCount": 4567,
+                "representedCount": 1141750,
+                "sharePercent": 75.24
               }
             ]
           },
@@ -2769,7 +3069,7 @@
         }
       ],
       "status": "passed",
-      "resultDigestSha256": "e903ebc2fa61957bb22af3848aaf4ce2a632fce64b618c3dc3f9303fe40c5423"
+      "resultDigestSha256": "43c73ab0df26c62117a05d31887d95461649e13e5abefe3a1b5b3251b8aec0e3"
     }
   ],
   "crossScenarioChecks": [

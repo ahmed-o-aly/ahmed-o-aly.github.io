@@ -43,7 +43,32 @@ for (const name of ["setup", "policy", "model", "evidence"]) {
     `${name} control panel identifies its tab`
   );
 }
-assert.equal((html.match(/data-udes-v2-chart-tab=/g) || []).length, 4, "four decision-oriented analysis workspaces are available");
+const chartWorkspaceNames = ["outcomes", "districts", "flows", "mobility", "citizens", "enterprises"];
+assert.equal((html.match(/data-udes-v2-chart-tab=/g) || []).length, 6, "six decision-oriented analysis workspaces are available");
+assert.equal((html.match(/data-udes-v2-chart-panel=/g) || []).length, 6, "six analysis tab panels are available");
+for (const name of chartWorkspaceNames) {
+  assertContains(
+    html,
+    new RegExp(`id="udes-v2-chart-tab-${name}"[^>]+aria-controls="udes-v2-chart-panel-${name}"[^>]+data-udes-v2-chart-tab="${name}"`),
+    `${name} chart tab identifies its panel`
+  );
+  assertContains(
+    html,
+    new RegExp(
+      `id="udes-v2-chart-panel-${name}"[^>]+role="tabpanel"[^>]+aria-labelledby="udes-v2-chart-tab-${name}"[^>]+data-udes-v2-chart-panel="${name}"`
+    ),
+    `${name} chart panel identifies its tab`
+  );
+  assertContains(html, new RegExp(`data-udes-v2-chart="${name}"`), `${name} chart panel exposes a stable mount`);
+}
+const flowControls = html.match(/<div[^>]+data-udes-v2-flow-controls[^>]*>[\s\S]*?<\/div>/)?.[0] || "";
+assert.ok(flowControls, "cross-district flow controls are rendered beside the analysis tabs");
+for (const kind of ["residential", "job", "enterprise", "commute"]) {
+  assertContains(flowControls, new RegExp(`<option value="${kind}"`), `${kind} flow analysis is selectable`);
+}
+for (const days of [1, 7, 30]) {
+  assertContains(flowControls, new RegExp(`<option value="${days}"`), `${days}-day flow window is selectable`);
+}
 assert.equal((html.match(/data-udes-v2-step-days=/g) || []).length, 3, "one-, seven-, and thirty-day step controls are available");
 assertContains(html, /Citizen and enterprise objectives/, "citizen and enterprise objectives are documented in the model panel");
 assertContains(html, /Essential consumption: AED 2,500\/month/, "household saving assumptions are disclosed beside the controls");
@@ -134,18 +159,74 @@ assert.match(
 );
 assert.match(app, /referenceWorker = new WorkerClient/, "controller runs a same-seed reference worker");
 assert.match(app, /function renderOutcomeCharts\(/, "controller renders focused scenario outcomes");
-assert.match(app, /function renderPlaceCharts\(/, "controller renders all-district place outcomes");
+assert.match(app, /function renderDistrictCharts\(/, "controller renders current and daily district outcomes");
+assert.match(app, /function renderFlowCharts\(/, "controller renders cross-district movement outcomes");
 assert.match(app, /function renderMobilityCharts\(/, "controller renders the mobility analysis workspace");
-assert.match(app, /function renderAgentCharts\(/, "controller renders household and labor-market outcomes");
-assert.match(app, /agents:enterprise/, "the household and economy workspace includes an enterprise portfolio chart");
+assert.match(app, /function renderCitizenCharts\(/, "controller renders citizen finance and state outcomes");
+assert.match(app, /function renderEnterpriseCharts\(/, "controller renders enterprise state and viability outcomes");
+for (const [kind, keys] of Object.entries({
+  districts: ["stocks", "selected"],
+  flows: ["routes", "district"],
+  citizens: ["finance", "states"],
+  enterprises: ["states", "viability"],
+})) {
+  assert.match(app, new RegExp(`prepareChartPanel\\("${kind}"`), `${kind} charts use their dedicated stable panel`);
+  for (const key of keys) assert.match(app, new RegExp(`"${kind}:${key}"`), `${kind}:${key} remains a stable chart key`);
+}
+assert.match(app, /function districtHistory\(/, "selected districts have a dedicated daily trajectory source");
+assert.match(app, /daily district trajectory/, "district analysis labels its daily population, jobs, and rent trajectory");
+assert.match(
+  app,
+  /aggregateFlowRoutes\(state\.history, kind, state\.flowWindowDays, latestDay\)/,
+  "flow charts aggregate exact OD rows over the chosen window"
+);
+assert.match(
+  app,
+  /flowSeriesForZone\(state\.history, kind, selectedId, state\.flowWindowDays, latestDay\)/,
+  "selected districts receive daily in, out, and net movement series"
+);
+assert.match(app, /origin → destination/, "route charts state their origin-to-destination direction");
+assert.match(app, /state\.snapshot\?\.commuteOd/, "flow analysis can inspect the current home-to-work stock separately from relocation events");
+assert.match(app, /distributions\?\.financialStatus/, "citizen charts use mutually exclusive financial-status output");
+assert.match(app, /no [‘']net zero[’'] bucket/, "financial-status chart explicitly rejects a misleading net-zero bucket");
+assert.doesNotMatch(app, /Net-income distribution|agents:income/, "the ambiguous net-income histogram contract has been removed");
+assert.match(app, /stack: "citizen-state"/, "citizen Happy, Waiting, Extreme, and Recovery states are charted as a complete stock");
+assert.match(app, /stack: "enterprise-state"/, "enterprise Starting, Working, Grow, and Lesser states are charted as a complete stock");
 assert.match(app, /captureDaily: true/, "controller requests consecutive daily observations from both workers");
 assert.match(app, /const HISTORY_POINT_LIMIT = 3654/, "controller retains Day 0 plus a full ten-year daily run");
+assert.match(app, /const FLOW_HISTORY_DETAIL_DAYS = 30/, "high-volume OD rows are retained only for the longest selectable flow window");
+assert.match(app, /detailCutoff/, "expired OD and transition detail is compacted while daily aggregate history remains available");
+assert.match(app, /normalized\.zoneSeries = \[\]/, "unused reference-run district rows are discarded to keep ten-year daily playback bounded");
 assert.match(app, /function filterHistoryWindow\(/, "daily charts support bounded display windows without changing the run");
 assert.match(app, /function stagedEnginePatch\(/, "only explicitly changed intervention fields are applied to the live model");
 assert.match(app, /inspectionRequestToken/, "late inspection responses cannot overwrite the current agent selection");
 assert.match(app, /data-udes-v2-agent-search/, "inspectors support direct typed IDs beyond the sample navigator");
 assert.match(app, /\["representedVacancies"\]/, "enterprise inspector reads the hiring-aware vacancy field");
-assert.match(app, /statechart\(\["Happy", "Waiting", "Extreme", "Recovery"\]/, "citizen inspector exposes all satisfaction states");
+assert.match(app, /statechart\(\s*\["Happy", "Waiting", "Extreme", "Recovery"\]/, "citizen inspector exposes all satisfaction states");
+for (const helper of ["decisionSummary", "citizenAccounting", "agentEvents", "eventDescription"]) {
+  assert.match(app, new RegExp(`function ${helper}\\(`), `${helper} keeps agent decisions and retained actions inspectable`);
+}
+assert.match(app, /decisionExplanation/, "agent inspectors consume the worker's explicit goal and current assessment");
+assert.match(app, /Cash after housing \+ commute/, "citizen accounting separates salary, housing, commuting, essentials, and savings");
+assert.match(app, /Recent actions/, "citizen and enterprise inspectors expose their retained event ledger");
+assert.match(app, /event\.fromWorkZoneId/, "citizen job-change events retain their origin work district in the inspector");
+assert.match(app, /event\.toWorkZoneId/, "citizen job-change events retain their destination work district in the inspector");
+assert.match(app, /const signed = values\.some/, "signed household finance histories cannot render deficits as positive bars");
+assert.match(css, /\.udes-v2-agent-history > div\.is-signed/, "signed household histories use a zero-centered visual treatment");
+assert.match(app, /function panelIsInteracting\(/, "inspector refreshes detect active hover and keyboard interaction");
+assert.match(app, /state\.pendingPanelRenders\.set\(panel, render\)/, "inspector updates queue while the user is interacting");
+assert.match(
+  app,
+  /pointerleave[\s\S]*flushPendingPanelRender\(panel\)[\s\S]*focusout/,
+  "queued inspector updates flush after pointer or focus interaction ends"
+);
+assert.match(app, /state\.pendingChartOptions\.set\(key, option\)/, "chart updates queue while a tooltip interaction is active");
+assert.match(
+  app,
+  /firstRender[\s\S]*?\? \{ notMerge: true, lazyUpdate: true \}[\s\S]*?: \{ notMerge: false, lazyUpdate: true, silent: true, replaceMerge: \["series"\] \}/,
+  "normal chart ticks merge into existing instances and replace only series data"
+);
+assert.match(app, /if \(!series\.id\)\s+series\.id = `\$\{key\}:/, "chart series receive stable IDs before incremental updates");
 assert.match(app, /function summarizeChart\(/, "rendered charts receive data-derived accessible summaries");
 assert.match(app, /root\.dataset\.udesV2Mobile = compact\.matches \? "readonly" : "interactive"/, "compact simulation view is explicitly read-only");
 assert.match(app, /setMutationControlsDisabled\(true\)/, "scenario mutation controls are disabled during model initialization");

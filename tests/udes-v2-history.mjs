@@ -19,6 +19,8 @@ const {
   clampDailyStep,
   canSelectHorizon,
   filterHistoryWindow,
+  aggregateFlowRoutes,
+  flowSeriesForZone,
   commuteRangeMessage,
   summarizeChart,
 } = require("../assets/js/udes-v2-app.js");
@@ -65,15 +67,170 @@ const windowFixture = Array.from({ length: 120 }, (_value, day) => ({ day, date:
 assert.equal(filterHistoryWindow(windowFixture, 30).length, 30, "the 30-day chart window retains 30 consecutive points");
 assert.equal(filterHistoryWindow(windowFixture, 0).length, 120, "the full chart window retains the full run");
 
+const flowHistory = Array.from({ length: 31 }, (_value, index) => ({
+  day: index + 1,
+  date: new Date(Date.UTC(2024, 0, index + 1)).toISOString().slice(0, 10),
+  flows: { residentialMoves: [], jobMoves: [], enterpriseMoves: [] },
+}));
+const flowsOn = (day) => flowHistory[day - 1].flows;
+flowsOn(1).residentialMoves.push({
+  fromZoneId: "mushrif",
+  toZoneId: "danah",
+  reason: "early-flow-outside-30-days",
+  representedResidents: 100,
+});
+flowsOn(1).jobMoves.push({ fromZoneId: "mushrif", toZoneId: "danah", reason: "early-job", representedWorkers: 1000 });
+flowsOn(1).enterpriseMoves.push({ fromZoneId: "mushrif", toZoneId: "danah", reason: "early-firm", enterpriseCount: 10 });
+flowsOn(2).residentialMoves.push({ fromZoneId: "danah", toZoneId: "mushrif", reason: "cheaper-rent", representedResidents: 20 });
+flowsOn(2).jobMoves.push({ fromZoneId: "danah", toZoneId: "mushrif", reason: "better-job", representedWorkers: 12 });
+flowsOn(2).enterpriseMoves.push({ fromZoneId: "danah", toZoneId: "mushrif", reason: "growth-quality", enterpriseCount: 2 });
+flowsOn(24).residentialMoves.push({ fromZoneId: "mushrif", toZoneId: "reem", reason: "lower-commute-cost", representedResidents: 5 });
+flowsOn(24).jobMoves.push({ fromZoneId: "reem", toZoneId: "mushrif", reason: "better-job", representedWorkers: 9 });
+flowsOn(24).enterpriseMoves.push({ fromZoneId: "mushrif", toZoneId: "danah", reason: "contraction-rent", enterpriseCount: 4 });
+flowsOn(25).residentialMoves.push({ fromZoneId: "reem", toZoneId: "mushrif", reason: "workplace-zone", representedResidents: 7 });
+flowsOn(25).jobMoves.push({ fromZoneId: "mushrif", toZoneId: "reem", reason: "better-job", representedWorkers: 8 });
+flowsOn(25).enterpriseMoves.push({ fromZoneId: "danah", toZoneId: "mushrif", reason: "growth-quality", enterpriseCount: 1 });
+flowsOn(30).residentialMoves.push({ fromZoneId: "mushrif", toZoneId: "danah", reason: "cheaper-rent", representedResidents: 3 });
+flowsOn(30).jobMoves.push({ fromZoneId: "danah", toZoneId: "mushrif", reason: "better-job", representedWorkers: 2 });
+flowsOn(30).enterpriseMoves.push({ fromZoneId: "mushrif", toZoneId: "reem", reason: "contraction-rent", enterpriseCount: 2 });
+flowsOn(31).residentialMoves.push({ fromZoneId: "danah", toZoneId: "mushrif", reason: "workplace-zone", representedResidents: 4 });
+flowsOn(31).jobMoves.push({ fromZoneId: "mushrif", toZoneId: "reem", reason: "better-job", representedWorkers: 6 });
+flowsOn(31).enterpriseMoves.push({ fromZoneId: "reem", toZoneId: "mushrif", reason: "growth-quality", enterpriseCount: 3 });
+
+assert.deepEqual(
+  aggregateFlowRoutes(flowHistory, "residential", 1, 31),
+  [{ fromZoneId: "danah", toZoneId: "mushrif", value: 4, reasons: { "workplace-zone": 4 } }],
+  "one-day OD aggregation contains only the latest daily residential route"
+);
+const sevenDayResidential = aggregateFlowRoutes(flowHistory, "residential", 7, 31);
+assert.equal(
+  sevenDayResidential.reduce((total, route) => total + route.value, 0),
+  14,
+  "seven-day OD aggregation includes days 25 through 31"
+);
+assert.equal(sevenDayResidential.length, 3, "seven-day OD aggregation preserves each residential direction");
+const thirtyDayResidential = aggregateFlowRoutes(flowHistory, "residential", 30, 31);
+assert.equal(
+  thirtyDayResidential.find((route) => route.fromZoneId === "mushrif" && route.toZoneId === "danah")?.value,
+  3,
+  "thirty-day OD aggregation excludes the route on day 1"
+);
+assert.deepEqual(
+  thirtyDayResidential.find((route) => route.fromZoneId === "danah" && route.toZoneId === "mushrif")?.reasons,
+  { "cheaper-rent": 20, "workplace-zone": 4 },
+  "OD aggregation retains decision reasons across days"
+);
+assert.equal(
+  aggregateFlowRoutes(flowHistory, "job", 7, 31).find((route) => route.fromZoneId === "mushrif" && route.toZoneId === "reem")?.value,
+  14,
+  "job-route aggregation uses represented workers rather than residential counts"
+);
+assert.equal(
+  aggregateFlowRoutes(flowHistory, "enterprise", 30, 31).find((route) => route.fromZoneId === "mushrif" && route.toZoneId === "danah")?.value,
+  4,
+  "enterprise-route aggregation uses enterprise counts and the selected 30-day boundary"
+);
+
+assert.deepEqual(
+  flowSeriesForZone(flowHistory, "residential", "mushrif", 1, 31),
+  [{ day: 31, date: "2024-01-31", inflow: 4, outflow: 0, net: 4 }],
+  "one-day district flow series exposes exact inflow, outflow, and net"
+);
+const sevenDayMushrif = flowSeriesForZone(flowHistory, "residential", "mushrif", 7, 31);
+assert.equal(sevenDayMushrif.length, 7, "seven-day district series retains zero-flow days instead of collapsing time");
+assert.deepEqual(
+  sevenDayMushrif.find((point) => point.day === 25),
+  { day: 25, date: "2024-01-25", inflow: 7, outflow: 0, net: 7 },
+  "district residential inflows are assigned to the destination"
+);
+assert.deepEqual(
+  sevenDayMushrif.find((point) => point.day === 30),
+  { day: 30, date: "2024-01-30", inflow: 0, outflow: 3, net: -3 },
+  "district residential outflows are negative in the net balance"
+);
+assert.deepEqual(
+  sevenDayMushrif.reduce(
+    (totals, point) => ({ inflow: totals.inflow + point.inflow, outflow: totals.outflow + point.outflow, net: totals.net + point.net }),
+    { inflow: 0, outflow: 0, net: 0 }
+  ),
+  { inflow: 11, outflow: 3, net: 8 },
+  "seven-day district totals reconcile inflow minus outflow to net"
+);
+const thirtyDayMushrif = flowSeriesForZone(flowHistory, "residential", "mushrif", 30, 31);
+assert.equal(thirtyDayMushrif.length, 30, "thirty-day district series starts at day 2 for a day-31 endpoint");
+assert.equal(thirtyDayMushrif[0].day, 2, "thirty-day district series applies an inclusive rolling boundary");
+assert.deepEqual(
+  thirtyDayMushrif.reduce(
+    (totals, point) => ({ inflow: totals.inflow + point.inflow, outflow: totals.outflow + point.outflow, net: totals.net + point.net }),
+    { inflow: 0, outflow: 0, net: 0 }
+  ),
+  { inflow: 31, outflow: 8, net: 23 },
+  "thirty-day district residential stock-flow totals reconcile"
+);
+const sevenDayJobMushrif = flowSeriesForZone(flowHistory, "job", "mushrif", 7, 31);
+assert.deepEqual(
+  sevenDayJobMushrif.reduce(
+    (totals, point) => ({ inflow: totals.inflow + point.inflow, outflow: totals.outflow + point.outflow, net: totals.net + point.net }),
+    { inflow: 0, outflow: 0, net: 0 }
+  ),
+  { inflow: 2, outflow: 14, net: -12 },
+  "job changes use their own represented-worker district balance"
+);
+const thirtyDayEnterpriseMushrif = flowSeriesForZone(flowHistory, "enterprise", "mushrif", 30, 31);
+assert.deepEqual(
+  thirtyDayEnterpriseMushrif.reduce(
+    (totals, point) => ({ inflow: totals.inflow + point.inflow, outflow: totals.outflow + point.outflow, net: totals.net + point.net }),
+    { inflow: 0, outflow: 0, net: 0 }
+  ),
+  { inflow: 6, outflow: 6, net: 0 },
+  "enterprise relocations use enterprise counts and reconcile the district net"
+);
+const replacementHistory = [
+  {
+    day: 1,
+    date: "2024-01-01",
+    flows: {
+      residentialMoves: [],
+      jobMoves: [],
+      enterpriseMoves: [],
+      replacementRelocations: [
+        {
+          fromZoneId: "mushrif",
+          toZoneId: "danah",
+          reason: "replacement-lowest-rent",
+          representedResidents: 250,
+        },
+      ],
+    },
+  },
+];
+assert.deepEqual(
+  aggregateFlowRoutes(replacementHistory, "residential", 1, 1),
+  [
+    {
+      fromZoneId: "mushrif",
+      toZoneId: "danah",
+      value: 250,
+      reasons: { "replacement-lowest-rent": 250 },
+    },
+  ],
+  "residential OD charts include and label demographic replacement relocations"
+);
+assert.deepEqual(
+  flowSeriesForZone(replacementHistory, "residential", "mushrif", 1, 1),
+  [{ day: 1, date: "2024-01-01", inflow: 0, outflow: 250, net: -250 }],
+  "district residential stock-flow balances include replacement relocations"
+);
+
 assert.match(commuteRangeMessage(52, 45), /above the applied 45-minute/, "zone insight respects a non-default applied commute threshold");
 assert.match(commuteRangeMessage(42, 45), /within the applied 45-minute/, "zone insight reports when commute is inside the applied threshold");
 assert.match(
-  summarizeChart("Net income distribution", {
-    xAxis: { type: "category", data: ["Below AED 0", "AED 0–1,999"] },
-    series: [{ name: "Represented residents", type: "bar", data: [12500, 48750] }],
+  summarizeChart("Financial status", {
+    xAxis: { type: "category", data: ["Unemployed", "Pay < housing + commute", "Savings capacity"] },
+    series: [{ name: "Represented residents (%)", type: "bar", data: [20, 3.5, 54.25] }],
   }),
-  /Below AED 0: 12500\.0, AED 0–1,999: 48750\.0/,
-  "categorical histogram summaries expose every tested bin label and represented count"
+  /Unemployed: 20\.0, Pay < housing \+ commute: 3\.5, Savings capacity: 54\.3/,
+  "financial-status summaries explain mutually exclusive household groups instead of a net-income zero bin"
 );
 const districtLabels = Array.from({ length: 18 }, (_value, index) => `District ${index + 1}`);
 assert.match(

@@ -1,6 +1,7 @@
 (() => {
   const DAY_MS = 24 * 60 * 60 * 1000;
   const HISTORY_POINT_LIMIT = 3654;
+  const FLOW_HISTORY_DETAIL_DAYS = 30;
   const ASSUMPTION_FIELDS = Object.freeze([
     "rentPressureMultiplier",
     "waitingNetIncomeAed",
@@ -313,6 +314,64 @@
     return history.filter((entry) => Number(entry.day) >= firstDay);
   }
 
+  function flowDefinition(kind) {
+    return (
+      {
+        residential: { collection: "residentialMoves", value: "representedResidents", unit: "represented residents" },
+        job: { collection: "jobMoves", value: "representedWorkers", unit: "represented workers" },
+        enterprise: { collection: "enterpriseMoves", value: "enterpriseCount", unit: "enterprises" },
+        commute: { collection: "commuteOd", value: "representedResidents", unit: "represented residents" },
+      }[kind] || { collection: "residentialMoves", value: "representedResidents", unit: "represented residents" }
+    );
+  }
+
+  function flowRowsForHistoryEntry(entry, kind = "residential") {
+    const definition = flowDefinition(kind);
+    const rows = entry?.flows?.[definition.collection];
+    if (kind !== "residential") return Array.isArray(rows) ? rows : [];
+    const replacements = entry?.flows?.replacementRelocations;
+    return [
+      ...(Array.isArray(rows) ? rows : []),
+      ...(Array.isArray(replacements) ? replacements.map((row) => ({ reason: "demographic-replacement", ...row })) : []),
+    ];
+  }
+
+  function aggregateFlowRoutes(history, kind = "residential", windowDays = 30, latestDay = null) {
+    const definition = flowDefinition(kind);
+    const points = filterHistoryWindow(history || [], windowDays, latestDay);
+    const routes = new Map();
+    for (const point of points) {
+      for (const row of flowRowsForHistoryEntry(point, kind)) {
+        const fromZoneId = String(row.fromZoneId || "");
+        const toZoneId = String(row.toZoneId || "");
+        if (!fromZoneId || !toZoneId || fromZoneId === toZoneId) continue;
+        const key = `${fromZoneId}\u0000${toZoneId}`;
+        const value = Math.max(0, Number(row[definition.value]) || 0);
+        const current = routes.get(key) || { fromZoneId, toZoneId, value: 0, reasons: {} };
+        current.value += value;
+        const reason = String(row.reason || "unspecified");
+        current.reasons[reason] = (current.reasons[reason] || 0) + value;
+        routes.set(key, current);
+      }
+    }
+    return [...routes.values()].sort((a, b) => b.value - a.value || a.fromZoneId.localeCompare(b.fromZoneId));
+  }
+
+  function flowSeriesForZone(history, kind, zoneId, windowDays = 30, latestDay = null) {
+    const definition = flowDefinition(kind);
+    const target = String(zoneId || "");
+    return filterHistoryWindow(history || [], windowDays, latestDay).map((point) => {
+      let inflow = 0;
+      let outflow = 0;
+      for (const row of flowRowsForHistoryEntry(point, kind)) {
+        const value = Math.max(0, Number(row[definition.value]) || 0);
+        if (String(row.toZoneId || "") === target && String(row.fromZoneId || "") !== target) inflow += value;
+        if (String(row.fromZoneId || "") === target && String(row.toZoneId || "") !== target) outflow += value;
+      }
+      return { day: Number(point.day) || 0, date: point.date, inflow, outflow, net: inflow - outflow };
+    });
+  }
+
   function commuteRangeMessage(roundTripMinutes, acceptableRoundTripMinutes) {
     const threshold = Number(acceptableRoundTripMinutes);
     return Number(roundTripMinutes) > threshold
@@ -373,6 +432,10 @@
       clampDailyStep,
       canSelectHorizon,
       filterHistoryWindow,
+      flowDefinition,
+      flowRowsForHistoryEntry,
+      aggregateFlowRoutes,
+      flowSeriesForZone,
       commuteRangeMessage,
       summarizeChart,
     };
@@ -418,6 +481,8 @@
     speed: 1,
     horizonDays: 366,
     chartWindowDays: 90,
+    flowKind: "residential",
+    flowWindowDays: 30,
     elapsedDays: 0,
     seed: 240124,
     appliedPolicy: null,
@@ -429,6 +494,12 @@
     appliedZonePolicies: new Map(),
     latestDailyStatus: null,
     charts: new Map(),
+    chartInteractionLocks: new Set(),
+    pendingChartOptions: new Map(),
+    chartDataSignatures: new Map(),
+    panelHtml: new WeakMap(),
+    pendingPanelRenders: new WeakMap(),
+    hoveredZoneId: null,
     resizeObserver: null,
     requestCounter: 0,
     inspectionRequestToken: 0,
@@ -453,6 +524,9 @@
     policyScope: $("[data-udes-v2-policy-scope]"),
     horizon: $("[data-udes-v2-horizon]"),
     chartWindow: $("[data-udes-v2-window]"),
+    flowKind: $("[data-udes-v2-flow-kind]"),
+    flowWindow: $("[data-udes-v2-flow-window]"),
+    flowFilter: $("[data-udes-v2-flow-controls]"),
     seed: $("[data-udes-v2-seed]"),
     applyPolicy: $("[data-udes-v2-action='apply-policy']"),
     policyStatus: $("[data-udes-v2-policy-status]"),
@@ -1035,8 +1109,8 @@
       return;
     }
     state.busy = true;
-    setMutationControlsDisabled(true);
-    setRuntime("Computing", "busy");
+    restoreMutationControlAvailability();
+    if (!state.playing) setRuntime("Computing", "busy");
     let operationFailed = false;
     try {
       const [active, reference] = await Promise.all([
@@ -1088,21 +1162,26 @@
   }
 
   function togglePlayback() {
+    if (state.playing) {
+      stopPlayback(false);
+      ui.play?.setAttribute("aria-pressed", "false");
+      if (ui.playLabel) ui.playLabel.textContent = "Run";
+      restoreMutationControlAvailability();
+      setRuntime("Paused", "ready");
+      announce("Simulation paused after the current daily update.");
+      return;
+    }
     if (!state.worker || !state.referenceWorker || state.busy) {
       announce(state.busy ? "Wait for the current model operation to finish." : "Wait for the agent model to finish loading.");
       return;
     }
-    state.playing = !state.playing;
-    ui.play?.setAttribute("aria-pressed", String(state.playing));
-    if (ui.playLabel) ui.playLabel.textContent = state.playing ? "Pause" : "Run";
-    if (state.playing) {
-      setRuntime("Running", "running");
-      announce(`Simulation running in ${state.speed}-day updates.`);
-      schedulePlayback();
-    } else {
-      stopPlayback(false);
-      announce("Simulation paused.");
-    }
+    state.playing = true;
+    ui.play?.setAttribute("aria-pressed", "true");
+    if (ui.playLabel) ui.playLabel.textContent = "Pause";
+    restoreMutationControlAvailability();
+    setRuntime("Running", "running");
+    announce(`Simulation running in ${state.speed}-day updates.`);
+    schedulePlayback();
   }
 
   function stopPlayback(updateButton = true) {
@@ -1112,6 +1191,7 @@
       ui.play?.setAttribute("aria-pressed", "false");
       if (ui.playLabel) ui.playLabel.textContent = "Run";
     }
+    restoreMutationControlAvailability();
   }
 
   async function resetModel() {
@@ -1273,6 +1353,15 @@
       state.chartWindowDays = Math.max(0, Number(ui.chartWindow.value) || 0);
       renderChartPanel($("[data-udes-v2-chart-tab][aria-selected='true']")?.dataset.udesV2ChartTab || "outcomes");
     });
+    ui.flowKind?.addEventListener("change", () => {
+      state.flowKind = ["residential", "job", "enterprise", "commute"].includes(ui.flowKind.value) ? ui.flowKind.value : "residential";
+      if (ui.flowWindow) ui.flowWindow.disabled = state.flowKind === "commute";
+      renderChartPanel("flows");
+    });
+    ui.flowWindow?.addEventListener("change", () => {
+      state.flowWindowDays = [1, 7, 30].includes(Number(ui.flowWindow.value)) ? Number(ui.flowWindow.value) : 30;
+      renderChartPanel("flows");
+    });
     ui.seed?.addEventListener("change", resetModel);
 
     bindTabs("control");
@@ -1324,6 +1413,7 @@
       panel.hidden = panel.dataset[panelKey] !== value;
     });
     if (kind === "chart") {
+      if (ui.flowFilter) ui.flowFilter.hidden = value !== "flows";
       renderChartPanel(value);
       requestAnimationFrame(() => resizeCharts());
     } else if (kind === "inspector" && ["citizen", "enterprise", "link"].includes(value) && state.selected.kind !== value) {
@@ -1364,9 +1454,11 @@
   }
 
   function restoreMutationControlAvailability() {
-    const disabled = mutationControlsUnavailable();
-    setMutationControlsDisabled(disabled);
-    if (!disabled && ui.applyPolicy) {
+    const hardDisabled = root.dataset.udesV2Mobile === "readonly" || root.dataset.udesV2State === "error" || !state.worker || !state.referenceWorker;
+    const transactionLocked = hardDisabled || state.busy || state.playing;
+    setMutationControlsDisabled(transactionLocked);
+    if (ui.play) ui.play.disabled = hardDisabled;
+    if (!transactionLocked && ui.applyPolicy) {
       ui.applyPolicy.disabled = !state.draftDirty || state.elapsedDays >= state.horizonDays;
     }
   }
@@ -1518,6 +1610,8 @@
     const city = cityOf(snapshot);
     const modes = city.modeShares || city.modeShare || city.modes || {};
     const status = city.stateShares || city.statusShare || city.states || city.satisfactionStates || {};
+    const financialStatus = city.financialStatusShares || {};
+    const enterpriseStatus = city.enterpriseStateShares || city.enterpriseStates || {};
     const events = snapshot?.events || city.dailyEvents || {};
     const assignmentDate = textAt(snapshot, ["networkAssignmentDate", "city.networkAssignmentDate"], textAt(city, ["networkAssignmentDate"], ""));
     const snapshotDate = modelDate(snapshot);
@@ -1552,7 +1646,24 @@
       roadLoad: percentToRatio(valueAt(city, ["averageRoadCapacityUsage", "meanRoadLoad", "roadLoad", "roadCapacityUsage", "averageRoadLoad"])),
       rent: valueAt(city, ["meanHousingRentAed", "housingRent", "averageRent", "rentIndex"]),
       netIncome: valueAt(city, ["averageNetIncomeAed", "meanNetIncomeAed", "netIncome"]),
+      grossSalary: valueAt(city, ["averageGrossSalaryAed"]),
+      housingCost: valueAt(city, ["averageHousingCostAed"]),
+      transportCost: valueAt(city, ["averageMonthlyTransportCostAed"]),
+      residualAfterEssentials: valueAt(city, ["averageResidualAfterEssentialsAed"]),
       bankBalance: valueAt(city, ["averageBankBalanceAed", "meanBankBalanceAed", "bankBalance"]),
+      financialStatus: {
+        unemployed: percentToRatio(valueAt(financialStatus, ["unemployed"], 0)),
+        fixedCostDeficit: percentToRatio(valueAt(financialStatus, ["fixed-cost-deficit"], 0)),
+        essentialsGap: percentToRatio(valueAt(financialStatus, ["essentials-gap"], 0)),
+        thinPositiveBuffer: percentToRatio(valueAt(financialStatus, ["thin-positive-buffer"], 0)),
+        savingsCapacity: percentToRatio(valueAt(financialStatus, ["savings-capacity"], 0)),
+      },
+      enterpriseStates: {
+        starting: percentToRatio(valueAt(enterpriseStatus, ["Starting", "starting"], 0)),
+        working: percentToRatio(valueAt(enterpriseStatus, ["Working", "working"], 0)),
+        grow: percentToRatio(valueAt(enterpriseStatus, ["Grow", "grow"], 0)),
+        lesser: percentToRatio(valueAt(enterpriseStatus, ["Lesser", "lesser"], 0)),
+      },
       activeEnterpriseShare: percentToRatio(valueAt(city, ["activeEnterpriseSharePercent"], 0)),
       lossMakingEnterpriseShare: percentToRatio(valueAt(city, ["lossMakingEnterpriseSharePercent"], 0)),
       enterprisePortfolioMargin: percentToRatio(valueAt(city, ["enterprisePortfolioOperatingMarginPercent"], 0)),
@@ -1566,6 +1677,11 @@
       hires: valueAt(events, ["hiresRepresented", "hires"], 0),
       fires: valueAt(events, ["firesRepresented", "fires"], 0),
       moves: valueAt(events, ["residentialMovesRepresented", "residentialMoves"], 0),
+      firmMoves: valueAt(events, ["firmMoves"], 0),
+      firmRestarts: valueAt(events, ["firmRestarts"], 0),
+      flows: snapshot?.flows || { residentialMoves: [], jobMoves: [], enterpriseMoves: [], replacementRelocations: [], totals: {} },
+      transitions: snapshot?.transitions || { citizens: [], enterprises: [], totals: {} },
+      financialStatusDistribution: city.distributions?.financialStatus || null,
       networkAssignmentDate: assignmentDate,
       networkAssignmentStatus: assignmentStatus,
       isWorkday: Boolean(snapshot?.isWorkday ?? assignmentStatus === "current"),
@@ -1574,10 +1690,49 @@
         .map((zone) => ({
           id: String(zone.id || zone.zoneId || ""),
           satisfaction: percentToRatio(valueAt(zone, ["satisfaction", "stateShares.Happy", "states.happy"], 0)),
+          waiting: percentToRatio(valueAt(zone, ["waitingSharePercent", "stateShares.Waiting"], 0)),
+          extreme: percentToRatio(valueAt(zone, ["extremeSharePercent", "stateShares.Extreme"], 0)),
+          recovery: percentToRatio(valueAt(zone, ["recoverySharePercent", "stateShares.Recovery"], 0)),
           averageRoundTripMinutes: valueAt(zone, ["averageRoundTripMinutes", "meanCommuteMinutes"], 0),
           housingOccupancy: percentToRatio(valueAt(zone, ["housingOccupancyRate"], valueAt(zone, ["housingOccupancyRatio"], 0) * 100)),
+          residentialRentAed: valueAt(zone, ["residentialRentAed"], 0),
+          businessRentAed: valueAt(zone, ["businessRentAedPerRepresentedWorker"], 0),
           jobs: valueAt(zone, ["jobs", "representedEmployed"], 0),
+          jobCapacity: valueAt(zone, ["jobCapacity"], 0),
+          vacancies: valueAt(zone, ["vacancies"], 0),
           population: valueAt(zone, ["population", "representedPopulation"], 0),
+          housingCapacity: valueAt(zone, ["housingCapacity", "housingCapacityRepresented"], 0),
+          enterprises: valueAt(zone, ["enterprises"], 0),
+          enterprisePlaceCapacity: valueAt(zone, ["enterprisePlaceCapacity"], 0),
+          employmentRate: percentToRatio(valueAt(zone, ["employmentRate"], 0)),
+          carOwnership: percentToRatio(valueAt(zone, ["carOwnershipRate"], 0)),
+          carShare: percentToRatio(valueAt(zone, ["carModeSharePercent"], 0)),
+          ptShare: percentToRatio(valueAt(zone, ["ptModeSharePercent"], 0)),
+          walkShare: percentToRatio(valueAt(zone, ["walkModeSharePercent"], 0)),
+          sameZoneWorkShare: percentToRatio(valueAt(zone, ["sameZoneWorkShare"], 0)),
+          averageGrossSalaryAed: valueAt(zone, ["averageGrossSalaryAed"], 0),
+          averageHousingCostAed: valueAt(zone, ["averageHousingCostAed"], 0),
+          averageMonthlyTransportCostAed: valueAt(zone, ["averageMonthlyTransportCostAed"], 0),
+          averageCashAfterHousingAndCommuteAed: valueAt(zone, ["averageCashAfterHousingAndCommuteAed"], 0),
+          averageResidualAfterEssentialsAed: valueAt(zone, ["averageResidualAfterEssentialsAed"], 0),
+          averageBankBalanceAed: valueAt(zone, ["averageBankBalanceAed"], 0),
+          financialStatusShares: zone.financialStatusShares || {},
+          enterpriseStateShares: zone.enterpriseStateShares || {},
+          activeEnterpriseShare: percentToRatio(valueAt(zone, ["activeEnterpriseSharePercent"], 0)),
+          lossMakingEnterpriseShare: percentToRatio(valueAt(zone, ["lossMakingEnterpriseSharePercent"], 0)),
+          enterprisePortfolioMargin: percentToRatio(valueAt(zone, ["enterprisePortfolioOperatingMarginPercent"], 0)),
+          residentialMoveInflows: valueAt(zone, ["residentialMoveInflows"], 0),
+          residentialMoveOutflows: valueAt(zone, ["residentialMoveOutflows"], 0),
+          residentialMoveNet: valueAt(zone, ["residentialMoveNet"], 0),
+          jobMoveInflows: valueAt(zone, ["jobMoveInflows"], 0),
+          jobMoveOutflows: valueAt(zone, ["jobMoveOutflows"], 0),
+          jobMoveNet: valueAt(zone, ["jobMoveNet"], 0),
+          enterpriseMoveInflows: valueAt(zone, ["enterpriseMoveInflows"], 0),
+          enterpriseMoveOutflows: valueAt(zone, ["enterpriseMoveOutflows"], 0),
+          enterpriseMoveNet: valueAt(zone, ["enterpriseMoveNet"], 0),
+          replacementRelocationInflows: valueAt(zone, ["replacementRelocationInflows"], 0),
+          replacementRelocationOutflows: valueAt(zone, ["replacementRelocationOutflows"], 0),
+          replacementRelocationNet: valueAt(zone, ["replacementRelocationNet"], 0),
         }))
         .filter((zone) => zone.id),
     };
@@ -1590,6 +1745,17 @@
   function recordHistory(snapshot, target, policy) {
     if (!snapshot) return;
     const normalized = normalizeCity(snapshot);
+    if (target === state.referenceHistory) {
+      normalized.zoneSeries = [];
+      normalized.flows = {
+        residentialMoves: [],
+        jobMoves: [],
+        enterpriseMoves: [],
+        replacementRelocations: [],
+        totals: normalized.flows?.totals || {},
+      };
+      normalized.transitions = { citizens: [], enterprises: [], totals: normalized.transitions?.totals || {} };
+    }
     if (!normalized.zonePolicyState.length && target === state.history) normalized.zonePolicyState = appliedZonePolicyList();
     if (target.some((entry) => entry.day === normalized.day)) return;
     const marker = target === state.history ? state.interventions.find((intervention) => intervention.day === normalized.day) : null;
@@ -1612,6 +1778,26 @@
     target.push(point);
     target.sort((a, b) => a.day - b.day);
     if (target.length > HISTORY_POINT_LIMIT) target.splice(0, target.length - HISTORY_POINT_LIMIT);
+    if (target === state.history) {
+      const detailCutoff = Number(target.at(-1)?.day || 0) - FLOW_HISTORY_DETAIL_DAYS + 1;
+      for (let index = 0; index < target.length && Number(target[index].day) < detailCutoff; index += 1) {
+        const entry = target[index];
+        const hasFlowRows = ["residentialMoves", "jobMoves", "enterpriseMoves", "replacementRelocations"].some((key) => entry.flows?.[key]?.length);
+        const hasTransitionRows = entry.transitions?.citizens?.length || entry.transitions?.enterprises?.length;
+        if (!hasFlowRows && !hasTransitionRows) continue;
+        target[index] = Object.freeze({
+          ...entry,
+          flows: {
+            residentialMoves: [],
+            jobMoves: [],
+            enterpriseMoves: [],
+            replacementRelocations: [],
+            totals: entry.flows?.totals || {},
+          },
+          transitions: { citizens: [], enterprises: [], totals: entry.transitions?.totals || {} },
+        });
+      }
+    }
   }
 
   function recordDailySeries(series, target, policy) {
@@ -1825,19 +2011,23 @@
   function renderProvenance(zone) {
     const node = $("[data-udes-v2-provenance]");
     if (!node) return;
+    let html = "";
     if (!zone) {
-      node.innerHTML =
+      html =
         "<span>Field provenance</span><p><strong>Population</strong> SCAD-mapped (12 direct + 6 grouped / relabeled) · <strong>Geography</strong> derived from official AD-SDI · <strong>Jobs and rents</strong> synthetic assumptions</p>";
-      return;
+    } else {
+      const classes = zone.sourceClassByField || {};
+      html = `<span>Field provenance</span><p><strong>Population</strong> ${escapeHtml(
+        classes.population2024 || "synthetic"
+      )} · <strong>Geography</strong> derived · <strong>Jobs</strong> ${escapeHtml(
+        classes.jobs2024 || "synthetic"
+      )} · <strong>Rent</strong> ${escapeHtml(classes.housingRentIndex || "synthetic")}</p>${
+        zone.mappingNote ? `<small>${escapeHtml(zone.mappingNote)}</small>` : ""
+      }`;
     }
-    const classes = zone.sourceClassByField || {};
-    node.innerHTML = `<span>Field provenance</span><p><strong>Population</strong> ${escapeHtml(
-      classes.population2024 || "synthetic"
-    )} · <strong>Geography</strong> derived · <strong>Jobs</strong> ${escapeHtml(
-      classes.jobs2024 || "synthetic"
-    )} · <strong>Rent</strong> ${escapeHtml(classes.housingRentIndex || "synthetic")}</p>${
-      zone.mappingNote ? `<small>${escapeHtml(zone.mappingNote)}</small>` : ""
-    }`;
+    if (state.panelHtml.get(node) === html) return;
+    node.innerHTML = html;
+    state.panelHtml.set(node, html);
   }
 
   function renderInspectorMiniChart(zone) {
@@ -1854,9 +2044,17 @@
     const height = 58;
     const path = linePath(values, width, height, 4, 0, 1);
     const subject = isDistrict ? "District" : "City";
-    mount.innerHTML = `<div class="udes-v2-mini-chart-heading"><span>${subject} daily history</span><strong>${formatPercent(
-      zone.satisfaction
-    )}</strong></div><svg viewBox="0 0 ${width} 72" role="img" aria-label="${subject} daily satisfaction history"><path class="udes-v2-mini-chart__line" d="${path}"></path></svg>`;
+    if (!mount.querySelector("[data-udes-v2-mini-chart-line]")) {
+      mount.innerHTML = `<div class="udes-v2-mini-chart-heading"><span data-udes-v2-mini-chart-label></span><strong data-udes-v2-mini-chart-value></strong></div><svg viewBox="0 0 ${width} 72" role="img"><path class="udes-v2-mini-chart__line" data-udes-v2-mini-chart-line></path></svg>`;
+    }
+    const label = $("[data-udes-v2-mini-chart-label]", mount);
+    const value = $("[data-udes-v2-mini-chart-value]", mount);
+    const svg = $("svg", mount);
+    const line = $("[data-udes-v2-mini-chart-line]", mount);
+    if (label) label.textContent = `${subject} daily history`;
+    if (value) value.textContent = formatPercent(zone.satisfaction);
+    if (svg) svg.setAttribute("aria-label", `${subject} daily satisfaction history`);
+    if (line) line.setAttribute("d", path);
   }
 
   function initMap() {
@@ -1888,8 +2086,14 @@
           layer.bindTooltip(feature.properties?.name || baselineZone(id)?.name || id, { sticky: true, direction: "top" });
           layer.on({
             click: () => selectObject("zone", id),
-            mouseover: () => layer.setStyle({ weight: 2.2, fillOpacity: 0.4 }),
-            mouseout: () => updateMapStyles(),
+            mouseover: () => {
+              state.hoveredZoneId = id;
+              layer.setStyle(zoneStyle(feature));
+            },
+            mouseout: () => {
+              if (String(state.hoveredZoneId) === String(id)) state.hoveredZoneId = null;
+              updateMapStyles();
+            },
           });
         },
       }).addTo(state.map);
@@ -1972,13 +2176,15 @@
     const [minimum, maximum] = extent(values);
     const value = zoneValue(feature);
     const ratio = (value - minimum) / Math.max(0.0001, maximum - minimum);
-    const selected = String(zoneFeatureId(feature)) === String(state.selected.id);
+    const id = zoneFeatureId(feature);
+    const selected = String(id) === String(state.selected.id);
+    const hovered = String(id) === String(state.hoveredZoneId);
     return {
       color: selected ? palette.ink : "#65736f",
-      weight: selected ? 2.6 : 1.1,
+      weight: selected ? 2.6 : hovered ? 2.2 : 1.1,
       opacity: 0.9,
       fillColor: state.mapMode === "rent" ? mixColor("#f4ead4", "#a9673f", ratio) : mixColor("#e9f0ed", "#277565", ratio),
-      fillOpacity: state.mapMode === "network" ? 0.16 : 0.54,
+      fillOpacity: hovered ? 0.64 : state.mapMode === "network" ? 0.16 : 0.54,
     };
   }
 
@@ -2033,6 +2239,7 @@
       await requestInspection(kind, id);
     } else {
       renderSelection();
+      renderChartPanel($("[data-udes-v2-chart-tab][aria-selected='true']")?.dataset.udesV2ChartTab || "outcomes");
     }
   }
 
@@ -2079,10 +2286,10 @@
       .replaceAll("'", "&#039;");
   }
 
-  function statechart(states, active) {
-    return `<div class="udes-v2-statechart" aria-label="Agent statechart">${states
+  function statechart(states, active, note) {
+    return `<div class="udes-v2-statechart" aria-label="Agent states; ${escapeHtml(active)} is active">${states
       .map((name) => `<span class="${String(name).toLowerCase() === String(active).toLowerCase() ? "is-active" : ""}">${escapeHtml(name)}</span>`)
-      .join('<i aria-hidden="true">→</i>')}</div>`;
+      .join("")}<p class="udes-v2-statechart__branch-note">${escapeHtml(note)}</p></div>`;
   }
 
   function metricRows(rows) {
@@ -2095,11 +2302,161 @@
     const samples = kind === "link" ? linksOf() : samplesOf(kind);
     const id = item.id || item[`${kind}Id`] || state.selected.id || "";
     const disabled = samples.length < 2 ? " disabled" : "";
-    return `<div class="udes-v2-agent-nav"><button type="button" data-udes-v2-agent-nav="previous"${disabled}>Previous sample</button><form data-udes-v2-agent-search><label class="udes-v2-sr-only" for="udes-v2-${escapeHtml(
+    return `<div class="udes-v2-agent-nav"><button type="button" data-udes-v2-agent-nav="previous"${disabled}>Previous tracked</button><form data-udes-v2-agent-search><label class="udes-v2-sr-only" for="udes-v2-${escapeHtml(
       kind
     )}-id">Inspect ${escapeHtml(kind)} ID</label><input id="udes-v2-${escapeHtml(kind)}-id" name="agent-id" value="${escapeHtml(
       id
-    )}" autocomplete="off" spellcheck="false"><button type="submit">Inspect</button></form><button type="button" data-udes-v2-agent-nav="next"${disabled}>Next sample</button></div>`;
+    )}" autocomplete="off" spellcheck="false"><button type="submit">Inspect</button></form><button type="button" data-udes-v2-agent-nav="next"${disabled}>Next tracked</button></div>`;
+  }
+
+  function humanizeEvent(value) {
+    return String(value || "event")
+      .replace(/([a-z])([A-Z])/g, "$1 $2")
+      .replace(/[-_]+/g, " ")
+      .replace(/^./, (letter) => letter.toUpperCase());
+  }
+
+  function eventDescription(event = {}) {
+    const type = humanizeEvent(event.type || event.action || event.event || "model action");
+    const reason = event.reason ? ` · ${humanizeEvent(event.reason)}` : "";
+    const from = event.fromZoneId || event.fromWorkZoneId || event.previousZoneId || event.from;
+    const to = event.toZoneId || event.toWorkZoneId || event.zoneId || event.to;
+    const route = from && to && String(from) !== String(to) ? ` · ${zoneLabel(from)} → ${zoneLabel(to)}` : "";
+    return `${type}${reason}${route}`;
+  }
+
+  function agentEvents(events) {
+    const recent = Array.isArray(events) ? events.slice(-5).reverse() : [];
+    if (!recent.length) {
+      return '<section class="udes-v2-agent-events"><span>Recent actions</span><p>No completed action is recorded in this agent’s retained history.</p></section>';
+    }
+    return `<section class="udes-v2-agent-events"><span>Recent actions</span><ol>${recent
+      .map((event) => {
+        const date = textAt(event, ["date"], Number.isFinite(Number(event.day)) ? `Day ${Number(event.day)}` : "—");
+        return `<li><time>${escapeHtml(date)}</time><span>${escapeHtml(eventDescription(event))}</span></li>`;
+      })
+      .join("")}</ol></section>`;
+  }
+
+  function decisionSummary(kind, item) {
+    const explanation = item?.decisionExplanation || {};
+    const current = explanation.currentAssessment || {};
+    const next = explanation.nextScheduledReview || explanation.nextScheduledDecision;
+    const last = explanation.lastAction;
+    const goal =
+      explanation.primaryGoal ||
+      (kind === "citizen" ? "Balance housing, work access, and household finances." : "Keep the enterprise viable and staffed.");
+    let condition = textAt(current, ["financialStatusLabel", "state"], textAt(item, ["state", "status"], "—"));
+    let guard = "No severe guard is active";
+    let assessment = "Rules are evaluated daily";
+    if (kind === "citizen") {
+      if (current.severeFinancial && current.severeCommute) guard = "Severe finance + commute guard";
+      else if (current.severeFinancial) guard = "Severe financial guard";
+      else if (current.severeCommute) guard = "Severe commute guard";
+      else if (current.normal === false) guard = "Dissatisfaction guard";
+      assessment = `${
+        valueAt(item, ["cashAfterHousingAndCommuteAed", "netIncomeAed"], 0) >= valueAt(current, ["waitingCashThresholdAed"], 0) ? "Above" : "Below"
+      } AED ${formatNumber(valueAt(current, ["waitingCashThresholdAed"], 0))} cash buffer · ${valueAt(item, ["roundTripMinutes"], 0).toFixed(
+        1
+      )} / ${valueAt(current, ["acceptableRoundTripMinutes"], 0).toFixed(0)} min commute`;
+    } else {
+      condition = `${textAt(current, ["state"], textAt(item, ["state"], "—"))} · ${valueAt(current, ["operatingMarginPercent"], 0).toFixed(
+        1
+      )}% margin`;
+      const gap = valueAt(current, ["marginGapPercentagePoints"], 0);
+      guard = `${gap >= 0 ? "+" : ""}${gap.toFixed(1)} pp to target`;
+      assessment = `${valueAt(current, ["vacancyFillRatePercent"], 0).toFixed(0)}% vacancy fill · demand ${valueAt(
+        current,
+        ["demandIndex"],
+        0
+      ).toFixed(2)} · access ${valueAt(current, ["laborAccessScore"], 0).toFixed(2)}`;
+    }
+    const nextText = next
+      ? `${humanizeEvent(next.purpose)} in ${formatNumber(next.daysFromNow)} day${Number(next.daysFromNow) === 1 ? "" : "s"} · ${next.date}`
+      : "Re-evaluated by the daily rule set";
+    const lastText = last ? eventDescription(last) : "No completed action retained";
+    return `<section class="udes-v2-decision-summary"><span>What this agent is trying to do</span><strong>${escapeHtml(goal)}</strong><p>${escapeHtml(
+      explanation.decisionModel || "Rule-based statechart"
+    )}</p></section><dl class="udes-v2-decision-grid"><div><dt>Current assessment</dt><dd>${escapeHtml(
+      condition
+    )}</dd></div><div><dt>Active guard</dt><dd>${escapeHtml(guard)}</dd></div><div><dt>Evidence used now</dt><dd title="${escapeHtml(
+      assessment
+    )}">${escapeHtml(assessment)}</dd></div><div><dt>Next decision</dt><dd title="${escapeHtml(nextText)}">${escapeHtml(
+      nextText
+    )}</dd></div><div><dt>Last completed action</dt><dd title="${escapeHtml(lastText)}">${escapeHtml(
+      lastText
+    )}</dd></div><div><dt>Days in dissatisfaction</dt><dd>${
+      kind === "citizen" ? formatNumber(valueAt(current, ["daysDissatisfied"], 0)) : "Not applicable"
+    }</dd></div></dl>`;
+  }
+
+  function citizenAccounting(item) {
+    const account = item.financialAccount || {};
+    const gross = valueAt(account, ["grossSalaryAed"], valueAt(item, ["salaryAed"], 0));
+    const housing = valueAt(account, ["housingCostAed"], valueAt(item, ["residentialRentAed"], 0));
+    const commute = valueAt(account, ["commutingCostAed"], valueAt(item, ["monthlyTransportCostAed"], 0));
+    const fixedCash = valueAt(account, ["cashAfterHousingAndCommuteAed"], gross - housing - commute);
+    const essentials = valueAt(account, ["essentialConsumptionAed"], 0);
+    const residual = valueAt(account, ["residualAfterEssentialsAed"], fixedCash - essentials);
+    const bankChange = valueAt(account, ["modeledBankChangeAtMonthEndAed"], valueAt(item, ["lastMonthlyBankBalanceDeltaAed"], 0));
+    const row = (label, value, total = false, negative = false) =>
+      `<div class="udes-v2-accounting-row${total ? " is-total" : ""}"${negative ? ' data-direction="negative"' : ""}><span>${escapeHtml(
+        label
+      )}</span><strong>${escapeHtml(formatAed(value))}</strong></div>`;
+    return `<section class="udes-v2-accounting"><span>Last monthly household account · ${escapeHtml(
+      textAt(account, ["accountingDate"], "current model month")
+    )}</span>${row("Gross salary", gross)}${row("− Housing", -housing, false, true)}${row("− Commute", -commute, false, true)}${row(
+      "Cash after housing + commute",
+      fixedCash,
+      true,
+      fixedCash < 0
+    )}${row("− Essentials", -essentials, false, true)}${row("Residual after essentials", residual, true, residual < 0)}${row(
+      "Modeled saving / drawdown",
+      bankChange,
+      false,
+      bankChange < 0
+    )}</section>`;
+  }
+
+  function panelIsInteracting(panel) {
+    return panel.matches(":hover") || panel.contains(document.activeElement);
+  }
+
+  function commitPanelRender(panel, render) {
+    if (!render || state.panelHtml.get(panel) === render.html) return;
+    const scrollContainer = panel.closest(".udes-v2-inspector__body");
+    const previousScrollTop = scrollContainer?.scrollTop || 0;
+    panel.innerHTML = render.html;
+    panel.dataset.udesV2SelectionKey = render.selectionKey;
+    state.panelHtml.set(panel, render.html);
+    render.bind?.();
+    if (scrollContainer) scrollContainer.scrollTop = previousScrollTop;
+  }
+
+  function flushPendingPanelRender(panel) {
+    if (panelIsInteracting(panel)) return;
+    const pending = state.pendingPanelRenders.get(panel);
+    if (!pending) return;
+    state.pendingPanelRenders.delete(panel);
+    commitPanelRender(panel, pending);
+  }
+
+  function renderStablePanel(panel, selectionKey, html, bind) {
+    if (!panel) return;
+    if (panel.dataset.udesV2InteractionBound !== "true") {
+      panel.dataset.udesV2InteractionBound = "true";
+      panel.addEventListener("pointerleave", () => flushPendingPanelRender(panel));
+      panel.addEventListener("focusout", () => requestAnimationFrame(() => flushPendingPanelRender(panel)));
+    }
+    if (state.panelHtml.get(panel) === html) return;
+    const render = { selectionKey, html, bind };
+    const selectionChanged = panel.dataset.udesV2SelectionKey !== selectionKey;
+    if (!selectionChanged && panelIsInteracting(panel)) {
+      state.pendingPanelRenders.set(panel, render);
+      return;
+    }
+    state.pendingPanelRenders.delete(panel);
+    commitPanelRender(panel, render);
   }
 
   function renderInspection(kind, inspection, fallback = {}) {
@@ -2111,6 +2468,7 @@
     const panel = $(`[data-udes-v2-inspector-panel='${kind}']`);
     if (!panel) return;
     const id = item.id || item[`${kind}Id`] || state.selected.id || "sample";
+    let html = "";
     if (ui.selectionName)
       ui.selectionName.textContent =
         kind === "enterprise" ? `Enterprise ${id}` : kind === "citizen" ? `Citizen ${id}` : textAt(item, ["name", "roadName"], `Network link ${id}`);
@@ -2120,7 +2478,11 @@
       const netIncome = valueAt(item, ["netIncomeAed", "netIncomeMonthly", "netIncome"]);
       const roundTrip = valueAt(item, ["roundTripMinutes", "commuteMinutes"]);
       const appliedPolicy = state.appliedPolicy || policyFromControls();
-      panel.innerHTML = `${agentNavigation(kind, item)}${statechart(["Happy", "Waiting", "Extreme", "Recovery"], status)}${metricRows([
+      html = `${agentNavigation(kind, item)}${decisionSummary(kind, item)}${statechart(
+        ["Happy", "Waiting", "Extreme", "Recovery"],
+        status,
+        "Daily branching statechart: financial and commute guards can trigger dissatisfaction; successful moves, job changes, or recovery can return the citizen to Happy."
+      )}${citizenAccounting(item)}${metricRows([
         ["Representative weight", `${formatNumber(valueAt(item, ["weight"], 1))} people`],
         ["Home district", zoneLabel(textAt(item, ["homeZoneId", "livingZoneId"]))],
         ["Work district", item.workZoneId ? zoneLabel(item.workZoneId) : "Unemployed"],
@@ -2131,13 +2493,19 @@
         ["Salary", formatAed(valueAt(item, ["salaryAed", "salaryMonthly", "salary"]))],
         ["Housing rent", formatAed(valueAt(item, ["residentialRentAed", "rentMonthly", "rent"]))],
         ["Transport / month", formatAed(valueAt(item, ["monthlyTransportCostAed", "monthlyTransportCost", "transportCost"]))],
-        ["Net income", formatAed(netIncome)],
-        ["Income goal margin", formatAed(netIncome - appliedPolicy.waitingNetIncomeAed)],
+        ["Financial status", textAt(item, ["financialStatusLabel"], "Not classified")],
+        ["Cash after housing + commute", formatAed(netIncome)],
+        ["Cash-buffer margin", formatAed(netIncome - appliedPolicy.waitingNetIncomeAed)],
         ["Modeled savings stock", formatAed(valueAt(item, ["bankBalanceAed", "bankBalance", "savings"]))],
         ["Last monthly saving / drawdown", formatAed(valueAt(item, ["lastMonthlyBankBalanceDeltaAed"]))],
         ["Round trip", `${roundTrip.toFixed(1)} min`],
         ["Commute goal margin", `${(appliedPolicy.acceptableCommuteRoundTripMin - roundTrip).toFixed(1)} min`],
-      ])}${historyBars(item.history || item.histories, "Net income history", ["netIncomeAed", "netIncome"], "AED/month")}`;
+      ])}${historyBars(
+        item.history || item.histories,
+        "Monthly cash-after-fixed-cost history",
+        ["netIncomeAed", "netIncome"],
+        "AED/month"
+      )}${agentEvents(item.events)}`;
     } else if (kind === "enterprise") {
       const status = textAt(item, ["status", "state"], "Working");
       const representedEmployees = valueAt(item, ["representedEmployees", "employeeCount", "employees", "staff"]);
@@ -2147,7 +2515,11 @@
         ["representedVacancies"],
         item.hiring === false ? 0 : Math.max(0, representedJobCapacity - representedEmployees)
       );
-      panel.innerHTML = `${agentNavigation(kind, item)}${statechart(["Starting", "Working", "Grow", "Lesser"], status)}${metricRows([
+      html = `${agentNavigation(kind, item)}${decisionSummary(kind, item)}${statechart(
+        ["Starting", "Working", "Grow", "Lesser"],
+        status,
+        "Scheduled branching statechart: margin, demand, vacancy fill, and labor access adjust the hazards for Grow and Lesser; actions can hire, fire, move, or restart."
+      )}${metricRows([
         ["District", zoneLabel(textAt(item, ["zoneId"]))],
         ["Sector", textAt(item, ["sectorLabel", "sector"], "Services")],
         ["Employees represented", formatNumber(representedEmployees)],
@@ -2159,11 +2531,16 @@
         ["Operating margin", formatPercent(valueAt(item, ["operatingMargin", "margin"]))],
         ["Sector demand", valueAt(item, ["demandIndex"], 1).toFixed(2)],
         ["Labor accessibility", formatPercent(valueAt(item, ["laborAccessScore", "labourAccessibility", "accessibility"]))],
-      ])}${historyBars(item.history || item.histories, "Employee-agent count history", ["employeeCount", "employees"], "employee agents")}`;
+      ])}${historyBars(
+        item.history || item.histories,
+        "Employee-agent count history",
+        ["employeeCount", "employees"],
+        "employee agents"
+      )}${agentEvents(item.events)}`;
     } else {
       const current = item.current && typeof item.current === "object" ? { ...item, ...item.current } : item;
       const load = linkLoad(current);
-      panel.innerHTML = `${agentNavigation(kind, item)}${metricRows([
+      html = `${agentNavigation(kind, item)}${metricRows([
         ["From", zoneLabel(textAt(current, ["from"]))],
         ["To", zoneLabel(textAt(current, ["to"]))],
         ["Road class", textAt(current, ["roadClass", "class"], "Urban arterial")],
@@ -2181,17 +2558,15 @@
         ["Load / capacity", formatPercent(load)],
       ])}${historyBars(item.history || item.histories, "Maximum load / capacity history", ["volumeCapacityRatio", "loadRatio"], "ratio")}`;
     }
-    bindAgentNavigation(panel, kind);
+    renderStablePanel(panel, `${kind}:${id}`, html, () => bindAgentNavigation(panel, kind));
   }
 
   function renderEmptyInspection(kind, message) {
     const panel = $(`[data-udes-v2-inspector-panel='${kind}']`);
     if (!panel) return;
     const navigation = ["citizen", "enterprise", "link"].includes(kind) ? agentNavigation(kind, { id: state.selected.id }) : "";
-    panel.innerHTML = `${navigation}<div class="udes-v2-empty-state"><strong>No ${escapeHtml(kind)} selected</strong><p>${escapeHtml(
-      message
-    )}</p></div>`;
-    if (navigation) bindAgentNavigation(panel, kind);
+    const html = `${navigation}<div class="udes-v2-empty-state"><strong>No ${escapeHtml(kind)} selected</strong><p>${escapeHtml(message)}</p></div>`;
+    renderStablePanel(panel, `${kind}:${state.selected.id || "empty"}`, html, navigation ? () => bindAgentNavigation(panel, kind) : null);
   }
 
   function bindAgentNavigation(panel, kind) {
@@ -2215,10 +2590,19 @@
     if (!values.length)
       return `<div class="udes-v2-agent-history"><span>${escapeHtml(label)}</span><p>Agent finance history is recorded at month close.</p></div>`;
     const maximum = Math.max(...values.map(Math.abs), 1);
+    const signed = values.some((value) => value < 0);
     const accessibleValues = values.map((value) => `${Number(value).toFixed(1)} ${unit}`).join(", ");
-    return `<div class="udes-v2-agent-history"><span>${escapeHtml(label)}</span><div role="img" aria-label="${escapeHtml(
-      `${label}, oldest to newest: ${accessibleValues}`
-    )}">${values.map((value) => `<i aria-hidden="true" style="--value:${Math.max(0.08, Math.abs(value) / maximum)}"></i>`).join("")}</div></div>`;
+    return `<div class="udes-v2-agent-history"><span>${escapeHtml(label)}</span><div class="${
+      signed ? "is-signed" : ""
+    }" role="img" aria-label="${escapeHtml(`${label}, oldest to newest: ${accessibleValues}`)}">${values
+      .map(
+        (value) =>
+          `<i aria-hidden="true" data-direction="${value < 0 ? "negative" : value > 0 ? "positive" : "zero"}" style="--value:${Math.max(
+            signed ? 0.025 : 0.08,
+            Math.abs(value) / maximum
+          )}"></i>`
+      )
+      .join("")}</div></div>`;
   }
 
   function linePath(values, width, height, padding = 8, minimum = null, maximum = null) {
@@ -2256,6 +2640,7 @@
   function baseChartOptions() {
     return {
       animationDuration: 280,
+      animationDurationUpdate: 0,
       color: [palette.green, palette.blue, palette.amber, palette.red, palette.sand, palette.teal],
       textStyle: { fontFamily: 'Inter, "Helvetica Neue", sans-serif', color: palette.ink, fontSize: 10 },
       tooltip: {
@@ -2331,8 +2716,55 @@
     return $("[data-udes-v2-live-chart]", section);
   }
 
+  function chartDataSignature(option) {
+    return JSON.stringify({
+      xAxis: option.xAxis,
+      yAxis: option.yAxis,
+      legend: option.legend,
+      series: (option.series || []).map((series) => ({
+        name: series.name,
+        type: series.type,
+        stack: series.stack,
+        yAxisIndex: series.yAxisIndex,
+        data: series.data,
+        markLine: series.markLine?.data,
+      })),
+    });
+  }
+
+  function applyChartOption(chart, key, option) {
+    if (!chart || chart.isDisposed?.()) return;
+    const signature = chartDataSignature(option);
+    if (state.chartDataSignatures.get(key) === signature) return;
+    const firstRender = !state.chartDataSignatures.has(key);
+    chart.setOption(
+      option,
+      firstRender ? { notMerge: true, lazyUpdate: true } : { notMerge: false, lazyUpdate: true, silent: true, replaceMerge: ["series"] }
+    );
+    state.chartDataSignatures.set(key, signature);
+  }
+
+  function bindChartInteraction(node, key, chart) {
+    if (node.dataset.udesV2InteractionBound === "true") return;
+    node.dataset.udesV2InteractionBound = "true";
+    node.addEventListener("pointerenter", () => state.chartInteractionLocks.add(key));
+    node.addEventListener("pointerleave", () => {
+      state.chartInteractionLocks.delete(key);
+      const pending = state.pendingChartOptions.get(key);
+      if (!pending) return;
+      state.pendingChartOptions.delete(key);
+      requestAnimationFrame(() => applyChartOption(chart, key, pending));
+    });
+  }
+
   function mountChart(node, key, option) {
     if (!node) return;
+    (option.series || []).forEach((series, index) => {
+      if (!series.id)
+        series.id = `${key}:${String(series.name || index)
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-")}`;
+    });
     node.setAttribute("aria-label", summarizeChart(node.dataset.udesV2ChartTitle || key, option));
     if (!window.echarts) {
       node.innerHTML =
@@ -2344,18 +2776,26 @@
       chart = window.echarts.init(node, null, { renderer: "canvas" });
       state.charts.set(key, chart);
     }
-    chart.setOption(option, { notMerge: true, lazyUpdate: true });
+    bindChartInteraction(node, key, chart);
+    if (state.chartInteractionLocks.has(key)) {
+      state.pendingChartOptions.set(key, option);
+      return;
+    }
+    applyChartOption(chart, key, option);
   }
 
   function prepareChartPanel(kind, definitions) {
     const mount = $(`[data-udes-v2-chart='${kind}']`);
     if (!mount) return [];
-    const signature = definitions.map((definition) => definition[0]).join("|");
+    const signature = definitions.map((definition) => definition.join("::")).join("|");
     if (mount.dataset.renderedSignature !== signature) {
       for (const [key, chart] of state.charts.entries()) {
         if (key.startsWith(`${kind}:`)) {
           chart.dispose?.();
           state.charts.delete(key);
+          state.chartInteractionLocks.delete(key);
+          state.pendingChartOptions.delete(key);
+          state.chartDataSignatures.delete(key);
         }
       }
       mount.replaceChildren();
@@ -2369,9 +2809,11 @@
   function renderChartPanel(kind) {
     if (!state.snapshot) return;
     if (kind === "outcomes") renderOutcomeCharts();
-    else if (kind === "places") renderPlaceCharts();
+    else if (kind === "districts") renderDistrictCharts();
+    else if (kind === "flows") renderFlowCharts();
     else if (kind === "mobility") renderMobilityCharts();
-    else if (kind === "agents") renderAgentCharts();
+    else if (kind === "citizens") renderCitizenCharts();
+    else if (kind === "enterprises") renderEnterpriseCharts();
   }
 
   function renderOutcomeCharts() {
@@ -2437,80 +2879,266 @@
     mountChart(commuteNode, "outcomes:commute", commute);
   }
 
-  function renderPlaceCharts() {
-    const [occupancyNode, balanceNode] = prepareChartPanel("places", [
-      ["occupancy", "Housing occupancy by district", "Current day · all 18 districts"],
-      ["balance", "Jobs per 100 residents", "Current day · all 18 districts"],
-    ]);
-    const referenceZones = new Map(zonesOf(state.referenceSnapshot).map((zone) => [String(zone.id || zone.zoneId), zone]));
-    const zones = zonesOf()
-      .map((zone) => {
-        const baseline = baselineZone(zone.id || zone.zoneId) || {};
-        return {
-          active: normalizeZone(zone, baseline),
-          reference: normalizeZone(referenceZones.get(String(zone.id || zone.zoneId)) || {}, baseline),
-        };
-      })
-      .sort((a, b) => a.active.name.localeCompare(b.active.name));
-    const labels = zones.map(({ active }) => active.name).reverse();
+  function selectedDistrictId() {
+    if (state.selected.kind === "zone" && state.selected.id) return String(state.selected.id);
+    if (ui.zoneSelect?.value && ui.zoneSelect.value !== "city") return String(ui.zoneSelect.value);
+    return null;
+  }
 
-    const occupancy = baseChartOptions();
-    occupancy.grid = { top: 20, left: 112, right: 16, bottom: 24 };
-    occupancy.xAxis = { ...occupancy.xAxis, type: "value", axisLabel: { ...occupancy.xAxis.axisLabel, formatter: "{value}%" } };
-    occupancy.yAxis = {
-      ...occupancy.yAxis,
+  function districtHistory(zoneId) {
+    if (!zoneId) return [];
+    return chartSource()
+      .history.map((entry) => {
+        const zone = (entry.zoneSeries || []).find((candidate) => String(candidate.id) === String(zoneId));
+        return zone ? { ...zone, day: entry.day, date: entry.date } : null;
+      })
+      .filter(Boolean);
+  }
+
+  function renderDistrictCharts() {
+    const selectedId = selectedDistrictId();
+    const selectedName = selectedId ? zoneLabel(selectedId) : null;
+    const [stocksNode, districtNode] = prepareChartPanel("districts", [
+      ["stocks", "Residents and located jobs by district", "Current day · all modeled Abu Dhabi City districts"],
+      [
+        "selected",
+        selectedName ? `${selectedName}: daily district trajectory` : "Choose a district for its daily trajectory",
+        selectedName ? "Population and jobs daily · housing rent changes annually" : "Use Inspect district in Setup or click a district on the map",
+      ],
+    ]);
+    const zones = normalizeCity(state.snapshot)
+      .zoneSeries.map((zone) => ({ ...zone, name: zoneLabel(zone.id) }))
+      .sort((a, b) => a.population - b.population || a.name.localeCompare(b.name));
+    const labels = zones.map((zone) => zone.name);
+    const stocks = baseChartOptions();
+    stocks.grid = { top: 22, left: 112, right: 18, bottom: 20 };
+    stocks.xAxis = { ...stocks.xAxis, type: "value", axisLabel: { ...stocks.xAxis.axisLabel, formatter: (value) => formatCompact(value) } };
+    stocks.yAxis = {
+      ...stocks.yAxis,
       type: "category",
       data: labels,
-      axisLabel: { ...occupancy.yAxis.axisLabel, width: 102, overflow: "truncate", interval: 0 },
+      axisLabel: { ...stocks.yAxis.axisLabel, width: 102, overflow: "truncate", interval: 0 },
     };
-    occupancy.series = [
+    stocks.series = [
+      { name: "Residents", type: "bar", data: zones.map((zone) => zone.population), barMaxWidth: 7, itemStyle: { color: palette.green } },
+      { name: "Located jobs", type: "bar", data: zones.map((zone) => zone.jobs), barMaxWidth: 7, itemStyle: { color: palette.blue } },
+    ];
+    mountChart(stocksNode, "districts:stocks", stocks);
+
+    const history = districtHistory(selectedId);
+    const district = baseChartOptions();
+    district.grid = { ...district.grid, right: 54 };
+    district.xAxis.data = history.map((entry) => formatChartDayUtc(entry.date));
+    district.yAxis = [
       {
-        name: "Active",
-        type: "bar",
-        data: zones.map(({ active }) => active.occupancy * 100).reverse(),
-        barMaxWidth: 7,
+        ...district.yAxis,
+        name: "people / jobs",
+        nameTextStyle: { color: palette.muted, fontSize: 9 },
+        axisLabel: { ...district.yAxis.axisLabel, formatter: (value) => formatCompact(value) },
+      },
+      {
+        ...district.yAxis,
+        position: "right",
+        name: "AED/month",
+        nameTextStyle: { color: palette.muted, fontSize: 9 },
+        axisLabel: { ...district.yAxis.axisLabel, formatter: (value) => formatCompact(value) },
+        splitLine: { show: false },
+      },
+    ];
+    district.series = [
+      {
+        name: "Population",
+        type: "line",
+        showSymbol: false,
+        data: history.map((entry) => entry.population),
+        lineStyle: { width: 2.2, color: palette.green },
         itemStyle: { color: palette.green },
       },
-      state.compare
-        ? {
-            name: "Reference",
-            type: "bar",
-            data: zones.map(({ reference }) => reference.occupancy * 100).reverse(),
-            barMaxWidth: 7,
-            itemStyle: { color: palette.greenSoft },
-          }
-        : null,
-    ].filter(Boolean);
-    mountChart(occupancyNode, "places:occupancy", occupancy);
-
-    const balance = baseChartOptions();
-    balance.grid = { top: 20, left: 112, right: 16, bottom: 24 };
-    balance.xAxis = { ...balance.xAxis, type: "value" };
-    balance.yAxis = {
-      ...balance.yAxis,
-      type: "category",
-      data: labels,
-      axisLabel: { ...balance.yAxis.axisLabel, width: 102, overflow: "truncate", interval: 0 },
-    };
-    balance.series = [
       {
-        name: "Active",
-        type: "bar",
-        data: zones.map(({ active }) => (active.jobs / Math.max(active.population, 1)) * 100).reverse(),
-        barMaxWidth: 7,
+        name: "Located jobs",
+        type: "line",
+        showSymbol: false,
+        data: history.map((entry) => entry.jobs),
+        lineStyle: { width: 2, color: palette.blue },
         itemStyle: { color: palette.blue },
       },
-      state.compare
-        ? {
-            name: "Reference",
-            type: "bar",
-            data: zones.map(({ reference }) => (reference.jobs / Math.max(reference.population, 1)) * 100).reverse(),
-            barMaxWidth: 7,
-            itemStyle: { color: palette.sand },
-          }
-        : null,
-    ].filter(Boolean);
-    mountChart(balanceNode, "places:balance", balance);
+      {
+        name: "Housing rent",
+        type: "line",
+        yAxisIndex: 1,
+        showSymbol: false,
+        step: "end",
+        data: history.map((entry) => entry.residentialRentAed),
+        lineStyle: { width: 1.7, color: palette.amber },
+        itemStyle: { color: palette.amber },
+      },
+    ];
+    addInterventionMarkers(district, history, district.xAxis.data);
+    mountChart(districtNode, "districts:selected", district);
+  }
+
+  function renderFlowCharts() {
+    const latestDay = state.history.at(-1)?.day || 0;
+    const kind = state.flowKind;
+    const commuteStock = kind === "commute";
+    const definition = flowDefinition(kind);
+    const kindLabel = {
+      residential: "Residential moves",
+      job: "Workplace changes",
+      enterprise: "Enterprise relocations",
+      commute: "Home-to-work relationships",
+    }[kind];
+    const selectedId = selectedDistrictId();
+    const selectedName = selectedId ? zoneLabel(selectedId) : null;
+    const [routesNode, districtNode] = prepareChartPanel("flows", [
+      [
+        "routes",
+        `Top cross-district ${kindLabel.toLowerCase()}`,
+        commuteStock
+          ? "Current resident stock · home → work · employed residents"
+          : `${state.flowWindowDays}-day sum · ${definition.unit} · origin → destination${kind === "residential" ? " · replacements labeled" : ""}`,
+      ],
+      [
+        "district",
+        commuteStock
+          ? selectedName
+            ? `${selectedName}: residents’ work destinations`
+            : "Where residents work today"
+          : selectedName
+            ? `${selectedName}: incoming, outgoing, and net`
+            : `${kindLabel} by decision reason`,
+        commuteStock
+          ? selectedName
+            ? "Current stock · includes same-district work and unemployment"
+            : "Citywide same-district, cross-district, and unemployment split"
+          : selectedName
+            ? `Exact daily OD flows · ${definition.unit}${kind === "residential" ? " · replacements included" : ""}`
+            : `${state.flowWindowDays}-day citywide totals · choose a district for its daily balance`,
+      ],
+    ]);
+    const commuteOd = Array.isArray(state.snapshot?.commuteOd) ? state.snapshot.commuteOd : [];
+    const routes = (
+      commuteStock
+        ? commuteOd
+            .filter((row) => row.workZoneId && String(row.homeZoneId) !== String(row.workZoneId))
+            .map((row) => ({ fromZoneId: row.homeZoneId, toZoneId: row.workZoneId, value: Number(row.representedWorkers) || 0, reasons: {} }))
+            .sort((a, b) => b.value - a.value)
+        : aggregateFlowRoutes(state.history, kind, state.flowWindowDays, latestDay)
+    )
+      .slice(0, 12)
+      .reverse();
+    const routeChart = baseChartOptions();
+    routeChart.grid = { top: 22, left: 142, right: 20, bottom: 20 };
+    routeChart.xAxis = {
+      ...routeChart.xAxis,
+      type: "value",
+      axisLabel: { ...routeChart.xAxis.axisLabel, formatter: (value) => formatCompact(value) },
+    };
+    routeChart.yAxis = {
+      ...routeChart.yAxis,
+      type: "category",
+      data: routes.length
+        ? routes.map((route) => `${zoneLabel(route.fromZoneId)} → ${zoneLabel(route.toZoneId)}`)
+        : ["No cross-district changes yet"],
+      axisLabel: { ...routeChart.yAxis.axisLabel, width: 132, overflow: "truncate", interval: 0 },
+    };
+    routeChart.series = [
+      {
+        name: kindLabel,
+        type: "bar",
+        data: routes.length ? routes.map((route) => route.value) : [0],
+        barMaxWidth: 10,
+        itemStyle: { color: kind === "enterprise" ? palette.amber : kind === "job" || commuteStock ? palette.blue : palette.green },
+      },
+    ];
+    mountChart(routesNode, "flows:routes", routeChart);
+
+    const districtChart = baseChartOptions();
+    if (commuteStock) {
+      const groups = new Map();
+      const relevant = selectedId ? commuteOd.filter((row) => String(row.homeZoneId) === selectedId) : commuteOd;
+      if (selectedId) {
+        for (const row of relevant) {
+          const label = row.workZoneId ? zoneLabel(row.workZoneId) : "Unemployed";
+          groups.set(label, (groups.get(label) || 0) + (Number(row.representedResidents) || 0));
+        }
+      } else {
+        for (const row of relevant) {
+          const label = !row.workZoneId
+            ? "Unemployed"
+            : String(row.homeZoneId) === String(row.workZoneId)
+              ? "Works in home district"
+              : "Works in another district";
+          groups.set(label, (groups.get(label) || 0) + (Number(row.representedResidents) || 0));
+        }
+      }
+      const workDestinations = [...groups.entries()].sort((a, b) => a[1] - b[1]);
+      districtChart.grid = { top: 22, left: 124, right: 20, bottom: 20 };
+      districtChart.xAxis = {
+        ...districtChart.xAxis,
+        type: "value",
+        axisLabel: { ...districtChart.xAxis.axisLabel, formatter: (value) => formatCompact(value) },
+      };
+      districtChart.yAxis = {
+        ...districtChart.yAxis,
+        type: "category",
+        data: workDestinations.length ? workDestinations.map(([label]) => label) : ["No commute stock available"],
+        axisLabel: { ...districtChart.yAxis.axisLabel, width: 114, overflow: "truncate", interval: 0 },
+      };
+      districtChart.series = [
+        {
+          name: "Residents",
+          type: "bar",
+          data: workDestinations.length ? workDestinations.map(([, value]) => value) : [0],
+          barMaxWidth: 11,
+          itemStyle: { color: palette.blue },
+        },
+      ];
+    } else if (selectedId) {
+      const points = flowSeriesForZone(state.history, kind, selectedId, state.flowWindowDays, latestDay);
+      districtChart.xAxis.data = points.map((point) => formatChartDayUtc(point.date));
+      districtChart.yAxis.axisLabel = { ...districtChart.yAxis.axisLabel, formatter: (value) => formatCompact(value) };
+      districtChart.series = [
+        { name: "In", type: "bar", data: points.map((point) => point.inflow), itemStyle: { color: palette.greenSoft } },
+        { name: "Out", type: "bar", data: points.map((point) => -point.outflow), itemStyle: { color: palette.sand } },
+        {
+          name: "Net",
+          type: "line",
+          showSymbol: false,
+          data: points.map((point) => point.net),
+          lineStyle: { width: 2.2, color: palette.ink },
+          itemStyle: { color: palette.ink },
+        },
+      ];
+    } else {
+      const reasonTotals = new Map();
+      for (const route of aggregateFlowRoutes(state.history, kind, state.flowWindowDays, latestDay)) {
+        for (const [reason, value] of Object.entries(route.reasons)) reasonTotals.set(reason, (reasonTotals.get(reason) || 0) + value);
+      }
+      const reasons = [...reasonTotals.entries()].sort((a, b) => b[1] - a[1]);
+      districtChart.grid = { top: 22, left: 118, right: 20, bottom: 20 };
+      districtChart.xAxis = {
+        ...districtChart.xAxis,
+        type: "value",
+        axisLabel: { ...districtChart.xAxis.axisLabel, formatter: (value) => formatCompact(value) },
+      };
+      districtChart.yAxis = {
+        ...districtChart.yAxis,
+        type: "category",
+        data: reasons.length ? reasons.map(([reason]) => humanizeEvent(reason)).reverse() : ["No completed changes yet"],
+        axisLabel: { ...districtChart.yAxis.axisLabel, width: 108, overflow: "truncate", interval: 0 },
+      };
+      districtChart.series = [
+        {
+          name: kindLabel,
+          type: "bar",
+          data: reasons.length ? reasons.map(([, value]) => value).reverse() : [0],
+          barMaxWidth: 11,
+          itemStyle: { color: palette.teal },
+        },
+      ];
+    }
+    mountChart(districtNode, "flows:district", districtChart);
   }
 
   function renderMobilityCharts() {
@@ -2595,73 +3223,206 @@
     mountChart(linksNode, "mobility:links", linkChart);
   }
 
-  function renderAgentCharts() {
-    const activeIncome = cityOf(state.snapshot).distributions?.income || {};
-    const referenceIncome = cityOf(state.referenceSnapshot).distributions?.income || {};
-    const [incomeNode, eventsNode, enterpriseNode] = prepareChartPanel("agents", [
-      ["income", "Net-income distribution (AED/month)", "Current day · all weighted resident agents"],
-      ["events", "Exact daily citizen transitions", "Represented hires, fires and residential moves"],
-      ["enterprise", "Enterprise portfolio", "Daily active-firm share · latest closed-month revenue-weighted margin"],
+  function renderCitizenCharts() {
+    const activeStatus = cityOf(state.snapshot).distributions?.financialStatus || {};
+    const referenceStatus = cityOf(state.referenceSnapshot).distributions?.financialStatus || {};
+    const [financeNode, statesNode] = prepareChartPanel("citizens", [
+      ["finance", "Why household finances differ", "Latest monthly account · all represented residents · mutually exclusive · no ‘net zero’ bucket"],
+      ["states", "Citizen decision states", "Daily weighted shares · transition count on right axis"],
     ]);
-    const activeBins = Array.isArray(activeIncome.bins) ? activeIncome.bins : [];
-    const referenceBins = new Map((referenceIncome.bins || []).map((bin) => [bin.label, bin]));
-    const income = baseChartOptions();
-    income.grid = { top: 24, left: 58, right: 12, bottom: 48 };
-    income.xAxis.data = activeBins.length ? activeBins.map((bin) => bin.label) : ["No data"];
-    income.xAxis.axisLabel = { ...income.xAxis.axisLabel, interval: 0, rotate: activeBins.length > 6 ? 24 : 0 };
-    income.yAxis.axisLabel = { ...income.yAxis.axisLabel, formatter: (value) => formatCompact(value) };
-    income.series = [
+    const activeBins = Array.isArray(activeStatus.bins) ? activeStatus.bins : [];
+    const referenceBins = new Map((referenceStatus.bins || []).map((bin) => [bin.id, bin]));
+    const labels = activeBins.length
+      ? activeBins.map(
+          (bin) =>
+            ({
+              unemployed: "Unemployed",
+              "fixed-cost-deficit": "Pay < housing + commute",
+              "essentials-gap": "Essentials gap",
+              "thin-positive-buffer": "Thin buffer",
+              "savings-capacity": "Savings capacity",
+            })[bin.id] || bin.label
+        )
+      : ["No data"];
+    const finance = baseChartOptions();
+    finance.grid = { top: 24, left: 42, right: 12, bottom: 56 };
+    finance.xAxis.data = labels;
+    finance.xAxis.axisLabel = { ...finance.xAxis.axisLabel, interval: 0, rotate: 18 };
+    finance.yAxis = { ...finance.yAxis, min: 0, max: 100, axisLabel: { ...finance.yAxis.axisLabel, formatter: "{value}%" } };
+    finance.series = [
       {
         name: "Active",
         type: "bar",
-        data: activeBins.length ? activeBins.map((bin) => Number(bin.representedCount) || 0) : [0],
+        data: activeBins.length ? activeBins.map((bin) => Number(bin.sharePercent) || 0) : [0],
         itemStyle: { color: palette.green },
       },
       state.compare
         ? {
             name: "Reference",
             type: "bar",
-            data: activeBins.length ? activeBins.map((bin) => Number(referenceBins.get(bin.label)?.representedCount) || 0) : [0],
+            data: activeBins.length ? activeBins.map((bin) => Number(referenceBins.get(bin.id)?.sharePercent) || 0) : [0],
             itemStyle: { color: palette.greenSoft },
           }
         : null,
     ].filter(Boolean);
-    mountChart(incomeNode, "agents:income", income);
+    mountChart(financeNode, "citizens:finance", finance);
 
-    const { history, reference, labels } = chartSource();
-    const events = baseChartOptions();
-    events.xAxis.data = labels;
-    events.yAxis.axisLabel = { ...events.yAxis.axisLabel, formatter: (value) => formatCompact(value) };
-    events.series = [
-      { name: "Hires", type: "bar", data: history.map((entry) => entry.hires), itemStyle: { color: palette.green } },
-      { name: "Fires", type: "bar", data: history.map((entry) => entry.fires), itemStyle: { color: palette.red } },
-      { name: "Moves", type: "bar", data: history.map((entry) => entry.moves), itemStyle: { color: palette.sand } },
-    ];
-    addInterventionMarkers(events, history, labels);
-    mountChart(eventsNode, "agents:events", events);
-
-    const enterprise = baseChartOptions();
-    enterprise.grid = { ...enterprise.grid, right: 42 };
-    enterprise.xAxis.data = labels;
-    enterprise.yAxis = [
+    const { history, labels: dayLabels } = chartSource();
+    const states = baseChartOptions();
+    states.grid = { ...states.grid, right: 46 };
+    states.xAxis.data = dayLabels;
+    states.yAxis = [
+      { ...states.yAxis, min: 0, max: 100, axisLabel: { ...states.yAxis.axisLabel, formatter: "{value}%" } },
       {
-        ...enterprise.yAxis,
-        min: 0,
-        max: 100,
-        name: "active",
-        nameTextStyle: { color: palette.muted, fontSize: 9 },
-        axisLabel: { ...enterprise.yAxis.axisLabel, formatter: "{value}%" },
-      },
-      {
-        ...enterprise.yAxis,
+        ...states.yAxis,
         position: "right",
-        name: "margin",
+        name: "changes",
         nameTextStyle: { color: palette.muted, fontSize: 9 },
-        axisLabel: { ...enterprise.yAxis.axisLabel, formatter: "{value}%" },
+        axisLabel: { ...states.yAxis.axisLabel, formatter: (value) => formatCompact(value) },
         splitLine: { show: false },
       },
     ];
-    enterprise.series = [
+    states.series = [
+      {
+        name: "Happy",
+        type: "line",
+        stack: "citizen-state",
+        areaStyle: {},
+        showSymbol: false,
+        data: history.map((entry) => entry.happy * 100),
+        itemStyle: { color: palette.green },
+      },
+      {
+        name: "Waiting",
+        type: "line",
+        stack: "citizen-state",
+        areaStyle: {},
+        showSymbol: false,
+        data: history.map((entry) => entry.waiting * 100),
+        itemStyle: { color: palette.amber },
+      },
+      {
+        name: "Extreme",
+        type: "line",
+        stack: "citizen-state",
+        areaStyle: {},
+        showSymbol: false,
+        data: history.map((entry) => entry.extreme * 100),
+        itemStyle: { color: palette.red },
+      },
+      {
+        name: "Recovery",
+        type: "line",
+        stack: "citizen-state",
+        areaStyle: {},
+        showSymbol: false,
+        data: history.map((entry) => entry.recovery * 100),
+        itemStyle: { color: palette.blue },
+      },
+      {
+        name: "Transitions",
+        type: "bar",
+        yAxisIndex: 1,
+        data: history.map((entry) => Number(entry.transitions?.totals?.representedCitizenTransitions) || 0),
+        barMaxWidth: 5,
+        itemStyle: { color: "rgba(29,42,42,0.28)" },
+      },
+    ];
+    addInterventionMarkers(states, history, dayLabels);
+    mountChart(statesNode, "citizens:states", states);
+  }
+
+  function renderEnterpriseCharts() {
+    const [statesNode, viabilityNode] = prepareChartPanel("enterprises", [
+      ["states", "Enterprise decision states", "Daily shares · transition count on right axis"],
+      ["viability", "Portfolio viability and actions", "Daily active/loss-making shares · closed-month margin · moves/restarts"],
+    ]);
+    const { history, labels } = chartSource();
+    const states = baseChartOptions();
+    states.grid = { ...states.grid, right: 46 };
+    states.xAxis.data = labels;
+    states.yAxis = [
+      { ...states.yAxis, min: 0, max: 100, axisLabel: { ...states.yAxis.axisLabel, formatter: "{value}%" } },
+      {
+        ...states.yAxis,
+        position: "right",
+        name: "changes",
+        nameTextStyle: { color: palette.muted, fontSize: 9 },
+        axisLabel: { ...states.yAxis.axisLabel, formatter: (value) => formatCompact(value) },
+        splitLine: { show: false },
+      },
+    ];
+    states.series = [
+      {
+        name: "Starting",
+        type: "line",
+        stack: "enterprise-state",
+        areaStyle: {},
+        showSymbol: false,
+        data: history.map((entry) => entry.enterpriseStates.starting * 100),
+        itemStyle: { color: palette.sand },
+      },
+      {
+        name: "Working",
+        type: "line",
+        stack: "enterprise-state",
+        areaStyle: {},
+        showSymbol: false,
+        data: history.map((entry) => entry.enterpriseStates.working * 100),
+        itemStyle: { color: palette.green },
+      },
+      {
+        name: "Grow",
+        type: "line",
+        stack: "enterprise-state",
+        areaStyle: {},
+        showSymbol: false,
+        data: history.map((entry) => entry.enterpriseStates.grow * 100),
+        itemStyle: { color: palette.blue },
+      },
+      {
+        name: "Lesser",
+        type: "line",
+        stack: "enterprise-state",
+        areaStyle: {},
+        showSymbol: false,
+        data: history.map((entry) => entry.enterpriseStates.lesser * 100),
+        itemStyle: { color: palette.red },
+      },
+      {
+        name: "Transitions",
+        type: "bar",
+        yAxisIndex: 1,
+        data: history.map((entry) => Number(entry.transitions?.totals?.enterpriseTransitions) || 0),
+        barMaxWidth: 5,
+        itemStyle: { color: "rgba(29,42,42,0.28)" },
+      },
+    ];
+    addInterventionMarkers(states, history, labels);
+    mountChart(statesNode, "enterprises:states", states);
+
+    const viability = baseChartOptions();
+    viability.grid = { ...viability.grid, right: 48 };
+    viability.xAxis.data = labels;
+    viability.yAxis = [
+      {
+        ...viability.yAxis,
+        min: 0,
+        max: 100,
+        name: "%",
+        nameTextStyle: { color: palette.muted, fontSize: 9 },
+        axisLabel: { ...viability.yAxis.axisLabel, formatter: "{value}%" },
+      },
+      {
+        ...viability.yAxis,
+        position: "right",
+        name: "actions",
+        nameTextStyle: { color: palette.muted, fontSize: 9 },
+        axisLabel: { ...viability.yAxis.axisLabel, formatter: (value) => formatCompact(value) },
+        splitLine: { show: false },
+      },
+    ];
+    viability.series = [
       {
         name: "Active firms",
         type: "line",
@@ -2670,39 +3431,41 @@
         lineStyle: { width: 2.2, color: palette.green },
         itemStyle: { color: palette.green },
       },
-      state.compare
-        ? {
-            name: "Reference active firms",
-            type: "line",
-            showSymbol: false,
-            data: reference.map((entry) => (entry ? entry.activeEnterpriseShare * 100 : null)),
-            lineStyle: { width: 1.4, type: "dashed", color: palette.greenSoft },
-            itemStyle: { color: palette.greenSoft },
-          }
-        : null,
+      {
+        name: "Loss-making",
+        type: "line",
+        showSymbol: false,
+        data: history.map((entry) => entry.lossMakingEnterpriseShare * 100),
+        lineStyle: { width: 1.8, color: palette.red },
+        itemStyle: { color: palette.red },
+      },
       {
         name: "Portfolio margin",
         type: "line",
-        yAxisIndex: 1,
         showSymbol: false,
         data: history.map((entry) => entry.enterprisePortfolioMargin * 100),
-        lineStyle: { width: 2.2, color: palette.blue },
+        lineStyle: { width: 1.8, color: palette.blue },
         itemStyle: { color: palette.blue },
       },
-      state.compare
-        ? {
-            name: "Reference margin",
-            type: "line",
-            yAxisIndex: 1,
-            showSymbol: false,
-            data: reference.map((entry) => (entry ? entry.enterprisePortfolioMargin * 100 : null)),
-            lineStyle: { width: 1.4, type: "dashed", color: palette.sand },
-            itemStyle: { color: palette.sand },
-          }
-        : null,
-    ].filter(Boolean);
-    addInterventionMarkers(enterprise, history, labels);
-    mountChart(enterpriseNode, "agents:enterprise", enterprise);
+      {
+        name: "Moves",
+        type: "bar",
+        yAxisIndex: 1,
+        data: history.map((entry) => entry.firmMoves),
+        barMaxWidth: 6,
+        itemStyle: { color: palette.amber },
+      },
+      {
+        name: "Restarts",
+        type: "bar",
+        yAxisIndex: 1,
+        data: history.map((entry) => entry.firmRestarts),
+        barMaxWidth: 6,
+        itemStyle: { color: palette.sand },
+      },
+    ];
+    addInterventionMarkers(viability, history, labels);
+    mountChart(viabilityNode, "enterprises:viability", viability);
   }
 
   function resizeCharts() {
