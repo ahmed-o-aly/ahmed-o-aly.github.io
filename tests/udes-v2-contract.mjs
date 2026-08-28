@@ -212,7 +212,7 @@ assert.match(app, /Recent actions/, "citizen and enterprise inspectors expose th
 assert.match(app, /event\.fromWorkZoneId/, "citizen job-change events retain their origin work district in the inspector");
 assert.match(app, /event\.toWorkZoneId/, "citizen job-change events retain their destination work district in the inspector");
 assert.match(app, /const signed = values\.some/, "signed household finance histories cannot render deficits as positive bars");
-assert.match(css, /\.udes-v2-agent-history > div\.is-signed/, "signed household histories use a zero-centered visual treatment");
+assert.match(css, /\.udes-v2-agent-history\s*>\s*div\.is-signed/, "signed household histories use a zero-centered visual treatment");
 assert.match(app, /function panelIsInteracting\(/, "inspector refreshes detect active hover and keyboard interaction");
 assert.match(app, /state\.pendingPanelRenders\.set\(panel, render\)/, "inspector updates queue while the user is interacting");
 assert.match(
