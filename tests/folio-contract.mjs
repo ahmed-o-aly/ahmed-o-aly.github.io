@@ -417,7 +417,8 @@ assertContains(routes.records, /class="folio-timeline__details"/, "Records gives
 assert.doesNotMatch(routes.records, /folio-certificate|Certificates, framed/, "Records removes certificate cards");
 assertContains(routes.records, /href="\/assets\/pdf\/Ahmed(?:%20| )Aly(?:%20| )CV\.pdf"/, "Records retains the CV download");
 assertContains(routes.marginalia, /Notes in the margins\./, "Marginalia uses the selected page claim");
-assert.ok((routes.marginalia.match(/<time>/g) || []).length >= 7, "Marginalia renders all authored notes");
+assertContains(routes.marginalia, /Existence is a thing of beauty/, "Marginalia renders Ahmed's single note");
+assert.equal((routes.marginalia.match(/<time>/g) || []).length, 1, "Marginalia renders exactly one note");
 assert.doesNotMatch(routes.marginalia, /folio-note-card/, "Marginalia keeps a uniform feed");
 
 for (const [name, html] of Object.entries({

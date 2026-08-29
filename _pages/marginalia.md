@@ -2,7 +2,7 @@
 layout: default
 title: Marginalia
 permalink: /marginalia/
-description: Small observations about models, labs, research software, and the work around the work.
+description: Existence is a thing of beauty.
 ---
 
 <article class="folio-page folio-marginalia-page">
@@ -10,7 +10,6 @@ description: Small observations about models, labs, research software, and the w
   <header class="folio-page__header">
     <p class="folio-kicker">Marginalia</p>
     <h1>Notes in the margins.</h1>
-    <p>Short observations, loosely ranked and deliberately unfinished.</p>
   </header>
   <div class="folio-marginalia-feed">
     {% for note in site.data.marginalia %}
