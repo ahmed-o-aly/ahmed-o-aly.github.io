@@ -157,7 +157,8 @@ layout: default
         {%- endfor %}
       </nav>
     {% endif %}
-    {% include garden-related.liquid collection=site.projects current=page label='More projects' %}
+    {% assign selected_projects = site.projects | where_exp: 'project', 'project.work_number' %}
+    {% include garden-related.liquid collection=selected_projects current=page label='More projects' %}
     <img class="folio-ornament" src="{{ '/assets/img/folio/bunny-sepia-ornament.svg' | relative_url }}" alt="" width="17" height="27">
   </article>
 {% else %}

@@ -13,7 +13,7 @@ const routes = {
   works: readRoute("/projects/"),
   cnc: readRoute("/projects/cnc-machine-inspector/"),
   urban: readRoute("/projects/abu-dhabi-urban-dynamics/"),
-  policySimulations: readRoute("/projects/adsg-policy-simulations/"),
+  territory: readRoute("/projects/territory-design-probvns/"),
   records: readRoute("/cv/"),
   marginalia: readRoute("/marginalia/"),
   about: readRoute("/about/"),
@@ -144,6 +144,11 @@ assertContains(routes.writing, /<section class="folio-archive__year"[^>]*aria-la
 assertContains(routes.writing, /<time datetime="[^"]+">/, "Writing publishes semantic dates");
 assertContains(routes.writing, /folio-essay-ledger__excerpt/, "Writing rows retain excerpts");
 assertContains(routes.writing, /bunny-sepia-ornament\.svg/, "Writing ends with the supplied ornament");
+assert.doesNotMatch(
+  routes.writing,
+  /Explanation and Codebase of Probabilistic VNS|\/blog\/2025\/territory-design-bvns\//,
+  "the territory-design walkthrough no longer appears as separate Writing"
+);
 assertContains(routes.article, /class="folio-reader"/, "posts use the folio reader");
 assertContains(routes.article, /class="folio-prose folio-essay-body"/, "posts retain server-rendered prose");
 
@@ -271,8 +276,8 @@ assert.doesNotMatch(
 
 assertContains(routes.works, /Systems built to be operated, not just demonstrated\./, "Works uses the selected page claim");
 const worksIndex = block(routes.works, "folio-work-index", "ol");
-assert.equal((worksIndex.match(/class="folio-work-entry"/g) || []).length, 7, "Works renders all seven projects as one text index");
-assert.equal((worksIndex.match(/class="folio-work-entry__description"/g) || []).length, 7, "each Works entry has one plain-language sentence");
+assert.equal((worksIndex.match(/class="folio-work-entry"/g) || []).length, 4, "Works renders only the four real projects");
+assert.equal((worksIndex.match(/class="folio-work-entry__description"/g) || []).length, 4, "each Works entry has one plain-language sentence");
 assert.doesNotMatch(
   worksIndex,
   /<img\b|<picture\b|<figure\b|folio-work-plate|machine-lab-interface\.png|urban-dynamics-console\.png|folio-tags|>\s*(?:Role|Status|Methods)\s*</i,
@@ -281,14 +286,19 @@ assert.doesNotMatch(
 for (const title of [
   "Machine Lab — Interactive CNC Assembly Explorer",
   "Abu Dhabi Urban Dynamics Lab",
-  "KU MetaHub AI/XR Lab",
-  "ADSG Public Policy Simulations",
   "Energy System Optimization with DEWA",
-  "Logistics Routing and Facility Optimization",
   "Probabilistic VNS for Delivery Territory Design",
 ]) {
   assertContains(worksIndex, new RegExp(title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i"), `Works includes ${title}`);
 }
+for (const title of ["KU MetaHub AI/XR Lab", "ADSG Public Policy Simulations", "Logistics Routing and Facility Optimization"]) {
+  assert.doesNotMatch(worksIndex, new RegExp(title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i"), `Works excludes ${title}`);
+}
+assert.deepEqual(
+  [...worksIndex.matchAll(/class="folio-work-entry__number"[^>]*>(\d{2})<\/span>/g)].map((match) => match[1]),
+  ["01", "02", "05", "07"],
+  "Works preserves the authored project numbers"
+);
 assertContains(routes.works, /href="\/projects\/abu-dhabi-urban-dynamics\/"/, "Works opens the Urban Dynamics write-up");
 assert.doesNotMatch(routes.works, /href="\/projects\/abu-dhabi-urban-dynamics-v2\/"/, "Works does not drop readers directly into the console");
 assert.doesNotMatch(
@@ -296,6 +306,10 @@ assert.doesNotMatch(
   /work\.(?:role|status|methods|category|image|visual)/,
   "the shared work index entry consumes only title, description, URL, and number"
 );
+assertContains(routes.territory, /id="quick-start"/, "Work 07 contains the merged quick-start walkthrough");
+assertContains(routes.territory, /DTDPAlgorithms\.py/, "Work 07 contains the merged repository map");
+assertContains(routes.territory, /github\.com\/ahmed-o-aly\/TerritoryDesign/, "Work 07 keeps the public code artifact");
+assert.doesNotMatch(routes.territory, /<dt>\s*(?:Role|Methods|Status)\s*<\/dt>/i, "Work 07 reads as authored prose rather than template metadata");
 
 const cncInteractive = block(routes.cnc, "folio-case-interactive");
 assert.equal((cncInteractive.match(/<iframe\b/g) || []).length, 1, "CNC case study embeds one live explorer");
@@ -347,18 +361,6 @@ assert.doesNotMatch(
   "Urban Dynamics write-up has no generated case-study scaffolding"
 );
 
-const policySimulationProse = block(routes.policySimulations, "folio-prose", "div");
-assertContains(
-  policySimulationProse,
-  /I support the Abu Dhabi School of Government department/,
-  "ADSG simulations use a direct first-person account"
-);
-assert.doesNotMatch(policySimulationProse, /<h[2-6]\b|Narrative|What This Shows|What matters/i, "ADSG simulations avoid generated headings");
-assert.doesNotMatch(
-  routes.policySimulations,
-  /class="folio-case-sections"|<dt>\s*(?:Role|Methods|Status)\s*<\/dt>/i,
-  "ADSG simulations do not render generated case-study scaffolding"
-);
 assertContains(config, /\n\s*- tmp\//, "Jekyll excludes the ignored 150MB app clone from local builds");
 
 for (const text of ["A working record, kept in order.", "Experience", "Education", "Credentials", "Six Sigma Yellow Belt Specialization"]) {

@@ -4,6 +4,7 @@ title: Abu Dhabi Urban Dynamics Lab
 permalink: /projects/abu-dhabi-urban-dynamics/
 description: A browser-based model for exploring how housing, jobs, and transport interact across Greater Abu Dhabi City.
 importance: 0
+work_number: 2
 category: simulation
 thread: policy-simulation
 preview: false

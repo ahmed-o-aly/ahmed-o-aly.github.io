@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { assertContains, readRoute } from "./helpers/site.mjs";
 
 const index = readRoute("/projects/");
-const project = readRoute("/projects/metahub-ai-xr-lab/");
+const project = readRoute("/projects/dewa-energy-optimization/");
 const artifactProject = readRoute("/projects/territory-design-probvns/");
 const cncProject = readRoute("/projects/cnc-machine-inspector/");
 const css = readFileSync(new URL("../_site/assets/css/garden.css", import.meta.url), "utf8");
@@ -15,7 +15,8 @@ const urbanArticle = articleFor("/projects/abu-dhabi-urban-dynamics-v2/");
 const cncArticle = articleFor("/projects/cnc-machine-inspector/");
 
 assertContains(index, /class="[^"]*garden-project-grid/, "project index renders garden grid");
-assertContains(index, /KU MetaHub AI\/XR Lab/, "project index includes MetaHub");
+assertContains(index, /Energy System Optimization with DEWA/, "project index includes Work 05");
+assert.doesNotMatch(index, /KU MetaHub AI\/XR Lab/, "project index excludes the former Work 03 entry");
 assertContains(index, /href="\/projects\/cnc-machine-inspector\/"/, "project index includes Machine Lab");
 assertContains(index, /href="\/projects\/abu-dhabi-urban-dynamics-v2\/"/, "project index includes the urban model");
 assertContains(index, /<picture>[\s\S]*?srcset=/, "project cards provide responsive image candidates");

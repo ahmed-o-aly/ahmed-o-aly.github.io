@@ -3,8 +3,6 @@
   label: MetaHub
   summary: Making AI/XR facilities reliable enough that researchers and educators can use them for real decisions, not just demonstrations.
   links:
-    - label: KU MetaHub AI/XR Lab
-      url: /projects/metahub-ai-xr-lab/
     - label: CV context
       url: /cv/
 
@@ -13,8 +11,8 @@
   label: ADSG
   summary: Turning public-sector questions into scenarios, assumptions, and simulation prototypes that can be inspected before decisions harden.
   links:
-    - label: ADSG Public Policy Simulations
-      url: /projects/adsg-policy-simulations/
+    - label: Abu Dhabi Urban Dynamics Lab
+      url: /projects/abu-dhabi-urban-dynamics/
     - label: Field notes
       url: /blog/
 
@@ -23,8 +21,8 @@
   label: Optimization
   summary: Building models, heuristics, experiments, and interfaces that help logistics, energy, and territory-design work survive real constraints.
   links:
-    - label: Logistics Routing and Facility Optimization
-      url: /projects/logistics-routing-optimization/
+    - label: Energy System Optimization with DEWA
+      url: /projects/dewa-energy-optimization/
     - label: Territory Design Research
       url: /projects/territory-design-probvns/
 

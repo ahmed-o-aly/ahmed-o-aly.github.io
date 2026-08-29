@@ -27,7 +27,7 @@ const formatTargets = [
   "_includes/{folio-work-card,garden-card,garden-footer,garden-media,garden-nav,garden-project-card,garden-related,head,metadata}.liquid",
   "_layouts/{cv,garden,page,post}.liquid",
   "_pages/{about,blog,books,home,marginalia,projects}.md",
-  "_projects/{abu-dhabi-urban-dynamics,abu-dhabi-urban-dynamics-v2,adsg-policy-simulations,cnc-machine-inspector}.md",
+  "_projects/{abu-dhabi-urban-dynamics,abu-dhabi-urban-dynamics-v2,cnc-machine-inspector,dewa-energy-optimization,territory-design-probvns}.md",
   "package.json",
   ".github/workflows/{axe,deploy}.yml",
 ];
@@ -85,10 +85,11 @@ assert.doesNotMatch(
 const expectedAxePaths = [
   "",
   "projects/",
-  "projects/metahub-ai-xr-lab/",
   "projects/cnc-machine-inspector/",
   "projects/abu-dhabi-urban-dynamics/",
   "projects/abu-dhabi-urban-dynamics-v2/",
+  "projects/dewa-energy-optimization/",
+  "projects/territory-design-probvns/",
   "blog/",
   "blog/2026/what-i-am-building-this-site-for/",
   "books/",

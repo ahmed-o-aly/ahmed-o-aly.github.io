@@ -4,6 +4,7 @@ title: Machine Lab — Interactive CNC Assembly Explorer
 permalink: /projects/cnc-machine-inspector/
 description: A browser-based 3D viewer for studying eight workshop machines, from the complete assembly down to individual parts.
 importance: -1
+work_number: 1
 category: interactive software
 thread: immersive-tools
 interactive:

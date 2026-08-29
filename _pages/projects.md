@@ -2,10 +2,10 @@
 layout: default
 title: Projects
 permalink: /projects/
-description: Systems work across immersive labs, public policy, optimization, routing, and research software.
+description: Interactive machine exploration, urban simulation, energy-system optimization, and delivery-territory research software.
 ---
 
-{% assign sorted_projects = site.projects | where_exp: 'project', 'project.preview != true' | sort: 'importance' %}
+{% assign sorted_projects = site.projects | where_exp: 'project', 'project.work_number' | sort: 'work_number' %}
 
 <article class="folio-page folio-works-page">
   <a class="folio-back-link" href="{{ '/' | relative_url }}">&larr; Back to the folio</a>
@@ -17,7 +17,7 @@ description: Systems work across immersive labs, public policy, optimization, ro
 
   <ol class="folio-work-index folio-work-index--all" role="list">
     {% for project in sorted_projects %}
-      {% include folio-work-card.liquid project=project index=forloop.index heading_level=2 %}
+      {% include folio-work-card.liquid project=project index=project.work_number heading_level=2 %}
     {% endfor %}
   </ol>
 

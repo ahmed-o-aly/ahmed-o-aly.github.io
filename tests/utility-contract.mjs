@@ -108,12 +108,12 @@ assert.doesNotMatch(
   "CV template does not duplicate YAML-backed identity or role copy"
 );
 
-assertContains(publications, /class="publication-bridge"[\s\S]*href="\/projects\/territory-design-probvns\/"/, "publications retain project context");
 assertContains(
   publications,
-  /class="publication-bridge"[\s\S]*href="\/blog\/2025\/territory-design-bvns\/"/,
-  "publications retain authored walkthrough context"
+  /class="publication-bridge"[\s\S]*href="\/projects\/territory-design-probvns\/"/,
+  "publications retain the consolidated project and code walkthrough"
 );
+assert.doesNotMatch(publications, /href="\/blog\/2025\/territory-design-bvns\/"/, "publications no longer link to the retired duplicate post");
 assertContains(
   publications,
   /class="garden-publications"[\s\S]*id="bibsearch"[\s\S]*class="publications"[\s\S]*<ol class="bibliography">/,

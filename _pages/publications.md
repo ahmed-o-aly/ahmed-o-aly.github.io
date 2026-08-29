@@ -13,10 +13,9 @@ nav_order: 4
 
 <div class="publication-bridge">
   <p>
-    The formal papers sit beside a more practical trail:
-    <a href="{{ '/projects/territory-design-probvns/' | relative_url }}">project notes</a>,
-    <a href="{{ '/blog/2025/territory-design-bvns/' | relative_url }}">code walkthrough</a>,
-    and source artifacts for the delivery territory design work.
+    The formal papers sit beside a
+    <a href="{{ '/projects/territory-design-probvns/' | relative_url }}">practical project and code walkthrough</a>
+    for the delivery territory design work.
   </p>
 </div>
 
@@ -34,7 +33,7 @@ nav_order: 4
   <article>
     <span>bridge</span>
     <strong>Readable walkthrough</strong>
-    <p>Blog notes connect the formal result to the codebase, plotting workflow, and practical reuse path.</p>
+    <p>The project page connects the formal result to the codebase, plotting workflow, and practical reuse path.</p>
   </article>
 </section>
 

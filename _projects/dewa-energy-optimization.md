@@ -3,6 +3,7 @@ layout: page
 title: Energy System Optimization with DEWA
 description: Large-scale optimization and simulation for renewables, storage, demand, operations, and cost tracing.
 importance: 3
+work_number: 5
 category: research
 thread: optimization-software
 role: Research software, optimization modeling, simulation support

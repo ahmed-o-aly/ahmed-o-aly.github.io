@@ -1,18 +1,9 @@
 - kind: project
-  ref: metahub-ai-xr-lab
-  size: tall
-- kind: project
   ref: territory-design-probvns
   size: wide
 - kind: post
   ref: what-i-am-building-this-site-for
   size: standard
 - kind: project
-  ref: adsg-policy-simulations
-  size: wide
-- kind: project
   ref: dewa-energy-optimization
   size: standard
-- kind: project
-  ref: logistics-routing-optimization
-  size: wide

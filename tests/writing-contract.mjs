@@ -4,7 +4,7 @@ import { assertContains, readRoute } from "./helpers/site.mjs";
 
 const index = readRoute("/blog/");
 const article = readRoute("/blog/2026/what-i-am-building-this-site-for/");
-const matchedThreadArticle = readRoute("/blog/2025/territory-design-bvns/");
+const mergedTerritoryWork = readRoute("/projects/territory-design-probvns/");
 const postLayoutAnnouncement = readRoute("/news/announcement_1/");
 const yearArchive = readRoute("/blog/2026/");
 const tagArchive = readRoute("/blog/tag/optimization/");
@@ -34,17 +34,8 @@ assertContains(
   /<ul class="list-disc pl-8">[\s\S]*?<li class="my-2">[\s\S]*?<\/li>[\s\S]*?<\/ul>/,
   "related article links remain inside their semantic list"
 );
-assertContains(
-  matchedThreadArticle,
-  /<aside class="garden-article__thread"[\s\S]*?<span>\s*Optimization\s*<\/span>/,
-  "matched thread renders its authored label"
-);
-assert.equal(
-  (matchedThreadArticle.match(/id="table-of-contents"/g) || []).length,
-  1,
-  "scalar toc true renders exactly one article table of contents"
-);
-assert.equal((matchedThreadArticle.match(/href="#quick-start"/g) || []).length, 1, "generated article TOC links each authored section once");
+assert.doesNotMatch(index, /Explanation and Codebase of Probabilistic VNS/, "territory-design notes leave the Writing index");
+assertContains(mergedTerritoryWork, /id="quick-start"/, "territory-design notes move into Work 07");
 assert.doesNotMatch(article, /<div class="garden-article__support">\s*<\/div>/, "post omits an empty optional-support wrapper");
 assert.doesNotMatch(
   postLayoutAnnouncement,
@@ -65,7 +56,7 @@ for (const [html, label] of [
 for (const [source, label] of [
   [index, "writing index"],
   [article, "article"],
-  [matchedThreadArticle, "matched-thread article"],
+  [mergedTerritoryWork, "merged territory work"],
   [yearArchive, "year archive"],
   [tagArchive, "tag archive"],
   [categoryArchive, "category archive"],
