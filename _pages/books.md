@@ -15,7 +15,6 @@ nav_order: 2
   <header class="folio-page__header">
     <p class="folio-kicker">Bibliotheca</p>
     <h1>What I’m reading, and what I’ve finished.</h1>
-    <p>Synced from Goodreads, with my ratings and reviews when I’ve written one.</p>
   </header>
 
 {% if current_books != empty %}
