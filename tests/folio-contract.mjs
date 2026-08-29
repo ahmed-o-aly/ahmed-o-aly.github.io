@@ -134,6 +134,11 @@ assert.equal(
   expectedHomeCoverCount,
   "home shows the expected current and recent-read covers"
 );
+assert.equal(
+  (homeCoverRow.match(/class="folio-cover-drift"/g) || []).length,
+  expectedHomeCoverCount,
+  "each home cover separates scroll travel from hover lift"
+);
 assert.equal((homeCoverRow.match(/<img\b/g) || []).length, expectedHomeCoverCount, "every home library cover is an image");
 assert.equal((homeCoverRow.match(/data-book-trigger/g) || []).length, expectedHomeCoverCount, "every home library cover opens a local details card");
 assert.doesNotMatch(homeCoverRow, /folio-book-cover__face|--book-color/, "home never substitutes typographic fake covers");
@@ -463,10 +468,28 @@ assertContains(folioCss, /@media \(prefers-reduced-motion: reduce\)/, "styles re
 assertContains(script, /prefers-reduced-motion: reduce/, "behavior respects reduced motion");
 assertContains(script, /dataset\.parallaxY/, "library parallax uses explicit travel values");
 assertContains(script, /data-book-trigger/, "book interactions remain data-driven");
+assertContains(layout, /class="folio-cursor-glow"[^>]*aria-hidden="true"/, "layout includes the candlelight layer");
+assert.equal((layout.match(/class="folio-cursor-glow"/g) || []).length, 1, "layout includes one candlelight layer");
+assertContains(script, /\(hover: hover\) and \(pointer: fine\)/, "cursor effects run only for a precise hover pointer");
+assertContains(script, /Math\.hypot\([\s\S]*?< 90 \|\| liveDots\.size >= 14/, "ink trail remains sparse and bounded");
+assertContains(folioCss, /radial-gradient\([\s\S]*?540px circle at var\(--cursor-x/, "cursor glow uses the candlelight gradient");
+assertContains(folioCss, /\.folio-cursor-glow \{[\s\S]*?pointer-events: none;/, "candlelight cannot block interaction");
+assertContains(folioCss, /@keyframes folio-ink-fade/, "ink trail has its fading motion");
+assertContains(folioCss, /\.folio-cover-wrap--button:hover \{[\s\S]*?translateY\(-6px\) rotate\(var\(--book-tilt/, "home covers lift and tilt");
+assertContains(
+  folioCss,
+  /@media \(hover: none\), \(pointer: coarse\) \{[\s\S]*?\.folio-cursor-glow,[\s\S]*?display: none;/,
+  "cursor effects stay off touch interfaces"
+);
+assertContains(
+  folioCss,
+  /@media \(prefers-reduced-motion: reduce\) \{[\s\S]*?\.folio-cursor-glow,[\s\S]*?display: none;/,
+  "cursor effects stay off when reduced motion is requested"
+);
 assert.doesNotMatch(
   `${script}${layout}${projectFile("_layouts/page.liquid")}${projectFile("_pages/home.md")}`,
-  /IntersectionObserver|data-reveal|data-drift|data-page-turn|folio-page-turn|folio-cursor-glow|folio-ink-dot/,
-  "retired motion systems are absent"
+  /IntersectionObserver|data-reveal|data-drift|data-page-turn|folio-page-turn/,
+  "retired reveal, drift, and page-turn systems are absent"
 );
 assertContains(
   simulationCss,

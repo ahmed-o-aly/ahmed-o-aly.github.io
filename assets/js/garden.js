@@ -83,6 +83,47 @@
     requestAnimationFrame(updateParallax);
   }
 
+  const finePointer = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+  if (finePointer && !reduceMotion) {
+    const glow = document.querySelector(".folio-cursor-glow");
+    let pointerFrame = 0;
+    let pointerX = window.innerWidth / 2;
+    let pointerY = window.innerHeight / 2;
+    let dotX = pointerX;
+    let dotY = pointerY;
+    const liveDots = new Set();
+
+    const updatePointer = () => {
+      pointerFrame = 0;
+      glow?.style.setProperty("--cursor-x", `${pointerX}px`);
+      glow?.style.setProperty("--cursor-y", `${pointerY}px`);
+    };
+
+    window.addEventListener(
+      "mousemove",
+      (event) => {
+        pointerX = event.clientX;
+        pointerY = event.clientY;
+        if (!pointerFrame) pointerFrame = requestAnimationFrame(updatePointer);
+        if (Math.hypot(pointerX - dotX, pointerY - dotY) < 90 || liveDots.size >= 14) return;
+
+        dotX = pointerX;
+        dotY = pointerY;
+        const dot = document.createElement("span");
+        dot.className = "folio-ink-dot";
+        dot.style.left = `${pointerX}px`;
+        dot.style.top = `${pointerY}px`;
+        document.body.appendChild(dot);
+        liveDots.add(dot);
+        window.setTimeout(() => {
+          liveDots.delete(dot);
+          dot.remove();
+        }, 1200);
+      },
+      { passive: true }
+    );
+  }
+
   document.querySelectorAll("[data-reading-carousel]").forEach((carousel) => {
     const slides = [...carousel.querySelectorAll("[data-reading-slide]")];
     const controls = carousel.querySelector("[data-reading-controls]");

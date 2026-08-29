@@ -65,32 +65,33 @@ description: Decision-support systems for labs, public policy, and complex opera
     <div class="folio-library__content{% unless current_book %} folio-library__content--covers-only{% endunless %}">
       <div class="folio-cover-row" aria-label="A few books from the library">
         {% if current_book %}
-          <button
-            class="folio-cover-wrap folio-cover-wrap--button"
-            type="button"
-            data-parallax-y="30"
-            data-book-trigger
-            data-book-title="{{ current_book.title | escape }}"
-            data-book-author="{{ current_book.author | escape }}"
-            data-book-cover="{{ current_book.cover | escape }}"
-            data-book-rating="{{ current_book.rating | escape }}"
-            data-book-status="Currently reading"
-            data-book-review="{{ current_book.review | default: '' | newline_to_br | strip_newlines | escape }}"
-            data-book-url="{{ current_book.url | escape }}"
-            data-book-progress="{{ current_book.progress_percent | escape }}"
-            data-book-progress-label="{{ current_book.progress_label | escape }}"
-            aria-label="Open details for {{ current_book.title | escape }} by {{ current_book.author | escape }}{% if current_book.progress_label != blank %}, {{ current_book.progress_label | escape }}{% endif %}"
-          >
-            <img
-              src="{{ current_book.cover | escape }}"
-              alt=""
-              width="132"
-              height="196"
-              loading="lazy"
-              decoding="async"
-              referrerpolicy="no-referrer"
+          <span class="folio-cover-drift" data-parallax-y="30">
+            <button
+              class="folio-cover-wrap folio-cover-wrap--button"
+              type="button"
+              data-book-trigger
+              data-book-title="{{ current_book.title | escape }}"
+              data-book-author="{{ current_book.author | escape }}"
+              data-book-cover="{{ current_book.cover | escape }}"
+              data-book-rating="{{ current_book.rating | escape }}"
+              data-book-status="Currently reading"
+              data-book-review="{{ current_book.review | default: '' | newline_to_br | strip_newlines | escape }}"
+              data-book-url="{{ current_book.url | escape }}"
+              data-book-progress="{{ current_book.progress_percent | escape }}"
+              data-book-progress-label="{{ current_book.progress_label | escape }}"
+              aria-label="Open details for {{ current_book.title | escape }} by {{ current_book.author | escape }}{% if current_book.progress_label != blank %}, {{ current_book.progress_label | escape }}{% endif %}"
             >
-          </button>
+              <img
+                src="{{ current_book.cover | escape }}"
+                alt=""
+                width="132"
+                height="196"
+                loading="lazy"
+                decoding="async"
+                referrerpolicy="no-referrer"
+              >
+            </button>
+          </span>
         {% endif %}
         {% for book in site.data.read_books limit: home_read_limit %}
           {% if current_book %}
@@ -111,30 +112,31 @@ description: Decision-support systems for labs, public policy, and complex opera
             {% endcase %}
           {% endif %}
           {% assign book_status = book.status | default: 'Read' %}
-          <button
-            class="folio-cover-wrap folio-cover-wrap--button"
-            type="button"
-            data-parallax-y="{{ travel }}"
-            data-book-trigger
-            data-book-title="{{ book.title | escape }}"
-            data-book-author="{{ book.author | escape }}"
-            data-book-cover="{{ book.cover | escape }}"
-            data-book-rating="{{ book.rating | escape }}"
-            data-book-status="{{ book_status | escape }}{% if book.read_at != blank %} &middot; {{ book.read_at | date: '%Y' }}{% endif %}"
-            data-book-review="{{ book.review | default: '' | newline_to_br | strip_newlines | escape }}"
-            data-book-url="{{ book.url | escape }}"
-            aria-label="Open details for {{ book.title | escape }} by {{ book.author | escape }}{% if book.rating != blank %}, rated {{ book.rating }} out of 5{% endif %}"
-          >
-            <img
-              src="{{ book.cover | escape }}"
-              alt=""
-              width="132"
-              height="196"
-              loading="lazy"
-              decoding="async"
-              referrerpolicy="no-referrer"
+          <span class="folio-cover-drift" data-parallax-y="{{ travel }}">
+            <button
+              class="folio-cover-wrap folio-cover-wrap--button"
+              type="button"
+              data-book-trigger
+              data-book-title="{{ book.title | escape }}"
+              data-book-author="{{ book.author | escape }}"
+              data-book-cover="{{ book.cover | escape }}"
+              data-book-rating="{{ book.rating | escape }}"
+              data-book-status="{{ book_status | escape }}{% if book.read_at != blank %} &middot; {{ book.read_at | date: '%Y' }}{% endif %}"
+              data-book-review="{{ book.review | default: '' | newline_to_br | strip_newlines | escape }}"
+              data-book-url="{{ book.url | escape }}"
+              aria-label="Open details for {{ book.title | escape }} by {{ book.author | escape }}{% if book.rating != blank %}, rated {{ book.rating }} out of 5{% endif %}"
             >
-          </button>
+              <img
+                src="{{ book.cover | escape }}"
+                alt=""
+                width="132"
+                height="196"
+                loading="lazy"
+                decoding="async"
+                referrerpolicy="no-referrer"
+              >
+            </button>
+          </span>
         {% endfor %}
       </div>
       {% if current_book %}
