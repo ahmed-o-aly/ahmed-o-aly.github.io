@@ -1,0 +1,35 @@
+# Generated from Goodreads. Run: npm run sync:reading
+
+- source: "goodreads"
+  source_id: "241379146"
+  title: "Is Muhammad ﷺ Truly a Prophet of God?"
+  author: "Dr. Sami Ameri"
+  cover: "https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1757349179l/241379146._SY475_.jpg"
+  rating: null
+  read_at: ""
+  status: "Currently reading"
+  url: "https://www.goodreads.com/book/show/241379146"
+  review_url: "https://www.goodreads.com/review/show/8901118627"
+  review: ""
+  progress_page: null
+  progress_total: null
+  progress_percent: null
+  progress_label: ""
+  progress_url: ""
+
+- source: "goodreads"
+  source_id: "944073"
+  title: "The Blade Itself (The First Law, #1)"
+  author: "Joe Abercrombie"
+  cover: "https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1747782133l/944073._SY475_.jpg"
+  rating: null
+  read_at: ""
+  status: "Currently reading"
+  url: "https://www.goodreads.com/book/show/944073"
+  review_url: "https://www.goodreads.com/review/show/8875527581"
+  review: ""
+  progress_page: 75
+  progress_total: 515
+  progress_percent: 14.6
+  progress_label: "75 of 515 pages"
+  progress_url: "https://www.goodreads.com/user_status/show/1321122832"

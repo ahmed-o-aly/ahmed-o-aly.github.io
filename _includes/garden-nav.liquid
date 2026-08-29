@@ -1,26 +1,32 @@
 {% assign active_path = page.url | default: '/' %}
-{% assign is_home = false %}
-{% if active_path == '/' %}{% assign is_home = true %}{% endif %}
 <header class="garden-header">
   <nav class="garden-nav" aria-label="Primary navigation">
-    <a class="garden-nav__monogram" href="{{ '/' | relative_url }}" aria-label="Ahmed Aly, home">A<span>.</span></a>
-    <div class="garden-nav__links">
-      {% assign items = 'Writing|writing|/blog/;Library|library|/books/;Works|works|/projects/;Records|records|/cv/;Marginalia|marginalia|/marginalia/;About|about|/#sec-about' | split: ';' %}
+    <a class="garden-nav__brand" href="{{ '/' | relative_url }}" aria-label="Ahmed Aly, home">
+      <img class="garden-nav__mark" src="{{ '/assets/img/folio/bunny-ink-small.svg' | relative_url }}" alt="" width="24" height="38">
+      <span>Ahmed Aly</span>
+    </a>
+    <button class="garden-nav__toggle" type="button" aria-expanded="false" aria-controls="garden-nav-links">
+      <span class="sr-only">Open navigation</span>
+      <span class="garden-nav__toggle-lines" aria-hidden="true"></span>
+    </button>
+    <div class="garden-nav__links" id="garden-nav-links">
+      {% assign items = 'Writing|/blog/;Library|/books/;Works|/projects/;Records|/cv/;Marginalia|/marginalia/' | split: ';' %}
       {% for item in items %}
         {% assign parts = item | split: '|' %}
         {% assign label = parts[0] %}
-        {% assign section = parts[1] %}
-        {% assign destination = parts[2] %}
+        {% assign destination = parts[1] %}
         {% assign current = false %}
-        {% if destination != '/#sec-about' and active_path contains destination %}{% assign current = true %}{% endif %}
+        {% if active_path contains destination %}{% assign current = true %}{% endif %}
         <a
-          href="{% if is_home %}#sec-{{ section }}{% else %}{{ destination | relative_url }}{% endif %}"
-          {% if is_home %}data-scroll-target="sec-{{ section }}"{% else %}data-page-turn{% endif %}
-          {% if current %}aria-current="page"{% endif %}
+          href="{{ destination | relative_url }}"
+          {% if current %}
+            aria-current="page"
+          {% endif %}
         >
           {{- label -}}
         </a>
       {% endfor %}
+      <a class="garden-nav__contact" href="{{ '/#contact' | relative_url }}">Contact</a>
     </div>
   </nav>
 </header>

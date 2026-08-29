@@ -8,7 +8,6 @@
 {% unless card_url contains '://' %}{% assign card_url = card_url | relative_url %}{% endunless %}
 <article
   class="garden-card garden-card--{{ card_kind }} garden-card--{{ card_size }}{% if include.media_aspect == 'widescreen' %} garden-card--media-widescreen{% endif %}"
-  data-reveal
 >
   <a class="garden-card__link" href="{{ card_url }}">
     <div class="garden-card__meta">

@@ -22,6 +22,11 @@ const sha256 = (value) => crypto.createHash("sha256").update(value).digest("hex"
 
 assert.equal((html.match(/<h1\b/g) || []).length, 1, "v2 has one page heading");
 assertContains(html, /class="[^"]*garden-body--simulation-v2/, "v2 uses its fixed analyst shell");
+assertContains(
+  html,
+  /class="udes-v2-back" href="\/projects\/abu-dhabi-urban-dynamics\/" aria-label="Back to the project write-up"/,
+  "v2 links back to its readable project note"
+);
 assertContains(html, /data-model-url="\/assets\/data\/udes-v2\/baseline\.json"/, "v2 emits the scenario baseline URL");
 assertContains(html, /data-worker-url="\/assets\/js\/udes-v2-worker\.js"/, "v2 emits its agent worker URL");
 assertContains(html, /aria-label="Interactive map of Greater Abu Dhabi City/, "map has the correct city boundary description");
@@ -102,11 +107,11 @@ assertContains(
   "compiled CSS keeps the no-scroll analyst grid"
 );
 assertContains(css, /\.garden-body--simulation-v2\{overflow:hidden/, "desktop page scrolling is disabled");
-assertContains(projects, /href="\/projects\/abu-dhabi-urban-dynamics-v2\/"/, "the urban model is published in the project index");
+assertContains(projects, /href="\/projects\/abu-dhabi-urban-dynamics\/"/, "the Urban Dynamics write-up is published in the project index");
 assert.doesNotMatch(
   projects,
-  /href="\/projects\/abu-dhabi-urban-dynamics\/"/,
-  "the legacy urban-model card is retired without removing its direct route"
+  /href="\/projects\/abu-dhabi-urban-dynamics-v2\/"/,
+  "the project index does not drop readers directly into the console"
 );
 
 assert.equal(baseline.zones.length, 18, "baseline contains 18 Greater Abu Dhabi districts");

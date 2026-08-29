@@ -63,6 +63,8 @@ on:
       - "tests/**"
       - "!lighthouse_results/**"
       - "!README.md"
+  schedule:
+    - cron: "17 4 * * *"
   workflow_dispatch:
 
 concurrency:
@@ -101,6 +103,10 @@ jobs:
 
       - name: Install Node dependencies
         run: npm ci
+
+      - name: Sync Goodreads reading data
+        if: github.event_name != 'pull_request'
+        run: npm run sync:reading
 
       - name: Prepare build config
         run: |

@@ -7,9 +7,6 @@
 - kind: post
   ref: what-i-am-building-this-site-for
   size: standard
-- kind: book
-  ref: the_godfather
-  size: standard
 - kind: project
   ref: adsg-policy-simulations
   size: wide

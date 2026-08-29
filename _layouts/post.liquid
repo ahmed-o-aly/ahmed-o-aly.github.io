@@ -4,7 +4,7 @@ layout: default
 {% assign word_count = content | number_of_words %}
 {% assign read_minutes = word_count | divided_by: 180 | plus: 1 %}
 <article class="folio-reader">
-  <a class="folio-back-link" href="{{ '/blog/' | relative_url }}" data-page-turn>&larr; Back to the folio</a>
+  <a class="folio-back-link" href="{{ '/blog/' | relative_url }}">&larr; Back to writing</a>
   <header class="folio-reader__header">
     <p>
       {{ page.date | date: '%b %Y' }} &middot; {{ read_minutes }} min{% if page.tags %} &middot; {{ page.tags | first }}{% endif %}
@@ -24,12 +24,12 @@ layout: default
   {% if page.tags or page.categories %}
     <footer class="folio-reader__filing">
       {% for tag in page.tags -%}
-        <span>#{{ tag }}</span>
+        <span>[ {{ tag }} ]</span>
       {%- endfor %}
       {% for category in page.categories -%}
         <span>{{ category }}</span>
       {%- endfor %}
     </footer>
   {% endif %}
-  <p class="folio-ornament" aria-hidden="true">❦</p>
+  <img class="folio-ornament" src="{{ '/assets/img/folio/bunny-sepia-ornament.svg' | relative_url }}" alt="" width="17" height="27">
 </article>

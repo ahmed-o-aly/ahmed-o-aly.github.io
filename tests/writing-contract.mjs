@@ -9,7 +9,6 @@ const postLayoutAnnouncement = readRoute("/news/announcement_1/");
 const yearArchive = readRoute("/blog/2026/");
 const tagArchive = readRoute("/blog/tag/optimization/");
 const categoryArchive = readRoute("/blog/category/blog/");
-const booksYearArchive = readRoute("/books/2024/");
 const css = readFileSync(new URL("../_site/assets/css/garden.css", import.meta.url), "utf8");
 const blogTemplate = readFileSync(new URL("../_pages/blog.md", import.meta.url), "utf8");
 const postTemplate = readFileSync(new URL("../_layouts/post.liquid", import.meta.url), "utf8");
@@ -63,15 +62,6 @@ for (const [html, label] of [
   assertContains(html, /What I Am Building This Site For/i, `${label} archive links a current post`);
 }
 
-assertContains(booksYearArchive, /class="[^"]*garden-archive/, "books year archive uses garden archive pattern");
-assertContains(
-  booksYearArchive,
-  /class="garden-intro__eyebrow">\s*Books archive\s*<\/p>/,
-  "books year archive keeps collection-appropriate labeling"
-);
-assertContains(booksYearArchive, /<time\b[^>]*datetime=/, "books year archive publishes a semantic date");
-assertContains(booksYearArchive, /<a href="\/books\/the_godfather\/">\s*The Godfather\s*<\/a>/, "books year archive links the real book fixture");
-
 for (const [source, label] of [
   [index, "writing index"],
   [article, "article"],
@@ -79,7 +69,6 @@ for (const [source, label] of [
   [yearArchive, "year archive"],
   [tagArchive, "tag archive"],
   [categoryArchive, "category archive"],
-  [booksYearArchive, "books year archive"],
 ]) {
   assert.doesNotMatch(
     source,

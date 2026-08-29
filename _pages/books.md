@@ -2,86 +2,167 @@
 layout: default
 title: Reading
 permalink: /books/
-description: Books and notes about institutions, competence, power, repair, and systems under stress.
+description: Books I am reading and have finished, synced from Goodreads.
 nav: true
 nav_order: 2
 ---
 
-{% assign feature_book = site.books | first %}
-{% assign volume_count = site.data.read_books.size | plus: site.books.size %}
+{% assign current_books = site.data.currently_reading %}
+{% assign current_book_count = current_books.size %}
 
 <article class="folio-page folio-library-page">
-  <a class="folio-back-link" href="{{ '/' | relative_url }}" data-page-turn>&larr; Back to the folio</a>
-  <header class="folio-page__header" data-reveal>
-    <p class="folio-kicker">The Library</p>
-    <h1><span data-drift="6">{{ volume_count }} volumes, honestly rated.</span></h1>
-    <p>{{ volume_count }} logged &middot; stories about institutions, competence, power, repair, and systems under stress.</p>
+  <a class="folio-back-link" href="{{ '/' | relative_url }}">&larr; Back to the folio</a>
+  <header class="folio-page__header">
+    <p class="folio-kicker">Bibliotheca</p>
+    <h1>What I’m reading, and what I’ve finished.</h1>
+    <p>Synced from Goodreads, with my ratings and reviews when I’ve written one.</p>
   </header>
 
-{% if feature_book %}
+{% if current_books != empty %}
 
-<section class="folio-reading-feature" aria-labelledby="reading-feature-title" data-reveal>
-<button
-        class="folio-book-cover folio-book-cover--feature"
-        type="button"
-        style="--book-color: #41573f; --book-tilt: 1.2deg"
-        data-book-trigger
-        data-book-title="{{ feature_book.title | escape }}"
-        data-book-author="{{ feature_book.author | escape }}"
-        data-book-color="#41573f"
-        data-book-rating="{{ feature_book.stars | default: 0 }}"
-        data-book-status="{{ feature_book.status | default: 'On the shelf' | escape }}"
-        data-book-notes="{{ feature_book.content | strip_html | strip_newlines | escape }}"
-        aria-label="Open notes for {{ feature_book.title | escape }}"
-      >
-<span class="folio-book-cover__face"><strong>{{ feature_book.title }}</strong><small>{{ feature_book.author }}</small></span>
-</button>
-<div>
-<p class="folio-kicker">From the shelf</p>
-<h2 id="reading-feature-title">{{ feature_book.title }}</h2>
-<p>{{ feature_book.content | strip_html | truncatewords: 55 }}</p>
-<button class="folio-text-button" type="button" data-book-proxy>open the margin notes &rarr;</button>
-</div>
-</section>
+  <section class="folio-current-reading" aria-labelledby="current-reading-title">
+    <div class="folio-reading-banner" data-reading-carousel>
+      <div class="folio-reading-banner__heading">
+        <h2 class="folio-reading-banner__label" id="current-reading-title">Currently reading</h2>
+        {% if current_book_count > 1 %}
+          <div class="folio-reading-banner__controls" data-reading-controls hidden>
+            <button
+              type="button"
+              data-reading-previous
+              aria-label="Show previous current book"
+              aria-controls="current-reading-list"
+            >
+              <span aria-hidden="true">&larr;</span>
+            </button>
+            <span class="folio-reading-banner__position" data-reading-position aria-live="polite" aria-atomic="true">
+              1 of {{ current_book_count }}
+            </span>
+            <button
+              type="button"
+              data-reading-next
+              aria-label="Show next current book"
+              aria-controls="current-reading-list"
+            >
+              <span aria-hidden="true">&rarr;</span>
+            </button>
+          </div>
+        {% endif %}
+      </div>
+      <ul class="folio-reading-banner__list" id="current-reading-list">
+        {% for book in current_books %}
+          {% assign display_title = book.title | split: ' (' | first %}
+          <li
+            class="folio-reading-banner__item"
+            data-reading-slide
+            role="listitem"
+            aria-roledescription="slide"
+            aria-label="{{ forloop.index }} of {{ current_book_count }}"
+          >
+            <button
+              class="folio-reading-banner__book"
+              type="button"
+              data-book-trigger
+              data-book-title="{{ book.title | escape }}"
+              data-book-author="{{ book.author | escape }}"
+              data-book-cover="{{ book.cover | escape }}"
+              data-book-rating="{{ book.rating | escape }}"
+              data-book-status="Currently reading"
+              data-book-review="{{ book.review | default: '' | newline_to_br | strip_newlines | escape }}"
+              data-book-url="{{ book.url | escape }}"
+              data-book-progress="{{ book.progress_percent | escape }}"
+              data-book-progress-label="{{ book.progress_label | escape }}"
+              aria-label="Open details for {{ book.title | escape }} by {{ book.author | escape }}{% if book.progress_label != blank %}, {{ book.progress_label | escape }}{% endif %}"
+            >
+              <span class="folio-reading-banner__jacket">
+                <span class="folio-reading-banner__fallback" aria-hidden="true">{{ display_title }}</span>
+                <img
+                  src="{{ book.cover | escape }}"
+                  alt=""
+                  width="88"
+                  height="132"
+                  decoding="async"
+                  referrerpolicy="no-referrer"
+                  data-book-cover-image
+                >
+              </span>
+              <span class="folio-reading-banner__copy">
+                <span class="folio-reading-banner__title">{{ display_title }}</span>
+                <span class="folio-reading-banner__author">{{ book.author }}</span>
+                {% if book.progress_percent != blank %}
+                  <span class="folio-reading-banner__progress" aria-label="Reading progress: {{ book.progress_label | escape }}">
+                    <span class="folio-reading-banner__progress-track" aria-hidden="true">
+                      <span style="width: {{ book.progress_percent }}%"></span>
+                    </span>
+                    <span class="folio-reading-banner__progress-value">{{ book.progress_label }}</span>
+                  </span>
+                {% endif %}
+              </span>
+            </button>
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+  </section>
 {% endif %}
 
   <section class="folio-shelf-section" aria-labelledby="shelf-title">
     <div class="folio-section__heading">
-      <h2 id="shelf-title">The shelf</h2>
-      <p>click a spine for notes</p>
+      <h2 id="shelf-title">Read</h2>
+      <p>open a cover</p>
     </div>
-    <div class="folio-shelf" role="group" aria-label="Books">
+    <ul class="folio-cover-grid" aria-label="Books">
       {% for book in site.data.read_books %}
-        {% assign variation = forloop.index0 | modulo: 9 %}
-        {% case variation %}
-          {% when 0 %}{% assign book_color = '#41573f' %}{% assign spine_width = 26 %}{% assign spine_height = 168 %}
-          {% when 1 %}{% assign book_color = '#2f3546' %}{% assign spine_width = 32 %}{% assign spine_height = 184 %}
-          {% when 2 %}{% assign book_color = '#7b3b2e' %}{% assign spine_width = 24 %}{% assign spine_height = 154 %}
-          {% when 3 %}{% assign book_color = '#8a6d3b' %}{% assign spine_width = 29 %}{% assign spine_height = 176 %}
-          {% when 4 %}{% assign book_color = '#5d4632' %}{% assign spine_width = 22 %}{% assign spine_height = 146 %}
-          {% when 5 %}{% assign book_color = '#4a3b45' %}{% assign spine_width = 34 %}{% assign spine_height = 188 %}
-          {% when 6 %}{% assign book_color = '#5a3226' %}{% assign spine_width = 27 %}{% assign spine_height = 162 %}
-          {% when 7 %}{% assign book_color = '#6b4a2f' %}{% assign spine_width = 30 %}{% assign spine_height = 180 %}
-          {% else %}{% assign book_color = '#3f4a3a' %}{% assign spine_width = 25 %}{% assign spine_height = 158 %}
-        {% endcase %}
-        <button
-          class="folio-spine"
-          type="button"
-          style="--spine-color: {{ book_color }}; --spine-width: {{ spine_width }}px; --spine-height: {{ spine_height }}px"
-          data-book-trigger
-          data-book-title="{{ book.title | escape }}"
-          data-book-author="{{ book.author | escape }}"
-          data-book-color="{{ book_color }}"
-          data-book-rating="{{ book.rating | default: 0 }}"
-          data-book-status="{% if book.read_at %}Shelved &middot; {{ book.read_at | date: '%Y' }}{% else %}On the shelf{% endif %}"
-          data-book-notes="{{ book.review | strip_newlines | escape }}"
-          aria-label="Open notes for {{ book.title | escape }}"
-        >
-          <span>{{ book.title }}</span>
-        </button>
+        {% assign display_title = book.title | split: ' (' | first %}
+        {% assign book_status = book.status | default: 'Read' %}
+        <li class="folio-cover-grid__item">
+          <button
+            class="folio-cover-card"
+            type="button"
+            data-book-trigger
+            data-book-title="{{ book.title | escape }}"
+            data-book-author="{{ book.author | escape }}"
+            data-book-cover="{{ book.cover | escape }}"
+            data-book-rating="{{ book.rating | escape }}"
+            data-book-status="{{ book_status | escape }}{% if book.read_at != blank %} &middot; {{ book.read_at | date: '%Y' }}{% endif %}"
+            data-book-review="{{ book.review | default: '' | newline_to_br | strip_newlines | escape }}"
+            data-book-url="{{ book.url | escape }}"
+            aria-label="Open details for {{ book.title | escape }} by {{ book.author | escape }}{% if book.rating != blank %}, rated {{ book.rating }} out of 5{% endif %}"
+          >
+            <span class="folio-cover-card__jacket">
+              <span class="folio-cover-card__fallback" aria-hidden="true">{{ display_title }}</span>
+              <img
+                src="{{ book.cover | escape }}"
+                alt=""
+                width="320"
+                height="480"
+                loading="lazy"
+                decoding="async"
+                referrerpolicy="no-referrer"
+                data-book-cover-image
+              >
+            </span>
+            <span class="folio-cover-card__title">{{ display_title }}</span>
+            <span class="folio-cover-card__author">{{ book.author }}</span>
+            <span class="folio-cover-card__meta">
+              {% if book.rating != blank %}
+                <span class="folio-cover-card__rating">
+                  <span class="sr-only">My rating: {{ book.rating }} out of 5.</span>
+                  <span aria-hidden="true">&#9733; {{ book.rating }}/5</span>
+                </span>
+                <span class="folio-cover-card__separator" aria-hidden="true">&middot;</span>
+              {% endif %}
+              <span class="folio-cover-card__status">
+                {{ book_status }}
+                {% if book.read_at != blank %}
+                  <time datetime="{{ book.read_at }}">{{ book.read_at | date: '%Y' }}</time>
+                {% endif %}
+              </span>
+            </span>
+          </button>
+        </li>
       {% endfor %}
-    </div>
-    <div class="folio-shelf__plank" aria-hidden="true"></div>
+    </ul>
   </section>
-  <p class="folio-ornament" aria-hidden="true">❦</p>
+
+  <img class="folio-ornament" src="{{ '/assets/img/folio/bunny-sepia-ornament.svg' | relative_url }}" alt="" width="17" height="27">
 </article>

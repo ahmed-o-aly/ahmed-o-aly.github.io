@@ -6,7 +6,8 @@ description: A desktop agent-based planning console for exploring housing, enter
 eyebrow: Agent-based planning lab
 importance: 0
 category: simulation
-preview: false
+preview: true
+case_study_url: /projects/abu-dhabi-urban-dynamics/
 image: /assets/img/projects/urban-dynamics-console.png
 image_alt: Abu Dhabi Urban Dynamics analyst console with real district geography, agent indicators, and scenario charts
 image_fit: cover

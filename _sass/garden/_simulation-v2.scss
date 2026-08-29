@@ -29,7 +29,7 @@
   overflow-x: auto;
 }
 
-.garden-body--simulation-v2 .garden-nav__monogram,
+.garden-body--simulation-v2 .garden-nav__brand,
 .garden-body--simulation-v2 .garden-nav__links a {
   min-height: 44px;
 }
@@ -61,7 +61,7 @@
   overflow: hidden;
   background: var(--udes-v2-bg);
   color: var(--udes-v2-text);
-  font-family: var(--garden-sans);
+  font-family: var(--garden-ui);
 }
 
 .udes-v2-main button,
@@ -1086,7 +1086,7 @@
   background: rgb(255 255 255 / 97%);
   box-shadow: 0 2px 7px rgb(39 56 62 / 10%);
   color: var(--udes-v2-text);
-  font: 500 9px / 1.35 var(--garden-sans);
+  font: 500 9px / 1.35 var(--garden-ui);
 }
 
 .udes-v2-map-mount .leaflet-tooltip.udes-v2-agent-tooltip strong,
@@ -1401,7 +1401,7 @@
   border-radius: 2px;
   background-color: #fff;
   color: var(--udes-v2-text);
-  font: 600 8px / 1 var(--garden-sans);
+  font: 600 8px / 1 var(--garden-ui);
   letter-spacing: 0;
   text-transform: none;
 }
@@ -1679,7 +1679,7 @@
   border: 1px solid var(--udes-v2-line);
   background: #fff;
   color: var(--udes-v2-text);
-  font: 600 9px / 1 var(--garden-sans);
+  font: 600 9px / 1 var(--garden-ui);
   text-align: center;
 }
 
@@ -1837,7 +1837,7 @@
 .udes-v2-accounting-row strong,
 .udes-v2-accounting-row output {
   color: var(--udes-v2-text);
-  font: 650 9px / 1 var(--garden-sans);
+  font: 650 9px / 1 var(--garden-ui);
   font-variant-numeric: tabular-nums;
 }
 
@@ -2096,7 +2096,7 @@
 
 .udes-v2-main .leaflet-container {
   background: #e8eeef;
-  font-family: var(--garden-sans);
+  font-family: var(--garden-ui);
 }
 
 .udes-v2-main .leaflet-control-attribution {

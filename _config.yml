@@ -4,7 +4,7 @@
 
 title: Ahmed Aly # the website title (if blank, full name will be used instead)
 first_name: Ahmed
-middle_name: 
+middle_name:
 last_name: Aly
 contact_note: >
   You can reach out to me via email or linkedin for any inquiries or collaborations.
@@ -13,7 +13,7 @@ description: > # the ">" symbol means to ignore newlines until "footer_text:"
 # footer_text: >
 keywords: metahub, adsg, khalifa-university, public-policy-simulation, optimization, operations-research, energy-systems, xr, ai, logistics # add your own keywords or leave empty
 lang: en # the language of your site (for example: en, fr, cn, ru, etc.)
-icon: A # image placed in assets/img/, or a short text favicon
+icon: folio/bunny-ink-small.svg # provisional v2 mark; publication requires rights clearance
 
 url: https://ahmed-o-aly.github.io # the base hostname & protocol for your site
 baseurl: # the subpath of your site, e.g. /blog/. Leave blank for root
@@ -62,7 +62,7 @@ max_width: 720px
 # see https://schema.org/docs/faq.html for more information
 serve_og_meta: true # Include Open Graph meta tags in the HTML head
 serve_schema_org: true # Include Schema.org in the HTML head
-og_image: /assets/img/og-folio.png # The site-wide (default for all links) Open Graph preview image
+og_image: /assets/img/og-folio-v2.png # provisional v2 social card; publication requires mark rights clearance
 
 # -----------------------------------------------------------------------------
 # Analytics and search engine verification
@@ -183,6 +183,7 @@ exclude:
   - readme_preview/
   - README.md
   - tests/
+  - tmp/
   - vendor
 keep_files:
   - CNAME

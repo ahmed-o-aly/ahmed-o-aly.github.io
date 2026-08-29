@@ -31,7 +31,7 @@
 .udes-eyebrow,
 .udes-label {
   color: var(--garden-quiet);
-  font: 500 12px / 1.2 var(--garden-sans);
+  font: 500 12px / 1.2 var(--garden-ui);
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }
@@ -673,7 +673,7 @@
   background: #2f7d63;
   box-shadow: 0 4px 12px rgb(23 23 23 / 24%);
   color: #fff;
-  font: 600 9px / 1 var(--garden-sans);
+  font: 600 9px / 1 var(--garden-ui);
 }
 
 .udes-zone-marker.is-selected {
@@ -929,7 +929,7 @@
 
 .udes-chart__labels text {
   fill: #817c73;
-  font: 10px var(--garden-sans);
+  font: 10px var(--garden-ui);
 }
 
 .udes-chart__line {

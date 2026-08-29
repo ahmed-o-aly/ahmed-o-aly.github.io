@@ -1,24 +1,20 @@
 {% assign work = include.project %}
-{% assign figure_number = include.index | default: 1 %}
-<article class="folio-work-card" data-reveal>
-  <a href="{{ work.url | relative_url }}" data-page-turn>
-    <div class="folio-work-card__figure folio-work-card__figure--{{ work.visual.key | default: 'default' }}" aria-hidden="true">
-      <span style="--bar-height: 38%"></span>
-      <span style="--bar-height: 62%"></span>
-      <span style="--bar-height: 48%"></span>
-      <span style="--bar-height: 84%"></span>
-      <span style="--bar-height: 70%"></span>
-      <span style="--bar-height: 100%"></span>
-      <small>fig. {{ figure_number }} &mdash; {{ work.visual.label | default: work.category }}</small>
+{% assign entry_index = include.index | default: 1 %}
+{% if entry_index < 10 %}
+  {% assign entry_number = entry_index | prepend: '0' %}
+{% else %}
+  {% assign entry_number = entry_index %}
+{% endif %}
+<li class="folio-work-entry">
+  <a class="folio-work-entry__link" href="{{ work.url | relative_url }}">
+    <span class="folio-work-entry__number" aria-hidden="true">{{ entry_number }}</span>
+    <div class="folio-work-entry__copy">
+      {% if include.heading_level == 2 %}
+        <h2 class="folio-work-entry__title">{{ work.title }}</h2>
+      {% else %}
+        <h3 class="folio-work-entry__title">{{ work.title }}</h3>
+      {% endif %}
+      <p class="folio-work-entry__description">{{ work.description }}</p>
     </div>
-    <h3>{{ work.title }}</h3>
-    <p>{{ work.description }}</p>
-    {% if work.visual.chips %}
-      <ul class="folio-tags" aria-label="Methods">
-        {% for chip in work.visual.chips limit: 3 %}
-          <li>{{ chip }}</li>
-        {% endfor %}
-      </ul>
-    {% endif %}
   </a>
-</article>
+</li>

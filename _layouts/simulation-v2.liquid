@@ -1,6 +1,7 @@
 ---
 layout: garden
 ---
+{% assign simulation_back_url = page.case_study_url | default: '/projects/' %}
 <main
   id="main-content"
   class="garden-main udes-v2-main"
@@ -11,7 +12,7 @@ layout: garden
 >
   <header class="udes-v2-commandbar" aria-label="Simulation command bar">
     <div class="udes-v2-commandbar__identity">
-      <a class="udes-v2-back" href="{{ '/projects/' | relative_url }}" aria-label="Back to projects">
+      <a class="udes-v2-back" href="{{ simulation_back_url | relative_url }}" aria-label="Back to the project write-up">
         <span aria-hidden="true">&#8592;</span>
       </a>
       <div class="udes-v2-commandbar__title">

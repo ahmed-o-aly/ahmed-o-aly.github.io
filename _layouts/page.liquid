@@ -3,36 +3,68 @@ layout: default
 ---
 {% if page.collection == 'projects' %}
   <article class="folio-page folio-case-page">
-    <a class="folio-back-link" href="{{ '/projects/' | relative_url }}" data-page-turn>&larr; Back to all works</a>
-    <header class="folio-page__header folio-case-page__header" data-reveal>
+    <a class="folio-back-link" href="{{ '/projects/' | relative_url }}">&larr; Back to all works</a>
+    <header class="folio-page__header folio-case-page__header">
       <p class="folio-kicker">{{ page.category | default: 'Project' }}</p>
-      <h1>
-        <span data-drift="6">{{ page.title }}</span>
-      </h1>
+      <h1>{{ page.title }}</h1>
       {% if page.description %}
         <p>{{ page.description }}</p>
       {% endif %}
     </header>
-    <dl class="folio-case-meta" data-reveal>
-      <div>
-        <dt>Role</dt>
-        <dd>{{ page.role }}</dd>
-      </div>
-      <div>
-        <dt>Methods</dt>
-        <dd>{{ page.methods }}</dd>
-      </div>
-      <div>
-        <dt>Status</dt>
-        <dd>{{ page.status }}</dd>
-      </div>
-    </dl>
+    {% if page.interactive %}
+      <section class="folio-case-interactive" aria-labelledby="project-interactive-title">
+        <div class="folio-case-interactive__intro">
+          <div>
+            {% if page.interactive.eyebrow %}
+              <p class="folio-kicker">{{ page.interactive.eyebrow }}</p>
+            {% endif %}
+            <h2 id="project-interactive-title">{{ page.interactive.heading | default: 'Use the project' }}</h2>
+            {% if page.interactive.description %}
+              <p>{{ page.interactive.description }}</p>
+            {% endif %}
+          </div>
+          <a class="folio-case-interactive__launch" href="{{ page.interactive.url | escape }}">
+            {{ page.interactive.launch_label | default: 'Open full screen' }} &rarr;
+          </a>
+        </div>
+        {% if page.interactive.embed != false %}
+          <div class="folio-case-interactive__viewport">
+            <iframe
+              src="{{ page.interactive.url | escape }}"
+              title="{{ page.interactive.title | escape }}"
+              loading="lazy"
+              allow="fullscreen; xr-spatial-tracking"
+              allowfullscreen
+              referrerpolicy="strict-origin-when-cross-origin"
+            ></iframe>
+          </div>
+        {% endif %}
+        {% if page.interactive.note %}
+          <p class="folio-case-interactive__note">{{ page.interactive.note }}</p>
+        {% endif %}
+      </section>
+    {% elsif page.role or page.methods or page.status %}
+      <dl class="folio-case-meta">
+        <div>
+          <dt>Role</dt>
+          <dd>{{ page.role }}</dd>
+        </div>
+        <div>
+          <dt>Methods</dt>
+          <dd>{{ page.methods }}</dd>
+        </div>
+        <div>
+          <dt>Status</dt>
+          <dd>{{ page.status }}</dd>
+        </div>
+      </dl>
+    {% endif %}
     {% if page.gallery %}
       <section class="folio-case-gallery" aria-labelledby="project-gallery-title">
         <h2 id="project-gallery-title">Inside the experience</h2>
         <div>
           {% for item in page.gallery %}
-            <figure data-reveal>
+            <figure>
               {% include garden-media.liquid src=item.image alt=item.alt fit=item.fit width=item.width height=item.height loading='lazy' %}
               {% if item.caption %}
                 <figcaption>{{ item.caption }}</figcaption>
@@ -42,79 +74,81 @@ layout: default
         </div>
       </section>
     {% endif %}
-    <div class="folio-case-sections">
-      {% if page.problem %}
-        <section data-reveal>
-          <p class="folio-kicker">The problem</p>
-          <h2>What had to change</h2>
-          <p>{{ page.problem }}</p>
-        </section>
-      {% endif %}
-      {% if page.constraints %}
-        <section data-reveal>
-          <p class="folio-kicker">Constraints</p>
-          <h2>The shape of the work</h2>
-          <ul>
-            {% for item in page.constraints %}
-              <li>{{ item }}</li>
-            {% endfor %}
-          </ul>
-        </section>
-      {% endif %}
-      {% if page.system_map %}
-        <section data-reveal>
-          <p class="folio-kicker">System</p>
-          <h2>{{ page.system_map.title | default: 'How it works' }}</h2>
-          <ol class="folio-system-steps">
-            {% for step in page.system_map.steps %}
-              <li>
-                <span>{{ forloop.index | prepend: '0' }}</span>
-                <div>
-                  <h3>{{ step.title }}</h3>
-                  <p>{{ step.detail }}</p>
-                </div>
-              </li>
-            {% endfor %}
-          </ol>
-        </section>
-      {% endif %}
-      {% if page.proof %}
-        <section data-reveal>
-          <p class="folio-kicker">Proof &amp; artifacts</p>
-          <h2>What remains inspectable</h2>
-          <div class="folio-proof-grid">
-            {% for item in page.proof %}
-              <article>
-                <h3>{{ item.label }}</h3>
-                <p>{{ item.detail }}</p>
-              </article>
-            {% endfor %}
-          </div>
-        </section>
-      {% endif %}
-      {% if page.decisions %}
-        <section data-reveal>
-          <p class="folio-kicker">Decisions</p>
-          <h2>Choices that shaped the result</h2>
-          <ul>
-            {% for item in page.decisions %}
-              <li>{{ item }}</li>
-            {% endfor %}
-          </ul>
-        </section>
-      {% endif %}
-      {% if page.outcomes %}
-        <section data-reveal>
-          <p class="folio-kicker">Outcomes</p>
-          <h2>What the work made possible</h2>
-          <ul>
-            {% for item in page.outcomes %}
-              <li>{{ item }}</li>
-            {% endfor %}
-          </ul>
-        </section>
-      {% endif %}
-    </div>
+    {% if page.problem or page.constraints or page.system_map or page.proof or page.decisions or page.outcomes %}
+      <div class="folio-case-sections">
+        {% if page.problem %}
+          <section>
+            <p class="folio-kicker">The problem</p>
+            <h2>What had to change</h2>
+            <p>{{ page.problem }}</p>
+          </section>
+        {% endif %}
+        {% if page.constraints %}
+          <section>
+            <p class="folio-kicker">Constraints</p>
+            <h2>The shape of the work</h2>
+            <ul>
+              {% for item in page.constraints %}
+                <li>{{ item }}</li>
+              {% endfor %}
+            </ul>
+          </section>
+        {% endif %}
+        {% if page.system_map %}
+          <section>
+            <p class="folio-kicker">System</p>
+            <h2>{{ page.system_map.title | default: 'How it works' }}</h2>
+            <ol class="folio-system-steps">
+              {% for step in page.system_map.steps %}
+                <li>
+                  <span>{{ forloop.index | prepend: '0' }}</span>
+                  <div>
+                    <h3>{{ step.title }}</h3>
+                    <p>{{ step.detail }}</p>
+                  </div>
+                </li>
+              {% endfor %}
+            </ol>
+          </section>
+        {% endif %}
+        {% if page.proof %}
+          <section>
+            <p class="folio-kicker">Proof &amp; artifacts</p>
+            <h2>What remains inspectable</h2>
+            <div class="folio-proof-grid">
+              {% for item in page.proof %}
+                <article>
+                  <h3>{{ item.label }}</h3>
+                  <p>{{ item.detail }}</p>
+                </article>
+              {% endfor %}
+            </div>
+          </section>
+        {% endif %}
+        {% if page.decisions %}
+          <section>
+            <p class="folio-kicker">Decisions</p>
+            <h2>Choices that shaped the result</h2>
+            <ul>
+              {% for item in page.decisions %}
+                <li>{{ item }}</li>
+              {% endfor %}
+            </ul>
+          </section>
+        {% endif %}
+        {% if page.outcomes %}
+          <section>
+            <p class="folio-kicker">Outcomes</p>
+            <h2>What the work made possible</h2>
+            <ul>
+              {% for item in page.outcomes %}
+                <li>{{ item }}</li>
+              {% endfor %}
+            </ul>
+          </section>
+        {% endif %}
+      </div>
+    {% endif %}
     <div class="folio-prose">{{ content }}</div>
     {% if page.artifacts %}
       <nav class="folio-case-artifacts" aria-label="Project artifacts">
@@ -124,22 +158,20 @@ layout: default
       </nav>
     {% endif %}
     {% include garden-related.liquid collection=site.projects current=page label='More projects' %}
-    <p class="folio-ornament" aria-hidden="true">❦</p>
+    <img class="folio-ornament" src="{{ '/assets/img/folio/bunny-sepia-ornament.svg' | relative_url }}" alt="" width="17" height="27">
   </article>
 {% else %}
   <article class="folio-page">
     {% assign display_title = page.display_title | default: page.title %}
-    <a class="folio-back-link" href="{{ '/' | relative_url }}" data-page-turn>&larr; Back to the folio</a>
-    <header class="folio-page__header" data-reveal>
+    <a class="folio-back-link" href="{{ '/' | relative_url }}">&larr; Back to the folio</a>
+    <header class="folio-page__header">
       <p class="folio-kicker">{{ page.eyebrow | default: page.title }}</p>
-      <h1>
-        <span data-drift="6">{{ display_title }}</span>
-      </h1>
+      <h1>{{ display_title }}</h1>
       {% if page.description %}
         <p>{{ page.description }}</p>
       {% endif %}
     </header>
     <div class="folio-prose">{{ content }}</div>
-    <p class="folio-ornament" aria-hidden="true">❦</p>
+    <img class="folio-ornament" src="{{ '/assets/img/folio/bunny-sepia-ornament.svg' | relative_url }}" alt="" width="17" height="27">
   </article>
 {% endif %}

@@ -15,38 +15,42 @@ pagination:
 ---
 
 <article class="folio-page folio-archive">
-  <a class="folio-back-link" href="{{ '/' | relative_url }}" data-page-turn>&larr; Back to the folio</a>
-  <header class="folio-page__header" data-reveal>
+  <a class="folio-back-link" href="{{ '/' | relative_url }}">&larr; Back to the folio</a>
+  <header class="folio-page__header">
     <p class="folio-kicker">Essays &amp; Writing</p>
-    <h1><span data-drift="6">The full archive.</span></h1>
-    <p>It grows slowly, on purpose.</p>
+    <h1>Working notes on decisions, systems, and the rooms they live in.</h1>
+    <p>Longer arguments, technical walkthroughs, and notes from work in progress.</p>
   </header>
 
 {% assign postlist = paginator.posts | default: site.posts %}
 {% assign grouped_posts = postlist | group_by_exp: 'post', 'post.date | date: "%Y"' %}
-{% for year in grouped_posts %}
 
-<section class="folio-archive__year" aria-labelledby="year-{{ year.name }}">
-<h2 id="year-{{ year.name }}">{{ year.name }}</h2>
-<ol class="folio-essay-list folio-essay-list--archive">
-{% for post in year.items %}
-{% assign word_count = post.content | number_of_words %}
-{% assign read_minutes = word_count | divided_by: 180 | plus: 1 %}
-<li data-reveal>
-<a href="{{ post.url | relative_url }}" data-page-turn>
-<span class="folio-essay-list__number" aria-hidden="true">{% case forloop.index %}{% when 1 %}I.{% when 2 %}II.{% when 3 %}III.{% when 4 %}IV.{% when 5 %}V.{% else %}{{ forloop.index }}.{% endcase %}</span>
-<span class="folio-essay-list__copy">
-<span class="folio-essay-list__title">{{ post.title }}</span>
-<span class="folio-essay-list__excerpt">{{ post.description }}</span>
-</span>
-<span class="folio-essay-list__meta"><time datetime="{{ post.date | date_to_xmlschema }}">{{ post.date | date: '%b %Y' }}</time> &middot; {{ read_minutes }} min</span>
-</a>
-</li>
-{% endfor %}
-</ol>
-</section>
-{% endfor %}
+  <div class="folio-archive__groups">
+    {% for year in grouped_posts %}
+      <section class="folio-archive__year" aria-labelledby="year-{{ year.name }}">
+        <h2 id="year-{{ year.name }}">{{ year.name }}</h2>
+        <ol class="folio-essay-ledger">
+          {% for post in year.items %}
+            {% assign word_count = post.content | number_of_words %}
+            {% assign read_minutes = word_count | divided_by: 180 | plus: 1 %}
+            <li>
+              <span class="folio-ledger-number" aria-hidden="true">{{ forloop.index | prepend: '0' }}</span>
+              <a class="folio-essay-ledger__copy" href="{{ post.url | relative_url }}">
+                <span class="folio-essay-ledger__title">{{ post.title }}</span>
+                <span class="folio-essay-ledger__excerpt">{{ post.description }}</span>
+              </a>
+              <span class="folio-essay-ledger__meta">
+                <time datetime="{{ post.date | date_to_xmlschema }}">{{ post.date | date: '%b %Y' }}</time>
+                <span>{{ read_minutes }} min</span>
+              </span>
+            </li>
+          {% endfor %}
+        </ol>
+      </section>
+    {% endfor %}
+  </div>
+
 {% include pagination.liquid %}
+<img class="folio-ornament" src="{{ '/assets/img/folio/bunny-sepia-ornament.svg' | relative_url }}" alt="" width="17" height="27">
 
-  <p class="folio-ornament" aria-hidden="true">❦</p>
 </article>

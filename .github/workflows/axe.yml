@@ -39,7 +39,6 @@ jobs:
           - "blog/"
           - "blog/2026/what-i-am-building-this-site-for/"
           - "books/"
-          - "books/the_godfather/"
           - "about/"
           - "cv/"
           - "marginalia/"

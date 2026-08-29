@@ -21,15 +21,11 @@
       {{ content }}
       {% include garden-footer.liquid %}
     </div>
-    <div class="folio-cursor-glow" aria-hidden="true"></div>
-    <div class="folio-page-turn" aria-hidden="true">
-      <div class="folio-page-turn__leaf"><span>Ahmed &middot; Folio</span></div>
-    </div>
     <dialog class="folio-book-dialog" id="folio-book-dialog" aria-labelledby="folio-book-title">
       <div class="folio-book-dialog__card">
-        <div class="folio-book-dialog__cover" data-dialog-cover>
-          <strong data-dialog-cover-title></strong>
-          <small data-dialog-cover-author></small>
+        <div class="folio-book-dialog__jacket" data-dialog-jacket>
+          <span class="folio-book-dialog__fallback" data-dialog-cover-fallback></span>
+          <img class="folio-book-dialog__cover" data-dialog-cover alt="" width="360" height="540">
         </div>
         <div class="folio-book-dialog__copy">
           <div class="folio-book-dialog__topline">
@@ -39,8 +35,26 @@
           <h2 id="folio-book-title" data-dialog-title></h2>
           <p class="folio-book-dialog__author" data-dialog-author></p>
           <p class="folio-book-dialog__rating" data-dialog-rating></p>
-          <h3>Margin notes</h3>
-          <div class="folio-book-dialog__notes" data-dialog-notes></div>
+          <div class="folio-book-dialog__progress" data-dialog-progress hidden>
+            <div class="folio-book-dialog__progress-meta">
+              <span>Reading progress</span>
+              <span data-dialog-progress-label></span>
+            </div>
+            <div
+              class="folio-book-dialog__progress-track"
+              data-dialog-progress-meter
+              role="progressbar"
+              aria-label="Reading progress"
+              aria-valuemin="0"
+              aria-valuemax="100"
+            >
+              <span data-dialog-progress-fill></span>
+            </div>
+          </div>
+          <div class="folio-book-dialog__review" data-dialog-review aria-label="My review" hidden>
+            <div class="folio-book-dialog__review-body" data-dialog-review-body></div>
+          </div>
+          <a class="folio-book-dialog__source" data-dialog-source href="#" target="_blank" rel="noreferrer" hidden> View on Goodreads &rarr; </a>
         </div>
       </div>
     </dialog>

@@ -5,7 +5,9 @@
   },
   "scripts": {
     "build:project-previews": "node scripts/build-project-previews.mjs",
-    "format:check": "prettier --check \"tests/{folio-contract,site-contract,udes-contract,udes-v2-contract,udes-v2-engine,udes-v2-history,udes-v2-job-capacity,udes-v2-scenarios}.mjs\" \"assets/js/{garden,udes-v2-app,udes-v2-worker}.js\" \"assets/data/cnc-machine-inspector/portfolio-evidence.json\" \"assets/data/udes-v2/README.md\" \"scripts/{build-project-previews,validate-udes-v2-full}.mjs\" \"_sass/garden/{_cards,_content,_folio,_simulation-v2}.scss\" \"_includes/{folio-work-card,garden-card,garden-media,garden-project-card,garden-related,head}.liquid\" \"_layouts/{cv,garden,page,post}.liquid\" \"_pages/{about,blog,books,home,marginalia,projects}.md\" \"_projects/{abu-dhabi-urban-dynamics,abu-dhabi-urban-dynamics-v2,adsg-policy-simulations,cnc-machine-inspector}.md\" \"package.json\" \".github/workflows/{axe,deploy}.yml\"",
+    "format:check": "prettier --check \"tests/{folio-contract,goodreads-sync,site-contract,udes-contract,udes-v2-contract,udes-v2-engine,udes-v2-history,udes-v2-job-capacity,udes-v2-scenarios}.mjs\" \"assets/js/{garden,udes-v2-app,udes-v2-worker}.js\" \"assets/css/garden.scss\" \"assets/data/cnc-machine-inspector/portfolio-evidence.json\" \"assets/data/udes-v2/README.md\" \"_data/{currently_reading,read_books}.yml\" \"scripts/{build-project-previews,sync-goodreads,validate-udes-v2-full}.mjs\" \"_sass/garden/{_cards,_content,_folio-v2,_shell,_simulation-v2,_tokens}.scss\" \"_includes/{folio-work-card,garden-card,garden-footer,garden-media,garden-nav,garden-project-card,garden-related,head,metadata}.liquid\" \"_layouts/{cv,garden,page,post}.liquid\" \"_pages/{about,blog,books,home,marginalia,projects}.md\" \"_projects/{abu-dhabi-urban-dynamics,abu-dhabi-urban-dynamics-v2,adsg-policy-simulations,cnc-machine-inspector}.md\" \"package.json\" \".github/workflows/{axe,deploy}.yml\"",
+    "sync:reading": "node scripts/sync-goodreads.mjs",
+    "test:goodreads": "node tests/goodreads-sync.mjs",
     "test:site": "node tests/site-contract.mjs",
     "test:udes-v2": "node tests/udes-v2-engine.mjs",
     "test:udes-v2-capacity": "node tests/udes-v2-job-capacity.mjs",
@@ -14,6 +16,7 @@
   },
   "devDependencies": {
     "@shopify/prettier-plugin-liquid": "1.4.0",
+    "fast-xml-parser": "5.11.1",
     "prettier": "3.1.1",
     "sharp": "0.35.4"
   }

@@ -1043,7 +1043,7 @@
 
 .paper-impact-strip span {
   color: var(--garden-quiet);
-  font: 500 12px / 1.2 var(--garden-sans);
+  font: 500 12px / 1.2 var(--garden-ui);
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -1057,7 +1057,7 @@
 .paper-impact-strip p {
   margin: 28px 0 0;
   color: var(--garden-muted);
-  font: 400 15px / 1.55 var(--garden-sans);
+  font: 400 15px / 1.55 var(--garden-ui);
 }
 
 .garden-publications {
@@ -1091,7 +1091,7 @@
   border: 0;
   border-top: 1px solid var(--garden-line);
   color: var(--garden-quiet);
-  font: 500 12px / 1.2 var(--garden-sans);
+  font: 500 12px / 1.2 var(--garden-ui);
   letter-spacing: 0.08em;
   text-align: left;
 }

@@ -5,20 +5,22 @@ layout: default
 {% assign education = site.data.cv | where: 'title', 'Education' | first %}
 {% assign certifications = site.data.cv | where: 'title', 'Certifications' | first %}
 {% assign skills = site.data.cv | where: 'title', 'Skills' | first %}
+
 <article class="folio-page folio-records-page">
-  <a class="folio-back-link" href="{{ '/' | relative_url }}" data-page-turn>&larr; Back to the folio</a>
-  <header class="folio-page__header" data-reveal>
-    <p class="folio-kicker">Cabinet of Records</p>
-    <h1><span data-drift="6">The official paperwork.</span></h1>
+  <a class="folio-back-link" href="{{ '/' | relative_url }}">&larr; Back to the folio</a>
+  <header class="folio-page__header">
+    <p class="folio-kicker">Records</p>
+    <h1>A working record, kept in order.</h1>
     <p>{{ page.description }}</p>
   </header>
-  <div class="folio-records-grid folio-records-grid--page">
+
+  <div class="folio-records-layout">
     <div>
       <section class="folio-record-section" aria-labelledby="experience-title">
         <h2 id="experience-title">Experience</h2>
         <div class="folio-timeline">
           {% for role in experience.contents %}
-            <article data-reveal>
+            <article>
               <time>{{ role.year }}</time>
               <div>
                 <h3>{{ role.title }}</h3>
@@ -34,11 +36,12 @@ layout: default
           {% endfor %}
         </div>
       </section>
+
       <section class="folio-record-section" aria-labelledby="education-title">
         <h2 id="education-title">Education</h2>
         <div class="folio-timeline">
           {% for item in education.contents %}
-            <article data-reveal>
+            <article>
               <time>{{ item.year }}</time>
               <div>
                 <h3>{{ item.title }}</h3>
@@ -48,24 +51,41 @@ layout: default
           {% endfor %}
         </div>
       </section>
+
       <a class="folio-button" href="{{ page.cv_pdf | relative_url }}">Download the full CV &darr;</a>
     </div>
-    <aside class="folio-records-aside" aria-labelledby="certificates-title">
-      <h2 id="certificates-title">Certificates, framed</h2>
-      {% for certificate in certifications.contents %}
-        <article class="folio-certificate" data-reveal>
-          <span>Certificate</span>
-          <h3>{{ certificate.title }}</h3>
-          <p>{{ certificate.institution }} &middot; {{ certificate.year }}</p>
-        </article>
-      {% endfor %}
-      {% for item in education.contents %}
-        <article class="folio-certificate" data-reveal>
-          <span>Diploma</span>
-          <h3>{{ item.title }}</h3>
-          <p>{{ item.institution }} &middot; {{ item.year }}</p>
-        </article>
-      {% endfor %}
+
+    <aside class="folio-records-aside" aria-labelledby="credentials-title">
+      <h2 id="credentials-title">Credentials</h2>
+      <div class="folio-credentials-ledger">
+        {% for certificate in certifications.contents %}
+          <article>
+            <time>{{ certificate.year }}</time>
+            <div>
+              <h3>{{ certificate.title }}</h3>
+              <p>{{ certificate.institution }}</p>
+              {% if certificate.linkitems %}
+                <p class="folio-credential-links">
+                  {% for item in certificate.linkitems -%}
+                    <a href="{{ item.link | relative_url }}">{{ item.linkname }}</a>
+                    {%- unless forloop.last %} &middot; {% endunless -%}
+                  {%- endfor %}
+                </p>
+              {% endif %}
+            </div>
+          </article>
+        {% endfor %}
+        {% for item in education.contents %}
+          <article>
+            <time>{{ item.year }}</time>
+            <div>
+              <h3>{{ item.title }}</h3>
+              <p>{{ item.institution }}</p>
+            </div>
+          </article>
+        {% endfor %}
+      </div>
+
       <section class="folio-skills" aria-labelledby="skills-title">
         <h2 id="skills-title">Working methods</h2>
         <ul>
@@ -76,5 +96,6 @@ layout: default
       </section>
     </aside>
   </div>
-  <p class="folio-ornament" aria-hidden="true">❦</p>
+
+  <img class="folio-ornament" src="{{ '/assets/img/folio/bunny-sepia-ornament.svg' | relative_url }}" alt="" width="17" height="27">
 </article>

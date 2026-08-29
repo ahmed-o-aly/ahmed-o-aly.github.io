@@ -4,16 +4,24 @@
   --garden-surface-hover: #f1e6cf;
   --garden-ink: #372b1f;
   --garden-muted: #5c4c39;
-  --garden-quiet: #826644;
+  --garden-quiet: #6f5233;
   --garden-sepia: #8a6d4b;
   --garden-line: rgba(93, 70, 50, 0.25);
+  --garden-line-soft: rgba(93, 70, 50, 0.2);
+  --garden-line-plate: rgba(93, 70, 50, 0.3);
   --garden-accent: #8a3b2a;
+  --garden-accent-hover: #5d2418;
   --garden-focus: #8a3b2a;
   --garden-espresso: #2b2118;
   --garden-cream: #e9ddc6;
+  --garden-dark-secondary: #d9c9a8;
+  --garden-dark-label: #b3987a;
+  --garden-seal: #9b1d1b;
   --garden-max: 1120px;
+  --garden-gutter: 48px;
   --garden-gap: 28px;
   --garden-radius: 0;
   --garden-serif: "EB Garamond", Georgia, serif;
-  --garden-sans: "EB Garamond", Georgia, serif;
+  --garden-mono: "IBM Plex Mono", "Courier New", monospace;
+  --garden-ui: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
