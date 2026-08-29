@@ -13,6 +13,7 @@ const routes = {
   works: readRoute("/projects/"),
   cnc: readRoute("/projects/cnc-machine-inspector/"),
   urban: readRoute("/projects/abu-dhabi-urban-dynamics/"),
+  dewa: readRoute("/projects/dewa-energy-optimization/"),
   territory: readRoute("/projects/territory-design-probvns/"),
   records: readRoute("/cv/"),
   marginalia: readRoute("/marginalia/"),
@@ -67,6 +68,15 @@ assertContains(nav, /class="garden-nav__toggle"[^>]*aria-expanded="false"[^>]*ar
 assertContains(nav, /class="garden-nav__contact"[^>]*href="{{ '\/#contact' \| relative_url }}"/, "nav exposes a bordered correspondence action");
 assert.doesNotMatch(nav, /About|data-scroll-target|#sec-(?:writing|library|works|records|marginalia)/, "nav uses pages rather than home anchors");
 assertContains(routes.works, /href="\/projects\/"[^>]*aria-current="page"/, "Works is current on the projects route");
+
+for (const [name, html] of Object.entries({ cnc: routes.cnc, urban: routes.urban, dewa: routes.dewa, territory: routes.territory })) {
+  assertContains(html, /class="folio-case-page__masthead"/, `${name} uses the centered Works masthead rail`);
+}
+assertContains(
+  folioCss,
+  /\.folio-case-page__masthead,[\s\S]*?\.folio-case-page > \.folio-prose[\s\S]*?width: min\(100%, 820px\);[\s\S]*?margin-inline: auto;/,
+  "project mastheads and write-ups share a centered editorial rail"
+);
 
 const homeOrder = ["folio-hero", "folio-writing-ledger", "folio-selected-works", "folio-library"];
 let previousIndex = -1;

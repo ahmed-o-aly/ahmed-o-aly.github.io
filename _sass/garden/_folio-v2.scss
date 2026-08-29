@@ -467,6 +467,22 @@
   line-height: 1.62;
 }
 
+// Keep project write-ups on a centered editorial rail while allowing
+// interactive work to use the wider site canvas.
+.folio-case-page__masthead,
+.folio-case-page > .folio-case-meta,
+.folio-case-page > .folio-case-sections,
+.folio-case-page > .folio-prose,
+.folio-case-page > .folio-case-artifacts,
+.folio-case-page > .garden-related {
+  width: min(100%, 820px);
+  margin-inline: auto;
+}
+
+.folio-case-page__header {
+  max-width: none;
+}
+
 .folio-archive__groups {
   margin-top: 64px;
 }
