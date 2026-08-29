@@ -408,7 +408,7 @@ for (const asset of ["bunny-ink.svg", "bunny-ink-small.svg", "bunny-cream.svg", 
   assert.equal(existsSync(new URL(`../assets/img/folio/${asset}`, import.meta.url)), true, `${asset} is present`);
 }
 assertContains(config, /icon:\s*folio\/bunny-ink-small\.svg/, "configuration uses the small bunny favicon");
-assertContains(config, /og_image:\s*\/assets\/img\/og-folio-v2\.png/, "configuration uses the v2 social card");
+assertContains(config, /og_image:\s*["']?\/assets\/img\/og-folio-v2\.png["']?/, "configuration uses the v2 social card");
 const ogPath = new URL("../assets/img/og-folio-v2.png", import.meta.url);
 const ogMetadata = await sharp(fileURLToPath(ogPath)).metadata();
 assert.deepEqual([ogMetadata.width, ogMetadata.height], [1200, 630], "social card is 1200x630");
