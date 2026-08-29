@@ -10,7 +10,7 @@
   "metadata": {
     "source": "adsdiBusStops",
     "sourceClass": "observed",
-    "attribution": "Department of Government Enablement — Abu Dhabi Spatial Data Infrastructure",
+    "attribution": "Department of Government Enablement, Abu Dhabi Spatial Data Infrastructure",
     "note": "Only official stops contained by the selected model-zone polygons are retained."
   },
   "features": [
