@@ -9,7 +9,7 @@ const bounds = [54.28, 24.24, 54.78, 24.62];
 
 const sources = {
   adsdiCommunities: {
-    title: "AD-SDI Open Data — Community",
+    title: "AD-SDI Open Data: Community",
     url: "https://arcgis.sdi.abudhabi.ae/agspublish/rest/services/OpenData/ADSDI_OpenData/MapServer/2",
     publisher: "Department of Government Enablement, Abu Dhabi Spatial Data Infrastructure",
     classification: "observed",
@@ -17,7 +17,7 @@ const sources = {
     retrieved: snapshotDate,
   },
   adsdiRoadCenterline: {
-    title: "AD-SDI Open Data — RoadCenterline",
+    title: "AD-SDI Open Data: RoadCenterline",
     url: "https://arcgis.sdi.abudhabi.ae/agspublish/rest/services/OpenData/ADSDI_OpenData/MapServer/101",
     publisher: "Department of Government Enablement, Abu Dhabi Spatial Data Infrastructure",
     classification: "reference",
@@ -25,7 +25,7 @@ const sources = {
     retrieved: snapshotDate,
   },
   adsdiMainRoads: {
-    title: "AD-SDI Basemap — Main Roads",
+    title: "AD-SDI Basemap: Main Roads",
     url: "https://arcgis.sdi.abudhabi.ae/agshost/rest/services/Hosted/BaseMapEng_LightGray_GCS/MapServer/407",
     publisher: "Department of Government Enablement, Abu Dhabi Spatial Data Infrastructure",
     classification: "observed",
@@ -33,7 +33,7 @@ const sources = {
     retrieved: snapshotDate,
   },
   adsdiBusStops: {
-    title: "AD-SDI Open Data — Bus Stops",
+    title: "AD-SDI Open Data: Bus Stops",
     url: "https://arcgis.sdi.abudhabi.ae/agspublish/rest/services/OpenData/ADSDI_OpenData/MapServer/801",
     publisher: "Department of Government Enablement, Abu Dhabi Spatial Data Infrastructure",
     classification: "observed",
@@ -49,9 +49,9 @@ const sources = {
     retrieved: snapshotDate,
   },
   scadPopulation: {
-    title: "Abu Dhabi Census — Population 2024",
+    title: "Abu Dhabi Census: Population 2024",
     url: "https://census.scad.gov.ae/home/population?lang=en",
-    publisher: "Statistics Centre — Abu Dhabi",
+    publisher: "Statistics Centre: Abu Dhabi",
     classification: "observed",
     use: "Abu Dhabi Region total and the complete 2024 district table returned by the official census indicator endpoint",
     indicatorEndpoint: "https://census.scad.gov.ae/home/IndicatorData",
@@ -60,9 +60,9 @@ const sources = {
     retrieved: snapshotDate,
   },
   scadLabour2024: {
-    title: "Abu Dhabi Census — Employed population 2024",
+    title: "Abu Dhabi Census: Employed population 2024",
     url: "https://census.scad.gov.ae/home/labourforce?fid=0&id=0&lang=en&tab=table_employee_population&year=2024",
-    publisher: "Statistics Centre — Abu Dhabi",
+    publisher: "Statistics Centre: Abu Dhabi",
     classification: "observed",
     use: "Emirate-wide employed-population share used as the transparent 67% opening and target employment anchor",
     employedResidents: 2762715,
@@ -72,7 +72,7 @@ const sources = {
     retrieved: snapshotDate,
   },
   abuDhabiBusTariff: {
-    title: "Public Transport Services — Standard Service fare",
+    title: "Public Transport Services: Standard Service fare",
     url: "https://admobility.gov.ae/en/pb-bus-service/hafilat-public-buses-fees",
     publisher: "Abu Dhabi Mobility",
     classification: "observed",
@@ -83,7 +83,7 @@ const sources = {
     retrieved: snapshotDate,
   },
   unHabitatMobility: {
-    title: "National Urban Policy Transport Guide — Figure 21",
+    title: "National Urban Policy Transport Guide: Figure 21",
     url: "https://unhabitat.org/sites/default/files/2022/03/nup-transport_guide-web.pdf",
     publisher: "UN-Habitat",
     classification: "reference",
@@ -2000,7 +2000,7 @@ async function main() {
       id: forwardId,
       fromZoneId: fromId,
       toZoneId: toId,
-      routeLabel: `${fromZone.name} — ${toZone.name}`,
+      routeLabel: `${fromZone.name} to ${toZone.name}`,
       corridorType,
       directionalPairId,
       pairedCandidateRouteId: reverseId,
@@ -2012,7 +2012,7 @@ async function main() {
       id: reverseId,
       fromZoneId: toId,
       toZoneId: fromId,
-      routeLabel: `${toZone.name} — ${fromZone.name}`,
+      routeLabel: `${toZone.name} to ${fromZone.name}`,
       corridorType,
       directionalPairId,
       pairedCandidateRouteId: forwardId,
@@ -2106,7 +2106,7 @@ async function main() {
     generatedAt: new Date().toISOString(),
     baseYear: 2024,
     scope: {
-      name: "Greater Abu Dhabi City — focused UDES v2 study area",
+      name: "Greater Abu Dhabi City: focused UDES v2 study area",
       bounds,
       includedZoneCount: zones.length,
       excluded: ["Al Ain Region", "Al Dhafra Region", "Outer Abu Dhabi Region districts outside the selected metropolitan study area"],
@@ -2313,7 +2313,7 @@ async function main() {
       sourceClass: "derived",
       modified:
         "Official community polygons were simplified, filtered to the contiguous city cluster and grouped by district into the model zones described in baseline.json.",
-      attribution: "Department of Government Enablement — Abu Dhabi Spatial Data Infrastructure",
+      attribution: "Department of Government Enablement, Abu Dhabi Spatial Data Infrastructure",
     },
     features: zoneFeatures,
   };
@@ -2336,7 +2336,7 @@ async function main() {
     metadata: {
       source: "adsdiBusStops",
       sourceClass: "observed",
-      attribution: "Department of Government Enablement — Abu Dhabi Spatial Data Infrastructure",
+      attribution: "Department of Government Enablement, Abu Dhabi Spatial Data Infrastructure",
       note: "Only official stops contained by the selected model-zone polygons are retained.",
     },
     features: stopFeatures,

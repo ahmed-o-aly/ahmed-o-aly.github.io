@@ -2,7 +2,7 @@
 layout: page
 title: Abu Dhabi Urban Dynamics Lab
 permalink: /projects/abu-dhabi-urban-dynamics/
-description: A browser-based model for exploring how housing, jobs, and transport interact across Greater Abu Dhabi City.
+description: A browser simulation for testing housing, jobs, and transport ideas across Greater Abu Dhabi City.
 importance: 0
 work_number: 2
 category: simulation
@@ -31,12 +31,12 @@ artifacts:
     url: /assets/data/udes-v2/validation-report.json
 ---
 
-I built this as a browser-based sandbox for looking at how housing, jobs, and transport interact across Greater Abu Dhabi City. It covers 18 districts and lets me change public-transport costs and speeds, road capacity, housing, and employment-space capacity, then run the model against a reference with the same random seed.
+I built this model to experiment with housing, jobs, and transport in Greater Abu Dhabi City. It covers 18 districts. You can change bus fares and speeds, road capacity, housing, employment space, and public realm quality, then compare the result with a reference run that uses the same random seed.
 
-The geography is not an invented grid. District boundaries and bus-stop locations come from AD-SDI, population totals are mapped from SCAD's 2024 census, and the road graph is built from OpenStreetMap and OSRM routes. I kept the source of each field visible because the inputs do not all have the same status. Population and geography have official sources; jobs, rents, capacities, and most behavioural parameters are still explicit assumptions.
+The map uses AD-SDI community boundaries and bus stops. Population comes from SCAD's 2024 census tables, and the road network is assembled from OpenStreetMap and OSRM routes. Jobs, rents, capacities, and many of the behaviour settings are still assumptions. I label them as such because I do not want a synthetic input to look like an official statistic.
 
-The current model uses 6,070 citizen agents and 600 enterprise agents. Citizens respond to employment, housing costs, and commute pressure. Firms respond to demand, wages, rent, margins, and access to labour. The engine moves one calendar day at a time. Household and company accounts close monthly, while rents, wages, and demographic changes update annually.
+At full scale, the model runs 6,070 citizen agents and 600 enterprise agents. Commuting, road loading, job matching, and household and firm decisions happen daily. Accounts close monthly. Rent, wage, and demographic updates happen annually.
 
-This is an exploratory model, not a forecast. I have tested deterministic replay, population conservation, network assignment, and long-run stability, but the behavioural and economic assumptions still need current household travel, rent, employment, and firm data before the model could support real policy decisions.
+I also wrote checks for deterministic replay, population totals, network assignment, and long runs. Those checks tell me that the software is behaving consistently. They do not make it a forecast. It would need current travel, rent, employment, and business data before I would use it for policy work.
 
-The part I care about most is being able to inspect the model while it runs. The map, agents, scenario controls, charts, assumptions, and sources stay together, so a result is never separated from the choices that produced it.
+I kept the controls, map, charts, assumptions, and sources together so it is possible to see what changed and why.

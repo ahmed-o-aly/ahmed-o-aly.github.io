@@ -1074,7 +1074,7 @@
   function structuralConfig() {
     return {
       startDate: state.dataset?.calibration?.baseDate || "2024-01-01",
-      calibrationLabel: "Illustrative Greater Abu Dhabi City scenario baseline — not a forecast",
+      calibrationLabel: "Illustrative Greater Abu Dhabi City scenario baseline, not a forecast",
       endogenousEnterpriseDynamics: true,
     };
   }
@@ -1804,7 +1804,7 @@
     return fallback;
   }
 
-  function textAt(object, keys, fallback = "—") {
+  function textAt(object, keys, fallback = "Not available") {
     for (const key of keys) {
       const value = key.split(".").reduce((current, part) => current?.[part], object);
       if (value !== undefined && value !== null && value !== "") return String(value);
@@ -1813,7 +1813,7 @@
   }
 
   function zoneLabel(id) {
-    if (!id || id === "—") return "—";
+    if (!id || id === "Not available") return "Not available";
     return baselineZone(id)?.name || String(id);
   }
 
@@ -3592,7 +3592,7 @@
   }
 
   function escapeHtml(value) {
-    return String(value ?? "—")
+    return String(value ?? "Not available")
       .replaceAll("&", "&amp;")
       .replaceAll("<", "&lt;")
       .replaceAll(">", "&gt;")
@@ -3646,7 +3646,7 @@
     }
     return `<section class="udes-v2-agent-events"><span>Recent actions</span><ol>${recent
       .map((event) => {
-        const date = textAt(event, ["date"], Number.isFinite(Number(event.day)) ? `Day ${Number(event.day)}` : "—");
+        const date = textAt(event, ["date"], Number.isFinite(Number(event.day)) ? `Day ${Number(event.day)}` : "Not available");
         return `<li><time>${escapeHtml(date)}</time><span>${escapeHtml(eventDescription(event))}</span></li>`;
       })
       .join("")}</ol></section>`;
@@ -3660,7 +3660,7 @@
     const goal =
       explanation.primaryGoal ||
       (kind === "citizen" ? "Balance housing, work access, and household finances." : "Keep the enterprise viable and staffed.");
-    let condition = textAt(current, ["financialStatusLabel", "state"], textAt(item, ["state", "status"], "—"));
+    let condition = textAt(current, ["financialStatusLabel", "state"], textAt(item, ["state", "status"], "Not available"));
     let guard = "No severe guard is active";
     let assessment = "Rules are evaluated daily";
     if (kind === "citizen") {
@@ -3674,9 +3674,11 @@
         1
       )} / ${valueAt(current, ["acceptableRoundTripMinutes"], 0).toFixed(0)} min commute`;
     } else {
-      condition = `${textAt(current, ["state"], textAt(item, ["state"], "—"))} · ${valueAt(current, ["operatingMarginPercent"], 0).toFixed(
-        1
-      )}% margin`;
+      condition = `${textAt(current, ["state"], textAt(item, ["state"], "Not available"))} · ${valueAt(
+        current,
+        ["operatingMarginPercent"],
+        0
+      ).toFixed(1)}% margin`;
       const gap = valueAt(current, ["marginGapPercentagePoints"], 0);
       guard = `${gap >= 0 ? "+" : ""}${gap.toFixed(1)} pp to target`;
       assessment = `${valueAt(current, ["vacancyFillRatePercent"], 0).toFixed(0)}% vacancy fill · demand ${valueAt(

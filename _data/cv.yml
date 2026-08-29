@@ -24,6 +24,20 @@
 - title: Experience
   type: time_table
   contents:
+    - title: Founder
+      institution: Al Manar Systems / Sila
+      year: 2026 - Present
+      location: Abu Dhabi, UAE
+      featured: true
+      url: /projects/sila/
+      url_label: Read about Sila
+      description:
+        - Founded Al Manar Systems and built Sila, a medical field-sales platform for teams working across the UAE.
+        - Built the Next.js manager portal, Flutter field app, and multi-tenant Supabase/PostGIS backend.
+        - Mapped and classified more than 4,500 healthcare facilities across the UAE for territory planning and prospecting.
+        - Connected schedules, GPS check-ins, accounts, contacts, inventory, expenses, and invoicing in one organization-scoped system.
+        - Put the web platform into production and prepared the Android app for public release.
+
     - title: Lab Specialist, MetaHub and Abu Dhabi School of Government
       institution: Khalifa University
       year: Present

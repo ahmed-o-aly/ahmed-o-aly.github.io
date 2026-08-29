@@ -29,7 +29,20 @@ layout: default
                   {%- if role.location %} &middot; {{ role.location }}{% endif %}
                 </p>
                 {% if role.description %}
-                  <p class="folio-timeline__detail">{{ role.description | first }}</p>
+                  {% if role.featured %}
+                    <ul class="folio-timeline__details">
+                      {% for detail in role.description limit: 5 %}
+                        <li>{{ detail }}</li>
+                      {% endfor %}
+                    </ul>
+                  {% else %}
+                    <p class="folio-timeline__detail">{{ role.description | first }}</p>
+                  {% endif %}
+                {% endif %}
+                {% if role.url %}
+                  <p class="folio-timeline__link">
+                    <a href="{{ role.url | relative_url }}">{{ role.url_label | default: 'Read more' }} &rarr;</a>
+                  </p>
                 {% endif %}
               </div>
             </article>

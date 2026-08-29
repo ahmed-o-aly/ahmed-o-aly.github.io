@@ -19,7 +19,7 @@ const baselineData = {
 
 const referencePolicy = {
   startDate: "2024-01-01",
-  calibrationLabel: "Greater Abu Dhabi City scenario regression — not a forecast",
+  calibrationLabel: "Greater Abu Dhabi City scenario regression, not a forecast",
   endogenousEnterpriseDynamics: true,
   initialEmploymentRate: 0.67,
   ...PUBLIC_PRESETS.reference,

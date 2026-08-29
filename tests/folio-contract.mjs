@@ -13,8 +13,10 @@ const routes = {
   works: readRoute("/projects/"),
   cnc: readRoute("/projects/cnc-machine-inspector/"),
   urban: readRoute("/projects/abu-dhabi-urban-dynamics/"),
+  urbanConsole: readRoute("/projects/abu-dhabi-urban-dynamics-v2/"),
   dewa: readRoute("/projects/dewa-energy-optimization/"),
   territory: readRoute("/projects/territory-design-probvns/"),
+  sila: readRoute("/projects/sila/"),
   records: readRoute("/cv/"),
   marginalia: readRoute("/marginalia/"),
   about: readRoute("/about/"),
@@ -25,6 +27,11 @@ const shellCss = projectFile("_sass/garden/_shell.scss");
 const simulationCss = projectFile("_sass/garden/_simulation-v2.scss");
 const tokens = projectFile("_sass/garden/_tokens.scss");
 const script = projectFile("assets/js/garden.js");
+const urbanScript = projectFile("assets/js/udes-v2-app.js");
+const urbanBaseline = projectFile("assets/data/udes-v2/baseline.json");
+const urbanValidation = projectFile("assets/data/udes-v2/validation-report.json");
+const urbanZones = projectFile("assets/data/udes-v2/zones.geojson");
+const urbanStops = projectFile("assets/data/udes-v2/transit-stops.geojson");
 const layout = projectFile("_layouts/garden.liquid");
 const nav = projectFile("_includes/garden-nav.liquid");
 const footer = projectFile("_includes/garden-footer.liquid");
@@ -69,7 +76,13 @@ assertContains(nav, /class="garden-nav__contact"[^>]*href="{{ '\/#contact' \| re
 assert.doesNotMatch(nav, /About|data-scroll-target|#sec-(?:writing|library|works|records|marginalia)/, "nav uses pages rather than home anchors");
 assertContains(routes.works, /href="\/projects\/"[^>]*aria-current="page"/, "Works is current on the projects route");
 
-for (const [name, html] of Object.entries({ cnc: routes.cnc, urban: routes.urban, dewa: routes.dewa, territory: routes.territory })) {
+for (const [name, html] of Object.entries({
+  cnc: routes.cnc,
+  urban: routes.urban,
+  dewa: routes.dewa,
+  territory: routes.territory,
+  sila: routes.sila,
+})) {
   assertContains(html, /class="folio-case-page__masthead"/, `${name} uses the centered Works masthead rail`);
 }
 assertContains(
@@ -97,7 +110,7 @@ assert.doesNotMatch(
   /<img\b|<picture\b|<figure\b|folio-work-plate|machine-lab-interface\.png|urban-dynamics-console\.png|folio-tags|>\s*(?:Role|Status|Methods)\s*</i,
   "home works use no thumbnails or portfolio-template metadata"
 );
-for (const title of ["Machine Lab — Interactive CNC Assembly Explorer", "Abu Dhabi Urban Dynamics Lab"]) {
+for (const title of ["Machine Lab", "Abu Dhabi Urban Dynamics Lab"]) {
   assertContains(homeWorksIndex, new RegExp(title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i"), `home includes ${title}`);
 }
 assertContains(routes.home, /data-parallax-y="-60"/, "library watermark has calibrated travel");
@@ -284,7 +297,10 @@ assert.doesNotMatch(
   "book review internals no longer call reviews notes"
 );
 
-assertContains(routes.works, /Systems built to be operated, not just demonstrated\./, "Works uses the selected page claim");
+assertContains(routes.works, /A few things I have built\./, "Works uses Ahmed's plain-language page claim");
+const ventureNote = block(routes.works, "folio-venture-note");
+assertContains(ventureNote, /Current venture/, "Works distinguishes Sila from the numbered research and software work");
+assertContains(ventureNote, /href="\/projects\/sila\/"[\s\S]*?>[\s\S]*?Sila/, "Works links the current venture to its full write-up");
 const worksIndex = block(routes.works, "folio-work-index", "ol");
 assert.equal((worksIndex.match(/class="folio-work-entry"/g) || []).length, 4, "Works renders only the four real projects");
 assert.equal((worksIndex.match(/class="folio-work-entry__description"/g) || []).length, 4, "each Works entry has one plain-language sentence");
@@ -294,7 +310,7 @@ assert.doesNotMatch(
   "Works index uses no thumbnails or portfolio-template metadata"
 );
 for (const title of [
-  "Machine Lab — Interactive CNC Assembly Explorer",
+  "Machine Lab",
   "Abu Dhabi Urban Dynamics Lab",
   "Energy System Optimization with DEWA",
   "Probabilistic VNS for Delivery Territory Design",
@@ -306,9 +322,10 @@ for (const title of ["KU MetaHub AI/XR Lab", "ADSG Public Policy Simulations", "
 }
 assert.deepEqual(
   [...worksIndex.matchAll(/class="folio-work-entry__number"[^>]*>(\d{2})<\/span>/g)].map((match) => match[1]),
-  ["01", "02", "05", "07"],
-  "Works preserves the authored project numbers"
+  ["01", "02", "03", "04"],
+  "Works numbers the four selected projects consecutively"
 );
+assert.doesNotMatch(worksIndex, /href="\/projects\/sila\/"/, "Sila stays outside the four-item numbered sequence");
 assertContains(routes.works, /href="\/projects\/abu-dhabi-urban-dynamics\/"/, "Works opens the Urban Dynamics write-up");
 assert.doesNotMatch(routes.works, /href="\/projects\/abu-dhabi-urban-dynamics-v2\/"/, "Works does not drop readers directly into the console");
 assert.doesNotMatch(
@@ -316,10 +333,10 @@ assert.doesNotMatch(
   /work\.(?:role|status|methods|category|image|visual)/,
   "the shared work index entry consumes only title, description, URL, and number"
 );
-assertContains(routes.territory, /id="quick-start"/, "Work 07 contains the merged quick-start walkthrough");
-assertContains(routes.territory, /DTDPAlgorithms\.py/, "Work 07 contains the merged repository map");
-assertContains(routes.territory, /github\.com\/ahmed-o-aly\/TerritoryDesign/, "Work 07 keeps the public code artifact");
-assert.doesNotMatch(routes.territory, /<dt>\s*(?:Role|Methods|Status)\s*<\/dt>/i, "Work 07 reads as authored prose rather than template metadata");
+assertContains(routes.territory, /id="quick-start"/, "Work 04 contains the merged quick-start walkthrough");
+assertContains(routes.territory, /DTDPAlgorithms\.py/, "Work 04 contains the merged repository map");
+assertContains(routes.territory, /github\.com\/ahmed-o-aly\/TerritoryDesign/, "Work 04 keeps the public code artifact");
+assert.doesNotMatch(routes.territory, /<dt>\s*(?:Role|Methods|Status)\s*<\/dt>/i, "Work 04 reads as authored prose rather than template metadata");
 
 const cncInteractive = block(routes.cnc, "folio-case-interactive");
 assert.equal((cncInteractive.match(/<iframe\b/g) || []).length, 1, "CNC case study embeds one live explorer");
@@ -361,9 +378,9 @@ assertContains(
 );
 assert.doesNotMatch(urbanInteractive, /<iframe\b/, "the full analyst console is not squeezed into the write-up");
 const urbanProse = block(routes.urban, "folio-prose", "div");
-assertContains(urbanProse, /I built this as a browser-based sandbox/, "Urban Dynamics has a first-person project note");
+assertContains(urbanProse, /I built this model to experiment/, "Urban Dynamics has a first-person project note");
 assertContains(urbanProse, /6,070 citizen agents and 600 enterprise agents/, "Urban Dynamics note states the model scale");
-assertContains(urbanProse, /exploratory model, not a forecast/, "Urban Dynamics note states its limits plainly");
+assertContains(urbanProse, /They do not make it a forecast/, "Urban Dynamics note states its limits plainly");
 assert.doesNotMatch(urbanProse, /<h[2-6]\b|Narrative|What This Shows|What matters/i, "Urban Dynamics note avoids portfolio-template headings");
 assert.doesNotMatch(
   routes.urban,
@@ -371,16 +388,59 @@ assert.doesNotMatch(
   "Urban Dynamics write-up has no generated case-study scaffolding"
 );
 
+const dewaProse = block(routes.dewa, "folio-prose", "div");
+assertContains(dewaProse, /I worked on this project as a research assistant/, "DEWA write-up starts with Ahmed's actual involvement");
+assertContains(dewaProse, /Gurobi and Pyomo/, "DEWA write-up keeps the concrete modeling tools");
+assert.doesNotMatch(dewaProse, /<h[2-6]\b|Narrative|What This Shows|What matters/i, "DEWA write-up is plain prose without portfolio prompts");
+assert.doesNotMatch(
+  routes.dewa,
+  /class="folio-case-sections"|<dt>\s*(?:Role|Methods|Status)\s*<\/dt>/i,
+  "DEWA write-up has no generated case-study scaffolding"
+);
+
+const silaProse = block(routes.sila, "folio-prose", "div");
+assertContains(silaProse, /I founded Al Manar Systems/, "Sila write-up names Ahmed's founder role");
+assertContains(silaProse, /more than 4,500 healthcare facilities/, "Sila write-up states the mapped facility scope");
+assertContains(silaProse, /Next\.js[\s\S]*?Flutter[\s\S]*?Supabase/, "Sila write-up describes the actual product stack");
+assertContains(routes.sila, /href="https:\/\/almanarsystems\.com\/"/, "Sila write-up links to the live product");
+assert.doesNotMatch(silaProse, /<h[2-6]\b|What This Shows|What matters/i, "Sila write-up reads as a continuous first-person account");
+
 assertContains(config, /\n\s*- tmp\//, "Jekyll excludes the ignored 150MB app clone from local builds");
 
 for (const text of ["A working record, kept in order.", "Experience", "Education", "Credentials", "Six Sigma Yellow Belt Specialization"]) {
   assertContains(routes.records, new RegExp(text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i"), `Records renders ${text}`);
 }
+for (const text of ["Founder", "Al Manar Systems / Sila", "more than 4,500 healthcare facilities", "Read about Sila"]) {
+  assertContains(routes.records, new RegExp(text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i"), `Records renders ${text}`);
+}
+assertContains(routes.records, /class="folio-timeline__details"/, "Records gives the founder entry more than a single summary line");
 assert.doesNotMatch(routes.records, /folio-certificate|Certificates, framed/, "Records removes certificate cards");
 assertContains(routes.records, /href="\/assets\/pdf\/Ahmed(?:%20| )Aly(?:%20| )CV\.pdf"/, "Records retains the CV download");
 assertContains(routes.marginalia, /Notes in the margins\./, "Marginalia uses the selected page claim");
 assert.ok((routes.marginalia.match(/<time>/g) || []).length >= 7, "Marginalia renders all authored notes");
 assert.doesNotMatch(routes.marginalia, /folio-note-card/, "Marginalia keeps a uniform feed");
+
+for (const [name, html] of Object.entries({
+  home: routes.home,
+  writing: routes.writing,
+  article: routes.article,
+  library: routes.library,
+  works: routes.works,
+  cnc: routes.cnc,
+  urban: routes.urban,
+  urbanConsole: routes.urbanConsole,
+  dewa: routes.dewa,
+  territory: routes.territory,
+  sila: routes.sila,
+  records: routes.records,
+  marginalia: routes.marginalia,
+  about: routes.about,
+})) {
+  assert.doesNotMatch(html, /—|&mdash;/i, `${name} uses no em dashes`);
+}
+for (const [name, source] of Object.entries({ urbanScript, urbanBaseline, urbanValidation, urbanZones, urbanStops })) {
+  assert.doesNotMatch(source, /—|&mdash;/i, `${name} uses no em dashes`);
+}
 
 assertContains(tokens, /--garden-canvas:\s*#f6f0e3/i, "source keeps the parchment token");
 assertContains(tokens, /--garden-ink:\s*#372b1f/i, "source keeps the ink token");

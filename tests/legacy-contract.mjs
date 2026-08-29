@@ -25,11 +25,11 @@ for (const route of ["/", "/projects/", "/blog/", "/books/", "/about/", "/cv/"])
   const html = readRoute(route);
   assert.equal(legacyHooks.test(html), false, `${route} has no legacy shell output`);
 }
-assert.match(readRoute("/projects/territory-design-probvns/"), /id=["']quick-start["']/, "the territory-design walkthrough now lives inside Work 07");
+assert.match(readRoute("/projects/territory-design-probvns/"), /id=["']quick-start["']/, "the territory-design walkthrough now lives inside Work 04");
 assert.match(
   readRoute("/blog/2025/territory-design-bvns/"),
   /http-equiv="refresh" content="0; url=\/projects\/territory-design-probvns\/"/,
-  "the former Writing URL redirects to Work 07"
+  "the former Writing URL redirects to Work 04"
 );
 
 const script = readFileSync(new URL("../assets/js/garden.js", import.meta.url), "utf8");

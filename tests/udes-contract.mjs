@@ -14,10 +14,10 @@ assertContains(
   "the write-up launches the full analyst console"
 );
 assert.doesNotMatch(html, /<iframe\b/, "the full desktop console is not embedded in the article");
-assertContains(html, /I built this as a browser-based sandbox/, "the write-up is a direct first-person account");
+assertContains(html, /I built this model to experiment/, "the write-up is a direct first-person account");
 assertContains(html, /18 districts/, "the write-up states the city-model scope");
 assertContains(html, /6,070 citizen agents and 600 enterprise agents/, "the write-up states the agent scale");
-assertContains(html, /exploratory model, not a forecast/, "the write-up states its evidentiary limit");
+assertContains(html, /They do not make it a forecast/, "the write-up states its evidentiary limit");
 assert.doesNotMatch(
   html,
   /What had to change|The shape of the work|What remains inspectable|Choices that shaped the result|What the work made possible|Narrative|What This Shows/i,

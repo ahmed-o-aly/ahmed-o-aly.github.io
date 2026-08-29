@@ -36,7 +36,7 @@ const aggregateZonePortalIds = new Set(
 
 const commonConfig = {
   startDate: "2024-01-01",
-  calibrationLabel: "Illustrative Greater Abu Dhabi City scenario baseline — not a forecast",
+  calibrationLabel: "Illustrative Greater Abu Dhabi City scenario baseline, not a forecast",
   endogenousEnterpriseDynamics: true,
   initialEmploymentRate: 0.67,
   assignmentPeakHours: 13,

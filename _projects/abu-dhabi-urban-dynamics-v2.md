@@ -228,7 +228,7 @@ visual:
           <dl>
             <div>
               <dt>Citizen objective</dt>
-              <dd>Employed citizens and active job seekers try to keep monthly resources—earned salary plus any explicitly modeled non-labor resources, less housing and transport—above the buffer while keeping a work trip below the acceptable limit. Citizens outside the modeled labor force do not search for jobs; they still review housing cost and place quality.</dd>
+              <dd>Employed citizens and active job seekers try to keep monthly resources above the buffer after earned salary, any explicitly modeled non-labor resources, housing, and transport are counted. They also try to keep a work trip below the acceptable limit. Citizens outside the modeled labor force do not search for jobs; they still review housing cost and place quality.</dd>
             </div>
             <div>
               <dt>Citizen response</dt>
@@ -244,7 +244,7 @@ visual:
             </div>
             <div>
               <dt>Labor market</dt>
-              <dd>The 6,070 citizen agents each represent 250 residents. The opening stock contains 4,067 employed agents, 182 active job seekers and 1,821 residents outside the modeled labor force. Employment is held near the SCAD-derived 67% employed-resident reference share. The separate 70% participation split—and its 3 percentage-point active-seeker reserve—is an explicit, replaceable scenario assumption, not an observed city calibration.</dd>
+              <dd>The 6,070 citizen agents each represent 250 residents. The opening stock contains 4,067 employed agents, 182 active job seekers and 1,821 residents outside the modeled labor force. Employment is held near the SCAD-derived 67% employed-resident reference share. The separate 70% participation split, including its 3 percentage-point active-seeker reserve, is an explicit, replaceable scenario assumption, not an observed city calibration.</dd>
             </div>
             <div>
               <dt>Housing and network capacity</dt>
@@ -355,7 +355,7 @@ visual:
         </dl>
         <div class="udes-v2-cadence-note udes-v2-cadence-note--warning">
           <strong>Interpretation boundary</strong>
-          <p>This is a transparent scenario model, not an Abu Dhabi forecast. It has real geography, named routed arterials, directional road topology and stops, but no observed all-traffic link counts, daily demand profile, holiday/Ramadan schedule, incidents, household travel survey, establishment census or district rent series. Each district still uses an aggregate demand portal rather than address-level trip origins; shared portal chains are therefore excluded from road V/C until routes reach the physical network. Road V/C describes assigned modeled work trips over the stated 13-hour daily capacity window, not measured total or peak-hour traffic. Bus capacity is an aggregate service-equivalent assumption—not the capacity of one observed route.</p>
+          <p>This is a transparent scenario model, not an Abu Dhabi forecast. It has real geography, named routed arterials, directional road topology and stops, but no observed all-traffic link counts, daily demand profile, holiday/Ramadan schedule, incidents, household travel survey, establishment census or district rent series. Each district still uses an aggregate demand portal rather than address-level trip origins; shared portal chains are therefore excluded from road V/C until routes reach the physical network. Road V/C describes assigned modeled work trips over the stated 13-hour daily capacity window, not measured total or peak-hour traffic. Bus capacity is an aggregate service-equivalent assumption rather than the capacity of one observed route.</p>
         </div>
         <nav class="udes-v2-source-links" aria-label="Model sources">
           <a href="https://www.anylogic.com/upload/iblock/198/1985a2d61b26c2d23acd158ab6e5d68e.pdf" target="_blank" rel="noreferrer">UDES paper</a>
@@ -458,17 +458,17 @@ visual:
       <section id="udes-v2-panel-zone" class="udes-v2-tab-panel" role="tabpanel" aria-labelledby="udes-v2-tab-zone" data-udes-v2-inspector-panel="zone">
         <div class="udes-v2-primary-metric">
           <span>Resident satisfaction</span>
-          <strong data-udes-v2-metric="zoneSatisfaction">—</strong>
+          <strong data-udes-v2-metric="zoneSatisfaction">&hellip;</strong>
           <small data-udes-v2-delta="zoneSatisfaction">Same-day reference</small>
         </div>
 
         <dl class="udes-v2-metric-list">
-          <div><dt>Population</dt><dd data-udes-v2-metric="zonePopulation">—</dd></div>
-          <div><dt>Jobs</dt><dd data-udes-v2-metric="zoneJobs">—</dd></div>
-          <div><dt>Housing capacity</dt><dd data-udes-v2-metric="zoneHousing">—</dd></div>
-          <div><dt>Housing rent (AED/month)</dt><dd data-udes-v2-metric="zoneRent">—</dd></div>
-          <div><dt>Mean commute</dt><dd data-udes-v2-metric="zoneCommute">—</dd></div>
-          <div><dt>Car share</dt><dd data-udes-v2-metric="zoneCarShare">—</dd></div>
+          <div><dt>Population</dt><dd data-udes-v2-metric="zonePopulation">&hellip;</dd></div>
+          <div><dt>Jobs</dt><dd data-udes-v2-metric="zoneJobs">&hellip;</dd></div>
+          <div><dt>Housing capacity</dt><dd data-udes-v2-metric="zoneHousing">&hellip;</dd></div>
+          <div><dt>Housing rent (AED/month)</dt><dd data-udes-v2-metric="zoneRent">&hellip;</dd></div>
+          <div><dt>Mean commute</dt><dd data-udes-v2-metric="zoneCommute">&hellip;</dd></div>
+          <div><dt>Car share</dt><dd data-udes-v2-metric="zoneCarShare">&hellip;</dd></div>
         </dl>
 
         <div class="udes-v2-inspector-chart" aria-label="Daily zone trend" data-udes-v2-inspector-chart="zone">
@@ -562,10 +562,10 @@ visual:
     <div class="udes-v2-chart-panels">
       <section id="udes-v2-chart-panel-outcomes" class="udes-v2-chart-panel" role="tabpanel" aria-labelledby="udes-v2-chart-tab-outcomes" data-udes-v2-chart-panel="outcomes">
         <dl class="udes-v2-summary-strip">
-          <div><dt>Satisfied</dt><dd class="udes-v2-summary-value" data-udes-v2-metric="satisfaction">—</dd><dd class="udes-v2-summary-delta" data-udes-v2-delta="satisfaction">Same-seed reference</dd></div>
-          <div><dt>Mean commute</dt><dd class="udes-v2-summary-value" data-udes-v2-metric="commute">—</dd><dd class="udes-v2-summary-delta" data-udes-v2-delta="commute">Same-seed reference</dd></div>
-          <div><dt>Transit share</dt><dd class="udes-v2-summary-value" data-udes-v2-metric="transitShare">—</dd><dd class="udes-v2-summary-delta" data-udes-v2-delta="transitShare">Same-seed reference</dd></div>
-          <div><dt>Housing occupancy</dt><dd class="udes-v2-summary-value" data-udes-v2-metric="housingOccupancy">—</dd><dd class="udes-v2-summary-delta" data-udes-v2-delta="housingOccupancy">Same-seed reference</dd></div>
+          <div><dt>Satisfied</dt><dd class="udes-v2-summary-value" data-udes-v2-metric="satisfaction">&hellip;</dd><dd class="udes-v2-summary-delta" data-udes-v2-delta="satisfaction">Same-seed reference</dd></div>
+          <div><dt>Mean commute</dt><dd class="udes-v2-summary-value" data-udes-v2-metric="commute">&hellip;</dd><dd class="udes-v2-summary-delta" data-udes-v2-delta="commute">Same-seed reference</dd></div>
+          <div><dt>Transit share</dt><dd class="udes-v2-summary-value" data-udes-v2-metric="transitShare">&hellip;</dd><dd class="udes-v2-summary-delta" data-udes-v2-delta="transitShare">Same-seed reference</dd></div>
+          <div><dt>Housing occupancy</dt><dd class="udes-v2-summary-value" data-udes-v2-metric="housingOccupancy">&hellip;</dd><dd class="udes-v2-summary-delta" data-udes-v2-delta="housingOccupancy">Same-seed reference</dd></div>
         </dl>
 
         <div class="udes-v2-chart-canvas" data-udes-v2-chart="outcomes"><p class="udes-v2-chart-empty">Daily outcome and same-seed reference trends are loading.</p></div>

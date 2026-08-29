@@ -1,8 +1,8 @@
 ---
 layout: page
-title: Machine Lab — Interactive CNC Assembly Explorer
+title: Machine Lab
 permalink: /projects/cnc-machine-inspector/
-description: A browser-based 3D viewer for studying eight workshop machines, from the complete assembly down to individual parts.
+description: A browser tool for exploring eight workshop machines and seeing how their components fit together.
 importance: -1
 work_number: 1
 category: interactive software
@@ -29,12 +29,10 @@ artifacts:
     url: https://github.com/ahmed-o-aly/cnc-machine-inspector
 ---
 
-I built Machine Lab to make complete workshop machines easier to study in a browser. Instead of working through one dense CAD model, I can search the assembly, select a part, see where it sits in the larger system, isolate it, explode the model, cut a section through it, or take a point-to-point measurement. The same models can also be opened in WebXR.
+I built Machine Lab because complete machine models are difficult to learn from in their original form. Each one came with a different structure, naming system, scale, and level of detail, so I cleaned up the assemblies and prepared them for the browser.
 
-The library currently includes eight machines: SA0231 wire EDM, DMU 50, a conventional lathe, a conventional vertical mill, VG600-II, VMC855, CMX 1100 V, and a complete abrasive-waterjet cell. Across them, I mapped 197 named components and added notes explaining what each part is and how it fits into the rest of the machine.
+The library now contains eight machines: the SA0231 wire EDM, DMU 50, a conventional lathe, a conventional vertical mill, VG600-II, VMC855, CMX 1100 V, and an abrasive-waterjet cell. You can search for a part, isolate or hide it, open an exploded view, cut a section, and measure between two points. The models can also be opened in WebXR.
 
-I worked from both STEP and GLB sources, and the naming, hierarchy, scale, and level of detail varied from one model to another. I cleaned up each assembly for the browser, mapped the geometry to readable component names, and checked that nothing was left unassigned or duplicated. The validation reports cover roughly 4.9 million source triangles. For the CMX 1100 V, I deliberately left out one 12-triangle work-envelope volume because it is a reference object, not physical hardware.
+Across the eight machines, I mapped 197 components. The validation reports cover about 4.9 million source triangles, with nothing left unassigned and no duplicate mappings. I left out one tiny reference volume in the CMX 1100 V because it marks the work envelope rather than a physical part.
 
-This is an assembly explorer, not a machining simulator. The exploded views, sections, and measurements are there to help inspect the models; they do not reproduce machine motion, process physics, or CAD-grade metrology.
-
-I kept the source and licensing notes with each model. The conventional lathe is credited to Centurion University under CC BY 4.0, while the other packages retain the supplied-model and conversion notes that came with them.
+This is an assembly viewer, not a machining simulator. The explode, section, and measurement tools are there to show how the parts fit together. They do not simulate motion, cutting, or CAD-level measurement.

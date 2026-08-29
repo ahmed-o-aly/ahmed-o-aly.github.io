@@ -1,14 +1,14 @@
 {
   "schemaVersion": "1.6.0",
-  "generatedAt": "2026-08-28T17:34:36.565Z",
+  "generatedAt": "2026-08-29T22:27:04.904Z",
   "model": "Abu Dhabi Urban Dynamics Lab / UDES v2",
   "datasetSchemaVersion": "2.1.0",
   "engineSchemaVersion": "2.1",
   "sourceHashes": {
     "engineSha256": "b2dd23ffb3bb58e0d0daeac5c87091939cc2de756285f6f37da5204c7a69bac9",
-    "baselineSha256": "191fc43cf35f387918f64de89576545823e482e82045a5f30db711e976f7595c",
-    "publicControllerSha256": "52eff587d56d2f4d4de74814b2d988b602f326a40d131f3d847a4beab24f2fc9",
-    "validationHarnessSha256": "7ddd629b6264267ab78790c091ad941c88c6f7f986356334089556cdab8bbe0c"
+    "baselineSha256": "026e717c2ed0491608120ac2b1f9b903ef184fe9f398e353761e0b133e371c20",
+    "publicControllerSha256": "71f2fba647595bacedc1701a8593fce732c3a6e0419ee7ad0ac243b9ffab0c6a",
+    "validationHarnessSha256": "e7de4ad5f01d428fe6a293af06b332f5516356338c04f3898382600e08a8e54a"
   },
   "seed": 240124,
   "status": "passed-regression-and-provisional-sanity-checks",
@@ -57,7 +57,7 @@
     "fullScale": "The engine derives 6,070 citizen agents at 250 represented persons each from the committed baseline and uses 600 enterprise agents."
   },
   "sourceScope": {
-    "studyArea": "Greater Abu Dhabi City — focused UDES v2 study area",
+    "studyArea": "Greater Abu Dhabi City: focused UDES v2 study area",
     "scadMappedDistrictPopulationSubtotal2024": 1517535,
     "modeledRepresentedPopulation": 1517500,
     "citizenAgents": 6070,
@@ -84,7 +84,7 @@
       },
       "config": {
         "startDate": "2024-01-01",
-        "calibrationLabel": "Illustrative Greater Abu Dhabi City scenario baseline — not a forecast",
+        "calibrationLabel": "Illustrative Greater Abu Dhabi City scenario baseline, not a forecast",
         "endogenousEnterpriseDynamics": true,
         "initialEmploymentRate": 0.67,
         "assignmentPeakHours": 13,
@@ -711,7 +711,7 @@
       },
       "config": {
         "startDate": "2024-01-01",
-        "calibrationLabel": "Illustrative Greater Abu Dhabi City scenario baseline — not a forecast",
+        "calibrationLabel": "Illustrative Greater Abu Dhabi City scenario baseline, not a forecast",
         "endogenousEnterpriseDynamics": true,
         "initialEmploymentRate": 0.67,
         "assignmentPeakHours": 13,
@@ -1338,7 +1338,7 @@
       },
       "config": {
         "startDate": "2024-01-01",
-        "calibrationLabel": "Illustrative Greater Abu Dhabi City scenario baseline — not a forecast",
+        "calibrationLabel": "Illustrative Greater Abu Dhabi City scenario baseline, not a forecast",
         "endogenousEnterpriseDynamics": true,
         "initialEmploymentRate": 0.67,
         "assignmentPeakHours": 13,
@@ -1965,7 +1965,7 @@
       },
       "config": {
         "startDate": "2024-01-01",
-        "calibrationLabel": "Illustrative Greater Abu Dhabi City scenario baseline — not a forecast",
+        "calibrationLabel": "Illustrative Greater Abu Dhabi City scenario baseline, not a forecast",
         "endogenousEnterpriseDynamics": true,
         "initialEmploymentRate": 0.67,
         "assignmentPeakHours": 13,
@@ -2592,7 +2592,7 @@
       },
       "config": {
         "startDate": "2024-01-01",
-        "calibrationLabel": "Illustrative Greater Abu Dhabi City scenario baseline — not a forecast",
+        "calibrationLabel": "Illustrative Greater Abu Dhabi City scenario baseline, not a forecast",
         "endogenousEnterpriseDynamics": true,
         "initialEmploymentRate": 0.67,
         "assignmentPeakHours": 13,
@@ -3219,7 +3219,7 @@
       },
       "config": {
         "startDate": "2024-01-01",
-        "calibrationLabel": "Illustrative Greater Abu Dhabi City scenario baseline — not a forecast",
+        "calibrationLabel": "Illustrative Greater Abu Dhabi City scenario baseline, not a forecast",
         "endogenousEnterpriseDynamics": true,
         "initialEmploymentRate": 0.67,
         "assignmentPeakHours": 13,

@@ -15,7 +15,7 @@ const urbanArticle = articleFor("/projects/abu-dhabi-urban-dynamics-v2/");
 const cncArticle = articleFor("/projects/cnc-machine-inspector/");
 
 assertContains(index, /class="[^"]*garden-project-grid/, "project index renders garden grid");
-assertContains(index, /Energy System Optimization with DEWA/, "project index includes Work 05");
+assertContains(index, /Energy System Optimization with DEWA/, "project index includes Work 03");
 assert.doesNotMatch(index, /KU MetaHub AI\/XR Lab/, "project index excludes the former Work 03 entry");
 assertContains(index, /href="\/projects\/cnc-machine-inspector\/"/, "project index includes Machine Lab");
 assertContains(index, /href="\/projects\/abu-dhabi-urban-dynamics-v2\/"/, "project index includes the urban model");

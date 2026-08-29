@@ -36,6 +36,7 @@ jobs:
           - "projects/abu-dhabi-urban-dynamics/"
           - "projects/abu-dhabi-urban-dynamics-v2/"
           - "projects/dewa-energy-optimization/"
+          - "projects/sila/"
           - "projects/territory-design-probvns/"
           - "blog/"
           - "blog/2026/what-i-am-building-this-site-for/"

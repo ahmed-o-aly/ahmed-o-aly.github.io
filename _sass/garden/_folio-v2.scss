@@ -278,6 +278,55 @@
   line-height: 1.55;
 }
 
+.folio-venture-note {
+  margin-top: 64px;
+  border-block: 1px solid var(--garden-line-soft);
+}
+
+.folio-venture-note__link {
+  display: grid;
+  grid-template-columns: 160px minmax(0, 1fr);
+  gap: 32px;
+  align-items: baseline;
+  min-height: 44px;
+  padding: 26px 12px;
+  color: inherit;
+  text-decoration: none;
+  transition: background-color 0.25s ease;
+}
+
+.folio-venture-note__link:hover,
+.folio-venture-note__link:focus-visible {
+  background: rgba(138, 59, 42, 0.045);
+}
+
+.folio-venture-note h2 {
+  margin: 0;
+  font-family: var(--garden-serif);
+  font-size: 29px;
+  font-style: italic;
+  font-weight: 500;
+  line-height: 1.15;
+  transition: color 0.25s ease;
+}
+
+.folio-venture-note__link:hover h2,
+.folio-venture-note__link:focus-visible h2 {
+  color: var(--garden-accent);
+}
+
+.folio-venture-note__link div > p {
+  max-width: 60ch;
+  margin: 8px 0 0;
+  color: var(--garden-muted);
+  font-size: 17px;
+  line-height: 1.55;
+}
+
+.folio-venture-note + .folio-work-index--all {
+  margin-top: 40px;
+}
+
 .folio-library {
   position: relative;
   overflow: hidden;
@@ -989,6 +1038,27 @@
 .folio-timeline__detail {
   max-width: 64ch;
   margin-top: 10px !important;
+}
+
+.folio-timeline__details {
+  display: grid;
+  gap: 7px;
+  max-width: 64ch;
+  margin: 12px 0 0;
+  padding-left: 18px;
+  color: var(--garden-muted);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.folio-timeline__link {
+  margin-top: 12px !important;
+}
+
+.folio-timeline__link a {
+  color: var(--garden-accent);
+  font-style: italic;
+  text-underline-offset: 3px;
 }
 
 .folio-button {
@@ -1916,6 +1986,12 @@
   .folio-work-index--all .folio-work-entry__description {
     font-size: 16px;
     line-height: 1.55;
+  }
+
+  .folio-venture-note__link {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding-inline: 0;
   }
 
   .folio-essay-ledger li {

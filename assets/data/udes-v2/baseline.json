@@ -3,7 +3,7 @@
   "generatedAt": "2026-08-28T16:06:45.796Z",
   "baseYear": 2024,
   "scope": {
-    "name": "Greater Abu Dhabi City — focused UDES v2 study area",
+    "name": "Greater Abu Dhabi City: focused UDES v2 study area",
     "bounds": [
       54.28,
       24.24,
@@ -34,7 +34,7 @@
   },
   "sources": {
     "adsdiCommunities": {
-      "title": "AD-SDI Open Data — Community",
+      "title": "AD-SDI Open Data: Community",
       "url": "https://arcgis.sdi.abudhabi.ae/agspublish/rest/services/OpenData/ADSDI_OpenData/MapServer/2",
       "publisher": "Department of Government Enablement, Abu Dhabi Spatial Data Infrastructure",
       "classification": "observed",
@@ -42,7 +42,7 @@
       "retrieved": "2026-08-28"
     },
     "adsdiRoadCenterline": {
-      "title": "AD-SDI Open Data — RoadCenterline",
+      "title": "AD-SDI Open Data: RoadCenterline",
       "url": "https://arcgis.sdi.abudhabi.ae/agspublish/rest/services/OpenData/ADSDI_OpenData/MapServer/101",
       "publisher": "Department of Government Enablement, Abu Dhabi Spatial Data Infrastructure",
       "classification": "reference",
@@ -50,7 +50,7 @@
       "retrieved": "2026-08-28"
     },
     "adsdiMainRoads": {
-      "title": "AD-SDI Basemap — Main Roads",
+      "title": "AD-SDI Basemap: Main Roads",
       "url": "https://arcgis.sdi.abudhabi.ae/agshost/rest/services/Hosted/BaseMapEng_LightGray_GCS/MapServer/407",
       "publisher": "Department of Government Enablement, Abu Dhabi Spatial Data Infrastructure",
       "classification": "observed",
@@ -58,7 +58,7 @@
       "retrieved": "2026-08-28"
     },
     "adsdiBusStops": {
-      "title": "AD-SDI Open Data — Bus Stops",
+      "title": "AD-SDI Open Data: Bus Stops",
       "url": "https://arcgis.sdi.abudhabi.ae/agspublish/rest/services/OpenData/ADSDI_OpenData/MapServer/801",
       "publisher": "Department of Government Enablement, Abu Dhabi Spatial Data Infrastructure",
       "classification": "observed",
@@ -74,9 +74,9 @@
       "retrieved": "2026-08-28"
     },
     "scadPopulation": {
-      "title": "Abu Dhabi Census — Population 2024",
+      "title": "Abu Dhabi Census: Population 2024",
       "url": "https://census.scad.gov.ae/home/population?lang=en",
-      "publisher": "Statistics Centre — Abu Dhabi",
+      "publisher": "Statistics Centre: Abu Dhabi",
       "classification": "observed",
       "use": "Abu Dhabi Region total and the complete 2024 district table returned by the official census indicator endpoint",
       "indicatorEndpoint": "https://census.scad.gov.ae/home/IndicatorData",
@@ -91,9 +91,9 @@
       "retrieved": "2026-08-28"
     },
     "scadLabour2024": {
-      "title": "Abu Dhabi Census — Employed population 2024",
+      "title": "Abu Dhabi Census: Employed population 2024",
       "url": "https://census.scad.gov.ae/home/labourforce?fid=0&id=0&lang=en&tab=table_employee_population&year=2024",
-      "publisher": "Statistics Centre — Abu Dhabi",
+      "publisher": "Statistics Centre: Abu Dhabi",
       "classification": "observed",
       "use": "Emirate-wide employed-population share used as the transparent 67% opening and target employment anchor",
       "employedResidents": 2762715,
@@ -103,7 +103,7 @@
       "retrieved": "2026-08-28"
     },
     "abuDhabiBusTariff": {
-      "title": "Public Transport Services — Standard Service fare",
+      "title": "Public Transport Services: Standard Service fare",
       "url": "https://admobility.gov.ae/en/pb-bus-service/hafilat-public-buses-fees",
       "publisher": "Abu Dhabi Mobility",
       "classification": "observed",
@@ -114,7 +114,7 @@
       "retrieved": "2026-08-28"
     },
     "unHabitatMobility": {
-      "title": "National Urban Policy Transport Guide — Figure 21",
+      "title": "National Urban Policy Transport Guide: Figure 21",
       "url": "https://unhabitat.org/sites/default/files/2022/03/nup-transport_guide-web.pdf",
       "publisher": "UN-Habitat",
       "classification": "reference",
@@ -98493,7 +98493,7 @@
       {
         "id": "al-zahiyah--al-danah",
         "role": "zone-pair routing candidate",
-        "routeLabel": "Al Zahiyah — Al Danah",
+        "routeLabel": "Al Zahiyah to Al Danah",
         "from": "al-zahiyah",
         "to": "al-danah",
         "fromNodeId": "road-node-0137",
@@ -98615,7 +98615,7 @@
       {
         "id": "al-danah--al-zahiyah",
         "role": "zone-pair routing candidate",
-        "routeLabel": "Al Danah — Al Zahiyah",
+        "routeLabel": "Al Danah to Al Zahiyah",
         "from": "al-danah",
         "to": "al-zahiyah",
         "fromNodeId": "road-node-0087",
@@ -98720,7 +98720,7 @@
       {
         "id": "al-danah--al-nahyan",
         "role": "zone-pair routing candidate",
-        "routeLabel": "Al Danah — Al Nahyan",
+        "routeLabel": "Al Danah to Al Nahyan",
         "from": "al-danah",
         "to": "al-nahyan",
         "fromNodeId": "road-node-0087",
@@ -98841,7 +98841,7 @@
       {
         "id": "al-nahyan--al-danah",
         "role": "zone-pair routing candidate",
-        "routeLabel": "Al Nahyan — Al Danah",
+        "routeLabel": "Al Nahyan to Al Danah",
         "from": "al-nahyan",
         "to": "al-danah",
         "fromNodeId": "road-node-0167",
@@ -98946,7 +98946,7 @@
       {
         "id": "al-danah--al-khalidiyah",
         "role": "zone-pair routing candidate",
-        "routeLabel": "Al Danah — Al Khalidiyah",
+        "routeLabel": "Al Danah to Al Khalidiyah",
         "from": "al-danah",
         "to": "al-khalidiyah",
         "fromNodeId": "road-node-0087",
@@ -99031,7 +99031,7 @@
       {
         "id": "al-khalidiyah--al-danah",
         "role": "zone-pair routing candidate",
-        "routeLabel": "Al Khalidiyah — Al Danah",
+        "routeLabel": "Al Khalidiyah to Al Danah",
         "from": "al-khalidiyah",
         "to": "al-danah",
         "fromNodeId": "road-node-0030",
@@ -99133,7 +99133,7 @@
       {
         "id": "al-danah--al-manhal-karamah",
         "role": "zone-pair routing candidate",
-        "routeLabel": "Al Danah — Al Manhal / Al Karamah",
+        "routeLabel": "Al Danah to Al Manhal / Al Karamah",
         "from": "al-danah",
         "to": "al-manhal-karamah",
         "fromNodeId": "road-node-0087",
@@ -99253,7 +99253,7 @@
       {
         "id": "al-manhal-karamah--al-danah",
         "role": "zone-pair routing candidate",
-        "routeLabel": "Al Manhal / Al Karamah — Al Danah",
+        "routeLabel": "Al Manhal / Al Karamah to Al Danah",
         "from": "al-manhal-karamah",
         "to": "al-danah",
         "fromNodeId": "road-node-0069",
@@ -99394,7 +99394,7 @@
       {
         "id": "al-zahiyah--al-maryah",
         "role": "zone-pair routing candidate",
-        "routeLabel": "Al Zahiyah — Al Maryah Island",
+        "routeLabel": "Al Zahiyah to Al Maryah Island",
         "from": "al-zahiyah",
         "to": "al-maryah",
         "fromNodeId": "road-node-0137",
@@ -99482,7 +99482,7 @@
       {
         "id": "al-maryah--al-zahiyah",
         "role": "zone-pair routing candidate",
-        "routeLabel": "Al Maryah Island — Al Zahiyah",
+        "routeLabel": "Al Maryah Island to Al Zahiyah",
         "from": "al-maryah",
         "to": "al-zahiyah",
         "fromNodeId": "road-node-0185",
@@ -99558,7 +99558,7 @@
       {
         "id": "al-zahiyah--al-reem",
         "role": "zone-pair routing candidate",
-        "routeLabel": "Al Zahiyah — Al Reem Island",
+        "routeLabel": "Al Zahiyah to Al Reem Island",
         "from": "al-zahiyah",
         "to": "al-reem",
         "fromNodeId": "road-node-0137",
@@ -99707,7 +99707,7 @@
       {
         "id": "al-reem--al-zahiyah",
         "role": "zone-pair routing candidate",
-        "routeLabel": "Al Reem Island — Al Zahiyah",
+        "routeLabel": "Al Reem Island to Al Zahiyah",
         "from": "al-reem",
         "to": "al-zahiyah",
         "fromNodeId": "road-node-0239",
@@ -99831,7 +99831,7 @@
       {
         "id": "al-nahyan--al-mushrif",
         "role": "zone-pair routing candidate",
-        "routeLabel": "Al Nahyan — Al Mushrif",
+        "routeLabel": "Al Nahyan to Al Mushrif",
         "from": "al-nahyan",
         "to": "al-mushrif",
         "fromNodeId": "road-node-0167",
@@ -99945,7 +99945,7 @@
       {
         "id": "al-mushrif--al-nahyan",
         "role": "zone-pair routing candidate",
-        "routeLabel": "Al Mushrif — Al Nahyan",
+        "routeLabel": "Al Mushrif to Al Nahyan",
         "from": "al-mushrif",
         "to": "al-nahyan",
         "fromNodeId": "road-node-0178",
@@ -100081,7 +100081,7 @@
       {
         "id": "al-nahyan--al-manhal-karamah",
         "role": "zone-pair routing candidate",
-        "routeLabel": "Al Nahyan — Al Manhal / Al Karamah",
+        "routeLabel": "Al Nahyan to Al Manhal / Al Karamah",
         "from": "al-nahyan",
         "to": "al-manhal-karamah",
         "fromNodeId": "road-node-0167",
@@ -100200,7 +100200,7 @@
       {
         "id": "al-manhal-karamah--al-nahyan",
         "role": "zone-pair routing candidate",
-        "routeLabel": "Al Manhal / Al Karamah — Al Nahyan",
+        "routeLabel": "Al Manhal / Al Karamah to Al Nahyan",
         "from": "al-manhal-karamah",
         "to": "al-nahyan",
         "fromNodeId": "road-node-0069",
@@ -100310,7 +100310,7 @@
       {
         "id": "al-manhal-karamah--al-khalidiyah",
         "role": "zone-pair routing candidate",
-        "routeLabel": "Al Manhal / Al Karamah — Al Khalidiyah",
+        "routeLabel": "Al Manhal / Al Karamah to Al Khalidiyah",
         "from": "al-manhal-karamah",
         "to": "al-khalidiyah",
         "fromNodeId": "road-node-0069",
@@ -100409,7 +100409,7 @@
       {
         "id": "al-khalidiyah--al-manhal-karamah",
         "role": "zone-pair routing candidate",
-        "routeLabel": "Al Khalidiyah — Al Manhal / Al Karamah",
+        "routeLabel": "Al Khalidiyah to Al Manhal / Al Karamah",
         "from": "al-khalidiyah",
         "to": "al-manhal-karamah",
         "fromNodeId": "road-node-0030",
@@ -100506,7 +100506,7 @@
       {
         "id": "al-manhal-karamah--al-mushrif",
         "role": "zone-pair routing candidate",
-        "routeLabel": "Al Manhal / Al Karamah — Al Mushrif",
+        "routeLabel": "Al Manhal / Al Karamah to Al Mushrif",
         "from": "al-manhal-karamah",
         "to": "al-mushrif",
         "fromNodeId": "road-node-0069",
@@ -100625,7 +100625,7 @@
       {
         "id": "al-mushrif--al-manhal-karamah",
         "role": "zone-pair routing candidate",
-        "routeLabel": "Al Mushrif — Al Manhal / Al Karamah",
+        "routeLabel": "Al Mushrif to Al Manhal / Al Karamah",
         "from": "al-mushrif",
         "to": "al-manhal-karamah",
         "fromNodeId": "road-node-0178",
@@ -100766,7 +100766,7 @@
       {
         "id": "al-manhal-karamah--muroor-al-saadah",
         "role": "zone-pair routing candidate",
-        "routeLabel": "Al Manhal / Al Karamah — Muroor / Al Sa'adah",
+        "routeLabel": "Al Manhal / Al Karamah to Muroor / Al Sa'adah",
         "from": "al-manhal-karamah",
         "to": "muroor-al-saadah",
         "fromNodeId": "road-node-0069",
@@ -100910,7 +100910,7 @@
       {
         "id": "muroor-al-saadah--al-manhal-karamah",
         "role": "zone-pair routing candidate",
-        "routeLabel": "Muroor / Al Sa'adah — Al Manhal / Al Karamah",
+        "routeLabel": "Muroor / Al Sa'adah to Al Manhal / Al Karamah",
         "from": "muroor-al-saadah",
         "to": "al-manhal-karamah",
         "fromNodeId": "road-node-0248",
@@ -101081,7 +101081,7 @@
       {
         "id": "al-khalidiyah--al-bateen",
         "role": "zone-pair routing candidate",
-        "routeLabel": "Al Khalidiyah — Al Bateen",
+        "routeLabel": "Al Khalidiyah to Al Bateen",
         "from": "al-khalidiyah",
         "to": "al-bateen",
         "fromNodeId": "road-node-0030",
@@ -101167,7 +101167,7 @@
       {
         "id": "al-bateen--al-khalidiyah",
         "role": "zone-pair routing candidate",
-        "routeLabel": "Al Bateen — Al Khalidiyah",
+        "routeLabel": "Al Bateen to Al Khalidiyah",
         "from": "al-bateen",
         "to": "al-khalidiyah",
         "fromNodeId": "road-node-0015",
@@ -101279,7 +101279,7 @@
       {
         "id": "al-mushrif--al-bateen",
         "role": "zone-pair routing candidate",
-        "routeLabel": "Al Mushrif — Al Bateen",
+        "routeLabel": "Al Mushrif to Al Bateen",
         "from": "al-mushrif",
         "to": "al-bateen",
         "fromNodeId": "road-node-0178",
@@ -101409,7 +101409,7 @@
       {
         "id": "al-bateen--al-mushrif",
         "role": "zone-pair routing candidate",
-        "routeLabel": "Al Bateen — Al Mushrif",
+        "routeLabel": "Al Bateen to Al Mushrif",
         "from": "al-bateen",
         "to": "al-mushrif",
         "fromNodeId": "road-node-0015",
@@ -101531,7 +101531,7 @@
       {
         "id": "al-mushrif--muroor-al-saadah",
         "role": "zone-pair routing candidate",
-        "routeLabel": "Al Mushrif — Muroor / Al Sa'adah",
+        "routeLabel": "Al Mushrif to Muroor / Al Sa'adah",
         "from": "al-mushrif",
         "to": "muroor-al-saadah",
         "fromNodeId": "road-node-0178",
@@ -101645,7 +101645,7 @@
       {
         "id": "muroor-al-saadah--al-mushrif",
         "role": "zone-pair routing candidate",
-        "routeLabel": "Muroor / Al Sa'adah — Al Mushrif",
+        "routeLabel": "Muroor / Al Sa'adah to Al Mushrif",
         "from": "muroor-al-saadah",
         "to": "al-mushrif",
         "fromNodeId": "road-node-0248",
@@ -101770,7 +101770,7 @@
       {
         "id": "muroor-al-saadah--al-rawdah",
         "role": "zone-pair routing candidate",
-        "routeLabel": "Muroor / Al Sa'adah — Al Rawdah",
+        "routeLabel": "Muroor / Al Sa'adah to Al Rawdah",
         "from": "muroor-al-saadah",
         "to": "al-rawdah",
         "fromNodeId": "road-node-0248",
@@ -101869,7 +101869,7 @@
       {
         "id": "al-rawdah--muroor-al-saadah",
         "role": "zone-pair routing candidate",
-        "routeLabel": "Al Rawdah — Muroor / Al Sa'adah",
+        "routeLabel": "Al Rawdah to Muroor / Al Sa'adah",
         "from": "al-rawdah",
         "to": "muroor-al-saadah",
         "fromNodeId": "road-node-0288",
@@ -101991,7 +101991,7 @@
       {
         "id": "al-rawdah--rabdan-al-maqta",
         "role": "zone-pair routing candidate",
-        "routeLabel": "Al Rawdah — Rabdan / Al Maqta",
+        "routeLabel": "Al Rawdah to Rabdan / Al Maqta",
         "from": "al-rawdah",
         "to": "rabdan-al-maqta",
         "fromNodeId": "road-node-0288",
@@ -102115,7 +102115,7 @@
       {
         "id": "rabdan-al-maqta--al-rawdah",
         "role": "zone-pair routing candidate",
-        "routeLabel": "Rabdan / Al Maqta — Al Rawdah",
+        "routeLabel": "Rabdan / Al Maqta to Al Rawdah",
         "from": "rabdan-al-maqta",
         "to": "al-rawdah",
         "fromNodeId": "road-node-0330",
@@ -102241,7 +102241,7 @@
       {
         "id": "al-rawdah--al-bateen",
         "role": "zone-pair routing candidate",
-        "routeLabel": "Al Rawdah — Al Bateen",
+        "routeLabel": "Al Rawdah to Al Bateen",
         "from": "al-rawdah",
         "to": "al-bateen",
         "fromNodeId": "road-node-0288",
@@ -102371,7 +102371,7 @@
       {
         "id": "al-bateen--al-rawdah",
         "role": "zone-pair routing candidate",
-        "routeLabel": "Al Bateen — Al Rawdah",
+        "routeLabel": "Al Bateen to Al Rawdah",
         "from": "al-bateen",
         "to": "al-rawdah",
         "fromNodeId": "road-node-0015",
@@ -102511,7 +102511,7 @@
       {
         "id": "al-reem--al-maryah",
         "role": "zone-pair routing candidate",
-        "routeLabel": "Al Reem Island — Al Maryah Island",
+        "routeLabel": "Al Reem Island to Al Maryah Island",
         "from": "al-reem",
         "to": "al-maryah",
         "fromNodeId": "road-node-0239",
@@ -102618,7 +102618,7 @@
       {
         "id": "al-maryah--al-reem",
         "role": "zone-pair routing candidate",
-        "routeLabel": "Al Maryah Island — Al Reem Island",
+        "routeLabel": "Al Maryah Island to Al Reem Island",
         "from": "al-maryah",
         "to": "al-reem",
         "fromNodeId": "road-node-0185",
@@ -102736,7 +102736,7 @@
       {
         "id": "al-reem--al-saadiyat",
         "role": "zone-pair routing candidate",
-        "routeLabel": "Al Reem Island — Al Saadiyat Island",
+        "routeLabel": "Al Reem Island to Al Saadiyat Island",
         "from": "al-reem",
         "to": "al-saadiyat",
         "fromNodeId": "road-node-0239",
@@ -102865,7 +102865,7 @@
       {
         "id": "al-saadiyat--al-reem",
         "role": "zone-pair routing candidate",
-        "routeLabel": "Al Saadiyat Island — Al Reem Island",
+        "routeLabel": "Al Saadiyat Island to Al Reem Island",
         "from": "al-saadiyat",
         "to": "al-reem",
         "fromNodeId": "road-node-0265",
@@ -103022,7 +103022,7 @@
       {
         "id": "al-maryah--al-saadiyat",
         "role": "zone-pair routing candidate",
-        "routeLabel": "Al Maryah Island — Al Saadiyat Island",
+        "routeLabel": "Al Maryah Island to Al Saadiyat Island",
         "from": "al-maryah",
         "to": "al-saadiyat",
         "fromNodeId": "road-node-0185",
@@ -103187,7 +103187,7 @@
       {
         "id": "al-saadiyat--al-maryah",
         "role": "zone-pair routing candidate",
-        "routeLabel": "Al Saadiyat Island — Al Maryah Island",
+        "routeLabel": "Al Saadiyat Island to Al Maryah Island",
         "from": "al-saadiyat",
         "to": "al-maryah",
         "fromNodeId": "road-node-0265",
@@ -103353,7 +103353,7 @@
       {
         "id": "al-saadiyat--yas-island",
         "role": "zone-pair routing candidate",
-        "routeLabel": "Al Saadiyat Island — Yas Island",
+        "routeLabel": "Al Saadiyat Island to Yas Island",
         "from": "al-saadiyat",
         "to": "yas-island",
         "fromNodeId": "road-node-0265",
@@ -103506,7 +103506,7 @@
       {
         "id": "yas-island--al-saadiyat",
         "role": "zone-pair routing candidate",
-        "routeLabel": "Yas Island — Al Saadiyat Island",
+        "routeLabel": "Yas Island to Al Saadiyat Island",
         "from": "yas-island",
         "to": "al-saadiyat",
         "fromNodeId": "road-node-0473",
@@ -103666,7 +103666,7 @@
       {
         "id": "al-saadiyat--rabdan-al-maqta",
         "role": "zone-pair routing candidate",
-        "routeLabel": "Al Saadiyat Island — Rabdan / Al Maqta",
+        "routeLabel": "Al Saadiyat Island to Rabdan / Al Maqta",
         "from": "al-saadiyat",
         "to": "rabdan-al-maqta",
         "fromNodeId": "road-node-0265",
@@ -103905,7 +103905,7 @@
       {
         "id": "rabdan-al-maqta--al-saadiyat",
         "role": "zone-pair routing candidate",
-        "routeLabel": "Rabdan / Al Maqta — Al Saadiyat Island",
+        "routeLabel": "Rabdan / Al Maqta to Al Saadiyat Island",
         "from": "rabdan-al-maqta",
         "to": "al-saadiyat",
         "fromNodeId": "road-node-0330",
@@ -104154,7 +104154,7 @@
       {
         "id": "rabdan-al-maqta--al-raha",
         "role": "zone-pair routing candidate",
-        "routeLabel": "Rabdan / Al Maqta — Al Raha",
+        "routeLabel": "Rabdan / Al Maqta to Al Raha",
         "from": "rabdan-al-maqta",
         "to": "al-raha",
         "fromNodeId": "road-node-0330",
@@ -104369,7 +104369,7 @@
       {
         "id": "al-raha--rabdan-al-maqta",
         "role": "zone-pair routing candidate",
-        "routeLabel": "Al Raha — Rabdan / Al Maqta",
+        "routeLabel": "Al Raha to Rabdan / Al Maqta",
         "from": "al-raha",
         "to": "rabdan-al-maqta",
         "fromNodeId": "road-node-0451",
@@ -104520,7 +104520,7 @@
       {
         "id": "al-raha--khalifa-city",
         "role": "zone-pair routing candidate",
-        "routeLabel": "Al Raha — Khalifa City",
+        "routeLabel": "Al Raha to Khalifa City",
         "from": "al-raha",
         "to": "khalifa-city",
         "fromNodeId": "road-node-0451",
@@ -104658,7 +104658,7 @@
       {
         "id": "khalifa-city--al-raha",
         "role": "zone-pair routing candidate",
-        "routeLabel": "Khalifa City — Al Raha",
+        "routeLabel": "Khalifa City to Al Raha",
         "from": "khalifa-city",
         "to": "al-raha",
         "fromNodeId": "road-node-0520",
@@ -104848,7 +104848,7 @@
       {
         "id": "al-raha--yas-island",
         "role": "zone-pair routing candidate",
-        "routeLabel": "Al Raha — Yas Island",
+        "routeLabel": "Al Raha to Yas Island",
         "from": "al-raha",
         "to": "yas-island",
         "fromNodeId": "road-node-0451",
@@ -104971,7 +104971,7 @@
       {
         "id": "yas-island--al-raha",
         "role": "zone-pair routing candidate",
-        "routeLabel": "Yas Island — Al Raha",
+        "routeLabel": "Yas Island to Al Raha",
         "from": "yas-island",
         "to": "al-raha",
         "fromNodeId": "road-node-0473",
@@ -105084,7 +105084,7 @@
       {
         "id": "yas-island--khalifa-city",
         "role": "zone-pair routing candidate",
-        "routeLabel": "Yas Island — Khalifa City",
+        "routeLabel": "Yas Island to Khalifa City",
         "from": "yas-island",
         "to": "khalifa-city",
         "fromNodeId": "road-node-0473",
@@ -105225,7 +105225,7 @@
       {
         "id": "khalifa-city--yas-island",
         "role": "zone-pair routing candidate",
-        "routeLabel": "Khalifa City — Yas Island",
+        "routeLabel": "Khalifa City to Yas Island",
         "from": "khalifa-city",
         "to": "yas-island",
         "fromNodeId": "road-node-0520",
@@ -105386,7 +105386,7 @@
       {
         "id": "khalifa-city--mbz-zayed-city",
         "role": "zone-pair routing candidate",
-        "routeLabel": "Khalifa City — Mohamed Bin Zayed / Zayed City",
+        "routeLabel": "Khalifa City to Mohamed Bin Zayed / Zayed City",
         "from": "khalifa-city",
         "to": "mbz-zayed-city",
         "fromNodeId": "road-node-0520",
@@ -105565,7 +105565,7 @@
       {
         "id": "mbz-zayed-city--khalifa-city",
         "role": "zone-pair routing candidate",
-        "routeLabel": "Mohamed Bin Zayed / Zayed City — Khalifa City",
+        "routeLabel": "Mohamed Bin Zayed / Zayed City to Khalifa City",
         "from": "mbz-zayed-city",
         "to": "khalifa-city",
         "fromNodeId": "road-node-0433",
@@ -105730,7 +105730,7 @@
       {
         "id": "khalifa-city--musaffah",
         "role": "zone-pair routing candidate",
-        "routeLabel": "Khalifa City — Musaffah",
+        "routeLabel": "Khalifa City to Musaffah",
         "from": "khalifa-city",
         "to": "musaffah",
         "fromNodeId": "road-node-0520",
@@ -105926,7 +105926,7 @@
       {
         "id": "musaffah--khalifa-city",
         "role": "zone-pair routing candidate",
-        "routeLabel": "Musaffah — Khalifa City",
+        "routeLabel": "Musaffah to Khalifa City",
         "from": "musaffah",
         "to": "khalifa-city",
         "fromNodeId": "road-node-0331",
@@ -106118,7 +106118,7 @@
       {
         "id": "mbz-zayed-city--musaffah",
         "role": "zone-pair routing candidate",
-        "routeLabel": "Mohamed Bin Zayed / Zayed City — Musaffah",
+        "routeLabel": "Mohamed Bin Zayed / Zayed City to Musaffah",
         "from": "mbz-zayed-city",
         "to": "musaffah",
         "fromNodeId": "road-node-0433",
@@ -106218,7 +106218,7 @@
       {
         "id": "musaffah--mbz-zayed-city",
         "role": "zone-pair routing candidate",
-        "routeLabel": "Musaffah — Mohamed Bin Zayed / Zayed City",
+        "routeLabel": "Musaffah to Mohamed Bin Zayed / Zayed City",
         "from": "musaffah",
         "to": "mbz-zayed-city",
         "fromNodeId": "road-node-0331",
@@ -106316,7 +106316,7 @@
       {
         "id": "rabdan-al-maqta--musaffah",
         "role": "zone-pair routing candidate",
-        "routeLabel": "Rabdan / Al Maqta — Musaffah",
+        "routeLabel": "Rabdan / Al Maqta to Musaffah",
         "from": "rabdan-al-maqta",
         "to": "musaffah",
         "fromNodeId": "road-node-0330",
@@ -106463,7 +106463,7 @@
       {
         "id": "musaffah--rabdan-al-maqta",
         "role": "zone-pair routing candidate",
-        "routeLabel": "Musaffah — Rabdan / Al Maqta",
+        "routeLabel": "Musaffah to Rabdan / Al Maqta",
         "from": "musaffah",
         "to": "rabdan-al-maqta",
         "fromNodeId": "road-node-0331",
@@ -106617,7 +106617,7 @@
       {
         "id": "rabdan-al-maqta--khalifa-city",
         "role": "zone-pair routing candidate",
-        "routeLabel": "Rabdan / Al Maqta — Khalifa City",
+        "routeLabel": "Rabdan / Al Maqta to Khalifa City",
         "from": "rabdan-al-maqta",
         "to": "khalifa-city",
         "fromNodeId": "road-node-0330",
@@ -106791,7 +106791,7 @@
       {
         "id": "khalifa-city--rabdan-al-maqta",
         "role": "zone-pair routing candidate",
-        "routeLabel": "Khalifa City — Rabdan / Al Maqta",
+        "routeLabel": "Khalifa City to Rabdan / Al Maqta",
         "from": "khalifa-city",
         "to": "rabdan-al-maqta",
         "fromNodeId": "road-node-0520",

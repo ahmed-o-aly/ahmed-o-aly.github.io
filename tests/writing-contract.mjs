@@ -35,7 +35,7 @@ assertContains(
   "related article links remain inside their semantic list"
 );
 assert.doesNotMatch(index, /Explanation and Codebase of Probabilistic VNS/, "territory-design notes leave the Writing index");
-assertContains(mergedTerritoryWork, /id="quick-start"/, "territory-design notes move into Work 07");
+assertContains(mergedTerritoryWork, /id="quick-start"/, "territory-design notes move into Work 04");
 assert.doesNotMatch(article, /<div class="garden-article__support">\s*<\/div>/, "post omits an empty optional-support wrapper");
 assert.doesNotMatch(
   postLayoutAnnouncement,

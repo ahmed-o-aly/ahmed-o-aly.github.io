@@ -15,7 +15,7 @@ description: Decision-support systems for labs, public policy, and complex opera
     <aside class="folio-currently" aria-label="Currently">
       <dl>
         <div><dt>Studying</dt><dd>Data Science at Leeds</dd></div>
-        <div><dt>Building</dt><dd>public-policy simulations</dd></div>
+        <div><dt>Building</dt><dd><a href="{{ '/projects/sila/' | relative_url }}">Sila</a></dd></div>
         <div><dt>Exploring</dt><dd>AI and XR laboratories</dd></div>
       </dl>
     </aside>
@@ -28,7 +28,7 @@ description: Decision-support systems for labs, public policy, and complex opera
   <span class="folio-mono-label">Essays &amp; Writing</span>
   {% if latest_post %}
     <div class="folio-writing-ledger__entry">
-      <span>latest &mdash;</span>
+      <span>latest:</span>
       <a class="folio-writing-ledger__title" href="{{ latest_post.url | relative_url }}">{{ latest_post.title }}</a>
       <time datetime="{{ latest_post.date | date_to_xmlschema }}">{{ latest_post.date | date: '%b %Y' }}</time>
     </div>

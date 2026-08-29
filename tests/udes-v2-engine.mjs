@@ -878,7 +878,7 @@ const baselineData = {
 };
 const appReferenceConfig = {
   startDate: "2024-01-01",
-  calibrationLabel: "Illustrative Greater Abu Dhabi City scenario baseline — not a forecast",
+  calibrationLabel: "Illustrative Greater Abu Dhabi City scenario baseline, not a forecast",
   endogenousEnterpriseDynamics: true,
   transitFareAed: 2,
   transitSpeedKmh: 28,

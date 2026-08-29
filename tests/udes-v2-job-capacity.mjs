@@ -105,7 +105,7 @@ assert.equal(
 assert.equal(restarting.maxJobSlots, restartEngine.config.firmMinimumJobSlots, "the restarted firm reopens at that explicit scale");
 
 // After a warm-started workday, stored route traversals and physical link loads
-// must still describe exactly the same assignment—prior routes are a path-choice
+// must still describe exactly the same assignment; prior routes are a path-choice
 // starting point, never extra background traffic in reported loads.
 const warm = createEngine({}, 53121);
 warm.step(1);

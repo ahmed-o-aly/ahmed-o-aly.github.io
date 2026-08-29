@@ -27,7 +27,7 @@ const formatTargets = [
   "_includes/{folio-work-card,garden-card,garden-footer,garden-media,garden-nav,garden-project-card,garden-related,head,metadata}.liquid",
   "_layouts/{cv,garden,page,post}.liquid",
   "_pages/{about,blog,books,home,marginalia,projects}.md",
-  "_projects/{abu-dhabi-urban-dynamics,abu-dhabi-urban-dynamics-v2,cnc-machine-inspector,dewa-energy-optimization,territory-design-probvns}.md",
+  "_projects/{abu-dhabi-urban-dynamics,abu-dhabi-urban-dynamics-v2,cnc-machine-inspector,dewa-energy-optimization,sila,territory-design-probvns}.md",
   "package.json",
   ".github/workflows/{axe,deploy}.yml",
 ];
@@ -89,6 +89,7 @@ const expectedAxePaths = [
   "projects/abu-dhabi-urban-dynamics/",
   "projects/abu-dhabi-urban-dynamics-v2/",
   "projects/dewa-energy-optimization/",
+  "projects/sila/",
   "projects/territory-design-probvns/",
   "blog/",
   "blog/2026/what-i-am-building-this-site-for/",
