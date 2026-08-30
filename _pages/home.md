@@ -47,72 +47,35 @@ description: Decision-support systems for labs, public policy, and complex opera
   </ol>
 </section>
 
-{% assign current_book = site.data.currently_reading | first %}
-{% if current_book %}
-{% assign home_read_limit = 2 %}
-{% else %}
-{% assign home_read_limit = 3 %}
-{% endif %}
+{% assign home_current_books = site.data.currently_reading | slice: 0, 3 %}
+{% assign home_current_count = home_current_books.size %}
+{% assign home_read_limit = 3 | minus: home_current_count %}
+{% assign home_sorted_read_books = site.data.read_books | sort: 'read_at' | reverse %}
+{% assign home_recent_books = home_sorted_read_books | slice: 0, home_read_limit %}
+{% assign home_books = home_current_books | concat: home_recent_books %}
+{% assign current_book = home_current_books | first %}
 
 <section class="folio-library" aria-labelledby="library-title">
   <div class="folio-library__watermark" data-parallax-y="-60" aria-hidden="true">Bibliotheca</div>
   <div class="garden-container folio-library__inner">
     <div class="folio-library__heading">
       <p class="folio-mono-label">The library</p>
-      <h2 id="library-title">Books that keep returning to the desk.</h2>
+      <h2 id="library-title">What I’m reading and what I’ve finished.</h2>
       <a class="folio-ink-link folio-ink-link--cream" href="{{ '/books/' | relative_url }}">the whole library &rarr;</a>
     </div>
     <div class="folio-library__content{% unless current_book %} folio-library__content--covers-only{% endunless %}">
-      <div class="folio-cover-row" aria-label="A few books from the library">
-        {% if current_book %}
-          <span class="folio-cover-drift" data-parallax-y="30">
-            <button
-              class="folio-cover-wrap folio-cover-wrap--button"
-              type="button"
-              data-book-trigger
-              data-book-title="{{ current_book.title | escape }}"
-              data-book-author="{{ current_book.author | escape }}"
-              data-book-cover="{{ current_book.cover | escape }}"
-              data-book-rating="{{ current_book.rating | escape }}"
-              data-book-status="Currently reading"
-              data-book-review="{{ current_book.review | default: '' | newline_to_br | strip_newlines | escape }}"
-              data-book-url="{{ current_book.url | escape }}"
-              data-book-progress="{{ current_book.progress_percent | escape }}"
-              data-book-progress-label="{{ current_book.progress_label | escape }}"
-              aria-label="Open details for {{ current_book.title | escape }} by {{ current_book.author | escape }}{% if current_book.progress_label != blank %}, {{ current_book.progress_label | escape }}{% endif %}"
-            >
-              <img
-                src="{{ current_book.cover | escape }}"
-                alt=""
-                width="132"
-                height="196"
-                loading="lazy"
-                decoding="async"
-                referrerpolicy="no-referrer"
-              >
-            </button>
-          </span>
-        {% endif %}
-        {% for book in site.data.read_books limit: home_read_limit %}
-          {% if current_book %}
-            {% case forloop.index %}
-              {% when 1 %}
-                {% assign travel = '55' %}
-              {% else %}
-                {% assign travel = '80' %}
-            {% endcase %}
-          {% else %}
-            {% case forloop.index %}
-              {% when 1 %}
-                {% assign travel = '30' %}
-              {% when 2 %}
-                {% assign travel = '55' %}
-              {% else %}
-                {% assign travel = '80' %}
-            {% endcase %}
-          {% endif %}
+      <div class="folio-cover-row" role="list" aria-label="Current and recent books">
+        {% for book in home_books %}
+          {% case forloop.index %}
+            {% when 1 %}
+              {% assign travel = '30' %}
+            {% when 2 %}
+              {% assign travel = '55' %}
+            {% else %}
+              {% assign travel = '80' %}
+          {% endcase %}
           {% assign book_status = book.status | default: 'Read' %}
-          <span class="folio-cover-drift" data-parallax-y="{{ travel }}">
+          <span class="folio-cover-drift" data-parallax-y="{{ travel }}" role="listitem">
             <button
               class="folio-cover-wrap folio-cover-wrap--button"
               type="button"
@@ -124,7 +87,9 @@ description: Decision-support systems for labs, public policy, and complex opera
               data-book-status="{{ book_status | escape }}{% if book.read_at != blank %} &middot; {{ book.read_at | date: '%Y' }}{% endif %}"
               data-book-review="{{ book.review | default: '' | newline_to_br | strip_newlines | escape }}"
               data-book-url="{{ book.url | escape }}"
-              aria-label="Open details for {{ book.title | escape }} by {{ book.author | escape }}{% if book.rating != blank %}, rated {{ book.rating }} out of 5{% endif %}"
+              data-book-progress="{{ book.progress_percent | escape }}"
+              data-book-progress-label="{{ book.progress_label | escape }}"
+              aria-label="Open details for {{ book.title | escape }} by {{ book.author | escape }}{% if book.progress_label != blank %}, {{ book.progress_label | escape }}{% elsif book.rating != blank %}, rated {{ book.rating }} out of 5{% endif %}"
             >
               <img
                 src="{{ book.cover | escape }}"

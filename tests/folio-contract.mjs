@@ -44,6 +44,17 @@ const readBooksData = projectFile("_data/read_books.yml");
 const currentlyReadingData = projectFile("_data/currently_reading.yml");
 
 const yamlRecordCount = (source) => (source.match(/^- source:/gm) || []).length;
+const yamlRecords = (source) =>
+  source
+    .split(/(?=^- source:)/m)
+    .filter((record) => record.startsWith("- source:"))
+    .map((record) => {
+      const field = (name) => {
+        const match = record.match(new RegExp(`^\\s+${name}:\\s+(.+)$`, "m"));
+        return match ? JSON.parse(match[1]) : "";
+      };
+      return { readAt: field("read_at"), sourceId: field("source_id") };
+    });
 const readBookCount = yamlRecordCount(readBooksData);
 const currentBookCount = yamlRecordCount(currentlyReadingData);
 const ratedReadBookCount = (readBooksData.match(/^\s+rating:\s+(?!null\b).+/gm) || []).length;
@@ -128,12 +139,11 @@ for (const travel of [30, 55, 80])
   assertContains(routes.home, new RegExp(`data-parallax-y="${travel}"`), `library includes ${travel}px cover travel`);
 const homeLibrary = block(routes.home, "folio-library");
 const homeCoverRow = block(homeLibrary, "folio-cover-row", "div");
-const expectedHomeCoverCount = currentBookCount > 0 ? 1 + Math.min(2, readBookCount) : Math.min(3, readBookCount);
-assert.equal(
-  (homeCoverRow.match(/class="folio-cover-wrap(?:\s|"|--)/g) || []).length,
-  expectedHomeCoverCount,
-  "home shows the expected current and recent-read covers"
-);
+const expectedHomeCurrentCount = Math.min(3, currentBookCount);
+const expectedHomeCoverCount = Math.min(3, currentBookCount + readBookCount);
+const renderedHomeCoverCount = (homeCoverRow.match(/class="folio-cover-wrap(?:\s|"|--)/g) || []).length;
+assert.equal(renderedHomeCoverCount, expectedHomeCoverCount, "home shows the expected current and recent-read covers");
+if (currentBookCount + readBookCount >= 3) assert.equal(renderedHomeCoverCount, 3, "home fills all three book slots");
 assert.equal(
   (homeCoverRow.match(/class="folio-cover-drift"/g) || []).length,
   expectedHomeCoverCount,
@@ -141,6 +151,27 @@ assert.equal(
 );
 assert.equal((homeCoverRow.match(/<img\b/g) || []).length, expectedHomeCoverCount, "every home library cover is an image");
 assert.equal((homeCoverRow.match(/data-book-trigger/g) || []).length, expectedHomeCoverCount, "every home library cover opens a local details card");
+const homeBookStatuses = [...homeCoverRow.matchAll(/data-book-status="([^"]+)"/g)].map((match) => match[1]);
+assert.equal(
+  homeBookStatuses.filter((status) => status === "Currently reading").length,
+  expectedHomeCurrentCount,
+  "home fills its cover row with current books first"
+);
+assert.deepEqual(
+  homeBookStatuses.slice(0, expectedHomeCurrentCount),
+  Array(expectedHomeCurrentCount).fill("Currently reading"),
+  "every displayed current book precedes the finished books"
+);
+const expectedHomeBookIds = [
+  ...yamlRecords(currentlyReadingData).slice(0, 3),
+  ...yamlRecords(readBooksData)
+    .sort((left, right) => right.readAt.localeCompare(left.readAt))
+    .slice(0, 3 - expectedHomeCurrentCount),
+].map((book) => book.sourceId);
+const renderedHomeBookIds = [...homeCoverRow.matchAll(/data-book-url="https:\/\/www\.goodreads\.com\/book\/show\/(\d+)/g)].map((match) => match[1]);
+assert.deepEqual(renderedHomeBookIds, expectedHomeBookIds, "home orders current books before the latest finished books");
+assertContains(homeCoverRow, /role="list" aria-label="Current and recent books"/, "home labels the three-book sequence");
+assert.equal((homeCoverRow.match(/role="listitem"/g) || []).length, expectedHomeCoverCount, "each home cover is a list item");
 assert.doesNotMatch(homeCoverRow, /folio-book-cover__face|--book-color/, "home never substitutes typographic fake covers");
 if (currentBookCount > 0) {
   assert.equal((homeLibrary.match(/class="folio-library__current"/g) || []).length, 1, "home names the current book once");
@@ -150,9 +181,15 @@ if (currentBookCount > 0) {
 }
 assertContains(
   homeTemplate,
-  /{% if current_book %}[\s\S]*?home_read_limit = 2[\s\S]*?{% else %}[\s\S]*?home_read_limit = 3/,
-  "home falls back from one current plus two read covers to three read covers"
+  /home_current_books = site\.data\.currently_reading \| slice: 0, 3[\s\S]*?home_read_limit = 3 \| minus: home_current_count/,
+  "home reserves up to three cover slots for current books"
 );
+assertContains(
+  homeTemplate,
+  /home_sorted_read_books = site\.data\.read_books \| sort: 'read_at' \| reverse[\s\S]*?home_recent_books = home_sorted_read_books \| slice: 0, home_read_limit/,
+  "remaining home slots use the most recently finished books"
+);
+assertContains(routes.home, /What I’m reading and what I’ve finished\./, "home uses a plain library heading");
 assert.doesNotMatch(
   routes.home,
   /folio-records-layout|folio-marginalia-feed|folio-about-page/,
