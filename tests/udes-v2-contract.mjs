@@ -35,10 +35,17 @@ assertContains(
   /Official AD-SDI district groups · OSM basemap and routed named arterials/,
   "map provenance distinguishes official district groups and the routed named-arterial model layer"
 );
+assertContains(html, /data-udes-v2-map-layer="agents"[^>]*aria-pressed="true"[^>]*>Agents</, "the default map exposes actual modeled agents");
+assertContains(html, /data-udes-v2-view="overview"/, "the simulation opens in its map-first executive overview");
+assertContains(html, /data-udes-v2-view-toggle/, "the overview exposes the detailed studio on demand");
+for (const metric of ["cityPopulation", "cityEnterprises", "peakRoadUsage", "mapCommute", "cityNetIncome"]) {
+  assertContains(html, new RegExp(`data-udes-v2-metric="${metric}"`), `${metric} is visible in the map pulse`);
+}
+assert.equal((html.match(/data-udes-v2-agent-layer=/g) || []).length, 3, "citizens, enterprises, and flows can be isolated independently");
 assertContains(
   html,
-  /data-udes-v2-map-layer="agents"[^>]*aria-pressed="true"[^>]*>Agents \+ flows</,
-  "the default map exposes actual agents and commute flows"
+  /aria-pressed="false"[^>]*data-udes-v2-agent-layer="flows"[^>]*>[\s\S]*?Home → work</,
+  "home-to-work commuter stock is clearly labeled and off by default"
 );
 assert.equal((html.match(/data-udes-v2-inspector-tab=/g) || []).length, 4, "four object inspectors are available");
 assert.equal((html.match(/data-udes-v2-control-tab=/g) || []).length, 4, "four focused control workspaces are available");
@@ -107,6 +114,12 @@ assertContains(
   "compiled CSS keeps the no-scroll analyst grid"
 );
 assertContains(css, /\.garden-body--simulation-v2\{overflow:hidden/, "desktop page scrolling is disabled");
+assert.match(
+  scss,
+  /data-udes-v2-view="overview"[\s\S]*?grid-template-columns: minmax\(0, 1fr\) clamp\(380px, 32vw, 440px\)/,
+  "desktop overview reserves a fixed analytics rail beside the full-height map"
+);
+assert.match(scss, /\.udes-v2-map-pulse[\s\S]*?display: grid/, "the overview restores the five-metric map pulse");
 assertContains(projects, /href="\/projects\/abu-dhabi-urban-dynamics\/"/, "the Urban Dynamics write-up is published in the project index");
 assert.doesNotMatch(
   projects,
@@ -189,7 +202,7 @@ for (const [zoneId, minimumPortalEdges] of [
 }
 assert.ok(
   contextRoadEdges.every((edge) => edge.modelVisible && !edge.hidden && !edge.loadBearing && edge.geometryFeatureId === edge.id),
-  "context-only named roads are rendered but cannot receive OD demand or enter V/C metrics"
+  "context-only named roads are rendered but cannot receive OD demand or enter road-load metrics"
 );
 assert.equal(stops.features.length, 924, "official transit-stop snapshot is complete");
 assert.ok(
@@ -411,6 +424,14 @@ assert.match(
 );
 assert.match(app, /referenceWorker = new WorkerClient/, "controller runs a same-seed reference worker");
 assert.match(app, /function renderOutcomeCharts\(/, "controller renders focused scenario outcomes");
+for (const key of ["satisfaction", "commute", "transit", "occupancy"]) {
+  assert.match(app, new RegExp(`"outcomes:${key}"`), `outcomes:${key} remains a stable overview chart key`);
+}
+assert.match(app, /finitePointCount <= 1/, "single-point line charts render a visible symbol at Day 0");
+assert.match(app, /function setConsoleView\(/, "the map-first overview and detailed studio share an explicit view controller");
+assert.match(app, /className: "udes-v2-road-feature"/, "explicit road clicks retain priority over nearby canvas agents");
+assert.match(app, /className: "udes-v2-commute-flow-feature"/, "explicit commute-flow clicks retain priority over nearby canvas agents");
+assert.match(app, /interactive: true/, "permanent district labels remain directly inspectable in the agent view");
 assert.match(app, /function renderDistrictCharts\(/, "controller renders current and daily district outcomes");
 assert.match(app, /function renderFlowCharts\(/, "controller renders cross-district movement outcomes");
 assert.match(app, /function renderMobilityCharts\(/, "controller renders the mobility analysis workspace");
@@ -450,6 +471,13 @@ assert.match(app, /tile\.openstreetmap\.org/, "the analyst map uses a labeled Op
 assert.match(app, /state\.hoveredMapFeatureKey !== entry\.key/, "hovered agent and commute-flow features are not mutated during a daily update");
 assert.match(app, /topInterDistrictCommutes\(state\.snapshot\?\.commuteOd, 18\)/, "the agent map shows a bounded set of directed home-to-work flows");
 assert.match(app, /function createAgentCanvasLayer\(/, "the complete modeled population uses one persistent canvas layer");
+assert.match(app, /agentVisibility: \{ citizens: true, enterprises: true, flows: false \}/, "commuter stock does not obscure road load by default");
+assert.match(app, /Math\.imul\(value, 0x7feb352d\)/, "agent placement uses a nonlinear hash mixer without diagonal axis correlation");
+assert.match(app, /positionSlotCache = new Map\(\)/, "agents retain stable district-level distribution slots");
+assert.match(app, /nearestSpacing > bestSpacing/, "district placement chooses separated in-polygon candidates instead of visible bands");
+assert.match(app, /map\.on\("zoomanim", this\.onZoomAnimation, this\)/, "the custom agent canvas participates in Leaflet zoom animation");
+assert.match(app, /DomUtil\.setTransform\(this\.canvas, position, scale\)/, "agent dots use the animated map transform before a crisp redraw");
+assert.match(app, /latlngs: commuteArcLatLngs\(/, "home-to-work stock uses district arcs rather than masking road centerlines");
 assert.match(
   app,
   /state\.worker\.request\("init", \{ data, config: activeConfig, seed: state\.seed, snapshot: \{ mapFrame: "all" \} \}\)/,
@@ -471,6 +499,24 @@ assert.match(app, /point\.laborForceStatus === "nonparticipant"/, "map agent lab
 assert.match(app, /Active job seeker/, "map and inspector copy identifies unemployed participants as active job seekers");
 assert.match(app, /requestAnimationFrame\(\(\) =>/, "agent-canvas redraws are coalesced through animation frames");
 assert.match(app, /this\.canvas\.tabIndex = 0/, "the all-agent canvas is one keyboard-reachable explorer rather than thousands of tab stops");
+assert.match(
+  app,
+  /this\.container\.addEventListener\("click", this\.clickListener, true\)/,
+  "agent hit testing no longer requires a pointer-blocking canvas"
+);
+assert.match(app, /state\.agentVisibility/, "citizens, enterprises, and commute flows retain independent visibility state");
+assert.match(app, /this\.keyboardKey = null/, "changing an agent filter clears stale keyboard selection");
+assert.match(app, /agentAriaLabel\(\)/, "the agent explorer description follows the visible filter set");
+assert.match(
+  scss,
+  /\.udes-v2-agent-canvas\s*\{[^}]*pointer-events:\s*none/s,
+  "the agent canvas leaves roads, districts, and flows pointer-accessible"
+);
+assert.match(
+  scss,
+  /data-udes-v2-view="studio"[\s\S]*?grid-auto-rows: 176px/,
+  "the detailed studio keeps outcome charts tall enough to read inside its scrollable tray"
+);
 assert.match(app, /window\.L\.svg\(\{ pane: "udesV2CommuteFlows"/, "commute routes use a dedicated SVG renderer for keyboard access");
 assert.match(app, /element\.setAttribute\("tabindex", "0"\)/, "interactive map features participate in sequential keyboard navigation");
 assert.match(app, /line\.udesV2PendingRemoval = true/, "an interacting commute route is retained when it leaves the top-route set");
@@ -489,7 +535,7 @@ assert.match(app, /const corridors = new Map\(\)/, "named-corridor pressure grou
 assert.match(
   app,
   /current\.roadPressure = Math\.max\(current\.roadPressure, roadPressure\)/,
-  "named-corridor pressure reports maximum directional V/C rather than duplicate segment bars"
+  "named-corridor pressure reports maximum directional road load rather than duplicate segment bars"
 );
 assert.match(app, /captureDaily: true/, "controller requests consecutive daily observations from both workers");
 assert.match(app, /const HISTORY_POINT_LIMIT = 3654/, "controller retains Day 0 plus a full ten-year daily run");

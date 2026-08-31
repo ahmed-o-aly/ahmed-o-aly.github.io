@@ -1,14 +1,14 @@
 {
   "schemaVersion": "1.6.0",
-  "generatedAt": "2026-08-29T22:27:04.904Z",
+  "generatedAt": "2026-08-31T11:02:38.965Z",
   "model": "Abu Dhabi Urban Dynamics Lab / UDES v2",
   "datasetSchemaVersion": "2.1.0",
   "engineSchemaVersion": "2.1",
   "sourceHashes": {
     "engineSha256": "b2dd23ffb3bb58e0d0daeac5c87091939cc2de756285f6f37da5204c7a69bac9",
     "baselineSha256": "026e717c2ed0491608120ac2b1f9b903ef184fe9f398e353761e0b133e371c20",
-    "publicControllerSha256": "71f2fba647595bacedc1701a8593fce732c3a6e0419ee7ad0ac243b9ffab0c6a",
-    "validationHarnessSha256": "e7de4ad5f01d428fe6a293af06b332f5516356338c04f3898382600e08a8e54a"
+    "publicControllerSha256": "a571945b57f50635b61492afbc5fdaa21be1d9d0f06073e4c4eb6e47e9d3eccb",
+    "validationHarnessSha256": "c6d06e9ed1d5b968da07e27f2e3dd07da37a3f7154bc0170ee126a26aa5729f3"
   },
   "seed": 240124,
   "status": "passed-regression-and-provisional-sanity-checks",
@@ -618,7 +618,7 @@
         {
           "id": "maximum-directional-road-volume-capacity-within-horizon-stress-guard",
           "passed": true,
-          "detail": "1.3755 maximum directional work-trip V/C; provisional <2 one-year guard"
+          "detail": "1.3755 maximum directional work-trip load ratio; provisional <2 one-year guard"
         },
         {
           "id": "aggregate-zone-portals-carry-no-assignment-load",
@@ -1245,7 +1245,7 @@
         {
           "id": "maximum-directional-road-volume-capacity-within-horizon-stress-guard",
           "passed": true,
-          "detail": "0.8714 maximum directional work-trip V/C; provisional <2 one-year guard"
+          "detail": "0.8714 maximum directional work-trip load ratio; provisional <2 one-year guard"
         },
         {
           "id": "aggregate-zone-portals-carry-no-assignment-load",
@@ -1872,7 +1872,7 @@
         {
           "id": "maximum-directional-road-volume-capacity-within-horizon-stress-guard",
           "passed": true,
-          "detail": "2.317 maximum directional work-trip V/C; provisional <3.25 ten-year stress guard"
+          "detail": "2.317 maximum directional work-trip load ratio; provisional <3.25 ten-year stress guard"
         },
         {
           "id": "aggregate-zone-portals-carry-no-assignment-load",
@@ -2499,7 +2499,7 @@
         {
           "id": "maximum-directional-road-volume-capacity-within-horizon-stress-guard",
           "passed": true,
-          "detail": "1.439 maximum directional work-trip V/C; provisional <3.25 ten-year stress guard"
+          "detail": "1.439 maximum directional work-trip load ratio; provisional <3.25 ten-year stress guard"
         },
         {
           "id": "aggregate-zone-portals-carry-no-assignment-load",
@@ -3126,7 +3126,7 @@
         {
           "id": "maximum-directional-road-volume-capacity-within-horizon-stress-guard",
           "passed": true,
-          "detail": "2.3337 maximum directional work-trip V/C; provisional <3.25 ten-year stress guard"
+          "detail": "2.3337 maximum directional work-trip load ratio; provisional <3.25 ten-year stress guard"
         },
         {
           "id": "aggregate-zone-portals-carry-no-assignment-load",
@@ -3753,7 +3753,7 @@
         {
           "id": "maximum-directional-road-volume-capacity-within-horizon-stress-guard",
           "passed": true,
-          "detail": "2.1434 maximum directional work-trip V/C; provisional <3.25 ten-year stress guard"
+          "detail": "2.1434 maximum directional work-trip load ratio; provisional <3.25 ten-year stress guard"
         },
         {
           "id": "aggregate-zone-portals-carry-no-assignment-load",

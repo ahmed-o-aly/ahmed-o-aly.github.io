@@ -340,7 +340,7 @@ function scenarioChecks(engine, snapshot, metrics, definition) {
       passed: metrics.network.maximumRoadVolumeCapacityRatio < maximumDirectionalRoadVolumeCapacity,
       detail: `${
         metrics.network.maximumRoadVolumeCapacityRatio
-      } maximum directional work-trip V/C; provisional <${maximumDirectionalRoadVolumeCapacity} ${
+      } maximum directional work-trip load ratio; provisional <${maximumDirectionalRoadVolumeCapacity} ${
         longHorizonStressTest ? "ten-year stress" : "one-year"
       } guard`,
     },

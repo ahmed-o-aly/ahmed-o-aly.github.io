@@ -692,9 +692,12 @@
     history: [],
     referenceHistory: [],
     map: null,
-    mapRenderers: { agents: null, commuteFlows: null },
+    mapRenderers: { agents: null, commuteFlows: null, roads: null },
     agentCanvas: null,
+    view: root.dataset.udesV2View === "studio" ? "studio" : "overview",
     mapMode: "agents",
+    // Keep commuter stock opt-in so the road-load signal remains legible.
+    agentVisibility: { citizens: true, enterprises: true, flows: false },
     renderedMapMode: null,
     layers: {
       zones: null,
@@ -774,6 +777,9 @@
     selectionId: $("[data-udes-v2-selection-id]"),
     mapStatus: $("[data-udes-v2-map-status]"),
     mapLegend: $("[data-udes-v2-map-legend]"),
+    agentLayerToggles: $("[data-udes-v2-agent-layer-toggles]"),
+    viewToggle: $("[data-udes-v2-view-toggle]"),
+    viewLabel: $("[data-udes-v2-view-label]"),
   };
 
   class WorkerClient {
@@ -825,6 +831,31 @@
     root.dataset.udesV2State = mode;
     if (!ui.runtime) return;
     ui.runtime.lastChild.textContent = ` ${label}`;
+  }
+
+  function setConsoleView(view, announceChange = true) {
+    const nextView = view === "studio" ? "studio" : "overview";
+    state.view = nextView;
+    root.dataset.udesV2View = nextView;
+    const studioOpen = nextView === "studio";
+    if (!studioOpen) activateTab("chart", "outcomes");
+    if (ui.viewLabel) ui.viewLabel.textContent = studioOpen ? "Show overview" : "Open studio";
+    if (ui.viewToggle) {
+      ui.viewToggle.setAttribute("aria-pressed", String(studioOpen));
+      ui.viewToggle.setAttribute(
+        "aria-label",
+        studioOpen ? "Return to the map and city-pulse overview" : "Open scenario controls and object inspection studio"
+      );
+    }
+    const refreshLayout = () => {
+      state.map?.invalidateSize?.({ pan: false });
+      resizeCharts();
+    };
+    requestAnimationFrame(refreshLayout);
+    setTimeout(refreshLayout, 120);
+    if (announceChange) {
+      announce(studioOpen ? "Studio opened with scenario controls and object inspection." : "City overview restored.");
+    }
   }
 
   function resolveAsset(path, baseUrl) {
@@ -1525,6 +1556,7 @@
 
   function bindControls() {
     ui.play?.addEventListener("click", togglePlayback);
+    ui.viewToggle?.addEventListener("click", () => setConsoleView(state.view === "overview" ? "studio" : "overview"));
     for (const button of $$("[data-udes-v2-step-days]")) {
       button.addEventListener("click", () => advanceDays(Number(button.dataset.udesV2StepDays) || 1));
     }
@@ -1643,6 +1675,17 @@
         updateMapStyles();
       });
     }
+    for (const button of $$("[data-udes-v2-agent-layer]")) {
+      button.addEventListener("click", () => {
+        const layer = button.dataset.udesV2AgentLayer;
+        if (!(layer in state.agentVisibility)) return;
+        state.agentVisibility[layer] = !state.agentVisibility[layer];
+        button.setAttribute("aria-pressed", String(state.agentVisibility[layer]));
+        updateAgentMapLayers();
+        renderMapStatus();
+        announce(`${button.textContent.trim()} ${state.agentVisibility[layer] ? "shown" : "hidden"} on the agent map.`);
+      });
+    }
   }
 
   function bindTabs(kind) {
@@ -1650,7 +1693,10 @@
     const panelAttr = `data-udes-v2-${kind}-panel`;
     const tabs = $$(`[${tabAttr}]`);
     tabs.forEach((tab, index) => {
-      tab.addEventListener("click", () => activateTab(kind, tab.getAttribute(tabAttr)));
+      tab.addEventListener("click", () => {
+        activateTab(kind, tab.getAttribute(tabAttr));
+        requestAnimationFrame(() => tab.scrollIntoView?.({ block: "nearest", inline: "nearest" }));
+      });
       tab.addEventListener("keydown", (event) => {
         if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
         event.preventDefault();
@@ -1737,6 +1783,7 @@
     root.dataset.udesV2Compare = "on";
     setRuntime("Loading geography", "busy");
     bindControls();
+    setConsoleView(state.view, false);
     setMutationControlsDisabled(true);
     try {
       await loadData();
@@ -2155,10 +2202,16 @@
   function renderSummary() {
     const active = normalizeCity(state.snapshot);
     const reference = normalizeCity(state.referenceSnapshot);
+    const peakRoadUsage = Math.max(0, ...linksOf().filter(isRenderedAnalysisLink).map(linkLoad).filter(Number.isFinite));
     setMetric("satisfaction", formatPercent(active.satisfaction || active.happy));
     setMetric("commute", `${active.meanCommute.toFixed(1)} min`);
     setMetric("transitShare", formatPercent(active.ptShare));
     setMetric("housingOccupancy", formatPercent(active.housingOccupancy));
+    setMetric("cityPopulation", formatCompact(active.population));
+    setMetric("cityEnterprises", formatNumber(active.enterprises));
+    setMetric("peakRoadUsage", formatPercent(peakRoadUsage));
+    setMetric("mapCommute", `${active.meanCommute.toFixed(1)} min`);
+    setMetric("cityNetIncome", formatAed(active.netIncome, true));
     setDelta("satisfaction", active.satisfaction || active.happy, reference.satisfaction || reference.happy, "percent");
     setDelta("commute", active.meanCommute, reference.meanCommute, "minutes", true);
     setDelta("transitShare", active.ptShare, reference.ptShare, "percent");
@@ -2325,8 +2378,10 @@
       return;
     }
     state.map = window.L.map(mount, { zoomControl: false, preferCanvas: true, attributionControl: true, minZoom: 8, maxZoom: 17 });
-    state.map.createPane("udesV2CommuteFlows").style.zIndex = "440";
+    state.map.createPane("udesV2CommuteFlows").style.zIndex = "420";
+    state.map.createPane("udesV2Roads").style.zIndex = "430";
     state.map.createPane("udesV2Agents").style.zIndex = "450";
+    state.mapRenderers.roads = window.L.svg({ pane: "udesV2Roads", padding: 0.5 });
     state.mapRenderers.commuteFlows = window.L.svg({ pane: "udesV2CommuteFlows", padding: 0.5 });
     state.mapRenderers.agents = window.L.svg({ pane: "udesV2Agents", padding: 0.5 });
     state.layers.basemap = window.L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -2356,7 +2411,30 @@
         style: zoneStyle,
         onEachFeature: (feature, layer) => {
           const id = feature.properties?.id || feature.properties?.zoneId || feature.id;
-          layer.bindTooltip(feature.properties?.name || baselineZone(id)?.name || id, { sticky: true, direction: "top" });
+          const label = feature.properties?.name || baselineZone(id)?.name || id;
+          const tooltip = layer
+            .bindTooltip(label, {
+              permanent: true,
+              direction: "center",
+              className: "udes-v2-zone-label",
+              interactive: true,
+              opacity: 0.94,
+            })
+            .getTooltip();
+          tooltip.on("click", () => selectObject("zone", id));
+          layer.on("tooltipopen", (event) => {
+            const element = event.tooltip?.getElement?.();
+            if (!element || element.dataset.udesV2Bound === "true") return;
+            element.dataset.udesV2Bound = "true";
+            element.setAttribute("role", "button");
+            element.setAttribute("tabindex", "0");
+            element.setAttribute("aria-label", `Inspect ${label}`);
+            element.addEventListener("keydown", (keyboardEvent) => {
+              if (!["Enter", " "].includes(keyboardEvent.key)) return;
+              keyboardEvent.preventDefault();
+              selectObject("zone", id);
+            });
+          });
           layer.on({
             click: () => selectObject("zone", id),
             mouseover: () => {
@@ -2459,11 +2537,11 @@
     const corridorOrAgentMode = state.mapMode === "network" || state.mapMode === "agents";
     return {
       color: selected ? palette.ink : "#60736e",
-      weight: selected ? 2.5 : hovered ? 2 : corridorOrAgentMode ? 0.85 : 1.1,
-      opacity: corridorOrAgentMode ? 0.68 : 0.9,
+      weight: selected ? 2.7 : hovered ? 2.1 : corridorOrAgentMode ? 1.05 : 1.1,
+      opacity: corridorOrAgentMode ? 0.8 : 0.9,
       fillColor:
-        state.mapMode === "rent" ? mixColor("#f4ead4", "#a9673f", ratio) : corridorOrAgentMode ? "#ffffff" : mixColor("#e9f0ed", "#277565", ratio),
-      fillOpacity: hovered ? (corridorOrAgentMode ? 0.16 : 0.78) : corridorOrAgentMode ? 0.06 : 0.5,
+        state.mapMode === "rent" ? mixColor("#f4ead4", "#a9673f", ratio) : corridorOrAgentMode ? "#eef3f0" : mixColor("#e9f0ed", "#277565", ratio),
+      fillOpacity: selected ? (corridorOrAgentMode ? 0.24 : 0.72) : hovered ? (corridorOrAgentMode ? 0.2 : 0.78) : corridorOrAgentMode ? 0.11 : 0.5,
     };
   }
 
@@ -2518,6 +2596,7 @@
   }
 
   const zoneDisplayGeometryCache = new Map();
+  const zonePointSequenceCache = new Map();
 
   function zoneDisplayGeometry(zoneId) {
     const key = String(zoneId || "");
@@ -2539,22 +2618,56 @@
 
   function hashUnit(hash) {
     let value = hash >>> 0;
-    value ^= value << 13;
-    value ^= value >>> 17;
-    value ^= value << 5;
+    value ^= value >>> 16;
+    value = Math.imul(value, 0x7feb352d);
+    value ^= value >>> 15;
+    value = Math.imul(value, 0x846ca68b);
+    value ^= value >>> 16;
     return (value >>> 0) / 4294967296;
   }
 
-  function stablePointInsideZone(zoneId, identity, kind, generation = 0) {
-    const { feature, bounds } = zoneDisplayGeometry(zoneId);
-    if (!feature || !bounds) return zoneCentroidLatLng(zoneId);
-    const seed = stableHash(`${kind}:${identity}:${generation}:${zoneId}`);
-    for (let attempt = 0; attempt < 36; attempt += 1) {
-      const longitude = bounds.west + (bounds.east - bounds.west) * hashUnit(seed + attempt * 0x9e3779b9);
-      const latitude = bounds.south + (bounds.north - bounds.south) * hashUnit(seed ^ (attempt * 0x85ebca6b));
+  function candidatePointInsideZone(feature, bounds, seed) {
+    for (let attempt = 0; attempt < 48; attempt += 1) {
+      const longitudeHash = seed + Math.imul(attempt + 1, 0x9e3779b9);
+      const latitudeHash = seed ^ Math.imul(attempt + 1, 0x85ebca6b);
+      const longitude = bounds.west + (bounds.east - bounds.west) * hashUnit(longitudeHash);
+      const latitude = bounds.south + (bounds.north - bounds.south) * hashUnit(latitudeHash);
       if (pointInFeature([longitude, latitude], feature)) return [latitude, longitude];
     }
-    return zoneCentroidLatLng(zoneId);
+    return null;
+  }
+
+  function stablePointInsideZone(zoneId, identity, kind, generation = 0, slot = null) {
+    const { feature, bounds } = zoneDisplayGeometry(zoneId);
+    if (!feature || !bounds) return zoneCentroidLatLng(zoneId);
+    if (!Number.isInteger(slot) || slot < 0) {
+      return candidatePointInsideZone(feature, bounds, stableHash(`${kind}:${identity}:${generation}:${zoneId}`)) || zoneCentroidLatLng(zoneId);
+    }
+    const sequenceKey = `${kind}:${zoneId}`;
+    if (!zonePointSequenceCache.has(sequenceKey)) zonePointSequenceCache.set(sequenceKey, []);
+    const sequence = zonePointSequenceCache.get(sequenceKey);
+    const longitudeScale = Math.max(0.35, Math.cos((((bounds.south + bounds.north) / 2) * Math.PI) / 180));
+    while (sequence.length <= slot) {
+      const ordinal = sequence.length;
+      let bestPoint = null;
+      let bestSpacing = -1;
+      for (let candidateIndex = 0; candidateIndex < 10; candidateIndex += 1) {
+        const candidate = candidatePointInsideZone(feature, bounds, stableHash(`${sequenceKey}:${ordinal}:${candidateIndex}`));
+        if (!candidate) continue;
+        let nearestSpacing = Number.POSITIVE_INFINITY;
+        for (const previous of sequence) {
+          const deltaX = (candidate[1] - previous[1]) * longitudeScale;
+          const deltaY = candidate[0] - previous[0];
+          nearestSpacing = Math.min(nearestSpacing, deltaX * deltaX + deltaY * deltaY);
+        }
+        if (nearestSpacing > bestSpacing) {
+          bestPoint = candidate;
+          bestSpacing = nearestSpacing;
+        }
+      }
+      sequence.push(bestPoint || zoneCentroidLatLng(zoneId));
+    }
+    return sequence[slot];
   }
 
   function mapAgentId(kind, index) {
@@ -2573,10 +2686,16 @@
         this.visible = false;
         this.points = [];
         this.positionCache = new Map();
+        this.positionSlotCache = new Map();
+        this.nextPositionSlot = new Map();
         this.grid = new Map();
         this.hoveredKey = null;
         this.keyboardKey = null;
         this.drawRequest = null;
+        this.zooming = false;
+        this.drawCenter = null;
+        this.drawZoom = null;
+        this.drawPosition = null;
         this.tooltip = null;
       },
       onAdd(map) {
@@ -2585,24 +2704,36 @@
         this.canvas.tabIndex = 0;
         this.canvas.setAttribute("role", "application");
         this.canvas.setAttribute("aria-describedby", "udes-v2-map-caption");
-        this.canvas.setAttribute(
-          "aria-label",
-          "All modeled citizen and enterprise agents. Use the arrow keys to move between nearby agents and Enter to inspect."
-        );
+        this.canvas.setAttribute("aria-label", this.agentAriaLabel());
         map.getPane("udesV2Agents").appendChild(this.canvas);
-        window.L.DomEvent.on(this.canvas, "mousemove", this.onPointerMove, this);
-        window.L.DomEvent.on(this.canvas, "mouseleave", this.onPointerLeave, this);
-        window.L.DomEvent.on(this.canvas, "click", this.onClick, this);
+        this.container = map.getContainer();
+        this.pointerMoveListener = (event) => this.onPointerMove(event);
+        this.pointerLeaveListener = () => this.onPointerLeave();
+        this.clickListener = (event) => this.onClick(event);
+        this.container.addEventListener("mousemove", this.pointerMoveListener);
+        this.container.addEventListener("mouseleave", this.pointerLeaveListener);
+        this.container.addEventListener("click", this.clickListener, true);
         window.L.DomEvent.on(this.canvas, "keydown", this.onKeyDown, this);
-        map.on("move zoomend resize viewreset", this.scheduleDraw, this);
+        map.on("move resize", this.scheduleDraw, this);
+        map.on("zoomstart", this.onZoomStart, this);
+        map.on("zoomanim", this.onZoomAnimation, this);
+        map.on("zoomend viewreset", this.onZoomEnd, this);
         this.scheduleDraw();
       },
       onRemove(map) {
-        map.off("move zoomend resize viewreset", this.scheduleDraw, this);
+        map.off("move resize", this.scheduleDraw, this);
+        map.off("zoomstart", this.onZoomStart, this);
+        map.off("zoomanim", this.onZoomAnimation, this);
+        map.off("zoomend viewreset", this.onZoomEnd, this);
+        this.container?.removeEventListener("mousemove", this.pointerMoveListener);
+        this.container?.removeEventListener("mouseleave", this.pointerLeaveListener);
+        this.container?.removeEventListener("click", this.clickListener, true);
+        this.container?.classList.remove("is-agent-hover");
         if (this.drawRequest) cancelAnimationFrame(this.drawRequest);
         this.closeTooltip();
         this.canvas?.remove();
         this.canvas = null;
+        this.container = null;
       },
       setFrame(frame) {
         if (this.frame === frame) return;
@@ -2610,13 +2741,67 @@
         this.rebuildPoints();
         this.scheduleDraw();
       },
+      setKinds(kinds) {
+        const nextKinds = { citizen: kinds?.citizen !== false, enterprise: kinds?.enterprise !== false };
+        if (this.kinds?.citizen === nextKinds.citizen && this.kinds?.enterprise === nextKinds.enterprise) return;
+        this.kinds = nextKinds;
+        this.hoveredKey = null;
+        this.keyboardKey = null;
+        this.container?.classList.remove("is-agent-hover");
+        this.closeTooltip();
+        this.scheduleDraw();
+      },
+      pointVisible(point) {
+        return this.kinds?.[point.kind] !== false;
+      },
+      agentAriaLabel() {
+        const kinds = [this.kinds?.citizen !== false ? "citizen" : null, this.kinds?.enterprise !== false ? "enterprise" : null].filter(Boolean);
+        if (!kinds.length) return "Agent layers are hidden.";
+        const subject = kinds.length === 2 ? "citizen and enterprise" : kinds[0];
+        return `Modeled ${subject} agents. Use the arrow keys to move between nearby agents and Enter to inspect.`;
+      },
       setVisible(visible) {
         this.visible = Boolean(visible);
         if (this.canvas) {
           this.canvas.hidden = !this.visible;
           this.canvas.tabIndex = this.visible ? 0 : -1;
         }
-        if (!this.visible) this.closeTooltip();
+        if (!this.visible) {
+          this.container?.classList.remove("is-agent-hover");
+          this.closeTooltip();
+        }
+        this.scheduleDraw();
+      },
+      positionSlot(cacheKey, zoneId, kind) {
+        if (this.positionSlotCache.has(cacheKey)) return this.positionSlotCache.get(cacheKey);
+        const sequenceKey = `${kind}:${zoneId}`;
+        const slot = this.nextPositionSlot.get(sequenceKey) || 0;
+        this.nextPositionSlot.set(sequenceKey, slot + 1);
+        this.positionSlotCache.set(cacheKey, slot);
+        return slot;
+      },
+      onZoomStart() {
+        this.zooming = true;
+        if (this.drawRequest) {
+          cancelAnimationFrame(this.drawRequest);
+          this.drawRequest = null;
+        }
+        this.hoveredKey = null;
+        this.container?.classList.remove("is-agent-hover");
+        this.closeTooltip();
+      },
+      onZoomAnimation(event) {
+        if (!this.canvas || !this.map || !this.drawCenter || this.drawZoom === null || !this.drawPosition) return;
+        const scale = this.map.getZoomScale(event.zoom, this.drawZoom);
+        const viewHalf = this.map.getSize().multiplyBy(0.5);
+        const drawnCenterPoint = this.map.project(this.drawCenter, event.zoom);
+        const targetCenterPoint = this.map.project(event.center, event.zoom);
+        const centerOffset = targetCenterPoint.subtract(drawnCenterPoint);
+        const position = viewHalf.multiplyBy(-scale).add(this.drawPosition).add(viewHalf).subtract(centerOffset);
+        window.L.DomUtil.setTransform(this.canvas, position, scale);
+      },
+      onZoomEnd() {
+        this.zooming = false;
         this.scheduleDraw();
       },
       rebuildPoints() {
@@ -2647,7 +2832,7 @@
           const cacheKey = `citizen:${id}:${generation}:${zoneId}`;
           let latlng = this.positionCache.get(cacheKey);
           if (!latlng) {
-            latlng = stablePointInsideZone(zoneId, id, "citizen", generation);
+            latlng = stablePointInsideZone(zoneId, id, "citizen", generation, this.positionSlot(cacheKey, zoneId, "citizen"));
             if (latlng) this.positionCache.set(cacheKey, latlng);
           }
           if (!latlng) continue;
@@ -2677,7 +2862,7 @@
           const cacheKey = `enterprise:${id}:${zoneId}`;
           let latlng = this.positionCache.get(cacheKey);
           if (!latlng) {
-            latlng = stablePointInsideZone(zoneId, id, "enterprise");
+            latlng = stablePointInsideZone(zoneId, id, "enterprise", 0, this.positionSlot(cacheKey, zoneId, "enterprise"));
             if (latlng) this.positionCache.set(cacheKey, latlng);
           }
           if (!latlng) continue;
@@ -2695,6 +2880,7 @@
         this.points = points;
       },
       scheduleDraw() {
+        if (this.zooming) return;
         if (this.drawRequest) return;
         this.drawRequest = requestAnimationFrame(() => {
           this.drawRequest = null;
@@ -2702,22 +2888,30 @@
         });
       },
       draw() {
-        if (!this.canvas || !this.map || !this.visible) return;
+        if (!this.canvas || !this.map || !this.visible || this.zooming) return;
         const size = this.map.getSize();
         const ratio = Math.min(2, window.devicePixelRatio || 1);
         this.canvas.width = Math.max(1, Math.round(size.x * ratio));
         this.canvas.height = Math.max(1, Math.round(size.y * ratio));
         this.canvas.style.width = `${size.x}px`;
         this.canvas.style.height = `${size.y}px`;
-        window.L.DomUtil.setPosition(this.canvas, this.map.containerPointToLayerPoint([0, 0]));
+        const canvasPosition = this.map.containerPointToLayerPoint([0, 0]);
+        window.L.DomUtil.setPosition(this.canvas, canvasPosition);
+        this.drawCenter = this.map.getCenter();
+        this.drawZoom = this.map.getZoom();
+        this.drawPosition = canvasPosition.clone();
         const context = this.canvas.getContext("2d");
         context.setTransform(ratio, 0, 0, ratio, 0, 0);
         context.clearRect(0, 0, size.x, size.y);
         this.grid = new Map();
         const zoom = this.map.getZoom();
-        const citizenRadius = zoom >= 13 ? 2.35 : zoom >= 11 ? 1.9 : 1.45;
-        const enterpriseRadius = zoom >= 13 ? 3.25 : zoom >= 11 ? 2.7 : 2.2;
+        const citizenRadius = zoom >= 13 ? 3.4 : zoom >= 11 ? 2.9 : 2.4;
+        const enterpriseRadius = zoom >= 13 ? 5.2 : zoom >= 11 ? 4.4 : 3.8;
         for (const point of this.points) {
+          if (!this.pointVisible(point)) {
+            point.screen = null;
+            continue;
+          }
           const screen = this.map.latLngToContainerPoint(point.latlng);
           point.screen = screen;
           if (screen.x < -8 || screen.y < -8 || screen.x > size.x + 8 || screen.y > size.y + 8) continue;
@@ -2728,7 +2922,7 @@
             point.key === this.hoveredKey || point.key === this.keyboardKey || (state.selected.kind === point.kind && state.selected.id === point.id);
           if (point.kind === "citizen") {
             context.beginPath();
-            context.arc(screen.x, screen.y, highlighted ? citizenRadius + 2.2 : citizenRadius, 0, Math.PI * 2);
+            context.arc(screen.x, screen.y, highlighted ? citizenRadius + 1.8 : citizenRadius, 0, Math.PI * 2);
             context.fillStyle =
               point.state === "Extreme"
                 ? palette.red
@@ -2737,19 +2931,17 @@
                   : point.state === "Recovery"
                     ? palette.teal
                     : palette.green;
-            context.globalAlpha = highlighted ? 1 : 0.76;
+            context.globalAlpha = highlighted ? 1 : 0.92;
             context.fill();
-            if (highlighted) {
-              context.lineWidth = 1.6;
-              context.strokeStyle = "#ffffff";
-              context.stroke();
-            }
+            context.lineWidth = highlighted ? 1.8 : 0.8;
+            context.strokeStyle = "#ffffff";
+            context.stroke();
           } else {
             const radius = highlighted ? enterpriseRadius + 1.7 : enterpriseRadius;
-            context.globalAlpha = highlighted ? 1 : 0.9;
-            context.fillStyle = "#ffffff";
-            context.strokeStyle = point.state === "Starting" ? palette.muted : palette.blue;
-            context.lineWidth = highlighted ? 2.2 : 1.5;
+            context.globalAlpha = highlighted ? 1 : 0.94;
+            context.fillStyle = palette.blue;
+            context.strokeStyle = "#ffffff";
+            context.lineWidth = highlighted ? 2.2 : 1.1;
             context.fillRect(screen.x - radius, screen.y - radius, radius * 2, radius * 2);
             context.strokeRect(screen.x - radius, screen.y - radius, radius * 2, radius * 2);
           }
@@ -2757,6 +2949,7 @@
         context.globalAlpha = 1;
       },
       nearestPoint(containerPoint, maximumDistance = 9) {
+        if (this.zooming) return null;
         const cellX = Math.floor(containerPoint.x / 18);
         const cellY = Math.floor(containerPoint.y / 18);
         let nearest = null;
@@ -2775,7 +2968,8 @@
         return nearest;
       },
       pointerPoint(event) {
-        const bounds = this.canvas.getBoundingClientRect();
+        if (event?.containerPoint) return event.containerPoint;
+        const bounds = this.container?.getBoundingClientRect() || this.canvas.getBoundingClientRect();
         return window.L.point(event.clientX - bounds.left, event.clientY - bounds.top);
       },
       tooltipHtml(point) {
@@ -2806,30 +3000,36 @@
       closeTooltip() {
         if (this.tooltip && this.map) this.map.closeTooltip(this.tooltip);
         if (this.canvas) {
-          this.canvas.setAttribute(
-            "aria-label",
-            "All modeled citizen and enterprise agents. Use the arrow keys to move between nearby agents and Enter to inspect."
-          );
+          this.canvas.setAttribute("aria-label", this.agentAriaLabel());
         }
       },
       onPointerMove(event) {
+        if (!this.visible || event.target?.closest?.(".leaflet-control")) return;
         const point = this.nearestPoint(this.pointerPoint(event));
         const nextKey = point?.key || null;
         if (nextKey === this.hoveredKey) return;
         this.hoveredKey = nextKey;
+        this.container?.classList.toggle("is-agent-hover", Boolean(point));
         if (point) this.showTooltip(point);
         else this.closeTooltip();
         this.scheduleDraw();
       },
       onPointerLeave() {
         this.hoveredKey = null;
+        this.container?.classList.remove("is-agent-hover");
         if (!this.keyboardKey) this.closeTooltip();
         this.scheduleDraw();
       },
       onClick(event) {
-        const point = this.nearestPoint(this.pointerPoint(event), 10);
+        if (
+          !this.visible ||
+          event.target?.closest?.("a, button, .leaflet-control, .udes-v2-road-feature, .udes-v2-commute-flow-feature, .udes-v2-zone-label")
+        )
+          return;
+        const point = this.nearestPoint(this.pointerPoint(event), 5);
         if (!point) return;
-        window.L.DomEvent.stopPropagation(event);
+        event.preventDefault();
+        event.stopImmediatePropagation();
         selectObject(point.kind, point.id);
       },
       directionalPoint(current, key) {
@@ -2843,7 +3043,7 @@
         let best = null;
         let bestScore = Infinity;
         for (const candidate of this.points) {
-          if (!candidate.screen || candidate === current) continue;
+          if (!this.pointVisible(candidate) || !candidate.screen || candidate === current) continue;
           const dx = candidate.screen.x - current.screen.x;
           const dy = candidate.screen.y - current.screen.y;
           const forward = dx * direction[0] + dy * direction[1];
@@ -2866,7 +3066,9 @@
           this.scheduleDraw();
           return;
         }
-        const current = this.points.find((point) => point.key === this.keyboardKey) || this.points.find((point) => point.screen);
+        const current =
+          this.points.find((point) => point.key === this.keyboardKey && this.pointVisible(point) && point.screen) ||
+          this.points.find((point) => this.pointVisible(point) && point.screen);
         if (!current) return;
         if (["Enter", " "].includes(event.key)) {
           selectObject(current.kind, current.id);
@@ -3244,15 +3446,41 @@
     const selectedZoneId = state.selected.kind === "zone" ? String(state.selected.id) : "";
     const selected = selectedZoneId && [entry.fromZoneId, entry.toZoneId].includes(selectedZoneId);
     return {
+      className: "udes-v2-commute-flow-feature",
       pane: "udesV2CommuteFlows",
       renderer: state.mapRenderers.commuteFlows,
       color: selected ? palette.teal : palette.blue,
-      weight: 1.1 + strength * 4.2 + (selected ? 0.7 : 0),
-      opacity: selected ? 0.9 : 0.3 + strength * 0.42,
-      dashArray: "4 5",
+      weight: 0.8 + strength * 2.8 + (selected ? 0.6 : 0),
+      opacity: selected ? 0.82 : 0.2 + strength * 0.34,
+      dashArray: "3 6",
       lineCap: "round",
       lineJoin: "round",
     };
+  }
+
+  function commuteArcLatLngs(fromZoneId, toZoneId) {
+    const start = zoneCentroidLatLng(fromZoneId);
+    const end = zoneCentroidLatLng(toZoneId);
+    if (!start || !end) return fallbackCommuteRouteLatLngs(fromZoneId, toZoneId);
+    const midLatitude = (start[0] + end[0]) / 2;
+    const longitudeScale = Math.max(0.35, Math.cos((midLatitude * Math.PI) / 180));
+    const deltaX = (end[1] - start[1]) * longitudeScale;
+    const deltaY = end[0] - start[0];
+    const distance = Math.hypot(deltaX, deltaY);
+    if (distance < 1e-6) return [start, end];
+    const bend = Math.min(0.035, distance * 0.16);
+    const controlLatitude = midLatitude + (deltaX / distance) * bend;
+    const controlLongitude = (start[1] + end[1]) / 2 - (deltaY / distance / longitudeScale) * bend;
+    const latlngs = [];
+    for (let index = 0; index <= 24; index += 1) {
+      const t = index / 24;
+      const inverse = 1 - t;
+      latlngs.push([
+        inverse * inverse * start[0] + 2 * inverse * t * controlLatitude + t * t * end[0],
+        inverse * inverse * start[1] + 2 * inverse * t * controlLongitude + t * t * end[1],
+      ]);
+    }
+    return latlngs;
   }
 
   function removeCommuteFlowLayer(line) {
@@ -3302,10 +3530,10 @@
     if (!registry || !layerGroup || !window.L) return;
     const entries = topInterDistrictCommutes(state.snapshot?.commuteOd, 18)
       .map((route) => {
-        const roadPath = commuteRoadPath(route.fromZoneId, route.toZoneId);
         return {
           ...route,
-          ...roadPath,
+          latlngs: commuteArcLatLngs(route.fromZoneId, route.toZoneId),
+          roadNames: [],
           key: `commute:${route.fromZoneId}:${route.toZoneId}`,
         };
       })
@@ -3316,12 +3544,10 @@
       activeKeys.add(entry.key);
       entry.ariaLabel = `${zoneLabel(entry.fromZoneId)} to ${zoneLabel(entry.toZoneId)}: ${formatNumber(
         entry.value
-      )} represented home-to-work commuters${
-        entry.roadNames.length ? ` via ${entry.roadNames.join(", ")}` : ""
-      }. Activate to inspect the home district.`;
+      )} represented workers in the current home-to-work stock. This is not a daily trip count. Activate to inspect the home district.`;
       const tooltip = `<strong>${escapeHtml(zoneLabel(entry.fromZoneId))} → ${escapeHtml(zoneLabel(entry.toZoneId))}</strong><span>${escapeHtml(
         formatNumber(entry.value)
-      )} represented home-to-work commuters</span>${entry.roadNames.length ? `<span>Via ${entry.roadNames.map(escapeHtml).join(" · ")}</span>` : ""}`;
+      )} represented workers</span><span>Current home-to-work relationship · not daily road traffic</span>`;
       let line = registry.get(entry.key);
       if (!line) {
         line = window.L.polyline(entry.latlngs, commuteFlowStyle(entry, maximum)).addTo(layerGroup);
@@ -3362,11 +3588,16 @@
   function updateAgentMapLayers() {
     if (!state.map) return;
     const visible = state.mapMode === "agents";
+    const showCitizens = visible && state.agentVisibility.citizens;
+    const showEnterprises = visible && state.agentVisibility.enterprises;
+    const showFlows = visible && state.agentVisibility.flows;
     const fullFrameAvailable = Boolean(state.snapshot?.mapFrame?.citizens && state.snapshot?.mapFrame?.enterprises && state.agentCanvas);
     if (visible) {
       syncCommuteFlowLayers();
-      if (fullFrameAvailable) state.agentCanvas.setFrame(state.snapshot.mapFrame);
-      else {
+      if (fullFrameAvailable) {
+        state.agentCanvas.setFrame(state.snapshot.mapFrame);
+        state.agentCanvas.setKinds({ citizen: showCitizens, enterprise: showEnterprises });
+      } else {
         syncRepresentativeAgentMarkers("citizen");
         syncRepresentativeAgentMarkers("enterprise");
       }
@@ -3383,14 +3614,16 @@
         marker.udesV2Signature = null;
       });
     }
-    mapLayerVisible(state.layers.commuteFlows, visible);
-    mapLayerVisible(state.layers.citizenAgents, visible && !fullFrameAvailable);
-    mapLayerVisible(state.layers.enterpriseAgents, visible && !fullFrameAvailable);
-    state.agentCanvas?.setVisible(visible && fullFrameAvailable);
+    mapLayerVisible(state.layers.commuteFlows, showFlows);
+    mapLayerVisible(state.layers.citizenAgents, showCitizens && !fullFrameAvailable);
+    mapLayerVisible(state.layers.enterpriseAgents, showEnterprises && !fullFrameAvailable);
+    state.agentCanvas?.setVisible(fullFrameAvailable && (showCitizens || showEnterprises));
     if (visible) {
-      const registries = fullFrameAvailable
-        ? [state.mapFeatures.commuteFlows]
-        : [state.mapFeatures.citizenAgents, state.mapFeatures.enterpriseAgents, state.mapFeatures.commuteFlows];
+      const registries = [
+        ...(fullFrameAvailable || !showCitizens ? [] : [state.mapFeatures.citizenAgents]),
+        ...(fullFrameAvailable || !showEnterprises ? [] : [state.mapFeatures.enterpriseAgents]),
+        ...(showFlows ? [state.mapFeatures.commuteFlows] : []),
+      ];
       for (const registry of registries) {
         registry.forEach((layer) => {
           syncMapFeatureAccessibility(layer);
@@ -3420,6 +3653,9 @@
     const selected = state.selected.kind === "link" && String(state.selected.id) === String(id);
     if (contextOnly) {
       return {
+        className: "udes-v2-road-feature",
+        pane: "udesV2Roads",
+        renderer: state.mapRenderers.roads,
         color: "#7f8c89",
         weight: selected ? 2.4 : 1.25,
         opacity: state.mapMode === "network" ? 0.72 : 0.38,
@@ -3428,9 +3664,12 @@
       };
     }
     return {
+      className: "udes-v2-road-feature",
+      pane: "udesV2Roads",
+      renderer: state.mapRenderers.roads,
       color: load > 0.9 ? palette.red : load > 0.65 ? palette.amber : palette.green,
       weight: selected ? 5 : Math.max(1.4, 2 + load * 2.2),
-      opacity: state.mapMode === "network" ? 0.86 : state.mapMode === "agents" ? 0.58 : 0.34,
+      opacity: state.mapMode === "network" ? 0.86 : state.mapMode === "agents" ? 0.76 : 0.34,
     };
   }
 
@@ -3452,11 +3691,13 @@
         roadRefs ? ` · ${escapeHtml(roadRefs)}` : ""
       }</strong><span>Map context only · no assigned OD demand</span><span>Shown for orientation; excluded from modeled road load and capacity results.</span>`;
     }
-    return `<strong>${escapeHtml(roadName)}${roadRefs ? ` · ${escapeHtml(roadRefs)}` : ""}</strong><span>Modeled work-trip V/C · A→B ${escapeHtml(
-      formatPercent(ratioAB)
-    )} · B→A ${escapeHtml(formatPercent(ratioBA))}</span><span>${escapeHtml(formatNumber(vehiclesAB))} / ${escapeHtml(
-      formatNumber(vehiclesBA)
-    )} assigned vehicles</span><span>${escapeHtml(capacityBasis)} · activate for assumptions</span>`;
+    return `<strong>${escapeHtml(roadName)}${
+      roadRefs ? ` · ${escapeHtml(roadRefs)}` : ""
+    }</strong><span>Modeled work-trip road load · A→B ${escapeHtml(formatPercent(ratioAB))} · B→A ${escapeHtml(
+      formatPercent(ratioBA)
+    )}</span><span>${escapeHtml(formatNumber(vehiclesAB))} / ${escapeHtml(formatNumber(vehiclesBA))} assigned vehicles</span><span>${escapeHtml(
+      capacityBasis
+    )} · activate for assumptions</span>`;
   }
 
   function renderMapStatus(date = modelDate(), dailyStatus = state.latestDailyStatus || normalizeCity(state.snapshot)) {
@@ -3480,7 +3721,14 @@
         : `${formatNumber(trackedCitizens)} of ${formatNumber(citizenAgents)} citizen agents + ${formatNumber(
             trackedEnterprises
           )} enterprise agents shown`;
-      ui.mapStatus.textContent = `${agentScope} · ${flowCount} strongest work flows on real routes`;
+      const shownLayers = [
+        state.agentVisibility.citizens ? `${formatNumber(trackedCitizens)} citizens` : null,
+        state.agentVisibility.enterprises ? `${formatNumber(trackedEnterprises)} enterprises` : null,
+        state.agentVisibility.flows ? `${flowCount} strongest home→work links` : null,
+      ].filter(Boolean);
+      ui.mapStatus.textContent = shownLayers.length
+        ? `${shownLayers.join(" + ")} shown · ${state.snapshot?.mapFrame ? "complete agent frame" : agentScope}`
+        : "Agent layers hidden · use the legend toggles to restore them";
       return;
     }
     const assignmentDate = parseUtcDate(textAt(dailyStatus, ["networkAssignmentDate", "city.networkAssignmentDate"], ""));
@@ -3504,6 +3752,7 @@
     if (mapModeChanged) {
       const mapMount = $("[data-udes-v2-map]");
       if (mapMount) mapMount.dataset.udesV2MapMode = state.mapMode;
+      if (ui.mapLegend) ui.mapLegend.dataset.udesV2MapMode = state.mapMode;
       state.renderedMapMode = state.mapMode;
     }
     state.layers.zones?.setStyle?.(zoneStyle);
@@ -3514,9 +3763,10 @@
     updateTransitVisibility();
     updateAgentMapLayers();
     renderMapStatus();
+    if (ui.agentLayerToggles) ui.agentLayerToggles.hidden = state.mapMode !== "agents";
     if (ui.mapLegend && mapModeChanged) {
       const legend = {
-        network: ["Road V/C", ["is-low", "Below 65%"], ["is-medium", "65–90%"], ["is-high", "Above 90%"], ["is-context-road", "Context only"]],
+        network: ["Road load", ["is-low", "Below 65%"], ["is-medium", "65–90%"], ["is-high", "Above 90%"], ["is-context-road", "Context only"]],
         population: ["Resident population", ["is-low", "Lower"], ["is-medium", "Middle"], ["is-high", "Higher"]],
         access: ["Shorter mean commute", ["is-high", "Longer"], ["is-medium", "Middle"], ["is-low", "Shorter"]],
         rent: ["Housing rent", ["is-low", "Lower"], ["is-medium", "Middle"], ["is-high", "Higher"]],
@@ -3526,7 +3776,7 @@
           ["is-agent-pressure", "Waiting / Extreme"],
           ["is-agent-recovery", "Recovery"],
           ["is-agent-enterprise", "Enterprise agents"],
-          ["is-agent-flow", "Home → work flow"],
+          ["is-agent-flow", "Home → work stock"],
         ],
       }[state.mapMode];
       const strong = $("strong", ui.mapLegend);
@@ -3546,6 +3796,9 @@
   async function selectObject(kind, id) {
     state.selected.kind = kind;
     state.selected.id = id;
+    if (kind !== "city" && state.view === "overview" && window.matchMedia("(min-width: 1100px)").matches) {
+      setConsoleView("studio", false);
+    }
     if (kind === "zone" && ui.zoneSelect) ui.zoneSelect.value = id;
     activateTab("inspector", kind === "city" ? "zone" : kind);
     updateMapStyles();
@@ -3928,7 +4181,7 @@
           `${formatNumber(valueAt(current, ["loadABVehicles"], 0))} / ${formatNumber(valueAt(current, ["loadBAVehicles"], 0))}`,
         ],
         [
-          "Work-trip V/C A→B / B→A",
+          "Work-trip road load A→B / B→A",
           `${formatPercent(valueAt(current, ["volumeCapacityAB"], load))} / ${formatPercent(valueAt(current, ["volumeCapacityBA"], load))}`,
         ],
         ["Connected candidate routes", formatNumber(Array.isArray(current.candidateRouteIds) ? current.candidateRouteIds.length : 0)],
@@ -4018,7 +4271,7 @@
       animationDuration: 280,
       animationDurationUpdate: 0,
       color: [palette.green, palette.blue, palette.amber, palette.red, palette.sand, palette.teal],
-      textStyle: { fontFamily: 'Inter, "Helvetica Neue", sans-serif', color: palette.ink, fontSize: 10 },
+      textStyle: { fontFamily: 'Inter, "Helvetica Neue", sans-serif', color: palette.ink, fontSize: 11 },
       tooltip: {
         trigger: "axis",
         backgroundColor: "#ffffff",
@@ -4027,17 +4280,17 @@
         confine: true,
       },
       grid: { top: 20, left: 44, right: 16, bottom: 28 },
-      legend: { top: 0, right: 4, itemWidth: 12, itemHeight: 7, textStyle: { color: palette.muted, fontSize: 9 } },
+      legend: { top: 0, right: 4, itemWidth: 12, itemHeight: 7, textStyle: { color: palette.muted, fontSize: 10 } },
       xAxis: {
         type: "category",
         axisLine: { lineStyle: { color: palette.line } },
         axisTick: { show: false },
-        axisLabel: { color: palette.muted, fontSize: 9, hideOverlap: true },
+        axisLabel: { color: palette.muted, fontSize: 10, hideOverlap: true },
       },
       yAxis: {
         type: "value",
         splitLine: { lineStyle: { color: "#e8ece9" } },
-        axisLabel: { color: palette.muted, fontSize: 9 },
+        axisLabel: { color: palette.muted, fontSize: 10 },
         axisLine: { show: false },
         axisTick: { show: false },
       },
@@ -4205,6 +4458,16 @@
         series.id = `${key}:${String(series.name || index)
           .toLowerCase()
           .replace(/[^a-z0-9]+/g, "-")}`;
+      if (series.type === "line") {
+        const finitePointCount = (series.data || []).filter((datum) => {
+          const value = Array.isArray(datum) ? datum.at(-1) : datum && typeof datum === "object" ? datum.value : datum;
+          return value !== null && value !== undefined && value !== "" && Number.isFinite(Number(value));
+        }).length;
+        if (finitePointCount <= 1) {
+          series.showSymbol = true;
+          series.symbolSize = 7;
+        }
+      }
     });
     node.setAttribute("aria-label", summarizeChart(node.dataset.udesV2ChartTitle || key, option));
     if (!window.echarts) {
@@ -4270,9 +4533,11 @@
   }
 
   function renderOutcomeCharts() {
-    const [satisfactionNode, commuteNode] = prepareChartPanel("outcomes", [
+    const [satisfactionNode, commuteNode, transitNode, occupancyNode] = prepareChartPanel("outcomes", [
       ["satisfaction", "Resident satisfaction", "Daily weighted share · active and same-seed reference"],
       ["commute", "Mean round-trip commute", "Completed workdays only · minutes"],
+      ["transit", "Transit mode share", "Completed workdays only · active and same-seed reference"],
+      ["occupancy", "Housing occupancy", "Daily occupied capacity · active and same-seed reference"],
     ]);
     const { history, reference, labels } = chartSource();
     const workdaySource = chartSource({ workdaysOnly: true });
@@ -4330,6 +4595,60 @@
     ].filter(Boolean);
     addInterventionMarkers(commute, workdaySource.history, workdaySource.labels);
     mountChart(commuteNode, "outcomes:commute", commute);
+
+    const transit = baseChartOptions();
+    transit.xAxis.data = workdaySource.labels;
+    transit.yAxis = { ...transit.yAxis, min: 0, max: 100, axisLabel: { ...transit.yAxis.axisLabel, formatter: "{value}%" } };
+    transit.series = [
+      {
+        name: "Active",
+        type: "line",
+        showSymbol: false,
+        smooth: 0.18,
+        data: workdaySource.history.map((entry) => entry.ptShare * 100),
+        lineStyle: { width: 2.3, color: palette.blue },
+        itemStyle: { color: palette.blue },
+      },
+      state.compare
+        ? {
+            name: "Reference",
+            type: "line",
+            showSymbol: false,
+            data: workdaySource.reference.map((entry) => (entry ? entry.ptShare * 100 : null)),
+            lineStyle: { width: 1.5, type: "dashed", color: palette.muted },
+            itemStyle: { color: palette.muted },
+          }
+        : null,
+    ].filter(Boolean);
+    addInterventionMarkers(transit, workdaySource.history, workdaySource.labels);
+    mountChart(transitNode, "outcomes:transit", transit);
+
+    const occupancy = baseChartOptions();
+    occupancy.xAxis.data = labels;
+    occupancy.yAxis = { ...occupancy.yAxis, min: 0, max: 100, axisLabel: { ...occupancy.yAxis.axisLabel, formatter: "{value}%" } };
+    occupancy.series = [
+      {
+        name: "Active",
+        type: "line",
+        showSymbol: false,
+        smooth: 0.18,
+        data: history.map((entry) => entry.housingOccupancy * 100),
+        lineStyle: { width: 2.3, color: palette.amber },
+        itemStyle: { color: palette.amber },
+      },
+      state.compare
+        ? {
+            name: "Reference",
+            type: "line",
+            showSymbol: false,
+            data: reference.map((entry) => (entry ? entry.housingOccupancy * 100 : null)),
+            lineStyle: { width: 1.5, type: "dashed", color: palette.muted },
+            itemStyle: { color: palette.muted },
+          }
+        : null,
+    ].filter(Boolean);
+    addInterventionMarkers(occupancy, history, labels);
+    mountChart(occupancyNode, "outcomes:occupancy", occupancy);
   }
 
   function selectedDistrictId() {
@@ -4718,7 +5037,7 @@
   function renderMobilityCharts() {
     const [modesNode, linksNode] = prepareChartPanel("mobility", [
       ["modes", "Workday commute mode share", "Completed workdays only · car, bus and walk"],
-      ["links", "Named corridor pressure", "Latest assignment · maximum directional V/C across each named road's modeled segments"],
+      ["links", "Named corridor pressure", "Latest assignment · highest directional road load across each named road's modeled segments"],
     ]);
     const { history, labels } = chartSource({ workdaysOnly: true });
     const modes = baseChartOptions();
@@ -5089,8 +5408,7 @@
     compact.addEventListener?.("change", apply);
     apply();
     state.resizeObserver = new ResizeObserver(() => resizeCharts());
-    const tray = $("[data-udes-v2-tray]");
-    if (tray) state.resizeObserver.observe(tray);
+    [$("[data-udes-v2-tray]"), $(".udes-v2-map-workspace")].filter(Boolean).forEach((node) => state.resizeObserver.observe(node));
     window.addEventListener(
       "beforeunload",
       () => {

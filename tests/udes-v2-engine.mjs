@@ -863,8 +863,8 @@ assert.deepEqual(
 asymmetricLink.loadABVehicles = 250;
 asymmetricLink.loadBAVehicles = 100;
 const asymmetricMetric = physicalFixture.snapshot().links.find((link) => link.id === asymmetricLink.id);
-assert.equal(asymmetricMetric.volumeCapacityAB, 0.5, "AB V/C divides by AB directional period capacity");
-assert.equal(asymmetricMetric.volumeCapacityBA, 0.5, "BA V/C divides by BA directional period capacity");
+assert.equal(asymmetricMetric.volumeCapacityAB, 0.5, "AB road load divides by AB directional period capacity");
+assert.equal(asymmetricMetric.volumeCapacityBA, 0.5, "BA road load divides by BA directional period capacity");
 
 const baselineData = {
   schemaVersion: abuDhabiBaseline.schemaVersion,
@@ -994,7 +994,7 @@ assert.ok(
     const link = baselineEngine.linkById.get(source.id);
     return link && !link.loadBearing && link.loadABVehicles + link.loadBAVehicles + link.loadABPassengers + link.loadBAPassengers === 0;
   }),
-  "terminal and forced access edges remain non-load-bearing and never dilute road V/C metrics"
+  "terminal and forced access edges remain non-load-bearing and never dilute road-load metrics"
 );
 const baselineContextEdges = abuDhabiBaseline.roadGraph.edges.filter((edge) => edge.contextOnly);
 assert.ok(
@@ -1010,7 +1010,7 @@ assert.ok(
         link.loadABVehicles + link.loadBAVehicles + link.loadABPassengers + link.loadBAPassengers === 0
       );
     }),
-  "context-only named roads stay visible but closed to routing, assignment demand, and V/C accounting"
+  "context-only named roads stay visible but closed to routing, assignment demand, and road-load accounting"
 );
 const assignedSharedLink = baselineEngine.links.find((link) => {
   if (!link.loadBearing || link.candidateRouteIds.length < 2 || link.loadABVehicles + link.loadBAVehicles <= 0) return false;
@@ -1050,7 +1050,7 @@ assert.ok(
       .filter((link) => link.loadBearing !== false && link.contextOnly !== true)
       .flatMap((link) => [link.volumeCapacityAB, link.volumeCapacityBA])
   ) < 2,
-  "opening directional road V/C remains below the broad two-times-capacity credibility ceiling"
+  "opening directional road load remains below the broad two-times-capacity credibility ceiling"
 );
 baselineEngine.step(30);
 const baselineSnapshot = baselineEngine.snapshot();

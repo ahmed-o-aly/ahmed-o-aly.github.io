@@ -347,7 +347,7 @@ visual:
           <div><dt>Standard bus fare</dt><dd><b class="is-observed">Observed</b> AED 2 + 0.05 / km · max 5</dd></div>
           <div><dt>Road assignment</dt><dd><b class="is-derived">OSM-routed</b> 536 nodes · 635 edges · 324 capacity-bearing edges · 241 visible arterial / gateway segments</dd></div>
           <div><dt>Main-road lanes</dt><dd><b class="is-mixed">AD-SDI matched</b> observed lanes on 87 / 324 assignment edges; other lanes remain road-class assumptions</dd></div>
-          <div><dt>Zone portals</dt><dd><b class="is-synthetic">Excluded from V/C</b> 76 centroid-shared access edges remain routeable but cannot appear as fake bottlenecks</dd></div>
+          <div><dt>Zone portals</dt><dd><b class="is-synthetic">Excluded from road load</b> 76 centroid-shared access edges remain routeable but cannot appear as fake bottlenecks</dd></div>
           <div><dt>Work-trip capacity window</dt><dd><b class="is-synthetic">Assumed</b> 13 hours/day · outbound + return work trips</dd></div>
           <div><dt>Jobs, rents and incomes</dt><dd><b class="is-synthetic">Assumed</b> 18 / 18 districts</dd></div>
           <div><dt>Bus routes and timetables</dt><dd><b class="is-synthetic">Assumed</b> 31 service links · 48 service-equivalent capacity multiplier</dd></div>
@@ -355,7 +355,7 @@ visual:
         </dl>
         <div class="udes-v2-cadence-note udes-v2-cadence-note--warning">
           <strong>Interpretation boundary</strong>
-          <p>This is a transparent scenario model, not an Abu Dhabi forecast. It has real geography, named routed arterials, directional road topology and stops, but no observed all-traffic link counts, daily demand profile, holiday/Ramadan schedule, incidents, household travel survey, establishment census or district rent series. Each district still uses an aggregate demand portal rather than address-level trip origins; shared portal chains are therefore excluded from road V/C until routes reach the physical network. Road V/C describes assigned modeled work trips over the stated 13-hour daily capacity window, not measured total or peak-hour traffic. Bus capacity is an aggregate service-equivalent assumption rather than the capacity of one observed route.</p>
+          <p>This is a transparent scenario model, not an Abu Dhabi forecast. It has real geography, named routed arterials, directional road topology and stops, but no observed all-traffic link counts, daily demand profile, holiday/Ramadan schedule, incidents, household travel survey, establishment census or district rent series. Each district still uses an aggregate demand portal rather than address-level trip origins; shared portal chains are therefore excluded from road-load calculations until routes reach the physical network. Road load compares assigned modeled work trips with the stated 13-hour daily capacity window; it is not measured total or peak-hour traffic. Bus capacity is an aggregate service-equivalent assumption rather than the capacity of one observed route.</p>
         </div>
         <nav class="udes-v2-source-links" aria-label="Model sources">
           <a href="https://www.anylogic.com/upload/iblock/198/1985a2d61b26c2d23acd158ab6e5d68e.pdf" target="_blank" rel="noreferrer">UDES paper</a>
@@ -389,13 +389,18 @@ visual:
         <h2 id="udes-v2-map-title">Abu Dhabi agents and arterial network</h2>
       </div>
       <div class="udes-v2-map-layers" role="group" aria-label="Map metric">
-        <button type="button" data-udes-v2-map-layer="network" aria-pressed="false">Road V/C</button>
+        <button type="button" data-udes-v2-map-layer="network" aria-pressed="false">Road load</button>
         <button type="button" data-udes-v2-map-layer="population" aria-pressed="false">Population</button>
         <button type="button" data-udes-v2-map-layer="access" aria-pressed="false">Commute</button>
         <button type="button" data-udes-v2-map-layer="rent" aria-pressed="false">Rent</button>
-        <button type="button" data-udes-v2-map-layer="agents" aria-pressed="true">Agents + flows</button>
+        <button type="button" data-udes-v2-map-layer="agents" aria-pressed="true">Agents</button>
       </div>
-      <button class="udes-v2-text-button" type="button" data-udes-v2-action="fit-emirate">Fit city</button>
+      <div class="udes-v2-workspace-actions">
+        <button class="udes-v2-view-toggle" type="button" aria-pressed="false" aria-label="Open scenario controls and object inspection studio" data-udes-v2-view-toggle>
+          <span data-udes-v2-view-label>Open studio</span>
+        </button>
+        <button class="udes-v2-text-button" type="button" data-udes-v2-action="fit-emirate">Fit city</button>
+      </div>
     </div>
 
     <div class="udes-v2-map-stage">
@@ -403,7 +408,7 @@ visual:
         id="udes-v2-map"
         class="udes-v2-map-mount"
         role="region"
-        aria-label="Interactive map of Greater Abu Dhabi City districts with a labeled basemap, all modeled citizen and enterprise agents, routed home-to-work flows, and named arterial road segments"
+        aria-label="Interactive map of Greater Abu Dhabi City districts with a labeled basemap, all modeled citizen and enterprise agents, optional home-to-work relationships, and named arterial road segments"
         aria-describedby="udes-v2-map-caption"
         data-udes-v2-map
       ></div>
@@ -412,12 +417,26 @@ visual:
         <span>Loading the labeled Abu Dhabi basemap, official districts, agents and routed arterial network…</span>
       </div>
 
+      <dl class="udes-v2-map-pulse" aria-label="Live city pulse">
+        <div><dt>Population</dt><dd data-udes-v2-metric="cityPopulation">&hellip;</dd></div>
+        <div><dt>Enterprises</dt><dd data-udes-v2-metric="cityEnterprises">&hellip;</dd></div>
+        <div><dt>Peak road load</dt><dd data-udes-v2-metric="peakRoadUsage">&hellip;</dd></div>
+        <div><dt>Mean commute</dt><dd data-udes-v2-metric="mapCommute">&hellip;</dd></div>
+        <div><dt>Mean net income</dt><dd data-udes-v2-metric="cityNetIncome">&hellip;</dd></div>
+      </dl>
+
       <div class="udes-v2-map-zoom" role="group" aria-label="Map zoom">
         <button type="button" data-udes-v2-map-action="zoom-in" aria-label="Zoom in">+</button>
         <button type="button" data-udes-v2-map-action="zoom-out" aria-label="Zoom out">&#8722;</button>
       </div>
 
       <div class="udes-v2-map-legend" data-udes-v2-map-legend>
+        <div class="udes-v2-agent-layer-toggles" role="group" aria-label="Agent map layers" data-udes-v2-agent-layer-toggles>
+          <button type="button" aria-pressed="true" data-udes-v2-agent-layer="citizens"><i class="is-agent-citizen"></i>Citizens</button>
+          <button type="button" aria-pressed="true" data-udes-v2-agent-layer="enterprises"><i class="is-agent-enterprise"></i>Enterprises</button>
+          <button type="button" aria-pressed="false" data-udes-v2-agent-layer="flows" title="Top 18 current district-to-district home-to-work relationships; not daily road traffic"><i class="is-agent-flow"></i>Home → work</button>
+        </div>
+        <p class="udes-v2-map-legend__note">Home → work shows current worker relationships, not vehicles or daily trips.</p>
         <strong>Road load</strong>
         <span><i class="is-low"></i>Below 65%</span>
         <span><i class="is-medium"></i>65–90%</span>
@@ -433,7 +452,7 @@ visual:
     </div>
 
     <p id="udes-v2-map-caption" class="udes-v2-sr-only">
-      Eighteen model districts, grouped from official AD-SDI community polygons, are shown over a labeled OpenStreetMap basemap with all 6,070 modeled citizen agents (250 represented residents each), all 600 enterprise agents, directional home-to-work flows, shared named arterial road segments, and public-transport stops. Agent positions are deterministic display locations inside each modeled district, not geocoded addresses. Load-colored roads carry assigned model demand; thin neutral dashed roads are map context only and carry no assigned origin-to-destination demand. Local streets appear only as muted basemap reference and are not simulation edges. Al Ain and Al Dhafra are outside the model boundary.
+      Eighteen model districts, grouped from official AD-SDI community polygons, are shown over a labeled OpenStreetMap basemap with all 6,070 modeled citizen agents (250 represented residents each), all 600 enterprise agents, optional district-to-district home-to-work relationships, shared named arterial road segments, and public-transport stops. Agent positions are deterministic display locations inside each modeled district, not geocoded addresses. Home-to-work arcs show current worker relationships rather than daily vehicle trips. Load-colored roads carry assigned model demand; thin neutral dashed roads are map context only and carry no assigned origin-to-destination demand. Local streets appear only as muted basemap reference and are not simulation edges. Al Ain and Al Dhafra are outside the model boundary.
     </p>
 
   </section>
@@ -517,8 +536,8 @@ visual:
   <section class="udes-v2-tray" aria-labelledby="udes-v2-tray-title" data-udes-v2-tray>
     <div class="udes-v2-tray__bar">
       <div class="udes-v2-tray__label">
-        <span class="udes-v2-kicker">Diagnostics</span>
-        <h2 id="udes-v2-tray-title">Scenario evidence</h2>
+        <span class="udes-v2-kicker">Live analytics</span>
+        <h2 id="udes-v2-tray-title">City pulse</h2>
       </div>
       <div class="udes-v2-chart-tabs" role="tablist" aria-label="Outcome chart views">
         <button id="udes-v2-chart-tab-outcomes" type="button" role="tab" aria-selected="true" aria-controls="udes-v2-chart-panel-outcomes" data-udes-v2-chart-tab="outcomes">Outcomes</button>
