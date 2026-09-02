@@ -3771,12 +3771,12 @@
         access: ["Shorter mean commute", ["is-high", "Longer"], ["is-medium", "Middle"], ["is-low", "Shorter"]],
         rent: ["Housing rent", ["is-low", "Lower"], ["is-medium", "Middle"], ["is-high", "Higher"]],
         agents: [
-          "All modeled agents",
-          ["is-agent-citizen", "Satisfied citizens"],
-          ["is-agent-pressure", "Waiting / Extreme"],
+          "Agent symbols",
+          ["is-agent-satisfied", "Satisfied"],
+          ["is-agent-waiting", "Waiting"],
+          ["is-agent-extreme", "Extreme"],
           ["is-agent-recovery", "Recovery"],
-          ["is-agent-enterprise", "Enterprise agents"],
-          ["is-agent-flow", "Home → work stock"],
+          ["is-agent-enterprise", "Enterprise"],
         ],
       }[state.mapMode];
       const strong = $("strong", ui.mapLegend);
@@ -3787,8 +3787,12 @@
         if (!entry) return;
         const [className, label] = entry;
         const swatch = $("i", node);
-        if (swatch) swatch.className = className;
-        node.lastChild.textContent = label;
+        if (swatch) {
+          swatch.className = className;
+          node.replaceChildren(swatch, document.createTextNode(label));
+        } else {
+          node.textContent = label;
+        }
       });
     }
   }
