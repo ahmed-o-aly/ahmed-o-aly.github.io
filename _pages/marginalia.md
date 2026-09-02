@@ -2,7 +2,7 @@
 layout: default
 title: Marginalia
 permalink: /marginalia/
-description: Existence is a thing of beauty.
+description: Notes in the margins.
 ---
 
 <article class="folio-page folio-marginalia-page">
