@@ -1,6 +1,23 @@
 # Generated from Goodreads. Run: npm run sync:reading
 
 - source: "goodreads"
+  source_id: "233800039"
+  title: "The Devils (The Devils #1)"
+  author: "Joe Abercrombie"
+  cover: "https://i.gr-assets.com/images/S/compressed.photo.goodreads.com/books/1747022269l/233800039._SY475_.jpg"
+  rating: null
+  read_at: ""
+  status: "Currently reading"
+  url: "https://www.goodreads.com/book/show/233800039"
+  review_url: "https://www.goodreads.com/review/show/8910289227"
+  review: ""
+  progress_page: null
+  progress_total: null
+  progress_percent: 68
+  progress_label: "68%"
+  progress_url: "https://www.goodreads.com/user_status/show/1328052076"
+
+- source: "goodreads"
   source_id: "241379146"
   title: "Is Muhammad ﷺ Truly a Prophet of God?"
   author: "Dr. Sami Ameri"
@@ -11,11 +28,11 @@
   url: "https://www.goodreads.com/book/show/241379146"
   review_url: "https://www.goodreads.com/review/show/8901118627"
   review: ""
-  progress_page: null
-  progress_total: null
-  progress_percent: null
-  progress_label: ""
-  progress_url: ""
+  progress_page: 18
+  progress_total: 1116
+  progress_percent: 1.6
+  progress_label: "18 of 1116 pages"
+  progress_url: "https://www.goodreads.com/user_status/show/1328052197"
 
 - source: "goodreads"
   source_id: "944073"

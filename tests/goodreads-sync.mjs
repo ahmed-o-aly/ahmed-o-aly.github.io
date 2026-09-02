@@ -71,6 +71,12 @@ const emptyCurrentlyReadingFixture = `<?xml version="1.0" encoding="UTF-8"?>
 const progressPageFixture = `<!doctype html>
 <html>
   <body>
+    <div class="userStatus" id="user_status_1328052076">
+      <p>
+        Aly is 68% done with
+        <a href="/book/show/233800039-the-devils">The Devils</a>
+      </p>
+    </div>
     <div class="userStatus" id="user_status_1321122832">
       <p>
         Aly is on page 75 of 515 of
@@ -153,6 +159,17 @@ assert.deepEqual(
 );
 
 const progressByBookId = parseGoodreadsProgressPage(progressPageFixture);
+assert.deepEqual(
+  progressByBookId.get("233800039"),
+  {
+    progress_page: null,
+    progress_total: null,
+    progress_percent: 68,
+    progress_label: "68%",
+    progress_url: "https://www.goodreads.com/user_status/show/1328052076",
+  },
+  "hyphenated Goodreads book slugs retain percentage progress"
+);
 assert.deepEqual(
   progressByBookId.get("944073"),
   {

@@ -162,7 +162,7 @@ export function parseGoodreadsProgressPage(html) {
     const start = starts[index];
     const end = starts[index + 1]?.index ?? source.length;
     const block = source.slice(start.index, end);
-    const bookMatch = block.match(/href=["'][^"']*\/book\/show\/(\d+)(?:[._/?#&"']|$)/i);
+    const bookMatch = block.match(/href=["'][^"']*\/book\/show\/(\d+)(?:[._/?#&"'-]|$)/i);
     if (!bookMatch || progressByBookId.has(bookMatch[1])) continue;
 
     const text = decodeHtmlEntities(block.replace(/<[^>]*>/g, " "))
