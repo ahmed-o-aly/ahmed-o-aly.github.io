@@ -5,6 +5,12 @@ permalink: /projects/cnc-machine-inspector/
 description: A browser tool for exploring eight workshop machines and seeing how their components fit together.
 importance: -1
 work_number: 1
+home_feature:
+  description: I cleaned up eight machine assemblies and built a browser viewer for them. You can inspect individual parts, pull the assemblies apart, and see how they fit together.
+  image: /assets/img/projects/selected-works/vmc855.webp
+  image_alt: The VMC855 assembly viewed from above, showing its enclosure, worktable, spindle, and control panel.
+  url: https://ahmed-o-aly.github.io/cnc-machine-inspector/?machine=vmc855
+  label: Open Machine Lab
 category: interactive software
 thread: immersive-tools
 interactive:

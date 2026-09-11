@@ -114,15 +114,62 @@ assertContains(routes.home, /Decision-support systems for labs, public policy &a
 assert.equal((routes.home.match(/class="folio-writing-ledger__entry"/g) || []).length, 1, "home renders one writing-ledger entry");
 const homeWorks = block(routes.home, "folio-selected-works");
 const homeWorksIndex = block(homeWorks, "folio-work-index", "ol");
-assert.equal((homeWorksIndex.match(/class="folio-work-entry"/g) || []).length, 2, "home renders exactly two text-first works");
-assert.equal((homeWorksIndex.match(/class="folio-work-entry__description"/g) || []).length, 2, "each selected work has one plain-language sentence");
+const homeFeatures = [...homeWorksIndex.matchAll(/<li\b[^>]*class="folio-work-feature(?:\s[^"]*)?"[^>]*>[\s\S]*?<\/li>/g)].map((match) => match[0]);
+assert.equal(homeFeatures.length, 2, "home renders exactly two featured works");
+assert.equal((homeWorksIndex.match(/<img\b/g) || []).length, 2, "home renders one project preview per featured work");
 assert.doesNotMatch(
   homeWorksIndex,
-  /<img\b|<picture\b|<figure\b|folio-work-plate|machine-lab-interface\.png|urban-dynamics-console\.png|folio-tags|>\s*(?:Role|Status|Methods)\s*</i,
-  "home works use no thumbnails or portfolio-template metadata"
+  /folio-tags|>\s*(?:Role|Status|Methods)\s*</i,
+  "home works retain authored descriptions without portfolio-template metadata"
 );
-for (const title of ["Machine Lab", "Abu Dhabi Urban Dynamics Lab"]) {
-  assertContains(homeWorksIndex, new RegExp(title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i"), `home includes ${title}`);
+const featuredProjects = [
+  {
+    title: "Machine Lab",
+    launch: "https://ahmed-o-aly.github.io/cnc-machine-inspector/?machine=vmc855",
+    launchLabel: "Open Machine Lab",
+    about: "/projects/cnc-machine-inspector/",
+  },
+  {
+    title: "Abu Dhabi Urban Dynamics Lab",
+    launch: "/projects/abu-dhabi-urban-dynamics-v2/",
+    launchLabel: "Open the simulation",
+    about: "/projects/abu-dhabi-urban-dynamics/",
+  },
+];
+const attribute = (html, name) => html.match(new RegExp(`(?:^|\\s)${name}="([^"]*)"`))?.[1];
+for (const [index, project] of featuredProjects.entries()) {
+  const feature = homeFeatures[index];
+  assertContains(feature, new RegExp(`<h3\\b[^>]*>\\s*${project.title}\\s*</h3>`), `${project.title} has a semantic feature heading`);
+  const description = block(feature, "folio-work-feature__description", "p");
+  assertContains(description, />\s*I\s/, `${project.title} has a first-person description`);
+  const launch = block(feature, "folio-work-feature__launch", "a");
+  const about = block(feature, "folio-work-feature__about", "a");
+  assert.equal(attribute(launch, "href"), project.launch, `${project.title} opens its interactive project directly`);
+  assertContains(launch, new RegExp(project.launchLabel), `${project.title} clearly names the launch action`);
+  assert.equal(attribute(about, "href"), project.about, `${project.title} separately links to its project note`);
+  assertContains(about, /About the project/, `${project.title} labels its secondary project note`);
+
+  const images = feature.match(/<img\b[^>]*>/g) || [];
+  assert.equal(images.length, 1, `${project.title} has one preview image`);
+  const preview = images[0];
+  assertContains(preview, /class="folio-work-feature__image"/, `${project.title} uses the shared preview treatment`);
+  assert.ok(attribute(preview, "alt")?.trim(), `${project.title} has descriptive alternative text`);
+  assert.equal(attribute(preview, "loading"), "lazy", `${project.title} defers its below-fold preview`);
+  assert.equal(attribute(preview, "decoding"), "async", `${project.title} decodes its preview asynchronously`);
+  const dimensions = [Number(attribute(preview, "width")), Number(attribute(preview, "height"))];
+  assert.deepEqual(dimensions, [1200, 900], `${project.title} reserves the preview's intrinsic aspect ratio`);
+  const previewSrc = attribute(preview, "src");
+  assert.match(
+    previewSrc,
+    /^\/assets\/img\/projects\/selected-works\/[^/]+\.(?:png|jpe?g|webp|avif)$/,
+    `${project.title} uses a local project preview`
+  );
+  const sourcePath = new URL(`..${previewSrc}`, import.meta.url);
+  const builtPath = new URL(`../_site${previewSrc}`, import.meta.url);
+  assert.equal(existsSync(sourcePath), true, `${project.title} has a source preview asset`);
+  assert.equal(existsSync(builtPath), true, `${project.title} preview is included in the generated site`);
+  const metadata = await sharp(fileURLToPath(builtPath)).metadata();
+  assert.deepEqual([metadata.width, metadata.height], dimensions, `${project.title} preview matches its declared dimensions`);
 }
 assertContains(routes.home, /data-parallax-y="-60"/, "library watermark has calibrated travel");
 assertContains(

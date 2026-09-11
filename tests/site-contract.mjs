@@ -24,7 +24,7 @@ const formatTargets = [
   "_data/{currently_reading,read_books}.yml",
   "scripts/{build-project-previews,sync-goodreads,validate-udes-v2-full}.mjs",
   "_sass/garden/{_cards,_content,_folio-v2,_shell,_simulation-v2,_tokens}.scss",
-  "_includes/{folio-work-card,garden-card,garden-footer,garden-media,garden-nav,garden-project-card,garden-related,head,metadata}.liquid",
+  "_includes/{folio-work-card,folio-work-feature,garden-card,garden-footer,garden-media,garden-nav,garden-project-card,garden-related,head,metadata}.liquid",
   "_layouts/{cv,garden,page,post}.liquid",
   "_pages/{about,blog,books,home,marginalia,projects}.md",
   "_projects/{abu-dhabi-urban-dynamics,abu-dhabi-urban-dynamics-v2,cnc-machine-inspector,dewa-energy-optimization,sila,territory-design-probvns}.md",

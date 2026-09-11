@@ -5,6 +5,13 @@ permalink: /projects/abu-dhabi-urban-dynamics/
 description: A browser simulation for testing housing, jobs, and transport ideas across Greater Abu Dhabi City.
 importance: 0
 work_number: 2
+home_feature:
+  description: I built this model to try out changes to housing, jobs, and transport across 18 Abu Dhabi districts. It combines public data with assumptions, and isn’t a forecast.
+  image: /assets/img/projects/selected-works/abu-dhabi.webp
+  image_alt: The simulation’s Abu Dhabi map, with citizen and enterprise agents across the island and mainland districts.
+  url: /projects/abu-dhabi-urban-dynamics-v2/
+  label: Open the simulation
+  credit: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>'
 category: simulation
 thread: policy-simulation
 preview: false

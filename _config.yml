@@ -171,6 +171,7 @@ kramdown:
 include: ["_pages", "_scripts"]
 exclude:
   - docs/
+  - design-qa.md
   - Gemfile
   - Gemfile.lock
   - LICENSE

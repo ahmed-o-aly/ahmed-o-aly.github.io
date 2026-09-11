@@ -1,0 +1,32 @@
+{% assign work = include.project %}
+{% assign feature = work.home_feature %}
+<li class="folio-work-feature">
+  <figure class="folio-work-feature__preview">
+    <img
+      class="folio-work-feature__image"
+      src="{{ feature.image | relative_url }}"
+      alt="{{ feature.image_alt | escape }}"
+      width="1200"
+      height="900"
+      loading="lazy"
+      decoding="async"
+    >
+    {% if feature.credit %}
+      <figcaption class="folio-work-feature__credit">{{ feature.credit }}</figcaption>
+    {% endif %}
+  </figure>
+  <div class="folio-work-feature__copy">
+    <span class="folio-work-feature__number" aria-hidden="true">{{ work.work_number | prepend: '0' }}</span>
+    <h3 class="folio-work-feature__title">{{ work.title }}</h3>
+    <p class="folio-work-feature__description">{{ feature.description }}</p>
+    <div class="folio-work-feature__links">
+      <a class="folio-work-feature__launch" href="{{ feature.url | relative_url }}">
+        {{- feature.label }}
+        <span aria-hidden="true">&rarr;</span></a
+      >
+      <a class="folio-work-feature__about" href="{{ work.url | relative_url }}" aria-label="About the project: {{ work.title | escape }}"
+        >About the project</a
+      >
+    </div>
+  </div>
+</li>
