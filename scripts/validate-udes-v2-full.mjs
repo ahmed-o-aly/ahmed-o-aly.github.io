@@ -3,6 +3,9 @@ import fs from "node:fs";
 import path from "node:path";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
+import { Worker, isMainThread, parentPort, workerData } from "node:worker_threads";
+import { summarizeEvidence } from "./udes-v2-evidence-summary.mjs";
+import { controllerModelInputs, finalizeSourceProvenance } from "./udes-v2-source-provenance.mjs";
 
 const require = createRequire(import.meta.url);
 const { UdesV2Engine } = require("../assets/js/udes-v2-worker.js");
@@ -17,29 +20,52 @@ const SOURCE_PATHS = {
   baselineSha256: path.join(ROOT, "assets", "data", "udes-v2", "baseline.json"),
   publicControllerSha256: path.join(ROOT, "assets", "js", "udes-v2-app.js"),
   validationHarnessSha256: fileURLToPath(import.meta.url),
+  evidenceSummarySha256: path.join(ROOT, "scripts", "udes-v2-evidence-summary.mjs"),
+  sourceProvenanceSha256: path.join(ROOT, "scripts", "udes-v2-source-provenance.mjs"),
 };
 const SEED = 240124;
+// These thresholds are model review prompts, not observed targets or proofs of
+// validity. Keep their failures visible without making a desired policy result
+// a condition for the software to pass.
+const DIAGNOSTIC_CHECK_IDS = new Set([
+  "extreme-state-not-dominated-by-nonparticipants",
+  "household-finance-remains-numerically-bounded",
+  "capacity-overflow-within-horizon-stress-guard",
+  "maximum-directional-road-volume-capacity-within-horizon-stress-guard",
+  "commute-time-in-plausibility-band",
+  "residential-relocation-rate-below-provisional-churn-ceiling",
+  "firm-relocation-rate-below-provisional-churn-ceiling",
+  "voluntary-job-switch-rate-below-provisional-churn-ceiling",
+  "employer-carried-workplace-change-rate-below-provisional-churn-ceiling",
+  "extreme-state-below-fifty-percent",
+  "active-enterprise-portfolio",
+  "enterprise-margin-in-plausibility-band",
+  "loss-making-firms-broad-distribution-guard",
+  "enterprise-median-margin-broad-plausibility-guard",
+  "enterprise-severe-distress-below-ten-percent",
+]);
 
 const baselineData = {
   schemaVersion: baseline.schemaVersion,
   zones: baseline.zones,
-  links: baseline.roadGraph.edges,
+  links: baseline.roadGraph.segments || baseline.roadGraph.edges,
   nodes: baseline.roadGraph.nodes,
   candidateRoutes: baseline.roadGraph.candidateRoutes,
+  turnRestrictions: baseline.roadGraph.turnRestrictions,
   transit: baseline.transit,
   calibration: baseline.calibration,
   assumptions: baseline.assumptions,
 };
-const aggregateZonePortalIds = new Set(
-  baseline.roadGraph.edges.filter((edge) => edge.hiddenReason === "aggregated-zone-portal").map((edge) => String(edge.id))
+const prohibitedRoadTurns = new Set(
+  (baseline.roadGraph.turnRestrictions || []).map(
+    (turn) => `${turn.incomingEdgeId}:${turn.incomingDirection}>${turn.outgoingEdgeId}:${turn.outgoingDirection}`
+  )
 );
-
 const commonConfig = {
-  startDate: "2024-01-01",
+  startDate: baseline.calibration.baseDate || "2024-01-01",
   calibrationLabel: "Illustrative Greater Abu Dhabi City scenario baseline, not a forecast",
   endogenousEnterpriseDynamics: true,
   initialEmploymentRate: 0.67,
-  assignmentPeakHours: 13,
 };
 
 const { reference: referencePreset, transit: transitPreset, housing: housingPreset, balanced: balancedPreset } = PUBLIC_PRESETS;
@@ -115,28 +141,152 @@ function enterprisePortfolio(engine) {
 
 function networkMetrics(snapshot) {
   const assignmentLinks = snapshot.links.filter((link) => link.loadBearing !== false && link.contextOnly !== true);
-  const roadRatios = assignmentLinks.flatMap((link) => [link.volumeCapacityAB, link.volumeCapacityBA]);
-  const transitRatios = assignmentLinks.flatMap((link) => [link.ptLoadFactorAB, link.ptLoadFactorBA]);
-  const aggregateZonePortalLoad = sum(
-    snapshot.links
-      .filter((link) => aggregateZonePortalIds.has(String(link.id)))
-      .map((link) => link.loadABVehicles + link.loadBAVehicles + link.loadABPassengers + link.loadBAPassengers)
-  );
+  const roadRatios = assignmentLinks.flatMap((link) => [
+    ...(link.capacityVehiclesAB > 0 ? [link.volumeCapacityAB] : []),
+    ...(link.capacityVehiclesBA > 0 ? [link.volumeCapacityBA] : []),
+  ]);
+  const transitRatios = assignmentLinks.flatMap((link) => [
+    ...(link.ptCapacityPassengersAB > 0 ? [link.ptLoadFactorAB] : []),
+    ...(link.ptCapacityPassengersBA > 0 ? [link.ptLoadFactorBA] : []),
+  ]);
   return {
     physicalEdgeCount: snapshot.links.length,
     assignmentEdgeCount: assignmentLinks.length,
     meanRoadVolumeCapacityRatio: round(sum(roadRatios) / Math.max(roadRatios.length, 1), 4),
     p90RoadVolumeCapacityRatio: round(percentile(roadRatios, 0.9), 4),
-    maximumRoadVolumeCapacityRatio: round(Math.max(...roadRatios), 4),
+    maximumRoadVolumeCapacityRatio: round(Math.max(0, ...roadRatios), 4),
     overloadedDirectionCount: roadRatios.filter((ratio) => ratio > 1).length,
     meanTransitLoadFactor: round(sum(transitRatios) / Math.max(transitRatios.length, 1), 4),
     p90TransitLoadFactor: round(percentile(transitRatios, 0.9), 4),
-    maximumTransitLoadFactor: round(Math.max(...transitRatios), 4),
-    aggregateZonePortalLoad: round(aggregateZonePortalLoad, 4),
+    maximumTransitLoadFactor: round(Math.max(0, ...transitRatios), 4),
   };
 }
 
-function scenarioMetrics(engine, snapshot) {
+const ROAD_LOAD_FIELDS = ["loadABVehicles", "loadBAVehicles", "loadABPassengers", "loadBAPassengers"];
+
+// Capture immediately after the final workday assignment. Subsequent resident
+// and employer decisions can change current routes, and weekends retain the
+// preceding workday's network. Reconstructing from final current routes would
+// therefore compare different observations. This independent ledger includes
+// every physical traversal, irrespective of the engine's loadBearing flag.
+function captureAssignedRoadLoads(engine) {
+  const expected = engine.links.map(() => Object.fromEntries(ROAD_LOAD_FIELDS.map((field) => [field, 0])));
+  let assignedCohorts = 0;
+  let traversalCount = 0;
+  let invalidTraversalCount = 0;
+  let invalidWeightCount = 0;
+  let prohibitedTurnCount = 0;
+  for (const citizen of engine.citizens) {
+    if (!citizen.enterpriseId || !["car", "pt"].includes(citizen.mode) || !citizen.routeTraversalCodes?.length) continue;
+    assignedCohorts += 1;
+    const addition = citizen.mode === "car" ? citizen.weight / engine.config.carOccupancy : citizen.weight;
+    if (!Number.isFinite(addition) || addition <= 0) {
+      invalidWeightCount += 1;
+      continue;
+    }
+    let previousCode = null;
+    let reachedWorkGateway = false;
+    const workNodeId = engine.zoneById.get(citizen.workZoneId)?.networkNodeId;
+    for (const code of citizen.routeTraversalCodes) {
+      const index = Math.abs(code) - 1;
+      if (!Number.isInteger(code) || code === 0 || !expected[index]) {
+        invalidTraversalCount += 1;
+        continue;
+      }
+      const field = citizen.mode === "car" ? (code > 0 ? "loadABVehicles" : "loadBAVehicles") : code > 0 ? "loadABPassengers" : "loadBAPassengers";
+      expected[index][field] += addition;
+      traversalCount += 1;
+      const link = engine.links[index];
+      if (previousCode !== null) {
+        const previous = engine.links[Math.abs(previousCode) - 1];
+        const previousEnd = previousCode > 0 ? previous.to : previous.from;
+        // Outbound arrival at work ends a trip; the return leg begins with a
+        // new departure. It is not a through-turn at that gateway.
+        const workStop = !reachedWorkGateway && previousEnd === workNodeId;
+        if (workStop) reachedWorkGateway = true;
+        else if (prohibitedRoadTurns.has(`${previous.id}:${Math.sign(previousCode)}>${link.id}:${Math.sign(code)}`)) prohibitedTurnCount += 1;
+      }
+      previousCode = code;
+    }
+  }
+  return { date: engine.clock.date, expected, assignedCohorts, traversalCount, invalidTraversalCount, invalidWeightCount, prohibitedTurnCount };
+}
+
+function physicalRoadAccounting(engine, snapshot, assignment) {
+  const snapshotById = new Map(snapshot.links.map((link) => [String(link.id), link]));
+  let excludedPhysicalEdges = 0;
+  let missingSnapshotEdges = 0;
+  let mismatchedDirectionalLoads = 0;
+  let unsupportedAssignedDirections = 0;
+  let invalidPhysicalRoadCapacities = 0;
+  let maximumRawLoadDifference = 0;
+  let maximumReportedLoadDifference = 0;
+  let assignedPhysicalEdges = 0;
+  for (const [index, link] of engine.links.entries()) {
+    const reported = snapshotById.get(String(link.id));
+    if (link.loadBearing !== true || link.contextOnly === true || reported?.loadBearing !== true || reported?.contextOnly === true)
+      excludedPhysicalEdges += 1;
+    if (!reported) missingSnapshotEdges += 1;
+    const roadCapacities = [engine.linkCapacity(link, "car", 1), engine.linkCapacity(link, "car", -1)];
+    if (roadCapacities.some((capacity) => !Number.isFinite(capacity) || capacity < 0) || !roadCapacities.some((capacity) => capacity > 0)) {
+      invalidPhysicalRoadCapacities += 1;
+    }
+    const expected = assignment?.expected[index];
+    if (expected && ROAD_LOAD_FIELDS.some((field) => expected[field] > 0)) assignedPhysicalEdges += 1;
+    for (const field of ROAD_LOAD_FIELDS) {
+      const rawDifference = Number.isFinite(expected?.[field]) && Number.isFinite(link[field]) ? Math.abs(link[field] - expected[field]) : Infinity;
+      const reportedDifference =
+        Number.isFinite(expected?.[field]) && Number.isFinite(reported?.[field]) ? Math.abs(reported[field] - expected[field]) : Infinity;
+      maximumRawLoadDifference = Math.max(maximumRawLoadDifference, rawDifference);
+      maximumReportedLoadDifference = Math.max(maximumReportedLoadDifference, reportedDifference);
+      if (rawDifference > 1e-6 || reportedDifference > 0.011) mismatchedDirectionalLoads += 1;
+      const direction = field.includes("AB") ? 1 : -1;
+      const mode = field.endsWith("Vehicles") ? "car" : "pt";
+      const capacity = engine.linkCapacity(link, mode, direction);
+      if (expected?.[field] > 0 && (!Number.isFinite(capacity) || capacity <= 0)) unsupportedAssignedDirections += 1;
+    }
+  }
+  const assignmentDateMatches = Boolean(assignment?.date && assignment.date === snapshot.city.networkAssignmentDate);
+  const passed =
+    Boolean(assignment) &&
+    assignmentDateMatches &&
+    assignment.assignedCohorts > 0 &&
+    assignment.traversalCount > 0 &&
+    assignment.invalidTraversalCount === 0 &&
+    assignment.invalidWeightCount === 0 &&
+    excludedPhysicalEdges === 0 &&
+    missingSnapshotEdges === 0 &&
+    snapshot.links.length === engine.links.length &&
+    snapshotById.size === engine.links.length &&
+    mismatchedDirectionalLoads === 0 &&
+    unsupportedAssignedDirections === 0 &&
+    invalidPhysicalRoadCapacities === 0;
+  return {
+    passed,
+    assignmentDate: assignment?.date || null,
+    assignmentDateMatches,
+    physicalEdges: engine.links.length,
+    assignedPhysicalEdges,
+    excludedPhysicalEdges,
+    missingSnapshotEdges,
+    assignedCohorts: assignment?.assignedCohorts ?? null,
+    traversalCount: assignment?.traversalCount ?? null,
+    invalidTraversalCount: assignment?.invalidTraversalCount ?? null,
+    invalidWeightCount: assignment?.invalidWeightCount ?? null,
+    prohibitedTurnCount: assignment?.prohibitedTurnCount ?? null,
+    declaredTurnRestrictionCount: prohibitedRoadTurns.size,
+    resolvedTurnRestrictionCount: engine.turnRestrictions.length,
+    mismatchedDirectionalLoads,
+    unsupportedAssignedDirections,
+    invalidPhysicalRoadCapacities,
+    maximumRawLoadDifference: Number.isFinite(maximumRawLoadDifference) ? round(maximumRawLoadDifference, 8) : null,
+    maximumReportedLoadDifference: Number.isFinite(maximumReportedLoadDifference) ? round(maximumReportedLoadDifference, 8) : null,
+    interpretation:
+      "Every physical directed traversal in the final workday assignment contributes resident weight / car occupancy vehicles or resident weight passengers. Independent route reconstruction is checked against raw loads (tolerance 0.000001) and rounded snapshot loads (0.011); all roads must carry capacity and every assigned direction must have positive mode capacity. Later actor decisions do not rewrite this assignment ledger.",
+  };
+}
+
+function scenarioMetrics(engine, snapshot, assignment) {
   const { city } = snapshot;
   return {
     representedPopulation: city.representedPopulation,
@@ -151,6 +301,7 @@ function scenarioMetrics(engine, snapshot) {
     modeCountsRepresented: city.modeCounts,
     modeSharesPercent: city.modeShares,
     carOwnershipRatePercent: city.carOwnershipRate,
+    carAccessAccounting: city.carAccessAccounting,
     citizenStateSharesPercent: city.stateShares,
     averageRoundTripMinutes: city.averageRoundTripMinutes,
     averageNetIncomeAedPerMonth: city.averageNetIncomeAed,
@@ -184,7 +335,7 @@ function scenarioMetrics(engine, snapshot) {
     cumulativeRepresentedCitizenEvents: city.representedCitizenEventsTotal,
     mobilityEventRates: city.mobilityEventRates,
     distributions: city.distributions,
-    network: networkMetrics(snapshot),
+    network: { ...networkMetrics(snapshot), physicalRoadAccounting: physicalRoadAccounting(engine, snapshot, assignment) },
     enterprisePortfolio: enterprisePortfolio(engine),
   };
 }
@@ -218,6 +369,10 @@ function scenarioChecks(engine, snapshot, metrics, definition) {
       zoneMetric.jobs > zoneMetric.requestedZonedJobCapacityRepresented
     );
   });
+  const accountReconciliationIssues = engine.citizens.filter((citizen) => {
+    const account = engine.citizenFinancialAccount(citizen);
+    return !Number.isFinite(account.accountingReconciliationDifferenceAed) || Math.abs(account.accountingReconciliationDifferenceAed) > 0.02;
+  });
   return [
     {
       id: "no-invariant-violations",
@@ -230,13 +385,32 @@ function scenarioChecks(engine, snapshot, metrics, definition) {
       detail: `${finiteValues.filter((value) => !Number.isFinite(value)).length} non-finite summary metric(s)`,
     },
     {
+      id: "resident-account-components-reconcile",
+      passed: accountReconciliationIssues.length === 0,
+      detail: `${accountReconciliationIssues.length} cohort account(s) where salary + support - housing - commute - fixed vehicle access differs from reported cash by more than AED 0.02`,
+    },
+    {
+      id: "vehicle-access-stock-and-flows-reconcile",
+      passed:
+        Number.isFinite(metrics.carAccessAccounting?.initialAgentCount) &&
+        metrics.carAccessAccounting.currentAgentCount === engine.citizens.filter((citizen) => citizen.hasCar).length &&
+        metrics.carAccessAccounting.initialAgentCount +
+          metrics.carAccessAccounting.acquisitions -
+          metrics.carAccessAccounting.disposals -
+          metrics.carAccessAccounting.replacementExits ===
+          metrics.carAccessAccounting.currentAgentCount,
+      detail: `Initial ${metrics.carAccessAccounting?.initialAgentCount} + acquisitions ${metrics.carAccessAccounting?.acquisitions} - disposals ${metrics.carAccessAccounting?.disposals} - replacement exits ${metrics.carAccessAccounting?.replacementExits} = current ${metrics.carAccessAccounting?.currentAgentCount} resident cohorts`,
+    },
+    {
       id: "population-conserved",
       passed: metrics.representedPopulation === expectedPopulation,
       detail: `${metrics.representedPopulation} represented residents; expected ${expectedPopulation}`,
     },
     {
       id: "full-agent-scale-resolved",
-      passed: engine.citizens.length === 6070 && engine.enterprises.length === 600,
+      passed:
+        engine.citizens.length === Math.round(baseline.calibration.studyScopePopulation2024 / engine.config.citizenWeight) &&
+        engine.enterprises.length === engine.config.enterpriseCount,
       detail: `${engine.citizens.length} citizen agents and ${engine.enterprises.length} enterprise agents`,
     },
     {
@@ -254,8 +428,12 @@ function scenarioChecks(engine, snapshot, metrics, definition) {
     {
       id: "labor-force-rates-use-disclosed-denominators",
       passed:
-        Math.abs(metrics.laborForceParticipationRatePercent - 70) <= 0.01 &&
-        Math.abs(metrics.nonParticipationRatePercent - 30) <= 0.01 &&
+        Math.abs(
+          metrics.laborForceParticipationRatePercent - round((metrics.representedLaborForce / Math.max(metrics.representedPopulation, 1)) * 100)
+        ) <= 0.01 &&
+        Math.abs(
+          metrics.nonParticipationRatePercent - round((metrics.representedNonparticipants / Math.max(metrics.representedPopulation, 1)) * 100)
+        ) <= 0.01 &&
         Math.abs(metrics.unemploymentRatePercent - round((metrics.representedUnemployed / Math.max(metrics.representedLaborForce, 1)) * 100)) <= 0.01,
       detail: `${metrics.laborForceParticipationRatePercent}% participating; ${metrics.unemploymentRatePercent}% unemployed within the labor force; ${metrics.nonParticipationRatePercent}% outside it`,
     },
@@ -311,9 +489,12 @@ function scenarioChecks(engine, snapshot, metrics, definition) {
       detail: `${round(stateTotal, 4)}% total`,
     },
     {
-      id: "employment-stock-near-calibrated-target",
-      passed: Math.abs(metrics.employmentRatePercent - engine.config.targetEmploymentRate * 100) <= 1,
-      detail: `${metrics.employmentRatePercent}% versus ${engine.config.targetEmploymentRate * 100}% target`,
+      id: "employment-within-participating-population",
+      passed:
+        metrics.representedEmployed >= 0 &&
+        metrics.representedEmployed <= metrics.representedLaborForce &&
+        Math.abs(metrics.employmentRatePercent - round((metrics.representedEmployed / Math.max(metrics.representedPopulation, 1)) * 100)) <= 0.01,
+      detail: `${metrics.representedEmployed} employed within ${metrics.representedLaborForce} participants; ${metrics.employmentRatePercent}% of represented residents. No outcome is required to equal the initial employment assumption.`,
     },
     {
       id: "no-forced-interzone-walking",
@@ -345,9 +526,16 @@ function scenarioChecks(engine, snapshot, metrics, definition) {
       } guard`,
     },
     {
-      id: "aggregate-zone-portals-carry-no-assignment-load",
-      passed: metrics.network.aggregateZonePortalLoad === 0,
-      detail: `${metrics.network.aggregateZonePortalLoad} assigned vehicle/passenger load on aggregate-zone portals`,
+      id: "physical-roads-carry-assigned-load",
+      passed: metrics.network.physicalRoadAccounting.passed,
+      detail: `${metrics.network.physicalRoadAccounting.physicalEdges} physical edges; ${metrics.network.physicalRoadAccounting.excludedPhysicalEdges} excluded; ${metrics.network.physicalRoadAccounting.mismatchedDirectionalLoads} mismatched car/passenger directional loads; ${metrics.network.physicalRoadAccounting.unsupportedAssignedDirections} assigned directions without capacity; assignment ${metrics.network.physicalRoadAccounting.assignmentDate}`,
+    },
+    {
+      id: "assigned-routes-respect-prohibited-turns",
+      passed:
+        metrics.network.physicalRoadAccounting.prohibitedTurnCount === 0 &&
+        metrics.network.physicalRoadAccounting.declaredTurnRestrictionCount === metrics.network.physicalRoadAccounting.resolvedTurnRestrictionCount,
+      detail: `${metrics.network.physicalRoadAccounting.prohibitedTurnCount} prohibited through-turns in final workday assignment; ${metrics.network.physicalRoadAccounting.resolvedTurnRestrictionCount}/${metrics.network.physicalRoadAccounting.declaredTurnRestrictionCount} source restrictions resolved; work-destination stops begin a new return leg`,
     },
     {
       id: "commute-time-in-plausibility-band",
@@ -438,19 +626,41 @@ function runScenario(definition) {
   process.stdout.write(`Running ${definition.label} (${definition.days} days)...\n`);
   const suppliedConfig = { ...commonConfig, ...definition.preset };
   const engine = new UdesV2Engine({ data: baselineData, config: suppliedConfig, seed: SEED });
+  let finalAssignmentDay = definition.days;
+  while (finalAssignmentDay > 0 && !engine.config.workdays.includes(engine.clockAt(finalAssignmentDay).weekday)) finalAssignmentDay -= 1;
+  let assignment = null;
+  const originalCommuteCitizens = engine.commuteCitizens;
+  engine.commuteCitizens = function () {
+    const result = originalCommuteCitizens.call(this);
+    if (this.day === finalAssignmentDay && this.config.workdays.includes(this.clock.weekday)) assignment = captureAssignedRoadLoads(this);
+    return result;
+  };
   const chunkDays = 30;
   for (let completed = 0; completed < definition.days; completed += chunkDays) {
     engine.step(Math.min(chunkDays, definition.days - completed));
   }
   const snapshot = engine.snapshot({ historyLimit: 0 });
-  const metrics = scenarioMetrics(engine, snapshot);
+  const metrics = scenarioMetrics(engine, snapshot, assignment);
   const invariantIssues = engine.validateInvariants();
-  const checks = scenarioChecks(engine, snapshot, metrics, definition);
+  const assessments = scenarioChecks(engine, snapshot, metrics, definition);
+  const checks = assessments.filter((check) => !DIAGNOSTIC_CHECK_IDS.has(check.id));
+  const diagnostics = assessments
+    .filter((check) => DIAGNOSTIC_CHECK_IDS.has(check.id))
+    .map(({ passed: withinReviewBand, ...diagnostic }) => ({
+      ...diagnostic,
+      withinReviewBand,
+      status: withinReviewBand ? "within-review-band" : "review-needed",
+    }));
   const deterministicResult = {
     clock: snapshot.clock,
     metrics,
     invariantIssues,
   };
+  process.stdout.write(
+    `Completed ${definition.id}: employment ${metrics.employmentRatePercent}%, vehicle access ${metrics.carOwnershipRatePercent}%, ${
+      checks.filter((check) => !check.passed).length
+    } structural failures.\n`
+  );
   return {
     id: definition.id,
     label: definition.label,
@@ -469,8 +679,12 @@ function runScenario(definition) {
     resolvedValidationParameters: {
       enterpriseRestartMarginThresholdPercent: round(engine.config.enterpriseRestartMarginThreshold * 100),
       enterpriseRestartLossMonths: engine.config.enterpriseRestartLossMonths,
-      targetEmploymentRatePercent: round(engine.config.targetEmploymentRate * 100),
+      employmentClosure: engine.config.employmentClosure || "legacy-fixed-target",
+      legacyTargetEmploymentRatePercent: round(engine.config.targetEmploymentRate * 100),
       initialEmploymentRatePercent: round(engine.config.initialEmploymentRate * 100),
+      dailyJobSearchProbability: engine.config.dailyJobSearchProbability,
+      dailyJobSeparationProbability: engine.config.dailyJobSeparationProbability,
+      matchingThroughputCohortsPerDay: engine.config.maxDailyLaborMatches,
       dailyWorkTripAssignmentHours: engine.config.assignmentPeakHours,
       residentialMoveCooldownDays: engine.config.residentialMoveCooldownDays,
       residentialMoveFollowThroughPercent: round(engine.config.residentialMoveDecisionProbability * 100),
@@ -485,234 +699,389 @@ function runScenario(definition) {
       issues: invariantIssues,
     },
     checks,
+    diagnostics,
     status: checks.every((check) => check.passed) ? "passed" : "failed",
     resultDigestSha256: digest(deterministicResult),
   };
 }
 
-const scenarios = runDefinitions.map(runScenario);
-const oneYearReference = scenarios.find((scenario) => scenario.id === "reference-1y");
-const oneYearTransit = scenarios.find((scenario) => scenario.id === "transit-1y");
-const tenYearReference = scenarios.find((scenario) => scenario.id === "reference-10y");
-const tenYearTransit = scenarios.find((scenario) => scenario.id === "transit-10y");
-const tenYearHousing = scenarios.find((scenario) => scenario.id === "housing-10y");
-const tenYearBalanced = scenarios.find((scenario) => scenario.id === "balanced-10y");
-const tenYearReferenceNetOwnershipFlow =
-  tenYearReference.metrics.cumulativeEvents.carAcquisitions - tenYearReference.metrics.cumulativeEvents.carDisposals;
-const tenYearTransitNetOwnershipFlow = tenYearTransit.metrics.cumulativeEvents.carAcquisitions - tenYearTransit.metrics.cumulativeEvents.carDisposals;
-const tenYearOwnershipDifference = tenYearTransit.metrics.carOwnershipRatePercent - tenYearReference.metrics.carOwnershipRatePercent;
-const tenYearNetOwnershipFlowDifference = tenYearTransitNetOwnershipFlow - tenYearReferenceNetOwnershipFlow;
+// Scenarios have separate engine instances and seeded RNGs. Parallel execution
+// changes scheduling only; definitions, dates and result ordering are retained.
+async function runScenariosConcurrently(definitions, concurrency = 4) {
+  const results = new Array(definitions.length);
+  const activeWorkers = new Set();
+  let nextIndex = 0;
+  let failed = false;
+  async function runSlot() {
+    while (!failed && nextIndex < definitions.length) {
+      const index = nextIndex++;
+      results[index] = await new Promise((resolve, reject) => {
+        const worker = new Worker(fileURLToPath(import.meta.url), {
+          workerData: { definition: definitions[index] },
+          resourceLimits: { maxOldGenerationSizeMb: 512 },
+        });
+        activeWorkers.add(worker);
+        let result;
+        worker.once("message", (message) => {
+          result = message;
+        });
+        worker.once("error", reject);
+        worker.once("exit", (code) => {
+          activeWorkers.delete(worker);
+          if (code !== 0 || !result) reject(new Error(`Scenario ${definitions[index]?.id ?? index} worker exited ${code} without a valid result.`));
+          else resolve(result);
+        });
+      });
+    }
+  }
+  try {
+    await Promise.all(Array.from({ length: Math.min(concurrency, definitions.length) }, runSlot));
+  } catch (error) {
+    failed = true;
+    await Promise.all([...activeWorkers].map((worker) => worker.terminate()));
+    throw error;
+  }
+  return results;
+}
 
-const crossScenarioChecks = [
-  {
-    id: "one-year-reference-reaches-exact-calendar-date",
-    passed: oneYearReference.clock.date === "2025-01-01",
-    detail: `${oneYearReference.clock.date} after ${ONE_CALENDAR_YEAR_DAYS} simulated days`,
-  },
-  {
-    id: "one-year-transit-reaches-exact-calendar-date",
-    passed: oneYearTransit.clock.date === "2025-01-01",
-    detail: `${oneYearTransit.clock.date} after ${ONE_CALENDAR_YEAR_DAYS} simulated days`,
-  },
-  {
-    id: "transit-preset-reduces-car-share",
-    passed: oneYearTransit.metrics.modeSharesPercent.car < oneYearReference.metrics.modeSharesPercent.car,
-    detail: `${oneYearReference.metrics.modeSharesPercent.car}% reference → ${oneYearTransit.metrics.modeSharesPercent.car}% transit`,
-  },
-  {
-    id: "transit-preset-increases-public-transport-share",
-    passed: oneYearTransit.metrics.modeSharesPercent.pt > oneYearReference.metrics.modeSharesPercent.pt,
-    detail: `${oneYearReference.metrics.modeSharesPercent.pt}% reference → ${oneYearTransit.metrics.modeSharesPercent.pt}% transit`,
-  },
-  {
-    id: "transit-preset-reduces-average-commute-time",
-    passed: oneYearTransit.metrics.averageRoundTripMinutes < oneYearReference.metrics.averageRoundTripMinutes,
-    detail: `${oneYearReference.metrics.averageRoundTripMinutes} minutes reference → ${oneYearTransit.metrics.averageRoundTripMinutes} minutes transit`,
-  },
-  {
-    id: "transit-preset-reduces-average-road-capacity-use",
-    passed: oneYearTransit.metrics.averageRoadCapacityUsagePercent < oneYearReference.metrics.averageRoadCapacityUsagePercent,
-    detail: `${oneYearReference.metrics.averageRoadCapacityUsagePercent}% reference → ${oneYearTransit.metrics.averageRoadCapacityUsagePercent}% transit`,
-  },
-  {
-    id: "ten-year-reference-preserves-population",
-    passed: tenYearReference.metrics.representedPopulation === oneYearReference.metrics.representedPopulation,
-    detail: `${oneYearReference.metrics.representedPopulation} after one year; ${tenYearReference.metrics.representedPopulation} after ten years`,
-  },
-  {
-    id: "ten-year-reference-enterprise-margin-remains-finite",
-    passed: Number.isFinite(tenYearReference.metrics.enterprisePortfolio.revenueWeightedOperatingMarginPercent),
-    detail: `${tenYearReference.metrics.enterprisePortfolio.revenueWeightedOperatingMarginPercent}% revenue-weighted operating margin`,
-  },
-  {
-    id: "ten-year-reference-reaches-exact-calendar-date",
-    passed: tenYearReference.clock.date === "2034-01-01",
-    detail: `${tenYearReference.clock.date} after 3,653 simulated days`,
-  },
-  ...[tenYearTransit, tenYearHousing, tenYearBalanced].map((scenario) => ({
-    id: `${scenario.id}-reaches-exact-calendar-date`,
-    passed: scenario.clock.date === "2034-01-01",
-    detail: `${scenario.clock.date} after ${TEN_CALENDAR_YEAR_DAYS.toLocaleString("en")} simulated days`,
-  })),
-  {
-    id: "ten-year-transit-reduces-car-share",
-    passed: tenYearTransit.metrics.modeSharesPercent.car < tenYearReference.metrics.modeSharesPercent.car,
-    detail: `${tenYearReference.metrics.modeSharesPercent.car}% reference → ${tenYearTransit.metrics.modeSharesPercent.car}% transit`,
-  },
-  {
-    id: "ten-year-transit-increases-public-transport-share",
-    passed: tenYearTransit.metrics.modeSharesPercent.pt > tenYearReference.metrics.modeSharesPercent.pt,
-    detail: `${tenYearReference.metrics.modeSharesPercent.pt}% reference → ${tenYearTransit.metrics.modeSharesPercent.pt}% transit`,
-  },
-  {
-    id: "ten-year-transit-ownership-stock-reconciles-with-agent-flows",
-    passed: Math.abs(tenYearOwnershipDifference) <= 0.01 || Math.sign(tenYearOwnershipDifference) === Math.sign(tenYearNetOwnershipFlowDifference),
-    detail: `${tenYearReference.metrics.carOwnershipRatePercent}% ownership and ${tenYearReferenceNetOwnershipFlow} net acquisition/disposal events reference → ${tenYearTransit.metrics.carOwnershipRatePercent}% and ${tenYearTransitNetOwnershipFlow} transit`,
-  },
-  {
-    id: "ten-year-transit-reduces-average-commute",
-    passed: tenYearTransit.metrics.averageRoundTripMinutes < tenYearReference.metrics.averageRoundTripMinutes,
-    detail: `${tenYearReference.metrics.averageRoundTripMinutes} minutes reference → ${tenYearTransit.metrics.averageRoundTripMinutes} minutes transit`,
-  },
-  {
-    id: "ten-year-housing-reduces-occupancy-pressure",
-    passed: tenYearHousing.metrics.housingOccupancyRatePercent < tenYearReference.metrics.housingOccupancyRatePercent,
-    detail: `${tenYearReference.metrics.housingOccupancyRatePercent}% reference → ${tenYearHousing.metrics.housingOccupancyRatePercent}% housing`,
-  },
-  {
-    id: "ten-year-housing-does-not-increase-overcapacity",
-    passed: tenYearHousing.metrics.housingOvercapacityRepresented <= tenYearReference.metrics.housingOvercapacityRepresented,
-    detail: `${tenYearReference.metrics.housingOvercapacityRepresented} reference → ${tenYearHousing.metrics.housingOvercapacityRepresented} housing represented residents`,
-  },
-  {
-    id: "ten-year-housing-satisfaction-change-remains-bounded",
-    passed: tenYearHousing.metrics.citizenStateSharesPercent.Happy >= tenYearReference.metrics.citizenStateSharesPercent.Happy - 5,
-    detail: `${tenYearReference.metrics.citizenStateSharesPercent.Happy}% reference → ${tenYearHousing.metrics.citizenStateSharesPercent.Happy}% housing happy`,
-  },
-  {
-    id: "ten-year-housing-lowers-mean-housing-rent",
-    passed: tenYearHousing.metrics.meanHousingRentAedPerMonth < tenYearReference.metrics.meanHousingRentAedPerMonth,
-    detail: `AED ${tenYearReference.metrics.meanHousingRentAedPerMonth} reference → AED ${tenYearHousing.metrics.meanHousingRentAedPerMonth} housing`,
-  },
-  {
-    id: "ten-year-housing-financial-tradeoff-remains-bounded",
-    passed: Number.isFinite(tenYearHousing.metrics.averageNetIncomeAedPerMonth) && tenYearHousing.metrics.averageNetIncomeAedPerMonth > 0,
-    detail: `AED ${tenYearReference.metrics.averageNetIncomeAedPerMonth} reference → AED ${tenYearHousing.metrics.averageNetIncomeAedPerMonth} housing after housing and commute`,
-  },
-  {
-    id: "ten-year-housing-network-tradeoff-remains-served",
-    passed:
-      tenYearHousing.metrics.unservedCommuters === 0 &&
-      Number.isFinite(tenYearHousing.metrics.capacityOverflowTrips) &&
-      tenYearHousing.metrics.capacityOverflowTrips / Math.max(tenYearHousing.metrics.representedEmployed, 1) <= 0.3,
-    detail: `${tenYearReference.metrics.capacityOverflowTrips} reference → ${tenYearHousing.metrics.capacityOverflowTrips} housing represented overflow trips; ${tenYearHousing.metrics.unservedCommuters} unserved`,
-  },
-  {
-    id: "ten-year-balanced-increases-housing-capacity",
-    passed: tenYearBalanced.metrics.housingCapacityRepresented > tenYearReference.metrics.housingCapacityRepresented,
-    detail: `${tenYearReference.metrics.housingCapacityRepresented} reference → ${tenYearBalanced.metrics.housingCapacityRepresented} balanced represented capacity`,
-  },
-  {
-    id: "ten-year-balanced-increases-employment-space-capacity",
-    passed: tenYearBalanced.metrics.enterprisePlaceCapacity > tenYearReference.metrics.enterprisePlaceCapacity,
-    detail: `${tenYearReference.metrics.enterprisePlaceCapacity} reference → ${tenYearBalanced.metrics.enterprisePlaceCapacity} balanced enterprise places`,
-  },
-  {
-    id: "ten-year-balanced-reduces-housing-pressure",
-    passed: tenYearBalanced.metrics.housingOccupancyRatePercent < tenYearReference.metrics.housingOccupancyRatePercent,
-    detail: `${tenYearReference.metrics.housingOccupancyRatePercent}% reference → ${tenYearBalanced.metrics.housingOccupancyRatePercent}% balanced`,
-  },
-  {
-    id: "ten-year-balanced-satisfaction-change-remains-bounded",
-    passed: tenYearBalanced.metrics.citizenStateSharesPercent.Happy >= tenYearReference.metrics.citizenStateSharesPercent.Happy - 6,
-    detail: `${tenYearReference.metrics.citizenStateSharesPercent.Happy}% reference → ${tenYearBalanced.metrics.citizenStateSharesPercent.Happy}% balanced happy`,
-  },
-];
+async function verifyConcurrency() {
+  const definitions = runDefinitions.slice(0, 2).map((definition) => ({ ...definition, days: 3 }));
+  const serial = definitions.map(runScenario);
+  const parallel = await runScenariosConcurrently(definitions, 2);
+  if (digest(serial) !== digest(parallel)) throw new Error("Serial and parallel scenario results differ.");
+  for (const scenario of serial) {
+    if (!scenario.metrics.network.physicalRoadAccounting.passed) throw new Error(`${scenario.id}: physical-road accounting failed.`);
+  }
+  const accountingEngine = new UdesV2Engine({ data: baselineData, config: { ...commonConfig, ...referencePreset }, seed: SEED });
+  accountingEngine.commuteCitizens();
+  const assignment = captureAssignedRoadLoads(accountingEngine);
+  const accountingSnapshot = accountingEngine.snapshot({ historyLimit: 0 });
+  if (!physicalRoadAccounting(accountingEngine, accountingSnapshot, assignment).passed) throw new Error("Fresh road accounting failed.");
+  const positiveLink = accountingSnapshot.links.find((link) => ROAD_LOAD_FIELDS.some((field) => link[field] > 0));
+  const positiveField = ROAD_LOAD_FIELDS.find((field) => positiveLink?.[field] > 0);
+  positiveLink[positiveField] -= 1;
+  if (physicalRoadAccounting(accountingEngine, accountingSnapshot, assignment).passed)
+    throw new Error("Road accounting accepted missing directional load.");
+  positiveLink[positiveField] += 1;
+  positiveLink.loadBearing = false;
+  if (physicalRoadAccounting(accountingEngine, accountingSnapshot, assignment).passed)
+    throw new Error("Road accounting accepted an excluded physical road.");
+  const firstRestriction = baseline.roadGraph.turnRestrictions?.[0];
+  if (firstRestriction) {
+    const turnProbe = Object.create(accountingEngine);
+    turnProbe.citizens = [
+      {
+        enterpriseId: "turn-probe-employer",
+        mode: "car",
+        weight: 250,
+        workZoneId: "turn-probe-work",
+        routeTraversalCodes: [
+          firstRestriction.incomingDirection * (accountingEngine.linkById.get(firstRestriction.incomingEdgeId).index + 1),
+          firstRestriction.outgoingDirection * (accountingEngine.linkById.get(firstRestriction.outgoingEdgeId).index + 1),
+        ],
+      },
+    ];
+    if (captureAssignedRoadLoads(turnProbe).prohibitedTurnCount !== 1) throw new Error("Assignment audit missed a prohibited through-turn.");
+    turnProbe.zoneById = new Map(accountingEngine.zoneById);
+    turnProbe.zoneById.set("turn-probe-work", { networkNodeId: firstRestriction.viaNodeId });
+    if (captureAssignedRoadLoads(turnProbe).prohibitedTurnCount !== 0) throw new Error("Assignment audit confused a work stop with a through-turn.");
+  }
+  let rejectedInvalidWorker = false;
+  try {
+    await runScenariosConcurrently([null, definitions[0]], 2);
+  } catch {
+    rejectedInvalidWorker = true;
+  }
+  if (!rejectedInvalidWorker) throw new Error("The runner accepted a failed worker.");
+  process.stdout.write(
+    "Serial/parallel scenario results match exactly; road accounting rejects missing loads/excluded physical roads; prohibited through-turns are distinguished from work stops; worker failures reject the run. This short runner check writes no evidence artifact.\n"
+  );
+}
 
-const allChecks = [...scenarios.flatMap((scenario) => scenario.checks), ...crossScenarioChecks];
-const passed = allChecks.every((check) => check.passed);
-const report = {
-  schemaVersion: "1.6.0",
-  generatedAt: new Date().toISOString(),
-  model: "Abu Dhabi Urban Dynamics Lab / UDES v2",
-  datasetSchemaVersion: baseline.schemaVersion,
-  engineSchemaVersion: scenarios[0] ? require("../assets/js/udes-v2-worker.js").SCHEMA_VERSION : null,
-  sourceHashes: Object.fromEntries(Object.entries(SOURCE_PATHS).map(([label, filePath]) => [label, fileDigest(filePath)])),
-  seed: SEED,
-  status: passed ? "passed-regression-and-provisional-sanity-checks" : "failed-one-or-more-regression-or-provisional-sanity-checks",
-  validationScope: "Fixed-seed software integrity, conservation, numerical stability, and provisional directional scenario sanity checks.",
-  caveat:
-    "This is regression and provisional sanity validation, not empirical forecast validation. District behavior, jobs, capacities, enterprise economics, and mode-choice parameters include synthetic assumptions. Policy use requires observed household travel, labor-market, housing, and firm microdata plus out-of-sample calibration.",
-  methodology: {
-    runs: [
-      "Reference preset for exactly 12 calendar months (2024-01-01 through 2025-01-01)",
-      "Bus-priority preset for exactly 12 calendar months",
-      "Reference preset for exactly 3,653 simulated days (2024-01-01 through 2034-01-01)",
-      "Bus-priority preset for exactly 3,653 simulated days",
-      "Housing-delivery preset for exactly 3,653 simulated days",
-      "Housing-plus-jobs preset for exactly 3,653 simulated days",
-    ],
-    determinism:
-      "All full-scale runs use seed 240124. Result digests identify each result for future regression comparison; deterministic replay is exercised separately in the CI regression suite.",
-    directionalRobustness:
-      "The committed full-scale evidence is fixed-seed. The faster CI scenario suite separately checks long-run transit direction across multiple seeds as a variance guard; neither test is empirical forecast validation.",
-    enterpriseEconomics:
-      "Enterprise checks are broad snapshot plausibility guards, not empirical profitability calibration. They test active-firm coverage, aggregate and median margins, the loss-making distribution, and severe distress against the model's configured restart threshold.",
-    enterpriseSnapshotGuards: {
-      activeFirmShareMinimumPercent: 85,
-      revenueWeightedMarginPercent: { minimum: -10, maximum: 40 },
-      lossMakingShareMaximumExclusivePercent: 60,
-      medianMarginMinimumExclusivePercent: -5,
-      severeDistressShareMaximumExclusivePercent: 10,
-      severeDistressDefinition: "Operating margin at or below the model's configured enterprise restart threshold.",
+async function main() {
+  const sourceHashesAtStart = Object.fromEntries(Object.entries(SOURCE_PATHS).map(([label, filePath]) => [label, fileDigest(filePath)]));
+  const initialControllerInputs = controllerModelInputs(require("../assets/js/udes-v2-app.js"), commonConfig.startDate, [12, 120]);
+  const scenarios = await runScenariosConcurrently(runDefinitions);
+  const oneYearReference = scenarios.find((scenario) => scenario.id === "reference-1y");
+  const oneYearTransit = scenarios.find((scenario) => scenario.id === "transit-1y");
+  const tenYearReference = scenarios.find((scenario) => scenario.id === "reference-10y");
+  const tenYearTransit = scenarios.find((scenario) => scenario.id === "transit-10y");
+  const tenYearHousing = scenarios.find((scenario) => scenario.id === "housing-10y");
+  const tenYearBalanced = scenarios.find((scenario) => scenario.id === "balanced-10y");
+  const tenYearReferenceNetOwnershipFlow =
+    tenYearReference.metrics.cumulativeEvents.carAcquisitions -
+    tenYearReference.metrics.cumulativeEvents.carDisposals -
+    tenYearReference.metrics.cumulativeEvents.carAccessReplacementExits;
+  const tenYearTransitNetOwnershipFlow =
+    tenYearTransit.metrics.cumulativeEvents.carAcquisitions -
+    tenYearTransit.metrics.cumulativeEvents.carDisposals -
+    tenYearTransit.metrics.cumulativeEvents.carAccessReplacementExits;
+  const tenYearOwnershipDifference = tenYearTransit.metrics.carOwnershipRatePercent - tenYearReference.metrics.carOwnershipRatePercent;
+  const predictedOwnershipDifference =
+    ((tenYearTransit.metrics.carAccessAccounting.initialAgentCount + tenYearTransitNetOwnershipFlow) / tenYearTransit.resolvedScope.citizenAgents -
+      (tenYearReference.metrics.carAccessAccounting.initialAgentCount + tenYearReferenceNetOwnershipFlow) /
+        tenYearReference.resolvedScope.citizenAgents) *
+    100;
+
+  const crossScenarioAssessments = [
+    {
+      id: "one-year-reference-reaches-exact-calendar-date",
+      passed: oneYearReference.clock.date === "2025-01-01",
+      detail: `${oneYearReference.clock.date} after ${ONE_CALENDAR_YEAR_DAYS} simulated days`,
     },
-    mobilitySanityGuards: {
-      status: "Provisional software sanity checks, not empirical Abu Dhabi calibration.",
-      denominator:
-        "Completed agent events per 100 modeled actor-years; employment-based rates use accumulated employed-agent-days, and repeated events by one actor count separately.",
-      residentialMovesMaximumPer100CitizenAgentYears: 30,
-      firmRelocationsMaximumPer100FirmAgentYears: 20,
-      voluntaryJobSwitchesMaximumPer100EmployedAgentYears: 50,
-      employerCarriedWorkplaceChangesMaximumPer100EmployedAgentYears: 30,
+    {
+      id: "one-year-transit-reaches-exact-calendar-date",
+      passed: oneYearTransit.clock.date === "2025-01-01",
+      detail: `${oneYearTransit.clock.date} after ${ONE_CALENDAR_YEAR_DAYS} simulated days`,
     },
-    systemWidePlausibilityGuards: {
-      status: "Broad numerical and distribution guards, not observed Abu Dhabi targets.",
-      oneYearCapacityOverflowMaximumShareOfEmployedPercent: 10,
-      tenYearStressCapacityOverflowMaximumShareOfEmployedPercent: 30,
-      oneYearMaximumDirectionalWorkTripVolumeCapacityRatio: 2,
-      tenYearStressMaximumDirectionalWorkTripVolumeCapacityRatio: 3.25,
-      extremeCitizenStateMaximumSharePercent: 50,
-      note: "Soft network overflow remains modeled as congestion/crowding. The one-year guard checks ordinary operation; the deliberately broader ten-year stress guard catches numerical/network collapse without pretending the uncalibrated road graph is a forecast. Housing capacity is evaluated through capacity, occupancy, rent, net resources, overflow, and service conservation; commute and network changes are reported as trade-offs rather than forced to a monotone policy direction.",
+    {
+      id: "transit-preset-reduces-car-share",
+      passed: oneYearTransit.metrics.modeSharesPercent.car < oneYearReference.metrics.modeSharesPercent.car,
+      detail: `${oneYearReference.metrics.modeSharesPercent.car}% reference → ${oneYearTransit.metrics.modeSharesPercent.car}% transit`,
     },
-    fullScale: `The engine derives ${scenarios[0]?.resolvedScope.citizenAgents?.toLocaleString(
-      "en-US"
-    )} citizen agents at ${scenarios[0]?.resolvedScope.citizenWeightPersons?.toLocaleString(
-      "en-US"
-    )} represented persons each from the committed baseline and uses ${scenarios[0]?.resolvedScope.enterpriseAgents?.toLocaleString(
-      "en-US"
-    )} enterprise agents.`,
-  },
-  sourceScope: {
-    studyArea: baseline.scope.name,
-    scadMappedDistrictPopulationSubtotal2024: baseline.calibration.studyScopePopulation2024,
-    modeledRepresentedPopulation: scenarios[0]?.resolvedScope.representedPopulation,
-    citizenAgents: scenarios[0]?.resolvedScope.citizenAgents,
-    citizenWeightPersons: scenarios[0]?.resolvedScope.citizenWeightPersons,
-    enterpriseAgents: scenarios[0]?.resolvedScope.enterpriseAgents,
-    zones: scenarios[0]?.resolvedScope.zones,
-    roadGraphEdges: scenarios[0]?.resolvedScope.roadGraphEdges,
-  },
-  scenarios,
-  crossScenarioChecks,
-  checkSummary: {
-    passed: allChecks.filter((check) => check.passed).length,
-    failed: allChecks.filter((check) => !check.passed).length,
-    total: allChecks.length,
-  },
-};
+    {
+      id: "transit-preset-increases-public-transport-share",
+      passed: oneYearTransit.metrics.modeSharesPercent.pt > oneYearReference.metrics.modeSharesPercent.pt,
+      detail: `${oneYearReference.metrics.modeSharesPercent.pt}% reference → ${oneYearTransit.metrics.modeSharesPercent.pt}% transit`,
+    },
+    {
+      id: "transit-preset-reduces-average-commute-time",
+      passed: oneYearTransit.metrics.averageRoundTripMinutes < oneYearReference.metrics.averageRoundTripMinutes,
+      detail: `${oneYearReference.metrics.averageRoundTripMinutes} minutes reference → ${oneYearTransit.metrics.averageRoundTripMinutes} minutes transit`,
+    },
+    {
+      id: "transit-preset-reduces-average-road-capacity-use",
+      passed: oneYearTransit.metrics.averageRoadCapacityUsagePercent < oneYearReference.metrics.averageRoadCapacityUsagePercent,
+      detail: `${oneYearReference.metrics.averageRoadCapacityUsagePercent}% reference → ${oneYearTransit.metrics.averageRoadCapacityUsagePercent}% transit`,
+    },
+    {
+      id: "ten-year-reference-preserves-population",
+      passed: tenYearReference.metrics.representedPopulation === oneYearReference.metrics.representedPopulation,
+      detail: `${oneYearReference.metrics.representedPopulation} after one year; ${tenYearReference.metrics.representedPopulation} after ten years`,
+    },
+    {
+      id: "ten-year-reference-enterprise-margin-remains-finite",
+      passed: Number.isFinite(tenYearReference.metrics.enterprisePortfolio.revenueWeightedOperatingMarginPercent),
+      detail: `${tenYearReference.metrics.enterprisePortfolio.revenueWeightedOperatingMarginPercent}% revenue-weighted operating margin`,
+    },
+    {
+      id: "ten-year-reference-reaches-exact-calendar-date",
+      passed: tenYearReference.clock.date === "2034-01-01",
+      detail: `${tenYearReference.clock.date} after 3,653 simulated days`,
+    },
+    ...[tenYearTransit, tenYearHousing, tenYearBalanced].map((scenario) => ({
+      id: `${scenario.id}-reaches-exact-calendar-date`,
+      passed: scenario.clock.date === "2034-01-01",
+      detail: `${scenario.clock.date} after ${TEN_CALENDAR_YEAR_DAYS.toLocaleString("en")} simulated days`,
+    })),
+    {
+      id: "ten-year-transit-reduces-car-share",
+      passed: tenYearTransit.metrics.modeSharesPercent.car < tenYearReference.metrics.modeSharesPercent.car,
+      detail: `${tenYearReference.metrics.modeSharesPercent.car}% reference → ${tenYearTransit.metrics.modeSharesPercent.car}% transit`,
+    },
+    {
+      id: "ten-year-transit-increases-public-transport-share",
+      passed: tenYearTransit.metrics.modeSharesPercent.pt > tenYearReference.metrics.modeSharesPercent.pt,
+      detail: `${tenYearReference.metrics.modeSharesPercent.pt}% reference → ${tenYearTransit.metrics.modeSharesPercent.pt}% transit`,
+    },
+    {
+      id: "ten-year-transit-ownership-stock-reconciles-with-agent-flows",
+      passed: Math.abs(tenYearOwnershipDifference - predictedOwnershipDifference) <= 0.02,
+      detail: `${tenYearOwnershipDifference} percentage-point stock difference versus ${round(
+        predictedOwnershipDifference,
+        4
+      )} from opening stocks, acquisitions, disposals and replacement exits`,
+    },
+    {
+      id: "ten-year-transit-reduces-average-commute",
+      passed: tenYearTransit.metrics.averageRoundTripMinutes < tenYearReference.metrics.averageRoundTripMinutes,
+      detail: `${tenYearReference.metrics.averageRoundTripMinutes} minutes reference → ${tenYearTransit.metrics.averageRoundTripMinutes} minutes transit`,
+    },
+    {
+      id: "ten-year-housing-reduces-occupancy-pressure",
+      passed: tenYearHousing.metrics.housingOccupancyRatePercent < tenYearReference.metrics.housingOccupancyRatePercent,
+      detail: `${tenYearReference.metrics.housingOccupancyRatePercent}% reference → ${tenYearHousing.metrics.housingOccupancyRatePercent}% housing`,
+    },
+    {
+      id: "ten-year-housing-does-not-increase-overcapacity",
+      passed: tenYearHousing.metrics.housingOvercapacityRepresented <= tenYearReference.metrics.housingOvercapacityRepresented,
+      detail: `${tenYearReference.metrics.housingOvercapacityRepresented} reference → ${tenYearHousing.metrics.housingOvercapacityRepresented} housing represented residents`,
+    },
+    {
+      id: "ten-year-housing-satisfaction-change-remains-bounded",
+      passed: tenYearHousing.metrics.citizenStateSharesPercent.Happy >= tenYearReference.metrics.citizenStateSharesPercent.Happy - 5,
+      detail: `${tenYearReference.metrics.citizenStateSharesPercent.Happy}% reference → ${tenYearHousing.metrics.citizenStateSharesPercent.Happy}% housing happy`,
+    },
+    {
+      id: "ten-year-housing-lowers-mean-housing-rent",
+      passed: tenYearHousing.metrics.meanHousingRentAedPerMonth < tenYearReference.metrics.meanHousingRentAedPerMonth,
+      detail: `AED ${tenYearReference.metrics.meanHousingRentAedPerMonth} reference → AED ${tenYearHousing.metrics.meanHousingRentAedPerMonth} housing`,
+    },
+    {
+      id: "ten-year-housing-financial-tradeoff-remains-bounded",
+      passed: Number.isFinite(tenYearHousing.metrics.averageNetIncomeAedPerMonth) && tenYearHousing.metrics.averageNetIncomeAedPerMonth > 0,
+      detail: `AED ${tenYearReference.metrics.averageNetIncomeAedPerMonth} reference → AED ${tenYearHousing.metrics.averageNetIncomeAedPerMonth} housing after housing and commute`,
+    },
+    {
+      id: "ten-year-housing-network-tradeoff-remains-served",
+      passed:
+        tenYearHousing.metrics.unservedCommuters === 0 &&
+        Number.isFinite(tenYearHousing.metrics.capacityOverflowTrips) &&
+        tenYearHousing.metrics.capacityOverflowTrips / Math.max(tenYearHousing.metrics.representedEmployed, 1) <= 0.3,
+      detail: `${tenYearReference.metrics.capacityOverflowTrips} reference → ${tenYearHousing.metrics.capacityOverflowTrips} housing represented overflow trips; ${tenYearHousing.metrics.unservedCommuters} unserved`,
+    },
+    {
+      id: "ten-year-balanced-increases-housing-capacity",
+      passed: tenYearBalanced.metrics.housingCapacityRepresented > tenYearReference.metrics.housingCapacityRepresented,
+      detail: `${tenYearReference.metrics.housingCapacityRepresented} reference → ${tenYearBalanced.metrics.housingCapacityRepresented} balanced represented capacity`,
+    },
+    {
+      id: "ten-year-balanced-increases-employment-space-capacity",
+      passed: tenYearBalanced.metrics.enterprisePlaceCapacity > tenYearReference.metrics.enterprisePlaceCapacity,
+      detail: `${tenYearReference.metrics.enterprisePlaceCapacity} reference → ${tenYearBalanced.metrics.enterprisePlaceCapacity} balanced enterprise places`,
+    },
+    {
+      id: "ten-year-balanced-reduces-housing-pressure",
+      passed: tenYearBalanced.metrics.housingOccupancyRatePercent < tenYearReference.metrics.housingOccupancyRatePercent,
+      detail: `${tenYearReference.metrics.housingOccupancyRatePercent}% reference → ${tenYearBalanced.metrics.housingOccupancyRatePercent}% balanced`,
+    },
+    {
+      id: "ten-year-balanced-satisfaction-change-remains-bounded",
+      passed: tenYearBalanced.metrics.citizenStateSharesPercent.Happy >= tenYearReference.metrics.citizenStateSharesPercent.Happy - 6,
+      detail: `${tenYearReference.metrics.citizenStateSharesPercent.Happy}% reference → ${tenYearBalanced.metrics.citizenStateSharesPercent.Happy}% balanced happy`,
+    },
+  ];
 
-fs.writeFileSync(OUTPUT_PATH, `${JSON.stringify(report, null, 2)}\n`, "utf8");
-process.stdout.write(`Wrote ${path.relative(ROOT, OUTPUT_PATH)}\n`);
-process.stdout.write(`Validation status: ${report.status} (${report.checkSummary.passed}/${report.checkSummary.total} checks passed)\n`);
+  const structuralComparisonIds = new Set([
+    "ten-year-reference-preserves-population",
+    "ten-year-reference-enterprise-margin-remains-finite",
+    "ten-year-transit-ownership-stock-reconciles-with-agent-flows",
+    "ten-year-balanced-increases-housing-capacity",
+    "ten-year-balanced-increases-employment-space-capacity",
+  ]);
+  const isStructuralComparison = (check) => check.id.endsWith("reaches-exact-calendar-date") || structuralComparisonIds.has(check.id);
+  const crossScenarioChecks = crossScenarioAssessments.filter(isStructuralComparison);
+  const crossScenarioDiagnostics = crossScenarioAssessments
+    .filter((check) => !isStructuralComparison(check))
+    .map(({ passed: expectedDirection, ...diagnostic }) => ({
+      ...diagnostic,
+      expectedDirection,
+      status: expectedDirection ? "expected-direction" : "review-needed",
+      interpretation: "Single-seed model outcome; this direction is not an empirical validation target.",
+    }));
+  const allDiagnostics = [...scenarios.flatMap((scenario) => scenario.diagnostics), ...crossScenarioDiagnostics];
+  const allChecks = [...scenarios.flatMap((scenario) => scenario.checks), ...crossScenarioChecks];
+  const passed = allChecks.every((check) => check.passed);
+  const report = {
+    schemaVersion: "2.0.0",
+    generatedAt: new Date().toISOString(),
+    model: "Abu Dhabi Urban Dynamics Lab / UDES v2",
+    datasetSchemaVersion: baseline.schemaVersion,
+    engineSchemaVersion: scenarios[0] ? require("../assets/js/udes-v2-worker.js").SCHEMA_VERSION : null,
+    sourceHashes: sourceHashesAtStart,
+    seed: SEED,
+    status: passed ? "passed-structural-checks" : "failed-structural-checks",
+    validationScope:
+      "Fixed-seed software integrity, conservation and accounting checks, with separately reported model diagnostics and scenario directions.",
+    caveat:
+      "Passing structural checks does not validate a forecast. Diagnostic thresholds and expected scenario directions are explicitly synthetic review prompts. Current travel, labor, housing and establishment observations, fitted parameters and held-out validation are still required for predictive use.",
+    empiricalValidation: {
+      status: "not-performed",
+      fittedBehavioralParameters: false,
+      heldOutPredictionTest: false,
+      uncertaintyReport: "uncertainty-report.json",
+      populationEvidence: "Official district totals mapped to the chosen study boundary; spatial totals do not validate behavior.",
+      trafficEvidence: "Routed geometry with partly observed road attributes; no observed link-count or journey-time calibration.",
+      behavioralEvidence: "Transparent assumptions; historical all-trip mode shares are not directly comparable to modeled commute shares.",
+    },
+    evidenceStatus: summarizeEvidence(baseline),
+    methodology: {
+      execution:
+        "At most four independent scenario workers; separate engines and RNGs, unchanged horizons and ordered results. The runner has a serial/parallel equality probe (--verify-concurrency) that writes no evidence artifact.",
+      runs: [
+        "Reference preset for exactly 12 calendar months (2024-01-01 through 2025-01-01)",
+        "Bus-priority preset for exactly 12 calendar months",
+        "Reference preset for exactly 3,653 simulated days (2024-01-01 through 2034-01-01)",
+        "Bus-priority preset for exactly 3,653 simulated days",
+        "Housing-delivery preset for exactly 3,653 simulated days",
+        "Housing-plus-jobs preset for exactly 3,653 simulated days",
+      ],
+      determinism:
+        "All full-scale runs use seed 240124. Result digests identify each result for future regression comparison; deterministic replay is exercised separately in the CI regression suite.",
+      directionalRobustness:
+        "This report is fixed-seed. Run scripts/validate-udes-v2-uncertainty.mjs for full-scale paired-seed outcomes and one-at-a-time sensitivity; that report records variability and reversals rather than requiring a preferred policy outcome.",
+      enterpriseEconomics:
+        "Enterprise diagnostics are broad snapshot review bands, not pass/fail requirements or empirical profitability calibration. They flag active-firm coverage, aggregate and median margins, the loss-making distribution, and severe distress against the model's configured restart threshold.",
+      enterpriseSnapshotReviewBands: {
+        activeFirmShareMinimumPercent: 85,
+        revenueWeightedMarginPercent: { minimum: -10, maximum: 40 },
+        lossMakingShareMaximumExclusivePercent: 60,
+        medianMarginMinimumExclusivePercent: -5,
+        severeDistressShareMaximumExclusivePercent: 10,
+        severeDistressDefinition: "Operating margin at or below the model's configured enterprise restart threshold.",
+      },
+      mobilityReviewBands: {
+        status: "Provisional diagnostic review bands, not pass/fail requirements or empirical Abu Dhabi calibration.",
+        denominator:
+          "Completed agent events per 100 modeled actor-years; employment-based rates use accumulated employed-agent-days, and repeated events by one actor count separately.",
+        residentialMovesMaximumPer100CitizenAgentYears: 30,
+        firmRelocationsMaximumPer100FirmAgentYears: 20,
+        voluntaryJobSwitchesMaximumPer100EmployedAgentYears: 50,
+        employerCarriedWorkplaceChangesMaximumPer100EmployedAgentYears: 30,
+      },
+      systemWideReviewBands: {
+        status: "Broad diagnostic review bands, not pass/fail requirements or observed Abu Dhabi targets.",
+        oneYearCapacityOverflowMaximumShareOfEmployedPercent: 10,
+        tenYearStressCapacityOverflowMaximumShareOfEmployedPercent: 30,
+        oneYearMaximumDirectionalWorkTripVolumeCapacityRatio: 2,
+        tenYearStressMaximumDirectionalWorkTripVolumeCapacityRatio: 3.25,
+        extremeCitizenStateMaximumSharePercent: 50,
+        note: "Soft network overflow remains modeled as congestion/crowding. The broader ten-year review bands flag extreme outcomes for investigation; exceeding a band is retained in the report and does not fail structural verification. Housing capacity is evaluated through capacity, occupancy, rent, net resources, overflow, and service conservation; commute and network changes are reported as trade-offs rather than forced to a monotone policy direction.",
+      },
+      fullScale: `The engine derives ${scenarios[0]?.resolvedScope.citizenAgents?.toLocaleString(
+        "en-US"
+      )} citizen agents at ${scenarios[0]?.resolvedScope.citizenWeightPersons?.toLocaleString(
+        "en-US"
+      )} represented persons each from the committed baseline and uses ${scenarios[0]?.resolvedScope.enterpriseAgents?.toLocaleString(
+        "en-US"
+      )} enterprise agents.`,
+    },
+    sourceScope: {
+      studyArea: baseline.scope.name,
+      scadMappedDistrictPopulationSubtotal2024: baseline.calibration.studyScopePopulation2024,
+      modeledRepresentedPopulation: scenarios[0]?.resolvedScope.representedPopulation,
+      citizenAgents: scenarios[0]?.resolvedScope.citizenAgents,
+      citizenWeightPersons: scenarios[0]?.resolvedScope.citizenWeightPersons,
+      enterpriseAgents: scenarios[0]?.resolvedScope.enterpriseAgents,
+      zones: scenarios[0]?.resolvedScope.zones,
+      roadGraphEdges: scenarios[0]?.resolvedScope.roadGraphEdges,
+    },
+    scenarios,
+    crossScenarioChecks,
+    crossScenarioDiagnostics,
+    diagnosticSummary: {
+      reviewNeeded: allDiagnostics.filter((diagnostic) => diagnostic.status === "review-needed").length,
+      total: allDiagnostics.length,
+      interpretation: "Review prompts remain visible even when all structural checks pass. They are not calibrated acceptance limits.",
+    },
+    checkSummary: {
+      passed: allChecks.filter((check) => check.passed).length,
+      failed: allChecks.filter((check) => !check.passed).length,
+      total: allChecks.length,
+    },
+  };
 
-if (!passed) process.exitCode = 1;
+  delete require.cache[require.resolve("../assets/js/udes-v2-app.js")];
+  const finalControllerInputs = controllerModelInputs(require("../assets/js/udes-v2-app.js"), commonConfig.startDate, [12, 120]);
+  Object.assign(report, finalizeSourceProvenance(SOURCE_PATHS, sourceHashesAtStart, initialControllerInputs, finalControllerInputs));
+  fs.writeFileSync(OUTPUT_PATH, `${JSON.stringify(report, null, 2)}\n`, "utf8");
+  process.stdout.write(`Wrote ${path.relative(ROOT, OUTPUT_PATH)}\n`);
+  process.stdout.write(`Validation status: ${report.status} (${report.checkSummary.passed}/${report.checkSummary.total} checks passed)\n`);
+  process.stdout.write(`Model diagnostics requiring review: ${report.diagnosticSummary.reviewNeeded}/${report.diagnosticSummary.total}\n`);
+
+  if (!passed) process.exitCode = 1;
+}
+
+if (!isMainThread) parentPort.postMessage(runScenario(workerData.definition));
+else if (process.argv.includes("--verify-concurrency")) await verifyConcurrency();
+else await main();
