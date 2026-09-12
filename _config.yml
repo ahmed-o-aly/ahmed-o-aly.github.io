@@ -227,6 +227,13 @@ terser:
   compress:
     drop_console: true
 
+# Preserve the exact numerical inputs hashed by the UDES evidence reports.
+# _plugins/udes-verified-assets.rb also bypasses jekyll-terser for these paths.
+jekyll-minifier:
+  exclude:
+    - assets/js/udes-v2-worker.js
+    - assets/data/udes-v2/baseline.json
+
 # -----------------------------------------------------------------------------
 # Jekyll Archives
 # -----------------------------------------------------------------------------

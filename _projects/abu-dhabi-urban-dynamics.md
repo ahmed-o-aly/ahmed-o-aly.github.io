@@ -36,13 +36,15 @@ artifacts:
     url: /projects/abu-dhabi-urban-dynamics-v2/
   - label: Read the validation report
     url: /assets/data/udes-v2/validation-report.json
+  - label: Read the seed and sensitivity experiments
+    url: /assets/data/udes-v2/uncertainty-report.json
 ---
 
 I built this model to experiment with housing, jobs, and transport in Greater Abu Dhabi City. It covers 18 districts. You can change bus fares and speeds, road capacity, housing, employment space, and public realm quality, then compare the result with a reference run that uses the same random seed.
 
 The map uses AD-SDI community boundaries and bus stops. Population comes from SCAD's 2024 census tables, and the road network is assembled from OpenStreetMap and OSRM routes. Jobs, rents, capacities, and many of the behaviour settings are still assumptions. I label them as such because I do not want a synthetic input to look like an official statistic.
 
-At full scale, the model runs 6,070 citizen agents and 600 enterprise agents. Commuting, road loading, job matching, and household and firm decisions happen daily. Accounts close monthly. Rent, wage, and demographic updates happen annually.
+At full scale, the model runs 6,070 citizen agents and 600 enterprise agents. Each resident agent is a decision cohort representing 250 people; employers are synthetic cohorts. Travel, job matching, staffing and relocation decisions happen daily. Resident budgets accrue daily and settle monthly; employer results describe modeled operating conditions. Rent, wage and demographic updates happen annually.
 
 I also wrote checks for deterministic replay, population totals, network assignment, and long runs. Those checks tell me that the software is behaving consistently. They do not make it a forecast. It would need current travel, rent, employment, and business data before I would use it for policy work.
 

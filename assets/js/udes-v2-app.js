@@ -8,7 +8,7 @@
     "acceptableCommuteRoundTripMin",
     "extremeCommuteRoundTripMin",
     "enterpriseTargetMargin",
-    "targetEmploymentRate",
+    "dailyJobSearchProbability",
     "residentialMoveDecisionProbability",
     "residentialMoveCooldownDays",
     "firmMoveProbabilityOnStateEntry",
@@ -39,7 +39,7 @@
     acceptableCommute: "acceptableCommuteRoundTripMin",
     extremeCommute: "extremeCommuteRoundTripMin",
     targetMargin: "enterpriseTargetMargin",
-    employmentTarget: "targetEmploymentRate",
+    jobSearchProbability: "dailyJobSearchProbability",
     rentPressure: "rentPressureMultiplier",
     householdMoveChance: "residentialMoveDecisionProbability",
     householdMinimumStay: "residentialMoveCooldownDays",
@@ -79,7 +79,7 @@
     "acceptableCommuteRoundTripMin",
     "extremeCommuteRoundTripMin",
     "enterpriseTargetMargin",
-    "targetEmploymentRate",
+    "dailyJobSearchProbability",
     "residentialMoveDecisionProbability",
     "residentialMoveCooldownDays",
     "firmMoveProbabilityOnStateEntry",
@@ -102,7 +102,7 @@
       acceptableCommuteRoundTripMin: 60,
       extremeCommuteRoundTripMin: 90,
       enterpriseTargetMargin: 0.12,
-      targetEmploymentRate: 0.67,
+      dailyJobSearchProbability: 0.04,
       residentialMoveDecisionProbability: 0.2,
       residentialMoveCooldownDays: 365,
       firmMoveProbabilityOnStateEntry: 0.1,
@@ -124,7 +124,7 @@
       acceptableCommuteRoundTripMin: 60,
       extremeCommuteRoundTripMin: 90,
       enterpriseTargetMargin: 0.12,
-      targetEmploymentRate: 0.67,
+      dailyJobSearchProbability: 0.04,
       residentialMoveDecisionProbability: 0.2,
       residentialMoveCooldownDays: 365,
       firmMoveProbabilityOnStateEntry: 0.1,
@@ -146,7 +146,7 @@
       acceptableCommuteRoundTripMin: 60,
       extremeCommuteRoundTripMin: 90,
       enterpriseTargetMargin: 0.12,
-      targetEmploymentRate: 0.67,
+      dailyJobSearchProbability: 0.04,
       residentialMoveDecisionProbability: 0.2,
       residentialMoveCooldownDays: 365,
       firmMoveProbabilityOnStateEntry: 0.1,
@@ -168,7 +168,7 @@
       acceptableCommuteRoundTripMin: 60,
       extremeCommuteRoundTripMin: 90,
       enterpriseTargetMargin: 0.12,
-      targetEmploymentRate: 0.67,
+      dailyJobSearchProbability: 0.04,
       residentialMoveDecisionProbability: 0.2,
       residentialMoveCooldownDays: 365,
       firmMoveProbabilityOnStateEntry: 0.1,
@@ -217,7 +217,7 @@
     "acceptable_round_trip_minutes",
     "severe_round_trip_minutes",
     "enterprise_target_margin",
-    "target_employment_rate",
+    "daily_job_search_probability",
     "residential_move_follow_through_probability",
     "residential_minimum_stay_days",
     "firm_move_consideration_probability",
@@ -287,7 +287,7 @@
       entry.acceptableCommuteRoundTripMin,
       entry.extremeCommuteRoundTripMin,
       entry.enterpriseTargetMargin,
-      entry.targetEmploymentRate,
+      entry.dailyJobSearchProbability,
       entry.residentialMoveDecisionProbability,
       entry.residentialMoveCooldownDays,
       entry.firmMoveProbabilityOnStateEntry,
@@ -303,6 +303,46 @@
     return [HISTORY_CSV_HEADERS, ...history.map(historyEntryCsvRow)]
       .map((row) => row.map((cell) => `"${String(cell ?? "").replaceAll('"', '""')}"`).join(","))
       .join("\n");
+  }
+
+  const COMPARISON_METRICS = {
+    meanCommute: "round_trip_commute_minutes",
+    ptShare: "transit_share_fraction",
+    housingOccupancy: "housing_occupancy_fraction",
+    satisfaction: "within_stress_thresholds_fraction",
+    unemployment: "unemployment_fraction",
+    residualAfterEssentials: "disposable_resources_aed_per_month",
+    population: "represented_residents",
+    jobs: "represented_filled_jobs",
+  };
+
+  function comparisonToCsv(activeHistory, referenceHistory, metadata = {}) {
+    const referenceByDay = new Map(referenceHistory.map((entry) => [Number(entry.day), entry]));
+    const keys = Object.keys(COMPARISON_METRICS);
+    const header = [
+      "day",
+      "date",
+      "seed",
+      "scenario",
+      "intervention",
+      ...keys.flatMap((key) => ["active", "reference", "delta"].map((kind) => `${kind}_${COMPARISON_METRICS[key]}`)),
+    ];
+    const rows = activeHistory.map((entry) => {
+      const reference = referenceByDay.get(Number(entry.day));
+      return [
+        entry.day,
+        entry.date,
+        metadata.seed,
+        entry.scenario || metadata.scenario,
+        entry.intervention,
+        ...keys.flatMap((key) => {
+          const activeValue = Number.isFinite(entry[key]) ? entry[key] : "";
+          const referenceValue = Number.isFinite(reference?.[key]) ? reference[key] : "";
+          return [activeValue, referenceValue, activeValue !== "" && referenceValue !== "" ? activeValue - referenceValue : ""];
+        }),
+      ];
+    });
+    return [header, ...rows].map((row) => row.map((cell) => `"${String(cell ?? "").replaceAll('"', '""')}"`).join(",")).join("\n");
   }
 
   function parseUtcDate(value) {
@@ -386,7 +426,7 @@
         residential: {
           collection: "residentialMoves",
           value: represented ? "representedResidents" : "citizenAgentCount",
-          unit: represented ? "represented move-event equivalents" : "modeled household-agent events",
+          unit: represented ? "represented move-event equivalents" : "resident-cohort events",
         },
         job: {
           collection: "jobMoves",
@@ -412,7 +452,7 @@
       }[kind] || {
         collection: "residentialMoves",
         value: represented ? "representedResidents" : "citizenAgentCount",
-        unit: represented ? "represented move-event equivalents" : "modeled household-agent events",
+        unit: represented ? "represented move-event equivalents" : "resident-cohort events",
       }
     );
   }
@@ -473,6 +513,42 @@
   function isRenderedAnalysisLink(link = {}) {
     const properties = link?.properties || link;
     return properties.modelVisible !== false && properties.contextOnly !== true && properties.hidden !== true && properties.loadBearing !== false;
+  }
+
+  function roadAssignmentStatus(link = {}) {
+    if (link.loadBearing === false) return "capacity-excluded";
+    if (link.contextOnly === true || link.hidden === true || link.modelVisible === false) return "context";
+    const car = [link.loadABVehicles, link.loadBAVehicles];
+    const transit = [link.loadABPassengers, link.loadBAPassengers];
+    if ([...car, ...transit].some((value) => typeof value !== "number" || !Number.isFinite(value) || value < 0)) return "unavailable";
+    if (car[0] + car[1] > 0) return "assigned-car";
+    return transit[0] + transit[1] > 0 ? "transit-only" : "unassigned";
+  }
+
+  function roadDirectionPresentation(link = {}, direction = 1) {
+    const side = direction === -1 ? "BA" : "AB";
+    const explicit = link[`allow${side}`];
+    const allowed =
+      typeof explicit === "boolean"
+        ? explicit
+        : link.oneway === "forward"
+          ? side === "AB"
+          : link.oneway === "reverse"
+            ? side === "BA"
+            : link.bidirectional === true
+              ? true
+              : null;
+    const observed = (value) => typeof value === "number" && Number.isFinite(value) && value >= 0;
+    const time = link[`travelTime${side}Min`];
+    const ratio = link[`volumeCapacity${side}`];
+    const vehicles = link[`load${side}Vehicles`];
+    const unavailable = allowed === false ? "Closed" : "Unavailable";
+    return {
+      status: allowed === false ? "closed" : allowed === true ? "open" : "unavailable",
+      time: allowed === true && observed(time) ? `${time.toFixed(2)} min` : unavailable,
+      loadRatio: allowed === true && observed(ratio) ? formatPercent(ratio) : unavailable,
+      assignedVehicles: observed(vehicles) ? formatNumber(vehicles) : "Unavailable",
+    };
   }
 
   function topInterDistrictCommutes(rows, limit = 18) {
@@ -636,6 +712,8 @@
       createHistoryPoint,
       historyEntryCsvRow,
       historyToCsv,
+      comparisonToCsv,
+      COMPARISON_METRICS,
       parseUtcDate,
       addUtcCalendarMonths,
       utcDayDifference,
@@ -653,6 +731,8 @@
       flowSeriesForZone,
       isInterDistrictCorridor,
       isRenderedAnalysisLink,
+      roadAssignmentStatus,
+      roadDirectionPresentation,
       topInterDistrictCommutes,
       commuteLiveWorkByDistrict,
       commuteOdMatrix,
@@ -687,6 +767,8 @@
     geo: { zones: null, roads: null, stops: null },
     worker: null,
     referenceWorker: null,
+    workerBlobUrl: null,
+    engineSha256: null,
     snapshot: null,
     referenceSnapshot: null,
     history: [],
@@ -695,7 +777,20 @@
     mapRenderers: { agents: null, commuteFlows: null, roads: null },
     agentCanvas: null,
     view: root.dataset.udesV2View === "studio" ? "studio" : "overview",
-    mapMode: "agents",
+    mapMode: "network",
+    roadFlow: null,
+    roadFlowEnabled: true,
+    roadFlowSnapshot: null,
+    outcomeMetric: "commute",
+    analysisOpen: false,
+    analysisId: "workspace:city",
+    analysisKind: "workspace",
+    analysisKey: null,
+    analysisCharts: [],
+    analysisDashboardId: "workspace:city",
+    analysisNotes: new Map(),
+    analysisTrigger: null,
+    transitionWindowDays: 30,
     // Keep commuter stock opt-in so the road-load signal remains legible.
     agentVisibility: { citizens: true, enterprises: true, flows: false },
     renderedMapMode: null,
@@ -730,6 +825,7 @@
     draftFields: new Set(),
     draftScopeDirty: false,
     interventions: [],
+    interventionPatches: [],
     appliedZonePolicies: new Map(),
     latestDailyStatus: null,
     charts: new Map(),
@@ -838,14 +934,11 @@
     state.view = nextView;
     root.dataset.udesV2View = nextView;
     const studioOpen = nextView === "studio";
-    if (!studioOpen) activateTab("chart", "outcomes");
-    if (ui.viewLabel) ui.viewLabel.textContent = studioOpen ? "Show overview" : "Open studio";
+    if (studioOpen) closeAnalysis(false);
+    if (ui.viewLabel) ui.viewLabel.textContent = studioOpen ? "Close scenario" : "Configure scenario";
     if (ui.viewToggle) {
       ui.viewToggle.setAttribute("aria-pressed", String(studioOpen));
-      ui.viewToggle.setAttribute(
-        "aria-label",
-        studioOpen ? "Return to the map and city-pulse overview" : "Open scenario controls and object inspection studio"
-      );
+      ui.viewToggle.setAttribute("aria-label", studioOpen ? "Close scenario configuration" : "Configure scenario");
     }
     const refreshLayout = () => {
       state.map?.invalidateSize?.({ pan: false });
@@ -854,7 +947,7 @@
     requestAnimationFrame(refreshLayout);
     setTimeout(refreshLayout, 120);
     if (announceChange) {
-      announce(studioOpen ? "Studio opened with scenario controls and object inspection." : "City overview restored.");
+      announce(studioOpen ? "Scenario configuration opened." : "Scenario configuration closed.");
     }
   }
 
@@ -870,7 +963,7 @@
 
   async function fetchJson(url, optional = false) {
     try {
-      const response = await fetch(url, { credentials: "same-origin" });
+      const response = await fetch(url, { credentials: "same-origin", cache: "no-store" });
       if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
       return await response.json();
     } catch (error) {
@@ -887,6 +980,7 @@
       nodes: dataset.roadGraph?.nodes || [],
       zoneAccess: dataset.roadGraph?.zoneAccess || [],
       candidateRoutes: dataset.roadGraph?.candidateRoutes || [],
+      turnRestrictions: dataset.roadGraph?.turnRestrictions || [],
       transit: dataset.transit,
       calibration: dataset.calibration,
       assumptions: dataset.assumptions,
@@ -960,7 +1054,7 @@
       acceptableCommuteRoundTripMin: values.acceptableCommute,
       extremeCommuteRoundTripMin: values.extremeCommute,
       enterpriseTargetMargin: values.targetMargin / 100,
-      targetEmploymentRate: values.employmentTarget / 100,
+      dailyJobSearchProbability: values.jobSearchProbability / 100,
       residentialMoveDecisionProbability: values.householdMoveChance / 100,
       residentialMoveCooldownDays: values.householdMinimumStay,
       firmMoveProbabilityOnStateEntry: values.firmMoveChance / 100,
@@ -1129,7 +1223,7 @@
       acceptableCommute: value.acceptableCommuteRoundTripMin,
       extremeCommute: value.extremeCommuteRoundTripMin,
       targetMargin: value.enterpriseTargetMargin * 100,
-      employmentTarget: value.targetEmploymentRate * 100,
+      jobSearchProbability: value.dailyJobSearchProbability * 100,
       householdMoveChance: value.residentialMoveDecisionProbability * 100,
       householdMinimumStay: value.residentialMoveCooldownDays,
       firmMoveChance: value.firmMoveProbabilityOnStateEntry * 100,
@@ -1226,7 +1320,7 @@
       acceptableCommute: `${value.toFixed(0)} min`,
       extremeCommute: `${value.toFixed(0)} min`,
       targetMargin: `${value.toFixed(0)}%`,
-      employmentTarget: `${value.toFixed(0)}%`,
+      jobSearchProbability: `${value.toFixed(0)}%`,
       householdMoveChance: `${value.toFixed(0)}%`,
       householdMinimumStay: `${value.toFixed(0)} days`,
       firmMoveChance: `${value.toFixed(0)}%`,
@@ -1260,8 +1354,16 @@
     if (!workerUrl) throw new Error("The v2 worker URL is missing from the page.");
     state.worker?.terminate();
     state.referenceWorker?.terminate();
-    state.worker = new WorkerClient(workerUrl, renderProgress);
-    state.referenceWorker = new WorkerClient(workerUrl);
+    if (state.workerBlobUrl) URL.revokeObjectURL(state.workerBlobUrl);
+    const response = await fetch(workerUrl, { credentials: "same-origin", cache: "no-store" });
+    if (!response.ok) throw new Error("Could not load the simulation engine.");
+    const source = await response.text();
+    const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(source));
+    state.engineSha256 = Array.from(new Uint8Array(digest), (value) => value.toString(16).padStart(2, "0")).join("");
+    state.workerBlobUrl = URL.createObjectURL(new Blob([source], { type: "text/javascript" }));
+    // Both workers execute the exact bytes identified in the experiment export.
+    state.worker = new WorkerClient(state.workerBlobUrl, renderProgress);
+    state.referenceWorker = new WorkerClient(state.workerBlobUrl);
     const data = workerDataset(state.dataset);
     const activePolicy = policyFromControls();
     const fixedReferencePolicy = referencePolicyFromControls();
@@ -1280,6 +1382,7 @@
     state.history = [];
     state.referenceHistory = [];
     state.interventions = [];
+    state.interventionPatches = [];
     state.latestDailyStatus = null;
     recordHistory(state.snapshot, state.history, state.appliedPolicy);
     recordHistory(state.referenceSnapshot, state.referenceHistory, fixedReferencePolicy);
@@ -1316,14 +1419,17 @@
         announce("A target area alone does not change the model. Change housing, employment-space, or public-realm inputs first.");
         return;
       }
+      const activePatch = stagedEnginePatch(requestedPolicy);
+      const referencePatch = stagedEnginePatch(requestedReferencePolicy, true);
       await Promise.all([
-        state.worker.request("configure", { patch: stagedEnginePatch(requestedPolicy), reset: false }),
-        state.referenceWorker.request("configure", { patch: stagedEnginePatch(requestedReferencePolicy, true), reset: false }),
+        state.worker.request("configure", { patch: activePatch, reset: false }),
+        state.referenceWorker.request("configure", { patch: referencePatch, reset: false }),
       ]);
       state.appliedPolicy = mergeAppliedPolicy(state.appliedPolicy, requestedPolicy, changedFields);
       state.referenceAppliedPolicy = mergeAppliedPolicy(state.referenceAppliedPolicy, requestedReferencePolicy, changedFields, true);
       updateAppliedZonePolicies(requestedPolicy, changedFields);
       const effectiveDay = state.elapsedDays + 1;
+      state.interventionPatches.push({ sequence: state.interventionPatches.length + 1, effectiveDay, activePatch, referencePatch });
       const effectiveDate = new Date(simulationStartDate().valueOf() + effectiveDay * DAY_MS);
       const descriptor = interventionDescriptor(requestedPolicy, changedFields);
       const marker = {
@@ -1422,6 +1528,7 @@
       state.latestDailyStatus = activeResult.dailySeries.at(-1) || null;
       state.elapsedDays = modelDay(state.snapshot, state.elapsedDays + stepDays);
       renderAll();
+      announce(`Day ${state.elapsedDays}: scenario and reference updated. ${formatLongDate(modelDate())}.`);
       if (state.elapsedDays >= state.horizonDays) {
         stopPlayback();
         setRuntime("Horizon reached", "complete");
@@ -1533,6 +1640,7 @@
       state.history = [];
       state.referenceHistory = [];
       state.interventions = [];
+      state.interventionPatches = [];
       state.latestDailyStatus = null;
       recordHistory(state.snapshot, state.history, state.appliedPolicy);
       recordHistory(state.referenceSnapshot, state.referenceHistory, state.referenceAppliedPolicy);
@@ -1555,6 +1663,7 @@
   }
 
   function bindControls() {
+    bindAnalysisControls();
     ui.play?.addEventListener("click", togglePlayback);
     ui.viewToggle?.addEventListener("click", () => setConsoleView(state.view === "overview" ? "studio" : "overview"));
     for (const button of $$("[data-udes-v2-step-days]")) {
@@ -1564,6 +1673,21 @@
     $("[data-udes-v2-action='reset-levers']")?.addEventListener("click", resetDraft);
     ui.applyPolicy?.addEventListener("click", applyDraftPolicy);
     $("[data-udes-v2-action='export']")?.addEventListener("click", exportCsv);
+    $("[data-udes-v2-action='export-experiment']")?.addEventListener("click", () => {
+      exportExperiment().catch((error) => announce(`Experiment export failed: ${error.message}`));
+    });
+    $("[data-udes-v2-action='close-inspector']")?.addEventListener("click", () => {
+      root.dataset.udesV2Inspection = "closed";
+      resizeCharts();
+    });
+    $("[data-udes-v2-action='close-controls']")?.addEventListener("click", () => setConsoleView("overview"));
+    for (const button of $$("[data-udes-v2-action='methods']")) button.addEventListener("click", openMethods);
+    $("[data-udes-v2-action='close-methods']")?.addEventListener("click", () => $("[data-udes-v2-methods]")?.close());
+    $("[data-udes-v2-road-flow-toggle]")?.addEventListener("click", (event) => {
+      state.roadFlowEnabled = !state.roadFlowEnabled;
+      event.currentTarget.setAttribute("aria-pressed", String(state.roadFlowEnabled));
+      state.roadFlow?.setEnabled(state.roadFlowEnabled && state.mapMode === "network");
+    });
     $("[data-udes-v2-compare]")?.addEventListener("click", (event) => {
       state.compare = !state.compare;
       event.currentTarget.setAttribute("aria-pressed", String(state.compare));
@@ -1646,7 +1770,7 @@
     });
     ui.chartWindow?.addEventListener("change", () => {
       state.chartWindowDays = Math.max(0, Number(ui.chartWindow.value) || 0);
-      renderChartPanel($("[data-udes-v2-chart-tab][aria-selected='true']")?.dataset.udesV2ChartTab || "outcomes");
+      renderChartPanel(state.analysisKind);
     });
     ui.flowKind?.addEventListener("change", () => {
       state.flowKind = ["residential", "job", "workplace", "enterprise", "replacement", "commute"].includes(ui.flowKind.value)
@@ -1667,7 +1791,6 @@
 
     bindTabs("control");
     bindTabs("inspector");
-    bindTabs("chart");
     for (const button of $$("[data-udes-v2-map-layer]")) {
       button.addEventListener("click", () => {
         state.mapMode = button.dataset.udesV2MapLayer;
@@ -1686,6 +1809,294 @@
         announce(`${button.textContent.trim()} ${state.agentVisibility[layer] ? "shown" : "hidden"} on the agent map.`);
       });
     }
+  }
+
+  function analysisCatalog() {
+    const workspaces = [
+      [
+        "city",
+        "City",
+        [
+          "citizens:states",
+          "labor-composition",
+          "resource-distribution",
+          "mobility:modes",
+          "commute-distribution",
+          "vehicle-access",
+          "enterprises:states",
+          "enterprise-size",
+          "outcomes:occupancy",
+        ],
+      ],
+      [
+        "district",
+        "Selected district",
+        [
+          "district-population-history",
+          "district-resident-states",
+          "district-travel-modes",
+          "district-rent-history",
+          "district-employment-history",
+          "district-work-destinations",
+          "district-enterprise-states",
+          "district-commute-destinations",
+        ],
+      ],
+      [
+        "transport",
+        "Transport",
+        ["commute-distribution", "mobility:modes", "vehicle-access", "district-commutes", "network-coverage", "mobility:links"],
+      ],
+      [
+        "districts",
+        "District comparison",
+        ["districts:stocks", "district-commutes", "district-housing", "district-tradeoff", "labor-composition", "resource-distribution"],
+      ],
+      [
+        "housing",
+        "Housing",
+        ["district-housing", "district-tradeoff", "outcomes:occupancy", "districts:stocks", "resource-distribution", "outcomes:residual"],
+      ],
+      [
+        "residents",
+        "Residents",
+        ["citizens:states", "citizens:finance", "resource-distribution", "labor-composition", "resident-transitions", "vehicle-access"],
+      ],
+      [
+        "firms",
+        "Firms",
+        ["enterprises:states", "enterprise-size", "enterprises:viability", "districts:stocks", "labor-composition", "outcomes:unemployment"],
+      ],
+      ["roads", "Roads", ["network-coverage", "mobility:links", "commute-distribution", "district-commutes", "mobility:modes", "outcomes:commute"]],
+    ].map(([id, title, charts]) => ({ id: `workspace:${id}`, title, group: "Dashboards", charts, scope: id === "district" ? "district" : "city" }));
+    const entries = [
+      ["outcomes:commute", "Commute over time", "City trends", true],
+      ["outcomes:transit", "Transit share over time", "City trends", true],
+      ["outcomes:occupancy", "Housing occupancy over time", "City trends", true],
+      ["outcomes:satisfaction", "Residents within thresholds", "City trends", true],
+      ["outcomes:unemployment", "Unemployment over time", "City trends", true],
+      ["outcomes:residual", "Disposable resources over time", "City trends", true],
+      ["districts:stocks", "Residents and jobs by district", "Districts", false],
+      ["districts:selected", "Selected district trajectory", "Districts", true],
+      ["flows:routes", "Movement routes / home-to-work matrix", "Movement", false],
+      ["flows:district", "District movement balance", "Movement", false],
+      ["mobility:modes", "Travel mode composition", "Transport", true],
+      ["mobility:links", "Road and transit pressure", "Transport", false],
+      ["citizens:finance", "Resident budget groups", "Residents", false],
+      ["citizens:states", "Resident decision states", "Residents", true],
+      ["enterprises:states", "Firm decision states", "Firms", true],
+      ["enterprises:viability", "Firm viability and actions", "Firms", true],
+    ].map(([id, title, group, timeline]) => ({ id, title, group, timeline }));
+    return [...workspaces, ...entries, ...(window.UdesV2Analysis?.CATALOG || [])];
+  }
+
+  function chartIdentity(id) {
+    return id.includes(":") ? id : `analysis:${id}`;
+  }
+
+  function recordAnalysisNote(id, note) {
+    if (note) state.analysisNotes.set(id, note);
+  }
+
+  function bindAnalysisControls() {
+    const picker = $("[data-udes-v2-analysis-picker]");
+    const groups = new Map();
+    for (const entry of analysisCatalog()) {
+      if (!groups.has(entry.group)) {
+        const group = document.createElement("optgroup");
+        group.label = entry.group;
+        groups.set(entry.group, group);
+        picker?.append(group);
+      }
+      const option = document.createElement("option");
+      option.value = entry.id;
+      option.textContent = entry.title;
+      groups.get(entry.group).append(option);
+    }
+    picker?.addEventListener("change", (event) => openAnalysis(event.target.value));
+    const dashboardNav = $("[data-udes-v2-dashboard-nav]");
+    for (const entry of analysisCatalog().filter((item) => item.charts)) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = entry.title;
+      button.dataset.udesV2Dashboard = entry.id;
+      button.setAttribute("aria-pressed", "false");
+      button.addEventListener("click", () => openAnalysis(entry.id));
+      dashboardNav?.append(button);
+    }
+    $("[data-udes-v2-action='back-dashboard']")?.addEventListener("click", () => openAnalysis(state.analysisDashboardId));
+    $("[data-udes-v2-action='open-analysis']")?.addEventListener("click", (event) => openAnalysis(state.analysisId, event.currentTarget));
+    $("[data-udes-v2-action='close-analysis']")?.addEventListener("click", () => closeAnalysis());
+    for (const button of $$("[data-udes-v2-open-chart]")) {
+      button.addEventListener("click", () => openAnalysis(button.dataset.udesV2OpenChart, button));
+    }
+    $("[data-udes-v2-action='inspect-charts']")?.addEventListener("click", (event) => {
+      const id = {
+        zone: "workspace:district",
+        city: "workspace:city",
+        citizen: "workspace:residents",
+        enterprise: "workspace:firms",
+        link: "workspace:roads",
+      }[state.selected.kind];
+      openAnalysis(id || "commute-distribution", event.currentTarget);
+    });
+    $("[data-udes-v2-analysis-district]")?.addEventListener("change", (event) => {
+      state.selected.kind = event.target.value === "city" ? "city" : "zone";
+      state.selected.id = event.target.value === "city" ? null : event.target.value;
+      if (ui.zoneSelect) ui.zoneSelect.value = event.target.value;
+      updateMapStyles();
+      updateDistrictLabels();
+      renderChartPanel(state.analysisKind);
+    });
+    $("[data-udes-v2-transition-window]")?.addEventListener("change", (event) => {
+      state.transitionWindowDays = Number(event.target.value);
+      renderChartPanel(state.analysisKind);
+    });
+    root.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && state.analysisOpen) {
+        event.preventDefault();
+        closeAnalysis();
+      }
+    });
+  }
+
+  function clearAnalysisCharts() {
+    for (const [key, chart] of state.charts.entries()) {
+      if (!key.includes(":")) continue;
+      chart.dispose?.();
+      state.charts.delete(key);
+      state.chartInteractionLocks.delete(key);
+      state.pendingChartOptions.delete(key);
+      state.chartDataSignatures.delete(key);
+      state.chartStructureKeys.delete(key);
+    }
+    for (const mount of $$("[data-udes-v2-chart]")) {
+      mount.replaceChildren();
+      delete mount.dataset.renderedSignature;
+    }
+  }
+
+  function closeAnalysis(restoreFocus = true) {
+    const wasOpen = state.analysisOpen;
+    state.analysisOpen = false;
+    root.dataset.udesV2Analysis = "closed";
+    const tray = $("[data-udes-v2-tray]");
+    if (tray) tray.hidden = true;
+    $("[data-udes-v2-action='open-analysis']")?.setAttribute("aria-expanded", "false");
+    if (wasOpen) clearAnalysisCharts();
+    if (restoreFocus && wasOpen) {
+      const trigger = state.analysisTrigger;
+      if (trigger?.getClientRects().length) trigger.focus();
+      else $("[data-udes-v2-action='open-analysis']")?.focus();
+    }
+  }
+
+  function openAnalysis(id, trigger = null) {
+    const entry = analysisCatalog().find((item) => item.id === id);
+    if (!entry) return;
+    if (state.analysisId !== id) clearAnalysisCharts();
+    if (trigger) state.analysisTrigger = trigger;
+    state.analysisId = id;
+    const [kind, key] = chartIdentity(id).split(":");
+    state.analysisKind = kind;
+    state.analysisKey = key;
+    state.analysisCharts = (entry.charts || [id]).map(chartIdentity);
+    const dashboard = state.analysisCharts.length > 1;
+    if (dashboard) state.analysisDashboardId = id;
+    root.dataset.udesV2AnalysisLayout = dashboard ? "dashboard" : "single";
+    root.style.setProperty("--udes-v2-dashboard-rows", String(Math.ceil(state.analysisCharts.length / 3)));
+    $("[data-udes-v2-action='back-dashboard']").hidden = dashboard;
+    $("#udes-v2-tray-title").textContent = dashboard ? `${entry.title} results` : entry.title;
+    $("[data-udes-v2-analysis-count]").textContent = dashboard ? `${state.analysisCharts.length} charts` : "";
+    for (const button of $$("[data-udes-v2-dashboard]")) button.setAttribute("aria-pressed", String(button.dataset.udesV2Dashboard === id));
+    if (kind === "outcomes") state.outcomeMetric = key;
+    if (state.view === "studio") setConsoleView("overview", false);
+    state.analysisOpen = true;
+    root.dataset.udesV2Analysis = "open";
+    root.dataset.udesV2Inspection = "closed";
+    $("[data-udes-v2-tray]").hidden = false;
+    $("[data-udes-v2-action='open-analysis']")?.setAttribute("aria-expanded", "true");
+    $("[data-udes-v2-analysis-picker]").value = id;
+    const catalog = analysisCatalog();
+    const hasTimeline = Boolean(entry.timeline || entry.charts?.some((chartId) => catalog.find((item) => item.id === chartId)?.timeline));
+    $("[data-udes-v2-analysis-window]").hidden = !hasTimeline;
+    if (ui.flowFilter) ui.flowFilter.hidden = !state.analysisCharts.some((chartId) => chartId.startsWith("flows:"));
+    const districtPicker = $("[data-udes-v2-analysis-district]");
+    const isTransitions = state.analysisCharts.includes("analysis:resident-transitions");
+    $("[data-udes-v2-analysis-district-label]").textContent = isTransitions ? "Transition district" : "District";
+    districtPicker.setAttribute("aria-label", isTransitions ? "Transition district" : "Chart district");
+    const showDistrict = entry.scope === "district" || id === "districts:selected" || id === "flows:district" || isTransitions;
+    $("[data-udes-v2-transition-window]").parentElement.hidden = !isTransitions;
+    districtPicker.parentElement.hidden = !showDistrict;
+    if (showDistrict) {
+      districtPicker.replaceChildren(
+        ...(isTransitions ? [{ id: "city", name: "All districts" }, ...(state.dataset?.zones || [])] : state.dataset?.zones || []).map((zone) => {
+          const option = document.createElement("option");
+          option.value = zone.id;
+          option.textContent = zone.name;
+          return option;
+        })
+      );
+      const districtId = selectedDistrictId() || (isTransitions ? "city" : state.dataset?.zones?.[0]?.id);
+      if (districtId) {
+        districtPicker.value = districtId;
+        state.selected.kind = districtId === "city" ? "city" : "zone";
+        state.selected.id = districtId === "city" ? null : districtId;
+        if (ui.zoneSelect) ui.zoneSelect.value = districtId;
+        updateMapStyles();
+      }
+    }
+    for (const panel of $$("[data-udes-v2-chart-panel]")) {
+      panel.hidden = !state.analysisCharts.some((chartId) => chartId.startsWith(`${panel.dataset.udesV2ChartPanel}:`));
+    }
+    renderChartPanel(kind);
+    requestAnimationFrame(() => {
+      resizeCharts();
+      if (trigger) $("[data-udes-v2-analysis-picker]")?.focus();
+    });
+  }
+
+  function renderDetailedAnalysis() {
+    const context = {
+      snapshot: state.snapshot,
+      referenceSnapshot: state.referenceSnapshot,
+      history: state.history,
+      referenceHistory: state.referenceHistory,
+      selectedZoneId: selectedDistrictId(),
+      windowDays: state.transitionWindowDays,
+      historyWindowDays: state.chartWindowDays,
+      compare: state.compare,
+    };
+    const results = state.analysisCharts
+      .filter((id) => id.startsWith("analysis:"))
+      .map((id) => window.UdesV2Analysis?.buildOption(id.slice(9), context, palette))
+      .filter(Boolean);
+    const nodes = prepareChartPanel(
+      "analysis",
+      results.map((result) => [result.id, result.title, result.subtitle])
+    );
+    results.forEach((result, index) => {
+      const node = nodes[index];
+      if (node && result.layoutHint?.minHeight && state.analysisKind !== "workspace") node.style.minHeight = `${result.layoutHint.minHeight}px`;
+      recordAnalysisNote(result.id, `${result.title}: ${result.note || ""}`);
+      mountChart(node, `analysis:${result.id}`, result.option, `${result.id}:${result.empty}`);
+      if (node && result.summary) node.setAttribute("aria-label", result.summary);
+      const chart = state.charts.get(`analysis:${result.id}`);
+      if (["district-tradeoff", "district-commutes", "district-housing"].includes(result.id) && chart) {
+        chart.off("click");
+        chart.on("click", (params) => {
+          if (params.data?.zoneId) openDistrictAnalysis(params.data.zoneId);
+        });
+      }
+    });
+  }
+
+  function openDistrictAnalysis(zoneId, chartId = "workspace:district") {
+    state.selected.kind = "zone";
+    state.selected.id = zoneId;
+    if (ui.zoneSelect) ui.zoneSelect.value = zoneId;
+    openAnalysis(chartId);
+    updateDistrictLabels();
   }
 
   function bindTabs(kind) {
@@ -1727,11 +2138,7 @@
     $$(panelSelector).forEach((panel) => {
       panel.hidden = panel.dataset[panelKey] !== value;
     });
-    if (kind === "chart") {
-      if (ui.flowFilter) ui.flowFilter.hidden = value !== "flows";
-      renderChartPanel(value);
-      requestAnimationFrame(() => resizeCharts());
-    } else if (kind === "inspector" && ["citizen", "enterprise", "link"].includes(value) && state.selected.kind !== value) {
+    if (kind === "inspector" && ["citizen", "enterprise", "link"].includes(value) && state.selected.kind !== value) {
       selectSample(value);
     } else if (kind === "inspector" && value === "zone" && !["zone", "city"].includes(state.selected.kind)) {
       const citySelected = ui.zoneSelect?.value === "city";
@@ -2012,13 +2419,14 @@
           recovery: percentToRatio(valueAt(zone, ["recoverySharePercent", "stateShares.Recovery"], 0)),
           averageRoundTripMinutes: valueAt(zone, ["averageRoundTripMinutes", "meanCommuteMinutes"], 0),
           housingOccupancy: percentToRatio(valueAt(zone, ["housingOccupancyRate"], valueAt(zone, ["housingOccupancyRatio"], 0) * 100)),
-          residentialRentAed: valueAt(zone, ["residentialRentAed"], 0),
+          residentialRentAed: valueAt(zone, ["residentialRentAed"], Number.NaN),
           businessRentAed: valueAt(zone, ["businessRentAedPerRepresentedWorker"], 0),
-          jobs: valueAt(zone, ["jobs", "representedEmployed"], 0),
+          jobs: valueAt(zone, ["jobs"], Number.NaN),
+          representedEmployed: valueAt(zone, ["representedEmployed"], Number.NaN),
           jobCapacity: valueAt(zone, ["jobCapacity"], 0),
           vacancies: valueAt(zone, ["vacancies"], 0),
-          population: valueAt(zone, ["population", "representedPopulation"], 0),
-          housingCapacity: valueAt(zone, ["housingCapacity", "housingCapacityRepresented"], 0),
+          population: valueAt(zone, ["population", "representedPopulation"], Number.NaN),
+          housingCapacity: valueAt(zone, ["housingCapacity", "housingCapacityRepresented"], Number.NaN),
           enterprises: valueAt(zone, ["enterprises"], 0),
           enterprisePlaceCapacity: valueAt(zone, ["enterprisePlaceCapacity"], 0),
           employmentRate: percentToRatio(valueAt(zone, ["employmentRate"], 0)),
@@ -2063,7 +2471,6 @@
     if (!snapshot) return;
     const normalized = normalizeCity(snapshot);
     if (target === state.referenceHistory) {
-      normalized.zoneSeries = [];
       normalized.flows = {
         residentialMoves: [],
         jobMoves: [],
@@ -2179,7 +2586,7 @@
     renderSummary();
     updateMapStyles();
     renderSelection();
-    const activeChart = $("[data-udes-v2-chart-tab][aria-selected='true']")?.dataset.udesV2ChartTab || "outcomes";
+    const activeChart = state.analysisKind;
     renderChartPanel(activeChart);
   }
 
@@ -2212,6 +2619,19 @@
     setMetric("peakRoadUsage", formatPercent(peakRoadUsage));
     setMetric("mapCommute", `${active.meanCommute.toFixed(1)} min`);
     setMetric("cityNetIncome", formatAed(active.netIncome, true));
+    setMetric("cityUnemployment", formatPercent(active.unemployment));
+    setMetric("cityResidual", formatAed(active.residualAfterEssentials, true));
+    const label = $("[data-udes-v2-active-scenario]");
+    if (label) label.textContent = scenarioLabel(state.appliedPolicy?.scenario || "reference");
+    const scope = $("[data-udes-v2-active-context]");
+    if (scope)
+      scope.textContent = `${policyScopeLabel(state.appliedPolicy?.policyScopeZoneId || "city")} · ${state.dataset?.baseYear || 2024} baseline`;
+    const sampleNote = $("[data-udes-v2-result-note]");
+    if (sampleNote)
+      sampleNote.textContent =
+        state.elapsedDays === 0
+          ? "Opening state · both runs use the same population and seed."
+          : `Day ${state.elapsedDays} · compared with reference · seed ${state.seed}`;
     setDelta("satisfaction", active.satisfaction || active.happy, reference.satisfaction || reference.happy, "percent");
     setDelta("commute", active.meanCommute, reference.meanCommute, "minutes", true);
     setDelta("transitShare", active.ptShare, reference.ptShare, "percent");
@@ -2393,7 +2813,7 @@
     }).addTo(state.map);
     if (state.geo.roads) {
       state.layers.roads = window.L.geoJSON(state.geo.roads, {
-        filter: isInterDistrictCorridor,
+        filter: (feature) => feature.properties?.modelVisible !== false && feature.properties?.contextOnly !== true,
         style: roadStyle,
         onEachFeature: (feature, layer) => {
           layer.bindTooltip(roadTooltipHtml(feature), {
@@ -2413,7 +2833,7 @@
           const id = feature.properties?.id || feature.properties?.zoneId || feature.id;
           const label = feature.properties?.name || baselineZone(id)?.name || id;
           const tooltip = layer
-            .bindTooltip(label, {
+            .bindTooltip(label.split(" / ")[0], {
               permanent: true,
               direction: "center",
               className: "udes-v2-zone-label",
@@ -2475,8 +2895,14 @@
     state.agentCanvas = createAgentCanvasLayer();
     state.layers.agentCanvas = state.agentCanvas;
     state.agentCanvas?.addTo(state.map);
+    if (window.UdesRoadFlow) {
+      state.roadFlow = window.UdesRoadFlow.createLayer(window.L);
+      state.roadFlow.addTo(state.map);
+    }
     if (placeholder) placeholder.hidden = true;
     fitMap();
+    state.map.on("moveend zoomend resize", updateDistrictLabels);
+    requestAnimationFrame(updateDistrictLabels);
     state.map.on("zoomend", updateTransitVisibility);
     updateTransitVisibility();
     setTimeout(() => state.map.invalidateSize(), 80);
@@ -2488,6 +2914,29 @@
     const visible = state.map.hasLayer(state.layers.stops);
     if (shouldShow && !visible) state.layers.stops.addTo(state.map);
     else if (!shouldShow && visible) state.map.removeLayer(state.layers.stops);
+  }
+
+  function updateDistrictLabels() {
+    const layers = state.layers.zones?.getLayers?.() || [];
+    const occupied = [];
+    layers
+      .sort((a, b) => {
+        const aid = zoneFeatureId(a.feature);
+        const bid = zoneFeatureId(b.feature);
+        const priority = (id) => (String(id) === String(state.selected.id) ? Infinity : Number(baselineZone(id)?.population2024 || 0));
+        return priority(bid) - priority(aid);
+      })
+      .forEach((layer) => {
+        const element = layer.getTooltip?.()?.getElement?.();
+        if (!element) return;
+        const box = element.getBoundingClientRect();
+        const overlaps = occupied.some(
+          (other) => box.left < other.right + 7 && box.right > other.left - 7 && box.top < other.bottom + 5 && box.bottom > other.top - 5
+        );
+        element.style.visibility = overlaps ? "hidden" : "visible";
+        element.tabIndex = overlaps ? -1 : 0;
+        if (!overlaps) occupied.push(box);
+      });
   }
 
   function fitMap() {
@@ -3651,6 +4100,22 @@
     const contextOnly = feature?.properties?.contextOnly === true || link.contextOnly === true;
     const load = linkLoad(link);
     const selected = state.selected.kind === "link" && String(state.selected.id) === String(id);
+    const assignment = roadAssignmentStatus(link);
+    const roadClass = feature?.properties?.displayClass || link.displayClass;
+    const baseWidth = roadClass === "arterial" ? 3.2 : roadClass === "gateway" ? 2.2 : 1.6;
+    if (feature?.properties?.loadBearing === false || link.loadBearing === false) {
+      return {
+        className: "udes-v2-road-feature",
+        pane: "udesV2Roads",
+        renderer: state.mapRenderers.roads,
+        color: selected ? palette.ink : "#899b9a",
+        weight: selected ? 5 : 2,
+        opacity: state.mapMode === "network" ? 0.7 : 0.25,
+        dashArray: "5 4",
+        lineCap: "round",
+        lineJoin: "round",
+      };
+    }
     if (contextOnly) {
       return {
         className: "udes-v2-road-feature",
@@ -3667,9 +4132,12 @@
       className: "udes-v2-road-feature",
       pane: "udesV2Roads",
       renderer: state.mapRenderers.roads,
-      color: load > 0.9 ? palette.red : load > 0.65 ? palette.amber : palette.green,
-      weight: selected ? 5 : Math.max(1.4, 2 + load * 2.2),
-      opacity: state.mapMode === "network" ? 0.86 : state.mapMode === "agents" ? 0.76 : 0.34,
+      color: assignment !== "assigned-car" ? "#aab7b7" : load > 1 ? palette.red : load > 0.8 ? palette.amber : palette.green,
+      weight: selected ? 6 : assignment !== "assigned-car" ? Math.max(1.2, baseWidth * 0.75) : baseWidth,
+      opacity: state.mapMode === "network" ? 0.94 : state.mapMode === "agents" ? 0.42 : 0.25,
+      dashArray: assignment === "unavailable" ? "2 5" : null,
+      lineCap: "round",
+      lineJoin: "round",
     };
   }
 
@@ -3680,24 +4148,36 @@
     const roadName = properties.primaryRoad || properties.roadNameEn || properties.name || "Modeled arterial";
     const refs = properties.roadRefs || properties.refs || [];
     const roadRefs = (Array.isArray(refs) ? refs.join(", ") : String(refs || properties.ref || "")).trim();
-    const ratioAB = valueAt(current, ["volumeCapacityAB"], 0);
-    const ratioBA = valueAt(current, ["volumeCapacityBA"], 0);
-    const vehiclesAB = valueAt(current, ["loadABVehicles"], 0);
-    const vehiclesBA = valueAt(current, ["loadBAVehicles"], 0);
+    const directionAB = roadDirectionPresentation(current, 1);
+    const directionBA = roadDirectionPresentation(current, -1);
     const lanesObserved = textAt(current, ["sourceClassByField.lanesPerDirection"], "") === "observed";
     const capacityBasis = lanesObserved ? "AD-SDI lane count · modeled per-lane capacity" : "Modeled road-class capacity";
+    if (properties.loadBearing === false || current.loadBearing === false) {
+      return `<strong>${escapeHtml(
+        roadName
+      )}</strong><span>Routing access · congestion not estimated</span><span>Trips can traverse this link. The aggregate model records no capacity load here; absence of arrows does not mean the road is unused.</span>`;
+    }
     if (properties.contextOnly === true || current.contextOnly === true) {
       return `<strong>${escapeHtml(roadName)}${
         roadRefs ? ` · ${escapeHtml(roadRefs)}` : ""
       }</strong><span>Map context only · no assigned OD demand</span><span>Shown for orientation; excluded from modeled road load and capacity results.</span>`;
     }
-    return `<strong>${escapeHtml(roadName)}${
-      roadRefs ? ` · ${escapeHtml(roadRefs)}` : ""
-    }</strong><span>Modeled work-trip road load · A→B ${escapeHtml(formatPercent(ratioAB))} · B→A ${escapeHtml(
-      formatPercent(ratioBA)
-    )}</span><span>${escapeHtml(formatNumber(vehiclesAB))} / ${escapeHtml(formatNumber(vehiclesBA))} assigned vehicles</span><span>${escapeHtml(
-      capacityBasis
-    )} · activate for assumptions</span>`;
+    const assignment = roadAssignmentStatus(current);
+    const statusLabel =
+      assignment === "unassigned"
+        ? "No car or transit work trips assigned on this segment"
+        : assignment === "transit-only"
+          ? "Transit work trips assigned · no car demand"
+          : assignment === "unavailable"
+            ? "Assignment data unavailable"
+            : "Assigned car work trips";
+    return `<strong>${escapeHtml(roadName)}${roadRefs ? ` · ${escapeHtml(roadRefs)}` : ""}</strong><span>${escapeHtml(
+      statusLabel
+    )}</span><span>Modeled work-trip road load · A→B ${escapeHtml(directionAB.loadRatio)} · B→A ${escapeHtml(
+      directionBA.loadRatio
+    )}</span><span>${escapeHtml(directionAB.assignedVehicles)} / ${escapeHtml(
+      directionBA.assignedVehicles
+    )} assigned vehicles</span><span>${escapeHtml(capacityBasis)} · activate for assumptions</span>`;
   }
 
   function renderMapStatus(date = modelDate(), dailyStatus = state.latestDailyStatus || normalizeCity(state.snapshot)) {
@@ -3727,13 +4207,13 @@
         state.agentVisibility.flows ? `${flowCount} strongest home→work links` : null,
       ].filter(Boolean);
       ui.mapStatus.textContent = shownLayers.length
-        ? `${shownLayers.join(" + ")} shown · ${state.snapshot?.mapFrame ? "complete agent frame" : agentScope}`
+        ? `${shownLayers.join(" + ")} · representative groups, display locations`
         : "Agent layers hidden · use the legend toggles to restore them";
       return;
     }
     const assignmentDate = parseUtcDate(textAt(dailyStatus, ["networkAssignmentDate", "city.networkAssignmentDate"], ""));
     if (!assignmentDate) {
-      ui.mapStatus.textContent = `${districtCount} districts · ${corridorCount} modeled arterial / gateway segments`;
+      ui.mapStatus.textContent = `${districtCount} districts · ${corridorCount} capacity-bearing road segments`;
       return;
     }
     const label = new Intl.DateTimeFormat("en-AE", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }).format(assignmentDate);
@@ -3742,7 +4222,7 @@
       ["networkAssignmentStatus"],
       assignmentDate.valueOf() === date.valueOf() ? "current" : "retained-last-workday"
     );
-    ui.mapStatus.textContent = `${districtCount} districts · ${corridorCount} modeled arterial / gateway segments · ${
+    ui.mapStatus.textContent = `${districtCount} districts · ${corridorCount} capacity-bearing road segments · ${
       status === "retained-last-workday" ? `assignment retained from ${label}` : `network assigned ${label}`
     }`;
   }
@@ -3762,21 +4242,34 @@
     });
     updateTransitVisibility();
     updateAgentMapLayers();
+    if (state.roadFlow && state.roadFlowSnapshot !== state.snapshot) {
+      state.roadFlow.setData(state.geo.roads?.features || [], linksOf());
+      state.roadFlowSnapshot = state.snapshot;
+    }
+    if (mapModeChanged) state.roadFlow?.setEnabled(state.roadFlowEnabled && state.mapMode === "network");
+    const flowToggle = $("[data-udes-v2-road-flow-toggle]");
+    if (flowToggle) flowToggle.hidden = state.mapMode !== "network";
     renderMapStatus();
     if (ui.agentLayerToggles) ui.agentLayerToggles.hidden = state.mapMode !== "agents";
     if (ui.mapLegend && mapModeChanged) {
       const legend = {
-        network: ["Road load", ["is-low", "Below 65%"], ["is-medium", "65–90%"], ["is-high", "Above 90%"], ["is-context-road", "Context only"]],
+        network: [
+          "Work-trip road load",
+          ["is-low", "Below 80%"],
+          ["is-medium", "80–100%"],
+          ["is-high", "Over capacity"],
+          ["is-unassigned-road", "No assigned car demand"],
+        ],
         population: ["Resident population", ["is-low", "Lower"], ["is-medium", "Middle"], ["is-high", "Higher"]],
         access: ["Shorter mean commute", ["is-high", "Longer"], ["is-medium", "Middle"], ["is-low", "Shorter"]],
         rent: ["Housing rent", ["is-low", "Lower"], ["is-medium", "Middle"], ["is-high", "Higher"]],
         agents: [
           "Agent symbols",
-          ["is-agent-satisfied", "Satisfied"],
-          ["is-agent-waiting", "Waiting"],
-          ["is-agent-extreme", "Extreme"],
-          ["is-agent-recovery", "Recovery"],
-          ["is-agent-enterprise", "Enterprise"],
+          ["is-agent-satisfied", "Within thresholds"],
+          ["is-agent-waiting", "Under pressure"],
+          ["is-agent-extreme", "Severe stress"],
+          ["is-agent-recovery", "Recovering"],
+          ["is-agent-enterprise", "Firm"],
         ],
       }[state.mapMode];
       const strong = $("strong", ui.mapLegend);
@@ -3800,9 +4293,9 @@
   async function selectObject(kind, id) {
     state.selected.kind = kind;
     state.selected.id = id;
-    if (kind !== "city" && state.view === "overview" && window.matchMedia("(min-width: 1100px)").matches) {
-      setConsoleView("studio", false);
-    }
+    closeAnalysis(false);
+    root.dataset.udesV2Inspection = "open";
+    updateDistrictLabels();
     if (kind === "zone" && ui.zoneSelect) ui.zoneSelect.value = id;
     activateTab("inspector", kind === "city" ? "zone" : kind);
     updateMapStyles();
@@ -3810,7 +4303,7 @@
       await requestInspection(kind, id);
     } else {
       renderSelection();
-      renderChartPanel($("[data-udes-v2-chart-tab][aria-selected='true']")?.dataset.udesV2ChartTab || "outcomes");
+      renderChartPanel(state.analysisKind);
     }
   }
 
@@ -3859,7 +4352,21 @@
 
   function statechart(states, active, note) {
     return `<div class="udes-v2-statechart" aria-label="Agent states; ${escapeHtml(active)} is active">${states
-      .map((name) => `<span class="${String(name).toLowerCase() === String(active).toLowerCase() ? "is-active" : ""}">${escapeHtml(name)}</span>`)
+      .map(
+        (name) =>
+          `<span class="${String(name).toLowerCase() === String(active).toLowerCase() ? "is-active" : ""}">${escapeHtml(
+            {
+              Happy: "Stable",
+              Waiting: "Under pressure",
+              Extreme: "Severe stress",
+              Recovery: "Recovering",
+              Starting: "Starting",
+              Working: "Operating",
+              Grow: "Expanding",
+              Lesser: "Contracting",
+            }[name] || name
+          )}</span>`
+      )
       .join("")}<p class="udes-v2-statechart__branch-note">${escapeHtml(note)}</p></div>`;
   }
 
@@ -3888,7 +4395,14 @@
   }
 
   function eventDescription(event = {}) {
-    const type = humanizeEvent(event.type || event.action || event.event || "model action");
+    const rawType = event.type || event.action || event.event || "model action";
+    const type =
+      {
+        lesserAction: "Reviewed staffing and operating costs",
+        growAction: "Reviewed expansion and recruitment",
+        carAcquired: "Acquired vehicle access",
+        carDisposed: "Released vehicle access",
+      }[rawType] || humanizeEvent(rawType);
     const reason = event.reason ? ` · ${humanizeEvent(event.reason)}` : "";
     const from = event.fromZoneId || event.fromWorkZoneId || event.previousZoneId || event.from;
     const to = event.toZoneId || event.toWorkZoneId || event.zoneId || event.to;
@@ -3910,57 +4424,42 @@
   }
 
   function decisionSummary(kind, item) {
-    const explanation = item?.decisionExplanation || {};
+    const explanation = item.decisionExplanation || {};
     const current = explanation.currentAssessment || {};
-    const next = explanation.nextScheduledReview || explanation.nextScheduledDecision;
     const last = explanation.lastAction;
-    const goal =
-      explanation.primaryGoal ||
-      (kind === "citizen" ? "Balance housing, work access, and household finances." : "Keep the enterprise viable and staffed.");
-    let condition = textAt(current, ["financialStatusLabel", "state"], textAt(item, ["state", "status"], "Not available"));
-    let guard = "No severe guard is active";
-    let assessment = "Rules are evaluated daily";
-    if (kind === "citizen") {
-      if (current.severeFinancial && current.severeCommute) guard = "Severe finance + commute guard";
-      else if (current.severeFinancial) guard = "Severe financial guard";
-      else if (current.severeCommute) guard = "Severe commute guard";
-      else if (current.normal === false) guard = "Dissatisfaction guard";
-      assessment = `${
-        valueAt(item, ["cashAfterHousingAndCommuteAed", "netIncomeAed"], 0) >= valueAt(current, ["waitingCashThresholdAed"], 0) ? "Above" : "Below"
-      } AED ${formatNumber(valueAt(current, ["waitingCashThresholdAed"], 0))} cash buffer · ${valueAt(item, ["roundTripMinutes"], 0).toFixed(
-        1
-      )} / ${valueAt(current, ["acceptableRoundTripMinutes"], 0).toFixed(0)} min commute`;
-    } else {
-      condition = `${textAt(current, ["state"], textAt(item, ["state"], "Not available"))} · ${valueAt(
-        current,
-        ["operatingMarginPercent"],
-        0
-      ).toFixed(1)}% margin`;
-      const gap = valueAt(current, ["marginGapPercentagePoints"], 0);
-      guard = `${gap >= 0 ? "+" : ""}${gap.toFixed(1)} pp to target`;
-      assessment = `${valueAt(current, ["vacancyFillRatePercent"], 0).toFixed(0)}% vacancy fill · demand ${valueAt(
-        current,
-        ["demandIndex"],
-        0
-      ).toFixed(2)} · access ${valueAt(current, ["laborAccessScore"], 0).toFixed(2)}`;
-    }
-    const nextText = next
-      ? `${humanizeEvent(next.purpose)} in ${formatNumber(next.daysFromNow)} day${Number(next.daysFromNow) === 1 ? "" : "s"} · ${next.date}`
-      : "Re-evaluated by the daily rule set";
-    const lastText = last ? eventDescription(last) : "No completed action retained";
-    return `<section class="udes-v2-decision-summary"><span>What this agent is trying to do</span><strong>${escapeHtml(goal)}</strong><p>${escapeHtml(
-      explanation.decisionModel || "Rule-based statechart"
-    )}</p></section><dl class="udes-v2-decision-grid"><div><dt>Current assessment</dt><dd>${escapeHtml(
-      condition
-    )}</dd></div><div><dt>Active guard</dt><dd>${escapeHtml(guard)}</dd></div><div><dt>Evidence used now</dt><dd title="${escapeHtml(
-      assessment
-    )}">${escapeHtml(assessment)}</dd></div><div><dt>Next decision</dt><dd title="${escapeHtml(nextText)}">${escapeHtml(
-      nextText
-    )}</dd></div><div><dt>Last completed action</dt><dd title="${escapeHtml(lastText)}">${escapeHtml(
-      lastText
-    )}</dd></div><div><dt>Days in dissatisfaction</dt><dd>${
-      kind === "citizen" ? formatNumber(valueAt(current, ["daysDissatisfied"], 0)) : "Not applicable"
-    }</dd></div></dl>`;
+    const next = explanation.nextScheduledReview || explanation.nextScheduledDecision;
+    const status =
+      kind === "citizen"
+        ? textAt(item, ["financialStatusLabel", "state"], "No assessment")
+        : formatPercent(valueAt(item, ["operatingMargin", "margin"], 0)) + " operating margin";
+    const nextText = next ? humanizeEvent(next.purpose) + " · " + next.date : "Daily review";
+    const reason =
+      kind === "citizen"
+        ? current.severeFinancial
+          ? "Resources or savings below the severe threshold."
+          : current.severeCommute
+            ? "Commute exceeds the severe threshold."
+            : current.normal === false
+              ? "Financial or commute threshold exceeded."
+              : "Current financial and commute thresholds are met."
+        : "Demand " +
+          valueAt(current, ["demandIndex"], 1).toFixed(2) +
+          " · " +
+          valueAt(current, ["vacancyFillRatePercent"], 0).toFixed(0) +
+          "% vacancy fill · " +
+          valueAt(current, ["marginGapPercentagePoints"], 0).toFixed(1) +
+          " pp from target margin.";
+    return (
+      '<section class="udes-v2-decision-summary"><span>Decision record</span><strong>' +
+      escapeHtml(status) +
+      "</strong><p>" +
+      escapeHtml(reason) +
+      '</p></section><dl class="udes-v2-decision-grid"><div><dt>Last action</dt><dd>' +
+      escapeHtml(last ? eventDescription(last) : "No action yet") +
+      "</dd></div><div><dt>Next review</dt><dd>" +
+      escapeHtml(nextText) +
+      "</dd></div></dl>"
+    );
   }
 
   function citizenAccounting(item) {
@@ -3969,7 +4468,12 @@
     const nonLaborSupport = valueAt(account, ["nonLaborSupportAed"], valueAt(item, ["monthlyNonLaborSupportAed", "nonLaborSupportAed"], 0));
     const housing = valueAt(account, ["housingCostAed"], valueAt(item, ["residentialRentAed"], 0));
     const commute = valueAt(account, ["commutingCostAed"], valueAt(item, ["monthlyTransportCostAed"], 0));
-    const fixedCash = valueAt(account, ["cashAfterHousingAndCommuteAed"], gross - housing - commute);
+    const ownership = valueAt(account, ["ownershipCostAed", "carOwnershipCostAed"], valueAt(item, ["monthlyOwnershipCostAed"], 0));
+    const fixedCash = valueAt(
+      account,
+      ["cashAfterHousingAndMobilityAed", "cashAfterHousingAndCommuteAed"],
+      gross + nonLaborSupport - housing - commute - ownership
+    );
     const essentials = valueAt(account, ["essentialConsumptionAed"], 0);
     const residual = valueAt(account, ["residualAfterEssentialsAed"], fixedCash - essentials);
     const bankChange = valueAt(account, ["modeledBankChangeAtMonthEndAed"], valueAt(item, ["lastMonthlyBankBalanceDeltaAed"], 0));
@@ -3977,19 +4481,19 @@
       `<div class="udes-v2-accounting-row${total ? " is-total" : ""}"${negative ? ' data-direction="negative"' : ""}><span>${escapeHtml(
         label
       )}</span><strong>${escapeHtml(formatAed(value))}</strong></div>`;
-    return `<section class="udes-v2-accounting"><span>Last monthly household account · ${escapeHtml(
+    return `<section class="udes-v2-accounting"><span>Per represented resident · account at ${escapeHtml(
       textAt(account, ["accountingDate"], "current model month")
     )}</span>${row("Gross salary", gross)}${nonLaborSupport > 0 ? row("+ Modeled non-labor resources", nonLaborSupport) : ""}${row(
       "− Housing",
       -housing,
       false,
       true
-    )}${row("− Commute", -commute, false, true)}${row("Cash after housing + commute", fixedCash, true, fixedCash < 0)}${row(
-      "− Essentials",
-      -essentials,
-      false,
-      true
-    )}${row("Residual after essentials", residual, true, residual < 0)}${row(
+    )}${row("− Commute", -commute, false, true)}${ownership > 0 ? row("− Vehicle access", -ownership, false, true) : ""}${row(
+      "After housing and mobility",
+      fixedCash,
+      true,
+      fixedCash < 0
+    )}${row("− Essentials", -essentials, false, true)}${row("Residual after essentials", residual, true, residual < 0)}${row(
       "Modeled saving / drawdown",
       bankChange,
       false,
@@ -4050,8 +4554,13 @@
     let html = "";
     if (ui.selectionName)
       ui.selectionName.textContent =
-        kind === "enterprise" ? `Enterprise ${id}` : kind === "citizen" ? `Citizen ${id}` : textAt(item, ["name", "roadName"], `Network link ${id}`);
-    if (ui.selectionId) ui.selectionId.textContent = `${kind.toUpperCase()} ${id}`;
+        kind === "enterprise"
+          ? `Firm cohort ${id}`
+          : kind === "citizen"
+            ? `Resident group ${id}`
+            : textAt(item, ["name", "roadName"], `Network link ${id}`);
+    if (ui.selectionId)
+      ui.selectionId.textContent = `${kind === "citizen" ? "RESIDENT GROUP" : kind === "enterprise" ? "FIRM COHORT" : "ROAD"} ${id}`;
     if (kind === "citizen") {
       const status = textAt(item, ["status", "state"], "Happy");
       const laborForceStatus = textAt(item, ["laborForceStatus", "financialAccount.laborForceStatus"], item.workZoneId ? "employed" : "unemployed");
@@ -4063,7 +4572,9 @@
         ["Happy", "Waiting", "Extreme", "Recovery"],
         status,
         "Daily branching statechart: financial and commute guards can trigger dissatisfaction; successful moves, job changes, or recovery can return the citizen to Happy."
-      )}${citizenAccounting(item)}${metricRows([
+      )}${agentEvents(item.events)}<details class="udes-v2-inspector-detail"><summary>Monthly account</summary>${citizenAccounting(
+        item
+      )}</details><details class="udes-v2-inspector-detail"><summary>Resident attributes</summary>${metricRows([
         ["Representative weight", `${formatNumber(valueAt(item, ["weight"], 1))} people`],
         ["Home district", zoneLabel(textAt(item, ["homeZoneId", "livingZoneId"]))],
         ["Labor-force status", humanizeEvent(laborForceStatus)],
@@ -4077,20 +4588,26 @@
         ["Housing rent", formatAed(valueAt(item, ["residentialRentAed", "rentMonthly", "rent"]))],
         ["Transport / month", formatAed(valueAt(item, ["monthlyTransportCostAed", "monthlyTransportCost", "transportCost"]))],
         ["Financial status", textAt(item, ["financialStatusLabel"], "Not classified")],
-        ["Cash after housing + commute", formatAed(netIncome)],
-        ["Cash-buffer margin", formatAed(netIncome - appliedPolicy.waitingNetIncomeAed)],
+        ["After housing and mobility", formatAed(netIncome)],
+        [
+          "Disposable-resource margin",
+          formatAed(
+            valueAt(item, ["financialAccount.currentMonthlyDisposableIncomeAed", "financialAccount.residualAfterEssentialsAed"], 0) -
+              appliedPolicy.waitingNetIncomeAed
+          ),
+        ],
         ["Modeled savings stock", formatAed(valueAt(item, ["bankBalanceAed", "bankBalance", "savings"]))],
         ["Last monthly saving / drawdown", formatAed(valueAt(item, ["lastMonthlyBankBalanceDeltaAed"]))],
         ["Round trip", `${roundTrip.toFixed(1)} min`],
         ["Commute goal margin", `${(appliedPolicy.acceptableCommuteRoundTripMin - roundTrip).toFixed(1)} min`],
         ["Residential move eligible", textAt(item, ["decisionExplanation.currentAssessment.nextResidentialMoveEligibleDate"], "Now")],
         ["Voluntary job switch eligible", textAt(item, ["decisionExplanation.currentAssessment.nextVoluntaryJobSwitchEligibleDate"], "Now")],
-      ])}${historyBars(
+      ])}</details>${historyBars(
         item.history || item.histories,
         "Monthly cash-after-fixed-cost history",
         ["netIncomeAed", "netIncome"],
         "AED/month"
-      )}${agentEvents(item.events)}`;
+      )}`;
     } else if (kind === "enterprise") {
       const status = textAt(item, ["status", "state"], "Working");
       const representedEmployees = valueAt(item, ["representedEmployees", "employeeCount", "employees", "staff"]);
@@ -4103,7 +4620,7 @@
       html = `${agentNavigation(kind, item)}${decisionSummary(kind, item)}${statechart(
         ["Starting", "Working", "Grow", "Lesser"],
         status,
-        "Scheduled branching statechart: margin, demand, vacancy fill, and labor access adjust the hazards for Grow and Lesser; actions can hire, fire, move, or restart."
+        "Margin, demand, vacancy fill and labor access determine reviews of staffing, location and operation."
       )}${metricRows([
         ["District", zoneLabel(textAt(item, ["zoneId"]))],
         ["Sector", textAt(item, ["sectorLabel", "sector"], "Services")],
@@ -4128,8 +4645,25 @@
         "employee agents"
       )}${agentEvents(item.events)}`;
     } else {
-      const current = item.current && typeof item.current === "object" ? { ...item, ...item.current } : item;
-      const load = linkLoad(current);
+      const current = { ...(roadFeature(id)?.properties || {}), ...item, ...(item.current || {}) };
+      if (current.loadBearing === false) {
+        const html = `${agentNavigation(
+          kind,
+          item
+        )}<section class="udes-v2-decision-summary"><span>Excluded connector</span><strong>Capacity not modeled</strong><p>This input link is explicitly excluded from capacity loading. The current Abu Dhabi baseline contains no excluded physical roads.</p></section>${metricRows(
+          [
+            ["Road", textAt(current, ["primaryRoad", "name"], "Access road")],
+            ["Length", `${valueAt(current, ["distanceKm"]).toFixed(2)} km`],
+            ["Free-flow time", `${valueAt(current, ["freeFlowMinutes"]).toFixed(2)} min`],
+            ["Direction", current.allowAB && current.allowBA ? "Both directions" : current.allowAB ? "A → B" : "B → A"],
+            ["Congestion", "Excluded by input metadata"],
+          ]
+        )}`;
+        renderStablePanel(panel, `${kind}:${id}`, html, () => bindAgentNavigation(panel, kind));
+        return;
+      }
+      const directionAB = roadDirectionPresentation(current, 1);
+      const directionBA = roadDirectionPresentation(current, -1);
       const contextOnly = current.contextOnly === true;
       const roadName = textAt(current, ["primaryRoad", "name", "roadName"], `Road segment ${id}`);
       const roadRefs = Array.isArray(current.roadRefs) ? current.roadRefs.join(", ") : textAt(current, ["roadRef", "ref"], "");
@@ -4167,27 +4701,14 @@
             ? `Observed lanes × assumed ${formatNumber(valueAt(current, ["capacityPerLaneVehPerHour"], 0))} veh/lane/h`
             : `Assumed lanes × ${formatNumber(valueAt(current, ["capacityPerLaneVehPerHour"], 0))} veh/lane/h`,
         ],
-        [
-          "Modeled time A→B / B→A",
-          `${valueAt(current, ["travelTimeABMin", "travelTimeMinutes", "travelTime"], 0).toFixed(2)} / ${valueAt(
-            current,
-            ["travelTimeBAMin", "travelTimeMinutes", "travelTime"],
-            0
-          ).toFixed(2)} min`,
-        ],
+        ["Modeled time A→B / B→A", `${directionAB.time} / ${directionBA.time}`],
         ["Hourly capacity A→B / B→A", `${formatNumber(capacityAB)} / ${formatNumber(capacityBA)} veh/h`],
         [
           `${assignmentPeriodHours.toFixed(0)}h assignment capacity`,
           `${formatNumber(periodCapacityAB)} / ${formatNumber(periodCapacityBA)} vehicles`,
         ],
-        [
-          "Assigned vehicles A→B / B→A",
-          `${formatNumber(valueAt(current, ["loadABVehicles"], 0))} / ${formatNumber(valueAt(current, ["loadBAVehicles"], 0))}`,
-        ],
-        [
-          "Work-trip road load A→B / B→A",
-          `${formatPercent(valueAt(current, ["volumeCapacityAB"], load))} / ${formatPercent(valueAt(current, ["volumeCapacityBA"], load))}`,
-        ],
+        ["Assigned vehicles A→B / B→A", `${directionAB.assignedVehicles} / ${directionBA.assignedVehicles}`],
+        ["Work-trip road load A→B / B→A", `${directionAB.loadRatio} / ${directionBA.loadRatio}`],
         ["Connected candidate routes", formatNumber(Array.isArray(current.candidateRouteIds) ? current.candidateRouteIds.length : 0)],
       ])}${historyBars(item.history || item.histories, "Maximum load / capacity history", ["volumeCapacityRatio", "loadRatio"], "ratio")}`;
     }
@@ -4330,7 +4851,7 @@
         show: true,
         position: "insideEndTop",
         color: palette.red,
-        fontSize: 8,
+        fontSize: 10,
         formatter: (params) => params.name,
       },
       data,
@@ -4340,12 +4861,23 @@
   function createChartCell(parent, key, title, subtitle = "") {
     const section = document.createElement("section");
     section.className = "udes-v2-live-chart";
+    const chartOrder = state.analysisCharts.indexOf(key);
+    if (chartOrder >= 0) section.style.order = String(chartOrder);
     section.innerHTML = `<header><strong>${escapeHtml(title)}</strong><span>${escapeHtml(
       subtitle
     )}</span></header><div role="img" aria-label="${escapeHtml(title)}" data-udes-v2-chart-title="${escapeHtml(
       title
     )}" data-udes-v2-live-chart="${escapeHtml(key)}"></div>`;
     parent.append(section);
+    if (state.analysisKind === "workspace") {
+      const expand = document.createElement("button");
+      expand.type = "button";
+      expand.className = "udes-v2-chart-expand";
+      expand.textContent = "↗";
+      expand.setAttribute("aria-label", `Expand ${title}`);
+      expand.addEventListener("click", () => openAnalysis(key.startsWith("analysis:") ? key.slice(9) : key));
+      $("header", section).append(expand);
+    }
     return $("[data-udes-v2-live-chart]", section);
   }
 
@@ -4412,6 +4944,7 @@
 
   function chartDataSignature(option) {
     return JSON.stringify({
+      title: option.title,
       xAxis: option.xAxis,
       yAxis: option.yAxis,
       legend: option.legend,
@@ -4457,6 +4990,68 @@
 
   function mountChart(node, key, option, structureKey = "default") {
     if (!node) return;
+    const isTimeline =
+      ["outcomes", "districts:selected", "mobility:modes", "citizens:states", "enterprises"].some((prefix) => key.startsWith(prefix)) ||
+      analysisCatalog().some((entry) => chartIdentity(entry.id) === key && entry.timeline);
+    const dashboard = state.analysisKind === "workspace";
+    const timeLabels = isTimeline
+      ? option.xAxis?.type === "time"
+        ? [
+            ...new Set(
+              (option.series || []).flatMap((series) =>
+                (series.data || []).flatMap((datum) => {
+                  const value = Array.isArray(datum) ? datum : datum?.value;
+                  const timestamp = Array.isArray(value) ? value[0] : null;
+                  return typeof timestamp === "number" && Number.isFinite(timestamp) ? [timestamp] : [];
+                })
+              )
+            ),
+          ]
+            .sort((a, b) => a - b)
+            .map((timestamp) => new Date(timestamp).toISOString().slice(0, 10))
+        : option.xAxis?.data || []
+      : [];
+    if (isTimeline) structureKey = `${structureKey}:${timeLabels.length > 1 ? "history" : "opening"}`;
+    if (isTimeline && timeLabels.length > 1 && !dashboard) {
+      option.grid = { ...option.grid, top: Math.max(40, option.grid?.top || 0), bottom: 66 };
+      option.dataZoom = [
+        { type: "inside", xAxisIndex: 0, filterMode: "none", zoomOnMouseWheel: "ctrl", moveOnMouseWheel: false },
+        {
+          type: "slider",
+          xAxisIndex: 0,
+          height: 20,
+          bottom: 8,
+          borderColor: palette.line,
+          fillerColor: "rgba(35,107,91,0.12)",
+          handleSize: "100%",
+          showDetail: false,
+        },
+      ];
+    }
+    option.legend = { ...option.legend, type: "scroll" };
+    if (dashboard) {
+      option.animation = false;
+      option.textStyle = { ...option.textStyle, fontSize: 10 };
+      option.legend = { ...option.legend, textStyle: { ...option.legend.textStyle, fontSize: 9 }, itemWidth: 10, itemHeight: 7, itemGap: 8 };
+      const axes = [option.xAxis, option.yAxis].flat().filter(Boolean);
+      axes.forEach((axis) => {
+        axis.axisLabel = { ...axis.axisLabel, fontSize: 9, hideOverlap: true };
+        axis.nameTextStyle = { ...axis.nameTextStyle, fontSize: 9 };
+      });
+      if (isTimeline) {
+        for (const axis of [option.yAxis].flat().filter(Boolean)) axis.name = "";
+        option.legend.formatter = (name) =>
+          name
+            .replace(" · reference", " ref.")
+            .replace("Housing capacity", "Capacity")
+            .replace("Employed residents", "Residents")
+            .replace("Jobs in district", "Jobs");
+      }
+      if (isTimeline && !Array.isArray(option.grid))
+        option.grid = { ...option.grid, left: 42, right: Math.min(46, option.grid?.right || 18), top: 32, bottom: 26 };
+      else if (option.grid && !Array.isArray(option.grid))
+        option.grid = { ...option.grid, top: Math.min(32, option.grid.top || 32), bottom: Math.min(44, option.grid.bottom || 26) };
+    }
     (option.series || []).forEach((series, index) => {
       if (!series.id)
         series.id = `${key}:${String(series.name || index)
@@ -4470,10 +5065,11 @@
         if (finitePointCount <= 1) {
           series.showSymbol = true;
           series.symbolSize = 7;
-        }
+        } else if (dashboard) series.showSymbol = false;
       }
     });
-    node.setAttribute("aria-label", summarizeChart(node.dataset.udesV2ChartTitle || key, option));
+    const periodSummary = timeLabels.length ? ` ${timeLabels.length} observations, ${timeLabels[0]} to ${timeLabels.at(-1)}.` : "";
+    node.setAttribute("aria-label", summarizeChart(node.dataset.udesV2ChartTitle || key, option) + periodSummary);
     if (!window.echarts) {
       node.innerHTML =
         '<p class="udes-v2-chart-empty">Interactive chart library unavailable. Model values remain available in the inspector and export.</p>';
@@ -4497,7 +5093,8 @@
   function prepareChartPanel(kind, definitions) {
     const mount = $(`[data-udes-v2-chart='${kind}']`);
     if (!mount) return [];
-    const signature = definitions.map(([key]) => key).join("|");
+    const visibleDefinitions = definitions.filter(([key]) => state.analysisCharts.includes(`${kind}:${key}`));
+    const signature = visibleDefinitions.map(([key]) => key).join("|");
     if (mount.dataset.renderedSignature !== signature) {
       for (const [key, chart] of state.charts.entries()) {
         if (key.startsWith(`${kind}:`)) {
@@ -4511,7 +5108,7 @@
       }
       mount.replaceChildren();
       mount.classList.add("udes-v2-live-chart-grid");
-      definitions.forEach(([key, title, subtitle]) => createChartCell(mount, `${kind}:${key}`, title, subtitle));
+      visibleDefinitions.forEach(([key, title, subtitle]) => createChartCell(mount, `${kind}:${key}`, title, subtitle));
       mount.dataset.renderedSignature = signature;
     }
     return definitions.map(([key, title, subtitle]) => {
@@ -4527,132 +5124,110 @@
   }
 
   function renderChartPanel(kind) {
-    if (!state.snapshot) return;
-    if (kind === "outcomes") renderOutcomeCharts();
-    else if (kind === "districts") renderDistrictCharts();
-    else if (kind === "flows") renderFlowCharts();
-    else if (kind === "mobility") renderMobilityCharts();
-    else if (kind === "citizens") renderCitizenCharts();
-    else if (kind === "enterprises") renderEnterpriseCharts();
+    if (!state.snapshot || !state.analysisOpen) return;
+    state.analysisNotes.clear();
+    const renderers = {
+      outcomes: renderOutcomeCharts,
+      districts: renderDistrictCharts,
+      flows: renderFlowCharts,
+      mobility: renderMobilityCharts,
+      citizens: renderCitizenCharts,
+      enterprises: renderEnterpriseCharts,
+      analysis: renderDetailedAnalysis,
+    };
+    const kinds = kind === "workspace" ? [...new Set(state.analysisCharts.map((id) => id.split(":")[0]))] : [kind];
+    for (const chartKind of kinds) renderers[chartKind]?.();
+    $("[data-udes-v2-analysis-note]").textContent =
+      [...state.analysisNotes.values()].join("\n\n") ||
+      "Hover for values. Click legend entries to show or hide series; drag the range control on history charts to zoom. Each chart keeps its own units.";
   }
 
   function renderOutcomeCharts() {
-    const [satisfactionNode, commuteNode, transitNode, occupancyNode] = prepareChartPanel("outcomes", [
-      ["satisfaction", "Resident satisfaction", "Daily weighted share · active and same-seed reference"],
-      ["commute", "Mean round-trip commute", "Completed workdays only · minutes"],
-      ["transit", "Transit mode share", "Completed workdays only · active and same-seed reference"],
-      ["occupancy", "Housing occupancy", "Daily occupied capacity · active and same-seed reference"],
-    ]);
-    const { history, reference, labels } = chartSource();
-    const workdaySource = chartSource({ workdaysOnly: true });
-
-    const satisfaction = baseChartOptions();
-    satisfaction.xAxis.data = labels;
-    satisfaction.yAxis = { ...satisfaction.yAxis, min: 0, max: 100, axisLabel: { ...satisfaction.yAxis.axisLabel, formatter: "{value}%" } };
-    satisfaction.series = [
-      {
-        name: "Active",
-        type: "line",
-        showSymbol: false,
-        smooth: 0.18,
-        data: history.map((entry) => entry.satisfaction * 100),
-        lineStyle: { width: 2.3, color: palette.green },
-        itemStyle: { color: palette.green },
+    const definitions = {
+      commute: {
+        title: "Round-trip commute",
+        subtitle: "Completed workdays · minutes per commuter",
+        field: "meanCommute",
+        factor: 1,
+        percent: false,
+        workdays: true,
       },
-      state.compare
-        ? {
-            name: "Reference",
-            type: "line",
-            showSymbol: false,
-            data: reference.map((entry) => (entry ? entry.satisfaction * 100 : null)),
-            lineStyle: { width: 1.5, type: "dashed", color: palette.muted },
-            itemStyle: { color: palette.muted },
-          }
-        : null,
-    ].filter(Boolean);
-    addInterventionMarkers(satisfaction, history, labels);
-    mountChart(satisfactionNode, "outcomes:satisfaction", satisfaction);
-
-    const commute = baseChartOptions();
-    commute.xAxis.data = workdaySource.labels;
-    commute.yAxis = { ...commute.yAxis, name: "minutes", nameTextStyle: { color: palette.muted, fontSize: 9 } };
-    commute.series = [
-      {
-        name: "Active",
-        type: "line",
-        showSymbol: false,
-        smooth: 0.18,
-        data: workdaySource.history.map((entry) => entry.meanCommute),
-        lineStyle: { width: 2.3, color: palette.green },
-        itemStyle: { color: palette.green },
+      transit: {
+        title: "Transit share",
+        subtitle: "Completed work trips · share using modeled transit",
+        field: "ptShare",
+        factor: 100,
+        percent: true,
+        workdays: true,
       },
-      state.compare
-        ? {
-            name: "Reference",
-            type: "line",
-            showSymbol: false,
-            data: workdaySource.reference.map((entry) => (entry ? entry.meanCommute : null)),
-            lineStyle: { width: 1.5, type: "dashed", color: palette.muted },
-            itemStyle: { color: palette.muted },
-          }
-        : null,
-    ].filter(Boolean);
-    addInterventionMarkers(commute, workdaySource.history, workdaySource.labels);
-    mountChart(commuteNode, "outcomes:commute", commute);
-
-    const transit = baseChartOptions();
-    transit.xAxis.data = workdaySource.labels;
-    transit.yAxis = { ...transit.yAxis, min: 0, max: 100, axisLabel: { ...transit.yAxis.axisLabel, formatter: "{value}%" } };
-    transit.series = [
-      {
-        name: "Active",
-        type: "line",
-        showSymbol: false,
-        smooth: 0.18,
-        data: workdaySource.history.map((entry) => entry.ptShare * 100),
-        lineStyle: { width: 2.3, color: palette.blue },
-        itemStyle: { color: palette.blue },
+      occupancy: {
+        title: "Housing occupancy",
+        subtitle: "Resident demand / modeled housing capacity",
+        field: "housingOccupancy",
+        factor: 100,
+        percent: true,
       },
-      state.compare
-        ? {
-            name: "Reference",
-            type: "line",
-            showSymbol: false,
-            data: workdaySource.reference.map((entry) => (entry ? entry.ptShare * 100 : null)),
-            lineStyle: { width: 1.5, type: "dashed", color: palette.muted },
-            itemStyle: { color: palette.muted },
-          }
-        : null,
-    ].filter(Boolean);
-    addInterventionMarkers(transit, workdaySource.history, workdaySource.labels);
-    mountChart(transitNode, "outcomes:transit", transit);
-
-    const occupancy = baseChartOptions();
-    occupancy.xAxis.data = labels;
-    occupancy.yAxis = { ...occupancy.yAxis, min: 0, max: 100, axisLabel: { ...occupancy.yAxis.axisLabel, formatter: "{value}%" } };
-    occupancy.series = [
-      {
-        name: "Active",
-        type: "line",
-        showSymbol: false,
-        smooth: 0.18,
-        data: history.map((entry) => entry.housingOccupancy * 100),
-        lineStyle: { width: 2.3, color: palette.amber },
-        itemStyle: { color: palette.amber },
+      satisfaction: {
+        title: "Residents within stress thresholds",
+        subtitle: "Modeled financial and commute state · not a well-being survey",
+        field: "satisfaction",
+        factor: 100,
+        percent: true,
       },
-      state.compare
-        ? {
-            name: "Reference",
-            type: "line",
-            showSymbol: false,
-            data: reference.map((entry) => (entry ? entry.housingOccupancy * 100 : null)),
-            lineStyle: { width: 1.5, type: "dashed", color: palette.muted },
-            itemStyle: { color: palette.muted },
-          }
-        : null,
-    ].filter(Boolean);
-    addInterventionMarkers(occupancy, history, labels);
-    mountChart(occupancyNode, "outcomes:occupancy", occupancy);
+      unemployment: {
+        title: "Unemployment",
+        subtitle: "Active job seekers / labor-force participants",
+        field: "unemployment",
+        factor: 100,
+        percent: true,
+      },
+      residual: {
+        title: "Disposable resources",
+        subtitle: "After housing, transport, ownership and essentials · AED/month",
+        field: "residualAfterEssentials",
+        factor: 1,
+        percent: false,
+      },
+    };
+    const requested = Object.entries(definitions).filter(([key]) => state.analysisCharts.includes(`outcomes:${key}`));
+    const nodes = prepareChartPanel(
+      "outcomes",
+      requested.map(([key, metric]) => [key, metric.title, metric.subtitle])
+    );
+    requested.forEach(([metricKey, metric], index) => {
+      const node = nodes[index];
+      const { history, reference, labels } = chartSource({ workdaysOnly: Boolean(metric.workdays) });
+      const option = baseChartOptions();
+      option.xAxis.data = labels;
+      if (metric.percent)
+        option.yAxis = {
+          ...option.yAxis,
+          min: 0,
+          max: metricKey === "occupancy" ? null : 100,
+          axisLabel: { ...option.yAxis.axisLabel, formatter: "{value}%" },
+        };
+      option.series = [
+        {
+          name: "Scenario",
+          type: "line",
+          showSymbol: history.length < 2,
+          data: history.map((entry) => entry[metric.field] * metric.factor),
+          lineStyle: { width: 2.5, color: palette.green },
+          itemStyle: { color: palette.green },
+        },
+      ];
+      if (state.compare)
+        option.series.push({
+          name: "Reference",
+          type: "line",
+          showSymbol: history.length < 2,
+          data: reference.map((entry) => (entry ? entry[metric.field] * metric.factor : null)),
+          lineStyle: { width: 2, type: "dashed", color: palette.muted },
+          itemStyle: { color: palette.muted },
+        });
+      addInterventionMarkers(option, history, labels);
+      mountChart(node, "outcomes:" + metricKey, option);
+    });
   }
 
   function selectedDistrictId() {
@@ -4675,11 +5250,7 @@
     const selectedId = selectedDistrictId();
     const selectedName = selectedId ? zoneLabel(selectedId) : null;
     const [stocksNode, districtNode] = prepareChartPanel("districts", [
-      [
-        "stocks",
-        "Employed residents vs jobs located",
-        "Current home → work stock · residence district vs workplace district · not relocation events",
-      ],
+      ["stocks", "Employed residents vs jobs located", "Current employed residents and filled jobs · click a district for its history"],
       [
         "selected",
         selectedName ? `${selectedName}: daily district trajectory` : "Choose a district for its daily trajectory",
@@ -4704,19 +5275,26 @@
       {
         name: "Employed residents (live)",
         type: "bar",
-        data: liveWork.map((row) => row.employedResidents),
+        data: liveWork.map((row) => ({ value: row.employedResidents, zoneId: row.districtId })),
         barMaxWidth: 7,
         itemStyle: { color: palette.green },
       },
       {
         name: "Jobs located (work)",
         type: "bar",
-        data: liveWork.map((row) => row.locatedJobs),
+        data: liveWork.map((row) => ({ value: row.locatedJobs, zoneId: row.districtId })),
         barMaxWidth: 7,
         itemStyle: { color: palette.blue },
       },
     ];
     mountChart(stocksNode, "districts:stocks", stocks);
+    const stocksChart = stocksNode && state.charts.get("districts:stocks");
+    if (stocksChart) {
+      stocksChart.off("click");
+      stocksChart.on("click", (params) => {
+        if (params.data?.zoneId) openDistrictAnalysis(params.data.zoneId);
+      });
+    }
 
     const history = districtHistory(selectedId);
     const district = baseChartOptions();
@@ -4726,14 +5304,14 @@
       {
         ...district.yAxis,
         name: "people / jobs",
-        nameTextStyle: { color: palette.muted, fontSize: 9 },
+        nameTextStyle: { color: palette.muted, fontSize: 11 },
         axisLabel: { ...district.yAxis.axisLabel, formatter: (value) => formatCompact(value) },
       },
       {
         ...district.yAxis,
         position: "right",
         name: "AED/month",
-        nameTextStyle: { color: palette.muted, fontSize: 9 },
+        nameTextStyle: { color: palette.muted, fontSize: 11 },
         axisLabel: { ...district.yAxis.axisLabel, formatter: (value) => formatCompact(value) },
         splitLine: { show: false },
       },
@@ -4843,10 +5421,12 @@
       const labels = matrix.districtIds.map(zoneLabel);
       const shortLabel = (value) =>
         String(value)
+          .split(" / ")[0]
           .replace(/^Al\s+/i, "")
-          .replace(/\s+Island$/i, "");
+          .replace(/\s+Island$/i, "")
+          .replace("Mohamed Bin Zayed", "M. Bin Zayed");
       routeChart.animationDuration = 0;
-      routeChart.grid = { top: 10, left: 83, right: 12, bottom: 69 };
+      routeChart.grid = { top: 10, left: 83, right: 12, bottom: 82 };
       routeChart.legend = { show: false };
       routeChart.tooltip = {
         ...routeChart.tooltip,
@@ -4860,9 +5440,6 @@
       };
       routeChart.xAxis = {
         ...routeChart.xAxis,
-        name: "work district",
-        nameLocation: "middle",
-        nameGap: 56,
         data: labels,
         splitArea: { show: true },
         axisLabel: { ...routeChart.xAxis.axisLabel, interval: 0, rotate: 48, formatter: shortLabel },
@@ -4884,10 +5461,10 @@
         orient: "horizontal",
         left: "center",
         bottom: 1,
-        itemWidth: 105,
-        itemHeight: 7,
+        itemWidth: 7,
+        itemHeight: 105,
         text: ["more", "0"],
-        textStyle: { color: palette.muted, fontSize: 8 },
+        textStyle: { color: palette.muted, fontSize: 10 },
         inRange: { color: ["#edf4f1", palette.green] },
       };
       routeChart.series = [
@@ -5077,6 +5654,7 @@
       },
     ];
     addInterventionMarkers(modes, history, labels);
+    if (history.length === 1) modes.series.forEach((series) => Object.assign(series, { type: "bar", barMaxWidth: 56 }));
     mountChart(modesNode, "mobility:modes", modes);
 
     const corridors = new Map();
@@ -5128,68 +5706,28 @@
   }
 
   function renderCitizenCharts() {
-    const activeStatus = cityOf(state.snapshot).distributions?.financialStatus || {};
-    const referenceStatus = cityOf(state.referenceSnapshot).distributions?.financialStatus || {};
+    const financeResult = window.UdesV2Analysis?.buildFinancialStatusOption(
+      { snapshot: state.snapshot, referenceSnapshot: state.referenceSnapshot, compare: state.compare },
+      palette
+    );
     const [financeNode, statesNode] = prepareChartPanel("citizens", [
-      ["finance", "Why household finances differ", "Latest monthly account · all represented residents · mutually exclusive · no ‘net zero’ bucket"],
-      ["states", "Citizen decision states", "Daily weighted shares · modeled-agent transition count on right axis"],
+      ["finance", financeResult?.title || "Resident budgets", financeResult?.subtitle || "Budget chart unavailable"],
+      ["states", "Citizen decision states", "Daily shares of represented residents · click legend entries to isolate a state"],
     ]);
-    const activeBins = Array.isArray(activeStatus.bins) ? activeStatus.bins : [];
-    const referenceBins = new Map((referenceStatus.bins || []).map((bin) => [bin.id, bin]));
-    const labels = activeBins.length
-      ? activeBins.map(
-          (bin) =>
-            ({
-              "outside-labor-force": "Outside labor force",
-              unemployed: "Active job seeker",
-              "fixed-cost-deficit": "Pay < housing + commute",
-              "essentials-gap": "Essentials gap",
-              "thin-positive-buffer": "Thin buffer",
-              "savings-capacity": "Savings capacity",
-            })[bin.id] || bin.label
-        )
-      : ["No data"];
-    const finance = baseChartOptions();
-    finance.grid = { top: 24, left: 42, right: 12, bottom: 56 };
-    finance.xAxis.data = labels;
-    finance.xAxis.axisLabel = { ...finance.xAxis.axisLabel, interval: 0, rotate: 18 };
-    finance.yAxis = { ...finance.yAxis, min: 0, max: 100, axisLabel: { ...finance.yAxis.axisLabel, formatter: "{value}%" } };
-    finance.series = [
-      {
-        name: "Active",
-        type: "bar",
-        data: activeBins.length ? activeBins.map((bin) => Number(bin.sharePercent) || 0) : [0],
-        itemStyle: { color: palette.green },
-      },
-      state.compare
-        ? {
-            name: "Reference",
-            type: "bar",
-            data: activeBins.length ? activeBins.map((bin) => Number(referenceBins.get(bin.id)?.sharePercent) || 0) : [0],
-            itemStyle: { color: palette.greenSoft },
-          }
-        : null,
-    ].filter(Boolean);
-    mountChart(financeNode, "citizens:finance", finance);
+    if (financeNode && financeResult) {
+      mountChart(financeNode, "citizens:finance", financeResult.option, `financial-status:${financeResult.empty}`);
+      financeNode.setAttribute("aria-label", financeResult.summary);
+      recordAnalysisNote("citizens:finance", `${financeResult.title}: ${financeResult.note}`);
+    }
 
     const { history, labels: dayLabels } = chartSource();
     const states = baseChartOptions();
     states.grid = { ...states.grid, right: 46 };
     states.xAxis.data = dayLabels;
-    states.yAxis = [
-      { ...states.yAxis, min: 0, max: 100, axisLabel: { ...states.yAxis.axisLabel, formatter: "{value}%" } },
-      {
-        ...states.yAxis,
-        position: "right",
-        name: "changes",
-        nameTextStyle: { color: palette.muted, fontSize: 9 },
-        axisLabel: { ...states.yAxis.axisLabel, formatter: (value) => formatCompact(value) },
-        splitLine: { show: false },
-      },
-    ];
+    states.yAxis = { ...states.yAxis, min: 0, max: 100, axisLabel: { ...states.yAxis.axisLabel, formatter: "{value}%" } };
     states.series = [
       {
-        name: "Happy",
+        name: "Within thresholds",
         type: "line",
         stack: "citizen-state",
         areaStyle: {},
@@ -5198,7 +5736,7 @@
         itemStyle: { color: palette.green },
       },
       {
-        name: "Waiting",
+        name: "Under pressure",
         type: "line",
         stack: "citizen-state",
         areaStyle: {},
@@ -5207,7 +5745,7 @@
         itemStyle: { color: palette.amber },
       },
       {
-        name: "Extreme",
+        name: "Severe stress",
         type: "line",
         stack: "citizen-state",
         areaStyle: {},
@@ -5216,7 +5754,7 @@
         itemStyle: { color: palette.red },
       },
       {
-        name: "Recovery",
+        name: "Recovering",
         type: "line",
         stack: "citizen-state",
         areaStyle: {},
@@ -5224,39 +5762,22 @@
         data: history.map((entry) => entry.recovery * 100),
         itemStyle: { color: palette.blue },
       },
-      {
-        name: "Agent transitions",
-        type: "bar",
-        yAxisIndex: 1,
-        data: history.map((entry) => Number(entry.transitions?.totals?.citizenAgentTransitions) || 0),
-        barMaxWidth: 5,
-        itemStyle: { color: "rgba(29,42,42,0.28)" },
-      },
     ];
     addInterventionMarkers(states, history, dayLabels);
+    if (history.length === 1) states.series.forEach((series) => Object.assign(series, { type: "bar", barMaxWidth: 56 }));
     mountChart(statesNode, "citizens:states", states);
   }
 
   function renderEnterpriseCharts() {
     const [statesNode, viabilityNode] = prepareChartPanel("enterprises", [
-      ["states", "Enterprise decision states", "Daily shares · transition count on right axis"],
-      ["viability", "Portfolio viability and actions", "Daily active/loss-making shares · closed-month margin · moves/restarts"],
+      ["states", "Enterprise decision states", "Daily shares of modeled firms · click legend entries to isolate a state"],
+      ["viability", "Portfolio viability and actions", "Daily active/loss-making shares · modeled operating margin · moves/restarts"],
     ]);
     const { history, labels } = chartSource();
     const states = baseChartOptions();
     states.grid = { ...states.grid, right: 46 };
     states.xAxis.data = labels;
-    states.yAxis = [
-      { ...states.yAxis, min: 0, max: 100, axisLabel: { ...states.yAxis.axisLabel, formatter: "{value}%" } },
-      {
-        ...states.yAxis,
-        position: "right",
-        name: "changes",
-        nameTextStyle: { color: palette.muted, fontSize: 9 },
-        axisLabel: { ...states.yAxis.axisLabel, formatter: (value) => formatCompact(value) },
-        splitLine: { show: false },
-      },
-    ];
+    states.yAxis = { ...states.yAxis, min: 0, max: 100, axisLabel: { ...states.yAxis.axisLabel, formatter: "{value}%" } };
     states.series = [
       {
         name: "Starting",
@@ -5268,7 +5789,7 @@
         itemStyle: { color: palette.sand },
       },
       {
-        name: "Working",
+        name: "Operating",
         type: "line",
         stack: "enterprise-state",
         areaStyle: {},
@@ -5277,7 +5798,7 @@
         itemStyle: { color: palette.green },
       },
       {
-        name: "Grow",
+        name: "Expanding",
         type: "line",
         stack: "enterprise-state",
         areaStyle: {},
@@ -5286,7 +5807,7 @@
         itemStyle: { color: palette.blue },
       },
       {
-        name: "Lesser",
+        name: "Contracting",
         type: "line",
         stack: "enterprise-state",
         areaStyle: {},
@@ -5294,16 +5815,9 @@
         data: history.map((entry) => entry.enterpriseStates.lesser * 100),
         itemStyle: { color: palette.red },
       },
-      {
-        name: "Transitions",
-        type: "bar",
-        yAxisIndex: 1,
-        data: history.map((entry) => Number(entry.transitions?.totals?.enterpriseTransitions) || 0),
-        barMaxWidth: 5,
-        itemStyle: { color: "rgba(29,42,42,0.28)" },
-      },
     ];
     addInterventionMarkers(states, history, labels);
+    if (history.length === 1) states.series.forEach((series) => Object.assign(series, { type: "bar", barMaxWidth: 56 }));
     mountChart(statesNode, "enterprises:states", states);
 
     const viability = baseChartOptions();
@@ -5312,17 +5826,17 @@
     viability.yAxis = [
       {
         ...viability.yAxis,
-        min: 0,
+        min: Math.min(0, ...history.map((entry) => Math.floor((entry.enterprisePortfolioMargin * 100) / 10) * 10)),
         max: 100,
         name: "%",
-        nameTextStyle: { color: palette.muted, fontSize: 9 },
+        nameTextStyle: { color: palette.muted, fontSize: 11 },
         axisLabel: { ...viability.yAxis.axisLabel, formatter: "{value}%" },
       },
       {
         ...viability.yAxis,
         position: "right",
         name: "actions",
-        nameTextStyle: { color: palette.muted, fontSize: 9 },
+        nameTextStyle: { color: palette.muted, fontSize: 11 },
         axisLabel: { ...viability.yAxis.axisLabel, formatter: (value) => formatCompact(value) },
         splitLine: { show: false },
       },
@@ -5378,20 +5892,93 @@
   }
 
   function exportCsv() {
-    const csv = historyToCsv(state.history);
-    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+    const csv = comparisonToCsv(state.history, state.referenceHistory, { seed: state.seed, scenario: state.appliedPolicy?.scenario });
+    downloadArtifact(csv, "csv", "text/csv;charset=utf-8");
+    announce("Active scenario, reference and same-day differences exported as CSV.");
+  }
+
+  function downloadArtifact(content, extension, mime) {
+    const url = URL.createObjectURL(new Blob([content], { type: mime }));
     const link = document.createElement("a");
     link.href = url;
-    link.download = `abu-dhabi-urban-dynamics-${state.appliedPolicy?.scenario || "reference"}-seed-${state.seed}.csv`;
+    link.download = `abu-dhabi-urban-dynamics-${state.appliedPolicy?.scenario || "reference"}-seed-${state.seed}.${extension}`;
     document.body.append(link);
     link.click();
     link.remove();
-    URL.revokeObjectURL(url);
-    announce("Scenario history exported as CSV.");
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  async function exportExperiment() {
+    const source = JSON.stringify(state.dataset);
+    const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(source));
+    const baselineHash = Array.from(new Uint8Array(digest), (value) => value.toString(16).padStart(2, "0")).join("");
+    const experiment = {
+      schemaVersion: "abu-dhabi-experiment/1",
+      exportedAt: new Date().toISOString(),
+      model: {
+        datasetSchema: state.dataset.schemaVersion,
+        baseYear: state.dataset.baseYear,
+        generatedAt: state.dataset.generatedAt,
+        baselineSha256: baselineHash,
+        engineSha256: state.engineSha256,
+        engineHashEncoding: "SHA-256 of the UTF-8 source used to initialize both workers",
+        hashEncoding: "SHA-256 of JSON.stringify(parsed baseline)",
+        sources: state.dataset.sources,
+        actorUnits: state.snapshot?.city?.actorUnits,
+        structuralConfig: structuralConfig(),
+      },
+      seed: state.seed,
+      elapsedDays: state.elapsedDays,
+      horizonDays: state.horizonDays,
+      activePolicy: state.appliedPolicy,
+      initialPolicy: state.history[0] ? resolveHistoryPolicy(state.history[0], presets.reference) : state.appliedPolicy,
+      initialReferencePolicy: state.referenceHistory[0]
+        ? resolveHistoryPolicy(state.referenceHistory[0], presets.reference)
+        : state.referenceAppliedPolicy,
+      initialZonePolicies: state.history[0]?.zonePolicyState || [],
+      referencePolicy: state.referenceAppliedPolicy,
+      appliedZonePolicies: appliedZonePolicyList(),
+      interventions: state.interventions,
+      interventionPatches: state.interventionPatches.map((patch) => ({
+        ...patch,
+        status: patch.effectiveDay > state.elapsedDays ? "pending" : "effective",
+      })),
+      metricUnits: COMPARISON_METRICS,
+      history: state.history,
+      referenceHistory: state.referenceHistory,
+      detailRetention: { cityMetrics: "full run", movementAndTransitionDetailsDays: FLOW_HISTORY_DETAIL_DAYS },
+    };
+    downloadArtifact(JSON.stringify(experiment, null, 2), "json", "application/json");
+    announce("Experiment saved with seed, inputs, intervention dates, data fingerprint and both result histories.");
+  }
+
+  function openMethods() {
+    const dialog = $("[data-udes-v2-methods]");
+    const body = $("[data-udes-v2-methods-body]");
+    if (!dialog || !body || !state.dataset) return;
+    const sourceRows = Object.values(state.dataset.sources || {})
+      .map(
+        (source) =>
+          `<tr><td><a href="${escapeHtml(source.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(source.title)}</a></td><td>${escapeHtml(
+            source.classification || "reference"
+          )}</td><td>${escapeHtml(source.use || "")}</td></tr>`
+      )
+      .join("");
+    body.innerHTML = `<p class="udes-v2-methods-intro">A daily, spatial model of residents, employers, housing and work travel across 18 Abu Dhabi districts. It supports controlled scenario experiments; its behavioral parameters have not been fitted to observed Abu Dhabi outcomes.</p>
+      <h3>What is represented</h3><dl class="udes-v2-methods-facts"><div><dt>Base year</dt><dd>${escapeHtml(
+        String(state.dataset.baseYear)
+      )}</dd></div><div><dt>Population units</dt><dd>Resident groups weighted to the district census totals</dd></div><div><dt>Employers</dt><dd>Synthetic employer cohorts with finite space, labor demand and payroll</dd></div><div><dt>Road network</dt><dd>${formatNumber(
+        state.geo.roads?.features?.length || 0
+      )} connected road segments from frozen OSM/OSRM routes</dd></div></dl>
+      <h3>How a model day works</h3><ol><li>Accrue the completed day’s income, housing, mobility, vehicle access and essential spending.</li><li>Advance the calendar and settle completed monthly accounts. Rents update annually; dated policies change their specified inputs.</li><li>Assign the new day’s work travel to feasible modes and connected routes, then update congestion and transit costs.</li><li>Residents review financial and commute stress, job opportunities and relocation at their defined review intervals.</li><li>Firms review operation, location and staffing. Recruitment is bounded by labor demand, available participants and workplace capacity.</li></ol>
+      <h3>Reading the results</h3><p>The reference uses the same opening population and random seed. Differences describe this model's response to the intervention. “Within thresholds” counts residents outside modeled financial and commute stress; it is not a surveyed satisfaction score. Disposable resources are the monthly equivalent after housing, mobility and essentials.</p><p>Road color shows assigned work-travel demand divided by modeled capacity. Moving arrows show direction and relative volume along the same geometry; they are a visual sample, not individual vehicles. This is a daily traffic assignment, not a signal-by-signal traffic simulation. External traffic and non-work trips are not represented.</p>
+      <h3>Evidence and assumptions</h3><p>District populations, boundaries and bus-stop locations are observed inputs. Road routes and spatial allocations are derived. Jobs, household resources, rents, housing capacity, behavioral thresholds and transit service patterns remain explicit assumptions. Physical road connectivity is verified independently of those assumptions.</p><div class="udes-v2-source-table"><table><thead><tr><th>Source</th><th>Class</th><th>Use</th></tr></thead><tbody>${sourceRows}</tbody></table></div>
+      <h3>Reproducibility</h3><p>Comparison CSV includes active, reference and difference columns with units. Save experiment includes the seed, policies, intervention dates, baseline fingerprint and both histories. Structural checks, paired-seed experiments and parameter sensitivity tests are documented with the model source; none substitutes for validation against observed outcomes.</p>`;
+    dialog.showModal();
   }
 
   function setupResponsiveBehavior() {
-    const compact = window.matchMedia("(max-width: 1099px)");
+    const compact = window.matchMedia("(max-width: 719px)");
     const apply = () => {
       const runtimeFailed = root.dataset.udesV2State === "error";
       root.dataset.udesV2Mobile = compact.matches ? "readonly" : "interactive";
@@ -5418,6 +6005,7 @@
       () => {
         state.worker?.terminate();
         state.referenceWorker?.terminate();
+        if (state.workerBlobUrl) URL.revokeObjectURL(state.workerBlobUrl);
         state.resizeObserver?.disconnect();
       },
       { once: true }

@@ -5,14 +5,19 @@
   },
   "scripts": {
     "build:project-previews": "node scripts/build-project-previews.mjs",
-    "format:check": "prettier --check \"tests/{folio-contract,goodreads-sync,site-contract,udes-contract,udes-v2-contract,udes-v2-engine,udes-v2-history,udes-v2-job-capacity,udes-v2-scenarios}.mjs\" \"assets/js/{garden,udes-v2-app,udes-v2-worker}.js\" \"assets/css/garden.scss\" \"assets/data/cnc-machine-inspector/portfolio-evidence.json\" \"assets/data/udes-v2/README.md\" \"_data/{currently_reading,read_books}.yml\" \"scripts/{build-project-previews,sync-goodreads,validate-udes-v2-full}.mjs\" \"_sass/garden/{_cards,_content,_folio-v2,_shell,_simulation-v2,_tokens}.scss\" \"_includes/{folio-work-card,folio-work-feature,garden-card,garden-footer,garden-media,garden-nav,garden-project-card,garden-related,head,metadata}.liquid\" \"_layouts/{cv,garden,page,post}.liquid\" \"_pages/{about,blog,books,home,marginalia,projects}.md\" \"_projects/{abu-dhabi-urban-dynamics,abu-dhabi-urban-dynamics-v2,cnc-machine-inspector,dewa-energy-optimization,sila,territory-design-probvns}.md\" \"package.json\" \".github/workflows/{axe,deploy}.yml\"",
+    "format:check": "prettier --check \"tests/{folio-contract,goodreads-sync,site-contract,udes-contract,udes-v2-contract,udes-v2-engine,udes-v2-history,udes-v2-job-capacity,udes-v2-scenarios,udes-v2-mechanics,udes-v2-network,udes-v2-turns,udes-v2-road-flow,udes-v2-analysis,udes-v2-comparison,udes-v2-evidence,udes-v2-presentation-provenance}.mjs\" \"assets/js/{garden,udes-v2-app,udes-v2-worker,udes-v2-road-flow,udes-v2-analysis}.js\" \"assets/css/garden.scss\" \"assets/data/cnc-machine-inspector/portfolio-evidence.json\" \"assets/data/udes-v2/README.md\" \"_data/{currently_reading,read_books}.yml\" \"scripts/{build-project-previews,sync-goodreads,validate-udes-v2-full,validate-udes-v2-uncertainty,udes-v2-experiment-statistics,udes-v2-evidence-summary,udes-v2-source-provenance,refresh-udes-v2-presentation-provenance}.mjs\" \"_sass/garden/{_cards,_content,_folio-v2,_shell,_simulation-v2,_tokens}.scss\" \"_includes/{folio-work-card,folio-work-feature,garden-card,garden-footer,garden-media,garden-nav,garden-project-card,garden-related,head,metadata}.liquid\" \"_layouts/{cv,garden,page,post}.liquid\" \"_pages/{about,blog,books,home,marginalia,projects}.md\" \"_projects/{abu-dhabi-urban-dynamics,abu-dhabi-urban-dynamics-v2,cnc-machine-inspector,dewa-energy-optimization,sila,territory-design-probvns}.md\" \"package.json\" \".github/workflows/{axe,deploy}.yml\" \"scripts/lib/udes-v2-turn-restrictions.mjs\" \"scripts/data/udes-v2-transit-services.json\"",
     "sync:reading": "node scripts/sync-goodreads.mjs",
     "test:goodreads": "node tests/goodreads-sync.mjs",
     "test:site": "node tests/site-contract.mjs",
     "test:udes-v2": "node tests/udes-v2-engine.mjs",
     "test:udes-v2-capacity": "node tests/udes-v2-job-capacity.mjs",
     "test:udes-v2-scenarios": "node tests/udes-v2-scenarios.mjs",
-    "validate:udes-v2-full": "node scripts/validate-udes-v2-full.mjs"
+    "validate:udes-v2-full": "node scripts/validate-udes-v2-full.mjs",
+    "test:udes-v2-mechanics": "node tests/udes-v2-mechanics.mjs",
+    "test:udes-v2-network": "node tests/udes-v2-network.mjs && node tests/udes-v2-turns.mjs",
+    "test:udes-v2-ui": "node tests/udes-v2-road-flow.mjs && node tests/udes-v2-analysis.mjs && node tests/udes-v2-comparison.mjs && node tests/udes-v2-history.mjs",
+    "validate:udes-v2-uncertainty": "node scripts/validate-udes-v2-uncertainty.mjs",
+    "test:udes-v2-evidence": "node tests/udes-v2-evidence.mjs && node tests/udes-v2-presentation-provenance.mjs && node scripts/validate-udes-v2-full.mjs --verify-concurrency"
   },
   "devDependencies": {
     "@shopify/prettier-plugin-liquid": "1.4.0",

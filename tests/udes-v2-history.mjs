@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
+import vm from "node:vm";
 
 const require = createRequire(import.meta.url);
 const {
@@ -9,6 +10,7 @@ const {
   createHistoryPoint,
   historyEntryCsvRow,
   historyToCsv,
+  comparisonToCsv,
   resolveHistoryPolicy,
   addUtcCalendarMonths,
   completedCalendarMonthsFrom,
@@ -475,9 +477,32 @@ const csv = historyToCsv([referencePoint, customPoint]);
 assert.match(csv, /"0","2024-01-01","2024-01-01","current","reference"/, "CSV serialization includes daily reference fields");
 assert.match(csv, /"5","2024-01-06","2024-01-05","retained-last-workday","custom","mushrif"/, "CSV preserves the captured weekend row");
 
+const comparisonCsv = comparisonToCsv(
+  [
+    { day: 1, date: "2024-01-02", scenario: "transit", meanCommute: 30, unemployment: 0 },
+    { day: 2, date: "2024-01-03", scenario: "housing", meanCommute: 40 },
+  ],
+  [{ day: 1, date: "2024-01-02", meanCommute: 45, unemployment: 0.1 }],
+  { seed: 240124 }
+);
+const comparisonRows = comparisonCsv
+  .split("\n")
+  .map((line) => [...line.matchAll(/"((?:[^"]|"")*)"/g)].map((match) => match[1].replaceAll('""', '"')));
+const comparisonColumn = (name) => comparisonRows[0].indexOf(name);
+assert.equal(comparisonRows[1][comparisonColumn("delta_round_trip_commute_minutes")], "-15", "exported differences compare the same model day");
+assert.equal(comparisonRows[1][comparisonColumn("active_unemployment_fraction")], "0", "zero outcomes survive CSV export");
+assert.equal(comparisonRows[1][comparisonColumn("delta_unemployment_fraction")], "-0.1", "fraction differences keep their documented units");
+assert.equal(comparisonRows[2][comparisonColumn("reference_round_trip_commute_minutes")], "", "missing reference dates stay explicitly blank");
+assert.equal(comparisonRows[2][comparisonColumn("delta_round_trip_commute_minutes")], "", "missing reference dates do not invent zero baselines");
+assert.equal(comparisonRows[2][comparisonColumn("scenario")], "housing", "each historical row retains its own intervention context");
+
 const exportFunction = app.match(/function exportCsv\(\) \{([\s\S]*?)\n  \}\n\n  function setupResponsiveBehavior/);
 assert.ok(exportFunction, "CSV export function is present");
-assert.match(exportFunction[1], /historyToCsv\(state\.history\)/, "CSV export serializes captured history rows");
+assert.match(
+  exportFunction[1],
+  /comparisonToCsv\(state\.history, state\.referenceHistory/,
+  "CSV export serializes aligned active and reference histories"
+);
 assert.doesNotMatch(exportFunction[1], /currentPatch\(|state\.scenario,/, "CSV export does not relabel rows from current controls");
 assert.match(app, /captureDaily: true/, "the controller asks both workers for consecutive daily observations");
 assert.match(app, /chartSource\(\{ workdaysOnly: true \}\)/, "commute charts exclude retained weekend assignments");
@@ -566,5 +591,101 @@ assert.match(
   /root\.dataset\.udesV2State === "error"[\s\S]*?state\.busy[\s\S]*?!state\.worker/,
   "responsive control restoration preserves busy and failed runtime locks"
 );
+
+// Run the actual recorder: reference district observations survive while bulky
+// event-detail rows remain pruned.
+{
+  const start = app.indexOf("  function recordHistory(");
+  const end = app.indexOf("  function recordDailySeries(", start);
+  assert.ok(start >= 0 && end > start);
+  const state = { history: [], referenceHistory: [], interventions: [] };
+  const context = {
+    state,
+    createHistoryPoint,
+    presets: { reference: PUBLIC_PRESETS.reference },
+    HISTORY_POINT_LIMIT: 5000,
+    normalizeCity: (snapshot) => structuredClone(snapshot),
+    historyScopeFromZonePolicies: () => "city",
+  };
+  vm.runInNewContext(`${app.slice(start, end)}; globalThis.record = recordHistory;`, context);
+  context.record(
+    {
+      day: 7,
+      date: "2024-01-08",
+      zonePolicyState: [],
+      zoneSeries: [{ id: "yas", population: 100, representedEmployed: 60 }],
+      flows: { residentialMoves: [{ from: "yas", to: "musaffah" }], totals: { residentialMoves: 1 } },
+      transitions: { citizens: [{ zoneId: "yas" }], totals: { citizens: 1 } },
+    },
+    state.referenceHistory,
+    referencePatch
+  );
+  assert.equal(state.referenceHistory.length, 1);
+  assert.equal(state.referenceHistory[0].zoneSeries[0].representedEmployed, 60, "reference district counts remain available to paired charts");
+  assert.equal(state.referenceHistory[0].flows.residentialMoves.length, 0, "reference event detail stays pruned");
+  assert.equal(state.referenceHistory[0].transitions.citizens.length, 0);
+}
+
+// Date-coordinate timelines have no category data array. Expanded charts need
+// a range control and accurate dates; dashboard cards stay compact.
+{
+  const { buildOption } = require("../assets/js/udes-v2-analysis.js");
+  const start = app.indexOf("  function mountChart(");
+  const end = app.indexOf("  function prepareChartPanel(", start);
+  assert.ok(start >= 0 && end > start);
+  const districtContext = {
+    selectedZoneId: "yas",
+    snapshot: { clock: { day: 2, date: "2024-01-03" }, zones: [{ id: "yas", name: "Yas", population: 120, housingCapacity: 150 }] },
+    history: [{ day: 0, date: "2024-01-01", zoneSeries: [{ id: "yas", population: 100, housingCapacity: 150 }] }],
+  };
+  const run = (kind, option) => {
+    const attributes = {};
+    const calls = [];
+    const node = {
+      dataset: { udesV2ChartTitle: "District population" },
+      setAttribute: (name, value) => {
+        attributes[name] = value;
+      },
+    };
+    const state = {
+      analysisKind: kind,
+      charts: new Map(),
+      chartStructureKeys: new Map(),
+      chartInteractionLocks: new Set(),
+      pendingChartOptions: new Map(),
+    };
+    const context = {
+      state,
+      palette: { line: "#ddd", green: "#070" },
+      summarizeChart,
+      analysisCatalog: () => [{ id: "district-population-history", timeline: true }],
+      chartIdentity: (id) => `analysis:${id}`,
+      bindChartInteraction: () => {},
+      applyChartOption: (_chart, key, supplied, structureKey) => calls.push({ key, option: supplied, structureKey }),
+      window: { echarts: { init: () => ({ isDisposed: () => false }) } },
+    };
+    vm.runInNewContext(`${app.slice(start, end)}; globalThis.mount = mountChart;`, context);
+    context.mount(node, "analysis:district-population-history", option);
+    assert.equal(calls.length, 1);
+    return { ...calls[0], attributes };
+  };
+  const expanded = run("analysis", buildOption("district-population-history", districtContext).option);
+  assert.equal(expanded.option.dataZoom.length, 2);
+  assert.equal(expanded.option.dataZoom[1].type, "slider");
+  assert.match(expanded.structureKey, /:history$/);
+  assert.match(expanded.attributes["aria-label"], /2 observations, 2024-01-01 to 2024-01-03/);
+  const dashboard = run("workspace", buildOption("district-population-history", districtContext).option);
+  assert.equal(dashboard.option.dataZoom, undefined, "dashboard has no range slider");
+  assert.match(dashboard.structureKey, /:history$/);
+  const opening = run("analysis", buildOption("district-population-history", { ...districtContext, history: [] }).option);
+  assert.equal(opening.option.dataZoom, undefined, "one recorded date has no meaningless zoom range");
+  assert.match(opening.structureKey, /:opening$/);
+  const category = run("analysis", {
+    xAxis: { type: "category", data: ["Jan 1", "Jan 2"] },
+    yAxis: { type: "value" },
+    series: [{ type: "line", data: [1, 2] }],
+  });
+  assert.equal(category.option.dataZoom.length, 2, "existing category timelines keep their expanded zoom");
+}
 
 console.log("UDES v2 daily history export regression passed");

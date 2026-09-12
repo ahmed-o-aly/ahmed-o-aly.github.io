@@ -1,0 +1,411 @@
+[
+  {
+    "id": "workspace:city",
+    "expected": 2,
+    "mounts": [
+      {
+        "height": 451,
+        "id": "analysis:outcome-comparison",
+        "width": 386
+      },
+      {
+        "height": 451,
+        "id": "analysis:labor-composition",
+        "width": 386
+      }
+    ]
+  },
+  {
+    "id": "workspace:transport",
+    "expected": 2,
+    "mounts": [
+      {
+        "height": 451,
+        "id": "mobility:modes",
+        "width": 386
+      },
+      {
+        "height": 451,
+        "id": "analysis:commute-distribution",
+        "width": 386
+      }
+    ]
+  },
+  {
+    "id": "workspace:districts",
+    "expected": 2,
+    "mounts": [
+      {
+        "height": 451,
+        "id": "districts:stocks",
+        "width": 386
+      },
+      {
+        "height": 451,
+        "id": "analysis:district-commutes",
+        "width": 386
+      }
+    ]
+  },
+  {
+    "id": "workspace:housing",
+    "expected": 2,
+    "mounts": [
+      {
+        "height": 451,
+        "id": "analysis:district-housing",
+        "width": 386
+      },
+      {
+        "height": 451,
+        "id": "analysis:district-tradeoff",
+        "width": 386
+      }
+    ]
+  },
+  {
+    "id": "workspace:residents",
+    "expected": 2,
+    "mounts": [
+      {
+        "height": 451,
+        "id": "citizens:finance",
+        "width": 386
+      },
+      {
+        "height": 451,
+        "id": "analysis:resident-transitions",
+        "width": 386
+      }
+    ]
+  },
+  {
+    "id": "workspace:firms",
+    "expected": 2,
+    "mounts": [
+      {
+        "height": 451,
+        "id": "enterprises:states",
+        "width": 386
+      },
+      {
+        "height": 451,
+        "id": "analysis:enterprise-size",
+        "width": 386
+      }
+    ]
+  },
+  {
+    "id": "workspace:roads",
+    "expected": 2,
+    "mounts": [
+      {
+        "height": 437,
+        "id": "mobility:links",
+        "width": 386
+      },
+      {
+        "height": 451,
+        "id": "analysis:network-coverage",
+        "width": 386
+      }
+    ]
+  },
+  {
+    "id": "outcomes:commute",
+    "expected": 1,
+    "mounts": [
+      {
+        "height": 457,
+        "id": "outcomes:commute",
+        "width": 536
+      }
+    ]
+  },
+  {
+    "id": "outcomes:transit",
+    "expected": 1,
+    "mounts": [
+      {
+        "height": 457,
+        "id": "outcomes:transit",
+        "width": 536
+      }
+    ]
+  },
+  {
+    "id": "outcomes:occupancy",
+    "expected": 1,
+    "mounts": [
+      {
+        "height": 457,
+        "id": "outcomes:occupancy",
+        "width": 536
+      }
+    ]
+  },
+  {
+    "id": "outcomes:satisfaction",
+    "expected": 1,
+    "mounts": [
+      {
+        "height": 457,
+        "id": "outcomes:satisfaction",
+        "width": 536
+      }
+    ]
+  },
+  {
+    "id": "outcomes:unemployment",
+    "expected": 1,
+    "mounts": [
+      {
+        "height": 457,
+        "id": "outcomes:unemployment",
+        "width": 536
+      }
+    ]
+  },
+  {
+    "id": "outcomes:residual",
+    "expected": 1,
+    "mounts": [
+      {
+        "height": 457,
+        "id": "outcomes:residual",
+        "width": 536
+      }
+    ]
+  },
+  {
+    "id": "districts:stocks",
+    "expected": 1,
+    "mounts": [
+      {
+        "height": 457,
+        "id": "districts:stocks",
+        "width": 536
+      }
+    ]
+  },
+  {
+    "id": "districts:selected",
+    "expected": 1,
+    "mounts": [
+      {
+        "height": 386,
+        "id": "districts:selected",
+        "width": 536
+      }
+    ]
+  },
+  {
+    "id": "district-tradeoff",
+    "expected": 1,
+    "mounts": [
+      {
+        "height": 457,
+        "id": "analysis:district-tradeoff",
+        "width": 536
+      }
+    ]
+  },
+  {
+    "id": "district-commutes",
+    "expected": 1,
+    "mounts": [
+      {
+        "height": 457,
+        "id": "analysis:district-commutes",
+        "width": 536
+      }
+    ]
+  },
+  {
+    "id": "district-housing",
+    "expected": 1,
+    "mounts": [
+      {
+        "height": 457,
+        "id": "analysis:district-housing",
+        "width": 536
+      }
+    ]
+  },
+  {
+    "id": "flows:routes",
+    "expected": 1,
+    "mounts": [
+      {
+        "height": 421,
+        "id": "flows:routes",
+        "width": 536
+      }
+    ]
+  },
+  {
+    "id": "flows:district",
+    "expected": 1,
+    "mounts": [
+      {
+        "height": 421,
+        "id": "flows:district",
+        "width": 536
+      }
+    ]
+  },
+  {
+    "id": "mobility:modes",
+    "expected": 1,
+    "mounts": [
+      {
+        "height": 457,
+        "id": "mobility:modes",
+        "width": 536
+      }
+    ]
+  },
+  {
+    "id": "mobility:links",
+    "expected": 1,
+    "mounts": [
+      {
+        "height": 457,
+        "id": "mobility:links",
+        "width": 536
+      }
+    ]
+  },
+  {
+    "id": "commute-distribution",
+    "expected": 1,
+    "mounts": [
+      {
+        "height": 457,
+        "id": "analysis:commute-distribution",
+        "width": 536
+      }
+    ]
+  },
+  {
+    "id": "vehicle-access",
+    "expected": 1,
+    "mounts": [
+      {
+        "height": 457,
+        "id": "analysis:vehicle-access",
+        "width": 536
+      }
+    ]
+  },
+  {
+    "id": "network-coverage",
+    "expected": 1,
+    "mounts": [
+      {
+        "height": 457,
+        "id": "analysis:network-coverage",
+        "width": 536
+      }
+    ]
+  },
+  {
+    "id": "citizens:finance",
+    "expected": 1,
+    "mounts": [
+      {
+        "height": 457,
+        "id": "citizens:finance",
+        "width": 536
+      }
+    ]
+  },
+  {
+    "id": "citizens:states",
+    "expected": 1,
+    "mounts": [
+      {
+        "height": 457,
+        "id": "citizens:states",
+        "width": 536
+      }
+    ]
+  },
+  {
+    "id": "resource-distribution",
+    "expected": 1,
+    "mounts": [
+      {
+        "height": 457,
+        "id": "analysis:resource-distribution",
+        "width": 536
+      }
+    ]
+  },
+  {
+    "id": "resident-transitions",
+    "expected": 1,
+    "mounts": [
+      {
+        "height": 386,
+        "id": "analysis:resident-transitions",
+        "width": 536
+      }
+    ]
+  },
+  {
+    "id": "labor-composition",
+    "expected": 1,
+    "mounts": [
+      {
+        "height": 457,
+        "id": "analysis:labor-composition",
+        "width": 536
+      }
+    ]
+  },
+  {
+    "id": "enterprises:states",
+    "expected": 1,
+    "mounts": [
+      {
+        "height": 457,
+        "id": "enterprises:states",
+        "width": 536
+      }
+    ]
+  },
+  {
+    "id": "enterprises:viability",
+    "expected": 1,
+    "mounts": [
+      {
+        "height": 457,
+        "id": "enterprises:viability",
+        "width": 536
+      }
+    ]
+  },
+  {
+    "id": "enterprise-size",
+    "expected": 1,
+    "mounts": [
+      {
+        "height": 457,
+        "id": "analysis:enterprise-size",
+        "width": 536
+      }
+    ]
+  },
+  {
+    "id": "outcome-comparison",
+    "expected": 1,
+    "mounts": [
+      {
+        "height": 457,
+        "id": "analysis:outcome-comparison",
+        "width": 536
+      }
+    ]
+  }
+]

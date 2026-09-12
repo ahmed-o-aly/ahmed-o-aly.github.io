@@ -1,10 +1,18 @@
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { gzipSync, gunzipSync } from "node:zlib";
+import { validateRoadNetwork } from "./lib/udes-v2-network-integrity.mjs";
+import { deriveTurnRestrictions } from "./lib/udes-v2-turn-restrictions.mjs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const outputDir = path.join(projectRoot, "assets", "data", "udes-v2");
-const snapshotDate = "2026-08-28";
+const snapshotDate = "2026-08-28"; // Last review date for unchanged reference-only sources.
+const snapshotDir = path.join(projectRoot, "scripts", "data", "udes-v2-sources");
+const refreshSources = process.argv.includes("--refresh-sources");
+const sourceRequests = new Map();
+let lastOsrmRequestAt = 0;
 const bounds = [54.28, 24.24, 54.78, 24.62];
 
 const sources = {
@@ -64,12 +72,21 @@ const sources = {
     url: "https://census.scad.gov.ae/home/labourforce?fid=0&id=0&lang=en&tab=table_employee_population&year=2024",
     publisher: "Statistics Centre: Abu Dhabi",
     classification: "observed",
-    use: "Emirate-wide employed-population share used as the transparent 67% opening and target employment anchor",
+    use: "Emirate-wide employed-population share used only as the transparent 67% opening employment anchor; subsequent employment is endogenous",
     employedResidents: 2762715,
     residents: 4135985,
     employedResidentShare: 0.6679702658,
     referenceYear: 2024,
     retrieved: snapshotDate,
+  },
+  scadHousingReference2024: {
+    title: "Abu Dhabi Census 2024: property units by top districts and by use",
+    url: "https://census.scad.gov.ae/home/realestate?lang=en",
+    indicatorEndpoint: "https://census.scad.gov.ae/home/IndicatorData",
+    publisher: "Statistics Centre: Abu Dhabi",
+    classification: "reference",
+    referenceYear: 2024,
+    use: "Official stock reference. District totals include nonresidential units and cover only the top ten districts; the residential split is emirate-wide. These tables do not identify residential person capacity for all selected districts.",
   },
   abuDhabiBusTariff: {
     title: "Public Transport Services: Standard Service fare",
@@ -87,7 +104,7 @@ const sources = {
     url: "https://unhabitat.org/sites/default/files/2022/03/nup-transport_guide-web.pdf",
     publisher: "UN-Habitat",
     classification: "reference",
-    use: "Historical Abu Dhabi all-trip mode shares used as a broad calibration check, not a current commute forecast",
+    use: "Historical Abu Dhabi all-trip mode shares retained as contextual evidence only; they do not calibrate or validate modeled work-trip shares",
     referenceYear: 2015,
     underlyingSource: "UITP (2019)",
     retrieved: snapshotDate,
@@ -111,11 +128,23 @@ const sources = {
   },
 };
 
+const supplyAssumptions = {
+  housingSpareCapacityRatio: 0.15,
+  jobSpareCapacityRatio: 0.12,
+  jobsPerEnterprisePlace: 900,
+  sourceClass: "synthetic",
+  housingMeaning:
+    "Person-equivalent capacity with a uniform 15% opening buffer, retained as an explicit demonstration assumption until residential dwelling type, occupancy and collective accommodation stock can be mapped to all zones.",
+  housingEvidenceGap:
+    "SCAD publishes top-district total property units and an emirate-wide use split; these cannot be treated as district residential dwelling capacity.",
+};
+
 const zoneSpecs = [
   {
     id: "al-bateen",
-    name: "Al Bateen",
-    districtIds: [1300],
+    name: "Al Bateen / Al Qurm / Al Muzoun",
+    shortName: "Al Bateen group",
+    districtIds: [1300, 1292, 1287],
     population: 57100,
     populationClass: "derived-from-observed",
     jobs: 70000,
@@ -127,7 +156,7 @@ const zoneSpecs = [
     dominantEmployment: ["government", "professional services", "hospitality"],
     populationComponents: [{ name: "Al Qurm-Al Muzoun-Al Bateen", value: 57100, sourceClass: "observed" }],
     mappingNote:
-      "SCAD publishes one combined Al Qurm-Al Muzoun-Al Bateen census district; the model geometry is the official Al Bateen district group.",
+      "SCAD's combined Al Qurm-Al Muzoun-Al Bateen census district is matched to the union of the three corresponding AD-SDI district groups (1300, 1292, 1287); no population is reassigned to Al Bateen alone.",
   },
   {
     id: "al-danah",
@@ -384,7 +413,7 @@ const zoneSpecs = [
 // displaced while carrying otherwise valid district IDs. These anchors select
 // the contiguous Greater Abu Dhabi City community cluster reproducibly.
 const geometryHints = {
-  "al-bateen": { center: [54.345, 24.452], radiusKm: 10 },
+  "al-bateen": { center: [54.345, 24.452], radiusKm: 15 },
   "al-danah": { center: [54.369, 24.486], radiusKm: 8 },
   "al-khalidiyah": { center: [54.351, 24.467], radiusKm: 6 },
   "al-manhal-karamah": { center: [54.366, 24.462], radiusKm: 7 },
@@ -397,9 +426,9 @@ const geometryHints = {
   "al-maryah": { center: [54.39, 24.502], radiusKm: 5 },
   "al-saadiyat": { center: [54.44, 24.54], radiusKm: 18 },
   "rabdan-al-maqta": { center: [54.5, 24.397], radiusKm: 12 },
-  "al-raha": { center: [54.59, 24.453], radiusKm: 16 },
+  "al-raha": { center: [54.601, 24.455], radiusKm: 16 },
   "yas-island": { center: [54.603, 24.492], radiusKm: 12 },
-  "khalifa-city": { center: [54.697, 24.425], radiusKm: 18 },
+  "khalifa-city": { center: [54.578, 24.419], radiusKm: 12 },
   "mbz-zayed-city": { center: [54.574, 24.355], radiusKm: 24 },
   musaffah: { center: [54.5, 24.35], radiusKm: 22 },
 };
@@ -438,42 +467,8 @@ const corridorSpecs = [
   ["rabdan-al-maqta", "khalifa-city", "motorway"],
 ];
 
-// The district-pair routes do not naturally traverse every major city spine.
-// These short, on-road seeds add named arterial geometry to the physical union
-// without introducing extra zone-to-zone demand links.
-const arterialSeedSpecs = [
-  {
-    id: "seed-corniche-street",
-    name: "Corniche Street",
-    refs: ["1"],
-    from: [54.351487, 24.489579],
-    to: [54.365519, 24.50096],
-    corridorType: "urban-arterial",
-  },
-  {
-    id: "seed-king-abdullah-street",
-    name: "King Abdullah bin Abdulaziz Al Saud Street",
-    refs: [],
-    from: [54.319283, 24.460094],
-    to: [54.325636, 24.459844],
-    corridorType: "urban-arterial",
-  },
-  {
-    id: "seed-musaffah-road-e30",
-    name: "Musaffah Road (Ar Rawdah Road)",
-    refs: ["E30"],
-    from: [54.523806, 24.393363],
-    to: [54.524116, 24.333074],
-    corridorType: "motorway",
-  },
-];
-
-const requiredArterialCoverage = [
-  { label: "Corniche Street", name: "Corniche Street" },
-  { label: "King Abdullah bin Abdulaziz Al Saud Street", name: "King Abdullah bin Abdulaziz Al Saud Street" },
-  { label: "Musaffah Road / E30", ref: "E30" },
-  { label: "Mohammed Bin Khalifa Al Kindi Street", name: "Mohammed Bin Khalifa Al Kindi Street" },
-];
+// Only complete district-to-district routes contribute roads. Standalone display seeds are excluded.
+const requiredArterialCoverage = [];
 
 const routeRefNames = {
   E10: "Sheikh Zayed bin Sultan Street",
@@ -577,12 +572,64 @@ function routeRoadSummary(route) {
   };
 }
 
-async function fetchJson(url) {
-  const response = await fetch(url, {
-    headers: { "user-agent": "ahmed-o-aly.github.io UDES v2 data builder" },
-  });
-  if (!response.ok) throw new Error(`${response.status} ${response.statusText}: ${url}`);
-  return response.json();
+async function fetchJson(url, options = {}) {
+  const method = options.method || "GET";
+  const body = options.body ? String(options.body) : null;
+  const address = String(url);
+  const key = createHash("sha256")
+    .update(JSON.stringify({ method, url: address, body }))
+    .digest("hex");
+  const file = `${key}.json.gz`;
+  await mkdir(snapshotDir, { recursive: true });
+  let snapshot;
+  if (!refreshSources) {
+    try {
+      snapshot = JSON.parse(gunzipSync(await readFile(path.join(snapshotDir, file))).toString("utf8"));
+    } catch (error) {
+      if (error.code !== "ENOENT") throw new Error(`Invalid source snapshot ${file}: ${error.message}`);
+    }
+  }
+  if (!snapshot) {
+    let lastError;
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      try {
+        if (options.source === "osrm") {
+          const pause = Math.max(0, 1000 - (Date.now() - lastOsrmRequestAt));
+          if (pause) await new Promise((resolve) => setTimeout(resolve, pause));
+          lastOsrmRequestAt = Date.now();
+        }
+        const response = await fetch(address, {
+          method,
+          ...(body ? { body } : {}),
+          headers: { "user-agent": "ahmed-o-aly.github.io UDES v2 data builder", ...(options.headers || {}) },
+          signal: AbortSignal.timeout(45000),
+        });
+        if (!response.ok) throw new Error(`${response.status} ${response.statusText}: ${address}`);
+        const responseText = await response.text();
+        const payload = JSON.parse(responseText);
+        if (payload.error) throw new Error(`Source error: ${JSON.stringify(payload.error)}`);
+        if (payload.exceededTransferLimit || payload.properties?.exceededTransferLimit) throw new Error(`Truncated source response: ${address}`);
+        snapshot = {
+          request: { method, url: address, body },
+          retrievedAt: new Date().toISOString(),
+          sha256: createHash("sha256").update(responseText).digest("hex"),
+          responseText,
+        };
+        await writeFile(path.join(snapshotDir, file), gzipSync(JSON.stringify(snapshot)));
+        break;
+      } catch (error) {
+        lastError = error;
+        if (attempt < 2) await new Promise((resolve) => setTimeout(resolve, 1000 * (attempt + 1)));
+      }
+    }
+    if (!snapshot) throw lastError;
+  }
+  if (createHash("sha256").update(snapshot.responseText).digest("hex") !== snapshot.sha256) throw new Error(`Snapshot hash mismatch: ${file}`);
+  sourceRequests.set(key, { file, source: options.source || null, ...snapshot.request, retrievedAt: snapshot.retrievedAt, sha256: snapshot.sha256 });
+  const payload = JSON.parse(snapshot.responseText);
+  if (payload.error || payload.exceededTransferLimit || payload.properties?.exceededTransferLimit)
+    throw new Error(`Incomplete cached source: ${file}`);
+  return payload;
 }
 
 function arcgisUrl(layer, params) {
@@ -680,7 +727,8 @@ async function fetchCommunities() {
       geometryPrecision: "6",
       maxAllowableOffset: "0.00005",
       f: "geojson",
-    })
+    }),
+    { source: "adsdiCommunities" }
   );
 }
 
@@ -697,7 +745,8 @@ async function fetchBusStops() {
       outSR: "4326",
       geometryPrecision: "6",
       f: "geojson",
-    })
+    }),
+    { source: "adsdiBusStops" }
   );
 }
 
@@ -715,7 +764,7 @@ async function fetchMainRoads() {
     geometryPrecision: "6",
     f: "geojson",
   });
-  return fetchJson(url);
+  return fetchJson(url, { source: "adsdiMainRoads" });
 }
 
 function normalizeRouteSteps(route) {
@@ -733,6 +782,13 @@ function normalizeRouteSteps(route) {
       distanceKm: Math.max(0, Number(step.distance) || 0) / 1000,
       freeFlowMinutes: Math.max(0, Number(step.duration) || 0) / 60,
       maneuver: step.maneuver?.type || null,
+      intersections: (step.intersections || []).map((intersection) => ({
+        location: intersection.location,
+        bearings: intersection.bearings,
+        entry: intersection.entry,
+        in: intersection.in,
+        out: intersection.out,
+      })),
       sourceClass: "derived",
     }))
     .filter((step) => step.geometry.coordinates.length >= 2);
@@ -740,62 +796,155 @@ function normalizeRouteSteps(route) {
 
 async function fetchRoute(from, to, options = {}) {
   const url = new URL(`https://router.project-osrm.org/route/v1/driving/${from.join(",")};${to.join(",")}`);
-  url.search = new URLSearchParams({ overview: "full", geometries: "geojson", steps: "true" });
-  try {
-    const payload = await fetchJson(url);
-    const route = payload.routes?.[0];
-    if (!route) throw new Error(payload.message || "No OSRM route");
-    return {
-      geometry: route.geometry,
-      distanceKm: route.distance / 1000,
-      freeFlowMinutes: route.duration / 60,
-      ...routeRoadSummary(route),
-      steps: normalizeRouteSteps(route),
-      snappedFrom: (payload.waypoints?.[0]?.location || route.geometry.coordinates[0] || from).map((value) => Number(value.toFixed(6))),
-      snappedTo: (payload.waypoints?.at(-1)?.location || route.geometry.coordinates.at(-1) || to).map((value) => Number(value.toFixed(6))),
-      forcedArterial: Boolean(options.forcedArterial),
-      forcedName: options.forcedName || null,
-      forcedRefs: Array.isArray(options.forcedRefs) ? options.forcedRefs : [],
-      sourceClass: "derived",
-      geometrySource: "osm-osrm",
+  url.search = new URLSearchParams({
+    overview: "full",
+    geometries: "geojson",
+    steps: "true",
+    continue_straight: "false",
+    ...(options.fromHint && options.toHint ? { hints: `${options.fromHint};${options.toHint}` } : {}),
+  });
+  const payload = await fetchJson(url, { source: "osrm" });
+  const sourceRequestKey = createHash("sha256")
+    .update(JSON.stringify({ method: "GET", url: String(url), body: null }))
+    .digest("hex");
+  const sourceRequest = sourceRequests.get(sourceRequestKey);
+  const route = payload.routes?.[0];
+  if (!route) throw new Error(payload.message || "No OSRM route");
+  if (!route.geometry?.coordinates?.length || !route.legs?.length) throw new Error(`Incomplete OSRM route: ${url}`);
+  return {
+    geometry: route.geometry,
+    distanceKm: route.distance / 1000,
+    freeFlowMinutes: route.duration / 60,
+    ...routeRoadSummary(route),
+    steps: normalizeRouteSteps(route),
+    snappedFrom: (payload.waypoints?.[0]?.location || route.geometry.coordinates[0] || from).map((value) => Number(value.toFixed(6))),
+    snappedTo: (payload.waypoints?.at(-1)?.location || route.geometry.coordinates.at(-1) || to).map((value) => Number(value.toFixed(6))),
+    forcedArterial: Boolean(options.forcedArterial),
+    forcedName: options.forcedName || null,
+    forcedRefs: Array.isArray(options.forcedRefs) ? options.forcedRefs : [],
+    sourceClass: "derived",
+    geometrySource: "osm-osrm",
+    sourceRequestUrl: String(url),
+    sourceSnapshotFile: sourceRequest.file,
+    sourceRetrievedAt: sourceRequest.retrievedAt,
+  };
+}
+
+async function refreshCensusMappings() {
+  const source = sources.scadPopulation;
+  const response = await fetchJson(source.indicatorEndpoint, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams(source.indicatorRequest),
+    source: "scadPopulation",
+  });
+  if (typeof response.Data !== "string") throw new Error("SCAD census response has no district table");
+  let region = null;
+  const records = new Map();
+  for (const row of response.Data.matchAll(/<tr\b[^>]*>([\s\S]*?)<\/tr>/gi)) {
+    const cells = [...row[1].matchAll(/<td\b([^>]*)>([\s\S]*?)<\/td>/gi)];
+    if (!cells.length) continue;
+    if (cells[0][1].includes('data-column="Region"')) region = cells.shift()[2];
+    if (region !== "Abu Dhabi Region" || cells.length < 2) continue;
+    records.set(cells[0][2].replaceAll("&#39;", "'"), Number(cells[1][2].replaceAll(",", "")));
+  }
+  if (records.size < 50) throw new Error("Incomplete SCAD Abu Dhabi Region district table");
+  const mappings = {
+    "al-bateen": ["Al Qurm-Al Muzoun-Al Bateen"],
+    "al-manhal-karamah": ["Al Manhal"],
+    "muroor-al-saadah": ["Al Sa'adah"],
+    "al-saadiyat": ["Saadiyat Island"],
+    "rabdan-al-maqta": ["Rabdan"],
+    "al-raha": ["Al Rahah"],
+    "mbz-zayed-city": ["Mohamed Bin Zayed City", "Zayed City"],
+  };
+  for (const spec of zoneSpecs) {
+    const names = mappings[spec.id] || [spec.name];
+    spec.populationComponents = names.map((name) => {
+      const value = records.get(name);
+      if (!Number.isFinite(value) || value <= 0) throw new Error(`Missing SCAD population for ${name}`);
+      return { name, value, sourceClass: "observed" };
+    });
+    spec.population = spec.populationComponents.reduce((sum, record) => sum + record.value, 0);
+  }
+}
+
+async function fetchHousingReferences() {
+  const tables = await Promise.all(
+    [6025, 6026].map(async (id) => {
+      const request = { contentsetupid: id, topicid: 3, itemindex: 0, year: 2024, lang: "en" };
+      const response = await fetchJson(sources.scadHousingReference2024.indicatorEndpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams(request),
+        source: "scadHousingReference2024",
+      });
+      if (typeof response.Data !== "string") throw new Error("Missing SCAD property-unit reference table");
+      const rows = [...response.Data.matchAll(/<tr\b[^>]*>([\s\S]*?)<\/tr>/gi)]
+        .map((row) =>
+          [...row[1].matchAll(/<t[dh]\b[^>]*>([\s\S]*?)<\/t[dh]>/gi)].map((cell) =>
+            cell[1]
+              .replace(/<[^>]*>/g, "")
+              .replaceAll("&nbsp;", "")
+              .replaceAll("&amp;", "&")
+              .trim()
+          )
+        )
+        .filter((row) => row.length);
+      return { indicator: id, request, rows };
+    })
+  );
+  return { source: "scadHousingReference2024", usedForCapacity: false, reason: supplyAssumptions.housingEvidenceGap, tables };
+}
+
+function interiorActivityPoint(requested, geometry) {
+  if (pointInGeometry(requested, geometry)) return requested;
+  let best = null;
+  let bestDistance = Infinity;
+  // A narrow coastal district can have its centroid in water. Select an
+  // interior point, then verify the actual road snap against the polygon too.
+  for (let x = -25; x <= 25; x += 1) {
+    for (let y = -25; y <= 25; y += 1) {
+      const point = [requested[0] + x * 0.0004, requested[1] + y * 0.0004];
+      if (!pointInGeometry(point, geometry)) continue;
+      const distance = haversineKm(requested, point);
+      if (distance < bestDistance) {
+        best = point;
+        bestDistance = distance;
+      }
+    }
+  }
+  if (!best) throw new Error(`No interior activity point within 1.5 km of ${requested.join(",")}`);
+  return best.map((value) => Number(value.toFixed(6)));
+}
+
+async function pinDistrictGateways(zones, features) {
+  for (const zone of zones) {
+    const feature = features.find((item) => item.id === zone.id);
+    const requested = interiorActivityPoint(zone.centroid, feature.geometry);
+    const url = new URL(`https://router.project-osrm.org/nearest/v1/driving/${requested.join(",")}`);
+    url.search = new URLSearchParams({ number: "10" });
+    const response = await fetchJson(url, { source: "osrm" });
+    const waypoint = response.waypoints?.find((candidate) => candidate.hint && pointInGeometry(candidate.location, feature.geometry));
+    if (!waypoint || waypoint.distance > 1500) throw new Error(`No valid road gateway inside ${zone.id}`);
+    zone.routingHint = waypoint.hint;
+    zone.centroid = waypoint.location.map((value) => Number(value.toFixed(6)));
+    zone.networkGateway = {
+      requestedActivityPoint: requested,
+      snappedCoordinate: zone.centroid,
+      roadName: waypoint.name || null,
+      snapDistanceMeters: Number(waypoint.distance.toFixed(1)),
+      source: "osrm",
+      selection:
+        "Nearest routable road position inside the official grouped district geometry; frozen OSRM hint reused by every origin and destination route.",
     };
-  } catch (error) {
-    const distanceKm = haversineKm(from, to) * 1.25;
-    return {
-      geometry: { type: "LineString", coordinates: [from, to] },
-      distanceKm,
-      freeFlowMinutes: (distanceKm / 45) * 60,
-      primaryRoad: "Inter-district road route",
-      roadNames: [],
-      roadRefs: [],
-      steps: [
-        {
-          index: 0,
-          geometry: { type: "LineString", coordinates: [from, to] },
-          name: options.forcedName || null,
-          osmName: null,
-          refs: Array.isArray(options.forcedRefs) ? options.forcedRefs : [],
-          distanceKm,
-          freeFlowMinutes: (distanceKm / 45) * 60,
-          maneuver: "fallback",
-          sourceClass: "synthetic",
-        },
-      ],
-      snappedFrom: from,
-      snappedTo: to,
-      forcedArterial: Boolean(options.forcedArterial),
-      forcedName: options.forcedName || null,
-      forcedRefs: Array.isArray(options.forcedRefs) ? options.forcedRefs : [],
-      sourceClass: "synthetic",
-      geometrySource: "straight-line-fallback",
-      fallbackReason: error.message,
-    };
+    feature.properties.centroid = zone.centroid;
+    feature.properties.networkGateway = zone.networkGateway;
   }
 }
 
 const topologyCoordinatePrecision = 5;
 const maximumCollapsedEdgeKm = 2;
-const maximumAggregatedZonePortalKm = 2.5;
 const modeledRoadNameKeys = new Set(
   [
     ...Object.values(routeRefNames),
@@ -1071,7 +1220,7 @@ function applyOfficialMainRoadAttributes(graphEdges, officialRoadCollection) {
   for (const edge of graphEdges) {
     const observedAB = Number(edge.directionEvidence?.observedABTraversalCount) || 0;
     const observedBA = Number(edge.directionEvidence?.observedBATraversalCount) || 0;
-    const evidenceOneWay = edge.loadBearing && (observedAB === 0) !== (observedBA === 0);
+    const evidenceOneWay = (observedAB === 0) !== (observedBA === 0);
     edge.allowAB = !edge.contextOnly && (!evidenceOneWay || observedAB > 0);
     edge.allowBA = !edge.contextOnly && (!evidenceOneWay || observedBA > 0);
     edge.bidirectional = edge.allowAB && edge.allowBA;
@@ -1083,7 +1232,7 @@ function applyOfficialMainRoadAttributes(graphEdges, officialRoadCollection) {
     edge.speedLimitKphAB = null;
     edge.speedLimitKphBA = null;
     edge.officialMainRoadMatch = null;
-    edge.sourceClassByField.directionality = edge.contextOnly ? "synthetic" : evidenceOneWay ? "derived" : "synthetic";
+    edge.sourceClassByField.directionality = "derived";
     const match = matchOfficialMainRoad(edge, officialRoads);
     if (!match) continue;
     matchedCount += 1;
@@ -1103,7 +1252,7 @@ function applyOfficialMainRoadAttributes(graphEdges, officialRoadCollection) {
       edge.capacityVehPerHourAB = edge.allowAB ? edge.capacityVehPerHour : 0;
       edge.capacityVehPerHourBA = edge.allowBA ? edge.capacityVehPerHour : 0;
       edge.sourceClassByField.lanesPerDirection = "observed";
-      edge.sourceClassByField.capacityVehPerHour = "derived-from-observed";
+      edge.sourceClassByField.capacityVehPerHour = "mixed-derived-synthetic";
     }
     if (official.speedKph && calibrationEligible) {
       edge.speedLimitKphAB = edge.allowAB ? official.speedKph : null;
@@ -1161,7 +1310,7 @@ function applyOfficialMainRoadAttributes(graphEdges, officialRoadCollection) {
       capacityAcceptance:
         "LANES and SPEED affect model fields only for load-bearing edges with >= 80% sampled coverage within 75 m, p90 distance <= 150 m and alignment >= 0.80; looser accepted matches are retained as reference metadata only.",
       directionality:
-        "Every modeled OD corridor and named-spine seed is routed separately in both directions. A physical edge traversed in only one direction across that paired OSRM union is directional; official SIDE is retained as independent carriageway evidence.",
+        "Every modeled district corridor is routed separately in both directions between fixed road gateways. A physical edge traversed in only one direction across that paired OSRM union is directional; official SIDE is retained as independent carriageway evidence.",
       capacity: "Observed LANES replaces the class lane assumption; per-lane flow remains a transparent synthetic class assumption.",
     },
   };
@@ -1175,31 +1324,6 @@ function chooseZoneAnchor(zone, endpointCounts, coordinateByKey) {
     return haversineKm(coordinateByKey.get(left[0]), zone.centroid) - haversineKm(coordinateByKey.get(right[0]), zone.centroid);
   });
   return candidates[0][0];
-}
-
-function aggregatedZonePortal(edge, candidateRouteById, zoneById) {
-  if (edge.hidden || edge.gateway || edge.seedIds.length || edge.candidateRouteIds.length < 2) return null;
-  let commonEndpointZoneIds = null;
-  for (const routeId of edge.candidateRouteIds) {
-    const route = candidateRouteById.get(routeId);
-    if (!route) return null;
-    const endpoints = new Set([route.fromZoneId, route.toZoneId]);
-    commonEndpointZoneIds = commonEndpointZoneIds ? new Set([...commonEndpointZoneIds].filter((zoneId) => endpoints.has(zoneId))) : endpoints;
-    if (!commonEndpointZoneIds.size) return null;
-  }
-  if (commonEndpointZoneIds.size !== 1) return null;
-  const zoneId = [...commonEndpointZoneIds][0];
-  const zone = zoneById.get(zoneId);
-  if (!zone) return null;
-  const maximumDistanceKm = Math.max(...edge.geometry.map((coordinate) => haversineKm(zone.centroid, coordinate)));
-  if (maximumDistanceKm > maximumAggregatedZonePortalKm) return null;
-  return {
-    zoneId,
-    maximumDistanceKm: Number(maximumDistanceKm.toFixed(3)),
-    candidateRouteCount: edge.candidateRouteIds.length,
-    rule: "shared terminal chain from one aggregate zone centroid before route divergence",
-    sourceClass: "derived",
-  };
 }
 
 function buildPhysicalRoadGraph(zones, candidateRouteRecords, arterialSeedRecords, officialMainRoadCollection) {
@@ -1239,9 +1363,6 @@ function buildPhysicalRoadGraph(zones, candidateRouteRecords, arterialSeedRecord
         durationSamples: [],
         sourceClasses: new Set(),
         majorVotes: 0,
-        nonTerminalVotes: 0,
-        terminalVotes: 0,
-        forceHiddenVotes: 0,
         aToBTraversalCount: 0,
         bToATraversalCount: 0,
         usageCount: 0,
@@ -1263,9 +1384,6 @@ function buildPhysicalRoadGraph(zones, candidateRouteRecords, arterialSeedRecord
     if (Number.isFinite(usage.freeFlowMinutes)) segment.durationSamples.push(Math.max(0, usage.freeFlowMinutes));
     segment.sourceClasses.add(usage.sourceClass || "derived");
     if (usage.major) segment.majorVotes += 1;
-    if (usage.terminalAccess) segment.terminalVotes += 1;
-    else segment.nonTerminalVotes += 1;
-    if (usage.forceHidden) segment.forceHiddenVotes += 1;
     return { key, fromKey, toKey };
   };
 
@@ -1286,8 +1404,6 @@ function buildPhysicalRoadGraph(zones, candidateRouteRecords, arterialSeedRecord
       };
     });
     const stepMajor = stepAttributes.map((attributes) => isModeledArterial(attributes.name, attributes.refs, attributes.forcedMatch));
-    const firstMajor = stepMajor.findIndex(Boolean);
-    const lastMajor = stepMajor.lastIndexOf(true);
     const traversals = [];
     const routeNodeKeys = new Set();
     for (let stepIndex = 0; stepIndex < record.steps.length; stepIndex += 1) {
@@ -1301,7 +1417,6 @@ function buildPhysicalRoadGraph(zones, candidateRouteRecords, arterialSeedRecord
         pairDistances.push(distanceKm);
         geometryDistanceKm += distanceKm;
       }
-      const terminalAccess = !stepMajor[stepIndex] && (firstMajor < 0 || stepIndex < firstMajor || stepIndex > lastMajor);
       for (let index = 1; index < coordinates.length; index += 1) {
         const distanceKm = pairDistances[index - 1];
         if (distanceKm <= 0) continue;
@@ -1318,8 +1433,6 @@ function buildPhysicalRoadGraph(zones, candidateRouteRecords, arterialSeedRecord
           freeFlowMinutes: step.freeFlowMinutes * share,
           sourceClass: step.sourceClass || record.sourceClass,
           major: stepMajor[stepIndex],
-          terminalAccess,
-          forceHidden: false,
         });
         if (!traversal) continue;
         traversals.push(traversal);
@@ -1347,88 +1460,65 @@ function buildPhysicalRoadGraph(zones, candidateRouteRecords, arterialSeedRecord
   for (const record of candidateRouteRecords) ingestRoute(record, { isCandidate: true });
   for (const record of arterialSeedRecords) ingestRoute(record, { isSeed: true });
 
-  // Seed-only geometry is display/model infrastructure, not a new OD route.
-  // If it does not already intersect the candidate-route union exactly, attach
-  // it to the nearest candidate node with a hidden synthetic access edge.
-  for (const seed of arterialSeedRecords) {
-    if ([...seed.rawNodeKeys].some((key) => candidateNodeKeys.has(key))) continue;
-    const seedKey = seed.fromEndpointKey;
-    let nearestKey = null;
-    let nearestDistanceKm = Infinity;
-    for (const candidateKey of candidateNodeKeys) {
-      const distanceKm = haversineKm(coordinateByKey.get(seedKey), coordinateByKey.get(candidateKey));
-      if (distanceKm < nearestDistanceKm) {
-        nearestDistanceKm = distanceKm;
-        nearestKey = candidateKey;
-      }
-    }
-    if (!nearestKey || nearestDistanceKm > 4) {
-      throw new Error(`Required arterial seed ${seed.id} is ${nearestDistanceKm.toFixed(2)} km from the candidate-route union`);
-    }
-    addRawSegment(coordinateByKey.get(seedKey), coordinateByKey.get(nearestKey), {
-      routeId: `${seed.id}-hidden-attachment`,
-      isCandidate: false,
-      isSeed: true,
-      corridorType: "local-access",
-      name: null,
-      osmName: null,
-      refs: [],
-      distanceKm: nearestDistanceKm,
-      freeFlowMinutes: (nearestDistanceKm / 30) * 60,
-      sourceClass: "synthetic",
-      major: false,
-      terminalAccess: true,
-      forceHidden: true,
-    });
-  }
-
   const zoneAnchorKeyById = new Map();
   for (const zone of zones) zoneAnchorKeyById.set(zone.id, chooseZoneAnchor(zone, endpointCounts, coordinateByKey));
-
-  // OSRM can snap the same zone to a different carriageway depending on route
-  // direction. Preserve one stable zone portal and hide short connectors from
-  // that portal to any alternate snapped endpoints.
+  // A frozen OSRM hint pins each endpoint to its actual road segment. Never
+  // invent a line between independently snapped carriageways or seed geometry.
   for (const route of candidateRouteRecords) {
-    const fromAnchorKey = zoneAnchorKeyById.get(route.fromZoneId);
-    const toAnchorKey = zoneAnchorKeyById.get(route.toZoneId);
-    if (route.fromEndpointKey !== fromAnchorKey) {
-      const distanceKm = haversineKm(coordinateByKey.get(fromAnchorKey), coordinateByKey.get(route.fromEndpointKey));
-      const connector = addRawSegment(coordinateByKey.get(fromAnchorKey), coordinateByKey.get(route.fromEndpointKey), {
-        routeId: route.id,
-        isCandidate: true,
-        isSeed: false,
-        corridorType: "local-access",
-        name: null,
-        osmName: null,
-        refs: [],
-        distanceKm,
-        freeFlowMinutes: (distanceKm / 20) * 60,
-        sourceClass: "synthetic",
-        major: false,
-        terminalAccess: true,
-        forceHidden: true,
-      });
-      if (connector) route.rawTraversals.unshift({ ...connector, fromKey: fromAnchorKey, toKey: route.fromEndpointKey });
+    if (route.fromEndpointKey !== zoneAnchorKeyById.get(route.fromZoneId) || route.toEndpointKey !== zoneAnchorKeyById.get(route.toZoneId)) {
+      throw new Error("Inconsistent snapped gateway on route " + route.id + "; fix the OSRM endpoint instead of attaching synthetic roads");
     }
-    if (route.toEndpointKey !== toAnchorKey) {
-      const distanceKm = haversineKm(coordinateByKey.get(route.toEndpointKey), coordinateByKey.get(toAnchorKey));
-      const connector = addRawSegment(coordinateByKey.get(route.toEndpointKey), coordinateByKey.get(toAnchorKey), {
-        routeId: route.id,
-        isCandidate: true,
-        isSeed: false,
-        corridorType: "local-access",
-        name: null,
-        osmName: null,
-        refs: [],
-        distanceKm,
-        freeFlowMinutes: (distanceKm / 20) * 60,
-        sourceClass: "synthetic",
-        major: false,
-        terminalAccess: true,
-        forceHidden: true,
-      });
-      if (connector) route.rawTraversals.push({ ...connector, fromKey: route.toEndpointKey, toKey: toAnchorKey });
+  }
+
+  // A district's representative point may snap partway down a cul-de-sac.
+  // Move only such shared terminal stems to their first actual road junction,
+  // then trim the real approach geometry from every affected route. The
+  // analytical network therefore ends at connected district gateways rather
+  // than displaying dead-end access stubs or inventing cross-street links.
+  const trimmedGatewayApproaches = [];
+  for (const zone of zones) {
+    const originalKey = zoneAnchorKeyById.get(zone.id);
+    if (adjacency.get(originalKey)?.size !== 1) continue;
+    let currentKey = originalKey;
+    let previousSegmentKey = null;
+    let distanceKm = 0;
+    while ((adjacency.get(currentKey)?.size || 0) < 3) {
+      const key = [...(adjacency.get(currentKey) || [])].find((candidate) => candidate !== previousSegmentKey);
+      if (!key) throw new Error(`District ${zone.id} has no connected road junction`);
+      const segment = rawSegments.get(key);
+      const nextKey = segment.aKey === currentKey ? segment.bKey : segment.aKey;
+      distanceKm += haversineKm(coordinateByKey.get(currentKey), coordinateByKey.get(nextKey));
+      if (distanceKm > 2.5) throw new Error(`District ${zone.id} gateway is over 2.5 km from a road junction`);
+      previousSegmentKey = key;
+      currentKey = nextKey;
     }
+    for (const route of candidateRouteRecords) {
+      if (route.fromZoneId === zone.id) {
+        const start = route.rawTraversals.findIndex((item) => item.fromKey === currentKey);
+        if (start < 0) throw new Error(`Cannot trim ${route.id} to its district gateway`);
+        route.rawTraversals = route.rawTraversals.slice(start);
+      }
+      if (route.toZoneId === zone.id) {
+        const end = route.rawTraversals.findLastIndex((item) => item.toKey === currentKey);
+        if (end < 0) throw new Error(`Cannot trim ${route.id} to its district gateway`);
+        route.rawTraversals = route.rawTraversals.slice(0, end + 1);
+      }
+    }
+    const junctionCoordinate = coordinateByKey.get(currentKey);
+    zoneAnchorKeyById.set(zone.id, currentKey);
+    zone.networkGateway.routedSnapCoordinate = zone.networkGateway.snappedCoordinate;
+    zone.networkGateway.snappedCoordinate = junctionCoordinate;
+    zone.networkGateway.trimmedApproachMeters = Number((distanceKm * 1000).toFixed(1));
+    zone.networkGateway.selection += " A shared cul-de-sac approach is trimmed to its first real road junction.";
+    zone.centroid = junctionCoordinate;
+    trimmedGatewayApproaches.push({ zoneId: zone.id, distanceMeters: zone.networkGateway.trimmedApproachMeters });
+  }
+  const retainedSegments = new Set(candidateRouteRecords.flatMap((route) => route.rawTraversals.map((item) => item.key)));
+  for (const [key, segment] of rawSegments) {
+    if (retainedSegments.has(key)) continue;
+    rawSegments.delete(key);
+    adjacency.get(segment.aKey).delete(key);
+    adjacency.get(segment.bKey).delete(key);
   }
 
   const rawMetadata = new Map();
@@ -1440,9 +1530,7 @@ function buildPhysicalRoadGraph(zones, candidateRouteRecords, arterialSeedRecord
     const osmNames = [...segment.osmNameWeights.entries()]
       .sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0]))
       .map(([name]) => name);
-    const forcedNetworkAttachment = segment.forceHiddenVotes === segment.usageCount;
-    const terminalOnly = segment.majorVotes === 0 && segment.terminalVotes > 0 && segment.nonTerminalVotes === 0;
-    const hidden = forcedNetworkAttachment || terminalOnly;
+    const hidden = false; // Keep the complete real road geometry visible.
     const midRouteConnector = !hidden && segment.majorVotes === 0;
     const primaryRoad =
       roadNames[0] ||
@@ -1470,7 +1558,7 @@ function buildPhysicalRoadGraph(zones, candidateRouteRecords, arterialSeedRecord
     const freeFlowMinutes = median(segment.durationSamples) || (distanceKm / (hidden ? 30 : corridorType === "motorway" ? 90 : 55)) * 60;
     const metadata = {
       hidden,
-      modelVisible: !hidden && !midRouteConnector,
+      modelVisible: true,
       primaryRoad,
       roadNames,
       osmNames,
@@ -1478,7 +1566,7 @@ function buildPhysicalRoadGraph(zones, candidateRouteRecords, arterialSeedRecord
       corridorType,
       gateway,
       modelRole: hidden ? "zone-access" : midRouteConnector ? "mid-route-connector" : gateway ? "gateway" : "named-arterial",
-      hiddenReason: forcedNetworkAttachment ? "forced-network-attachment" : terminalOnly ? "terminal-first-last-mile" : null,
+      hiddenReason: null,
       distanceKm,
       freeFlowMinutes,
       ...capacity,
@@ -1545,8 +1633,8 @@ function buildPhysicalRoadGraph(zones, candidateRouteRecords, arterialSeedRecord
     const sourceClasses = new Set();
     let distanceKm = 0;
     let freeFlowMinutes = 0;
-    let observedABTraversalCount = 0;
-    let observedBATraversalCount = 0;
+    let observedABTraversalCount = Infinity;
+    let observedBATraversalCount = Infinity;
     for (const item of chainSegments) {
       const rawSegment = rawSegments.get(item.key);
       const metadata = rawMetadata.get(item.key);
@@ -1555,8 +1643,14 @@ function buildPhysicalRoadGraph(zones, candidateRouteRecords, arterialSeedRecord
       rawSegment.seedIds.forEach((id) => seedIds.add(id));
       rawSegment.sourceClasses.forEach((sourceClass) => sourceClasses.add(sourceClass));
       const chainFollowsCanonical = item.fromKey === rawSegment.aKey;
-      observedABTraversalCount += chainFollowsCanonical ? rawSegment.aToBTraversalCount : rawSegment.bToATraversalCount;
-      observedBATraversalCount += chainFollowsCanonical ? rawSegment.bToATraversalCount : rawSegment.aToBTraversalCount;
+      observedABTraversalCount = Math.min(
+        observedABTraversalCount,
+        chainFollowsCanonical ? rawSegment.aToBTraversalCount : rawSegment.bToATraversalCount
+      );
+      observedBATraversalCount = Math.min(
+        observedBATraversalCount,
+        chainFollowsCanonical ? rawSegment.bToATraversalCount : rawSegment.aToBTraversalCount
+      );
       distanceKm += metadata.distanceKm;
       freeFlowMinutes += metadata.freeFlowMinutes;
     }
@@ -1622,23 +1716,22 @@ function buildPhysicalRoadGraph(zones, candidateRouteRecords, arterialSeedRecord
     };
   });
 
-  const candidateRouteById = new Map(candidateRouteRecords.map((route) => [route.id, route]));
-  const zoneById = new Map(zones.map((zone) => [zone.id, zone]));
   const graphEdges = collapsedEdges.map((edge) => {
-    const portal = aggregatedZonePortal(edge, candidateRouteById, zoneById);
-    const hidden = edge.hidden || Boolean(portal);
-    const modelVisible = portal ? false : edge.modelVisible;
+    const hidden = false;
+    const modelVisible = true;
     return {
       id: edge.id,
       from: nodeIdByKey.get(edge.fromKey),
       to: nodeIdByKey.get(edge.toKey),
       bidirectional: true,
       hidden,
-      loadBearing: !hidden && edge.candidateRouteIds.length > 0,
+      // Every edge is real routed road geometry. A route's first/last-mile
+      // position does not exempt shared physical streets from congestion.
+      loadBearing: true,
+      capacityExclusionReason: null,
       modelVisible,
-      displayClass: portal
-        ? "access"
-        : edge.modelVisible && edge.candidateRouteIds.length === 0 && edge.seedIds.length > 0
+      displayClass:
+        edge.modelVisible && edge.candidateRouteIds.length === 0 && edge.seedIds.length > 0
           ? "context"
           : edge.hidden
             ? "access"
@@ -1647,16 +1740,10 @@ function buildPhysicalRoadGraph(zones, candidateRouteRecords, arterialSeedRecord
               : edge.gateway
                 ? "gateway"
                 : "arterial",
-      modelRole: portal
-        ? "zone-access"
-        : edge.modelVisible && edge.candidateRouteIds.length === 0 && edge.seedIds.length > 0
-          ? "reference-context"
-          : edge.modelRole,
-      hiddenReason: portal ? "aggregated-zone-portal" : edge.hiddenReason,
-      aggregatedZonePortalFor: portal?.zoneId || null,
-      aggregatedZonePortalEvidence: portal,
+      modelRole: edge.modelVisible && edge.candidateRouteIds.length === 0 && edge.seedIds.length > 0 ? "reference-context" : edge.modelRole,
+      hiddenReason: null,
       contextOnly: modelVisible && edge.candidateRouteIds.length === 0 && edge.seedIds.length > 0,
-      corridorType: portal ? "local-access" : edge.corridorType,
+      corridorType: edge.corridorType,
       primaryRoad: edge.primaryRoad,
       roadNames: edge.roadNames,
       osmNames: edge.osmNames,
@@ -1667,7 +1754,7 @@ function buildPhysicalRoadGraph(zones, candidateRouteRecords, arterialSeedRecord
       capacityPerLaneVehPerHour: edge.capacityPerLaneVehPerHour,
       capacityVehPerHour: edge.capacityVehPerHour,
       capacityDirection: edge.capacityDirection,
-      geometryFeatureId: modelVisible ? edge.id : null,
+      geometryFeatureId: edge.id,
       candidateRouteIds: edge.candidateRouteIds,
       seedIds: edge.seedIds,
       directionEvidence: {
@@ -1686,14 +1773,9 @@ function buildPhysicalRoadGraph(zones, candidateRouteRecords, arterialSeedRecord
         roadRefs: "derived",
         hidden: "synthetic",
         hiddenReason: "synthetic",
-        ...(portal
-          ? {
-              aggregatedZonePortalFor: "derived",
-              aggregatedZonePortalEvidence: "derived",
-            }
-          : {}),
         modelRole: "synthetic",
         loadBearing: "synthetic",
+        capacityExclusionReason: "synthetic",
         modelVisible: "synthetic",
         contextOnly: "derived",
         directionEvidence: "derived",
@@ -1744,8 +1826,8 @@ function buildPhysicalRoadGraph(zones, candidateRouteRecords, arterialSeedRecord
       primaryRoad: route.primaryRoad,
       roadNames: route.roadNames,
       roadRefs: route.roadRefs,
-      distanceKm: Number(route.distanceKm.toFixed(2)),
-      freeFlowMinutes: Number(route.freeFlowMinutes.toFixed(1)),
+      distanceKm: Number(traversals.reduce((sum, item) => sum + graphEdgeById.get(item.edgeId).distanceKm, 0).toFixed(3)),
+      freeFlowMinutes: Number(traversals.reduce((sum, item) => sum + graphEdgeById.get(item.edgeId).freeFlowMinutes, 0).toFixed(2)),
       traversals,
       edgeIds: traversals.map((traversal) => traversal.edgeId),
       visibleEdgeIds: traversals.map((traversal) => traversal.edgeId).filter((edgeId) => graphEdgeById.get(edgeId).modelVisible),
@@ -1763,6 +1845,7 @@ function buildPhysicalRoadGraph(zones, candidateRouteRecords, arterialSeedRecord
         directionalPairId: "derived",
       },
       fallbackReason: route.fallbackReason || null,
+      sourceRequest: { url: route.sourceRequestUrl, snapshotFile: route.sourceSnapshotFile, retrievedAt: route.sourceRetrievedAt },
     };
   });
 
@@ -1785,6 +1868,7 @@ function buildPhysicalRoadGraph(zones, candidateRouteRecords, arterialSeedRecord
         displayClass: edge.displayClass,
         modelRole: edge.modelRole,
         loadBearing: edge.loadBearing,
+        capacityExclusionReason: edge.capacityExclusionReason,
         modelVisible: edge.modelVisible,
         contextOnly: edge.contextOnly,
         bidirectional: edge.bidirectional,
@@ -1823,53 +1907,45 @@ function buildPhysicalRoadGraph(zones, candidateRouteRecords, arterialSeedRecord
       )
   );
   if (missingCoverage.length) throw new Error(`Missing required arterial coverage: ${missingCoverage.map((item) => item.label).join(", ")}`);
+  const turnModel = deriveTurnRestrictions(nodes, graphEdges, candidateRouteRecords, candidateRoutes);
+  const integrity = validateRoadNetwork(zones, nodes, graphEdges, candidateRoutes, roadFeatures, turnModel.restrictions);
 
   return {
     nodes,
     edges: graphEdges,
     candidateRoutes,
+    turnRestrictions: turnModel.restrictions,
+    turnRestrictionEvidence: turnModel.evidence,
     roadFeatures,
     rawSegmentCount: rawSegments.size,
     visibleEdgeCount: graphEdges.filter((edge) => edge.modelVisible).length,
     loadBearingEdgeCount: graphEdges.filter((edge) => edge.loadBearing).length,
     hiddenAccessEdgeCount: graphEdges.filter((edge) => edge.hidden).length,
     nonRenderedMidRouteConnectorEdgeCount: graphEdges.filter((edge) => edge.loadBearing && !edge.modelVisible).length,
-    visibleNamedNetworkEdgeCount: graphEdges.filter((edge) => edge.modelVisible).length,
-    terminalAccessEdgeCount: graphEdges.filter((edge) => edge.hiddenReason === "terminal-first-last-mile").length,
+    visibleNamedNetworkEdgeCount: graphEdges.filter((edge) => edge.modelVisible && edge.roadNames.length > 0).length,
     forcedAttachmentEdgeCount: graphEdges.filter((edge) => edge.hiddenReason === "forced-network-attachment").length,
-    aggregatedZonePortalEdgeCount: graphEdges.filter((edge) => edge.hiddenReason === "aggregated-zone-portal").length,
-    aggregatedZonePortalEdgesByZone: Object.fromEntries(
-      zones.map((zone) => [zone.id, graphEdges.filter((edge) => edge.aggregatedZonePortalFor === zone.id).length]).filter(([, count]) => count > 0)
-    ),
     contextOnlyEdgeCount: graphEdges.filter((edge) => edge.contextOnly).length,
     directionalEdgeCount: graphEdges.filter((edge) => edge.allowAB !== edge.allowBA).length,
     bidirectionalEdgeCount: graphEdges.filter((edge) => edge.allowAB && edge.allowBA).length,
     closedContextEdgeCount: graphEdges.filter((edge) => !edge.allowAB && !edge.allowBA && edge.contextOnly).length,
     officialAttributeJoin,
-    arterialCoverage: requiredArterialCoverage.map((item) => item.label),
+    arterialCoverage: [
+      ...new Set(graphEdges.filter((edge) => edge.displayClass === "arterial" || edge.displayClass === "gateway").map((edge) => edge.primaryRoad)),
+    ].sort(),
+    integrity,
+    trimmedGatewayApproaches,
   };
-}
-
-function transitHeadway(fromZone, toZone) {
-  const central = new Set([
-    "al-bateen",
-    "al-danah",
-    "al-khalidiyah",
-    "al-manhal-karamah",
-    "al-mushrif",
-    "al-nahyan",
-    "muroor-al-saadah",
-    "al-rawdah",
-    "al-zahiyah",
-  ]);
-  if (central.has(fromZone.id) && central.has(toZone.id)) return 8;
-  if (Math.min(fromZone.busStopCount, toZone.busStopCount) >= 20) return 12;
-  return 18;
 }
 
 async function main() {
   await mkdir(outputDir, { recursive: true });
-  const [communityCollection, rawStops, officialMainRoadCollection] = await Promise.all([fetchCommunities(), fetchBusStops(), fetchMainRoads()]);
+  const [communityCollection, rawStops, officialMainRoadCollection, housingStockReference] = await Promise.all([
+    fetchCommunities(),
+    fetchBusStops(),
+    fetchMainRoads(),
+    fetchHousingReferences(),
+    refreshCensusMappings(),
+  ]);
 
   const zoneFeatures = zoneSpecs.map((spec) => {
     const hint = geometryHints[spec.id];
@@ -1942,6 +2018,7 @@ async function main() {
     return {
       id: spec.id,
       name: spec.name,
+      shortName: spec.shortName || spec.name,
       officialDistrictIds: spec.districtIds,
       officialDistrictNames: feature.properties.officialDistrictNames,
       officialCommunityCount: feature.properties.officialCommunityIds.length,
@@ -1951,9 +2028,9 @@ async function main() {
       population2024: spec.population,
       populationComponents: spec.populationComponents || null,
       jobs2024: spec.jobs,
-      housingCapacityPersons: Math.ceil((spec.population * 1.15) / 100) * 100,
-      jobCapacityPersons: Math.ceil((spec.jobs * 1.12) / 100) * 100,
-      enterprisePlaceCapacity: Math.ceil(spec.jobs / 900),
+      housingCapacityPersons: Math.ceil((spec.population * (1 + supplyAssumptions.housingSpareCapacityRatio)) / 100) * 100,
+      jobCapacityPersons: Math.ceil((spec.jobs * (1 + supplyAssumptions.jobSpareCapacityRatio)) / 100) * 100,
+      enterprisePlaceCapacity: Math.ceil(spec.jobs / supplyAssumptions.jobsPerEnterprisePlace),
       quality: spec.quality,
       housingRentIndex: spec.housingRentIndex,
       businessRentIndex: spec.businessRentIndex,
@@ -1986,16 +2063,21 @@ async function main() {
       mappingNote: spec.mappingNote || null,
     };
   });
+  await pinDistrictGateways(zones, zoneFeatures);
   const zoneById = new Map(zones.map((zone) => [zone.id, zone]));
 
   const candidateRouteRecords = [];
-  for (const [fromId, toId, corridorType] of corridorSpecs) {
+  const corridorTypeByPair = new Map(corridorSpecs.map(([from, to, type]) => [[from, to].sort().join("<->"), type]));
+  const completeRoadPairs = zones.flatMap((from, index) =>
+    zones.slice(index + 1).map((to) => [from.id, to.id, corridorTypeByPair.get([from.id, to.id].sort().join("<->")) || "urban-arterial"])
+  );
+  for (const [fromId, toId, corridorType] of completeRoadPairs) {
     const fromZone = zoneById.get(fromId);
     const toZone = zoneById.get(toId);
     const forwardId = `${fromId}--${toId}`;
     const reverseId = `${toId}--${fromId}`;
     const directionalPairId = [fromId, toId].sort().join("<->");
-    const forwardRoute = await fetchRoute(fromZone.centroid, toZone.centroid);
+    const forwardRoute = await fetchRoute(fromZone.centroid, toZone.centroid, { fromHint: fromZone.routingHint, toHint: toZone.routingHint });
     candidateRouteRecords.push({
       id: forwardId,
       fromZoneId: fromId,
@@ -2007,7 +2089,7 @@ async function main() {
       bidirectional: false,
       ...forwardRoute,
     });
-    const reverseRoute = await fetchRoute(toZone.centroid, fromZone.centroid);
+    const reverseRoute = await fetchRoute(toZone.centroid, fromZone.centroid, { fromHint: toZone.routingHint, toHint: fromZone.routingHint });
     candidateRouteRecords.push({
       id: reverseId,
       fromZoneId: toId,
@@ -2019,48 +2101,23 @@ async function main() {
       bidirectional: false,
       ...reverseRoute,
     });
+    if (candidateRouteRecords.length % 18 === 0)
+      process.stdout.write(`Prepared ${candidateRouteRecords.length}/${zones.length * (zones.length - 1)} directed district road routes\n`);
   }
 
   const arterialSeedRecords = [];
-  for (const seed of arterialSeedSpecs) {
-    const forwardRoute = await fetchRoute(seed.from, seed.to, {
-      forcedArterial: true,
-      forcedName: seed.name,
-      forcedRefs: seed.refs,
-    });
-    const reverseId = `${seed.id}-reverse`;
-    arterialSeedRecords.push({
-      ...seed,
-      ...forwardRoute,
-      id: seed.id,
-      directionalPairId: seed.id,
-      pairedSeedId: reverseId,
-      bidirectional: false,
-    });
-    const reverseRoute = await fetchRoute(seed.to, seed.from, {
-      forcedArterial: true,
-      forcedName: seed.name,
-      forcedRefs: seed.refs,
-    });
-    arterialSeedRecords.push({
-      ...seed,
-      ...reverseRoute,
-      id: reverseId,
-      from: seed.to,
-      to: seed.from,
-      directionalPairId: seed.id,
-      pairedSeedId: seed.id,
-      bidirectional: false,
-    });
-  }
 
   const physicalRoadGraph = buildPhysicalRoadGraph(zones, candidateRouteRecords, arterialSeedRecords, officialMainRoadCollection);
   const roadFeatures = physicalRoadGraph.roadFeatures;
   const roadEdges = physicalRoadGraph.edges;
   const candidateRoutes = physicalRoadGraph.candidateRoutes;
+  for (const zone of zones) delete zone.routingHint;
 
   for (const feature of zoneFeatures) {
     const zone = zoneById.get(feature.id);
+    if (!pointInGeometry(zone.centroid, feature.geometry)) throw new Error(`Network gateway lies outside ${zone.id}`);
+    feature.properties.centroid = zone.centroid;
+    feature.properties.networkGateway = zone.networkGateway;
     feature.properties.networkNodeId = zone.networkNodeId;
     feature.properties.sourceClassByField = {
       ...(feature.properties.sourceClassByField || {}),
@@ -2068,10 +2125,11 @@ async function main() {
     };
   }
 
-  const transitLinks = candidateRoutes.map((route) => {
-    const fromZone = zoneById.get(route.from);
-    const toZone = zoneById.get(route.to);
-    const headwayMinutes = transitHeadway(fromZone, toZone);
+  const transitServiceAssumptions = JSON.parse(await readFile(path.join(projectRoot, "scripts/data/udes-v2-transit-services.json"), "utf8"));
+  const routeById = new Map(candidateRoutes.map((route) => [route.id, route]));
+  const transitLinks = transitServiceAssumptions.services.map((service) => {
+    const route = routeById.get(service.candidateRouteId);
+    if (!route) throw new Error(`Missing physical path for retained transit service ${service.id}`);
     return {
       id: `bus-${route.id}`,
       from: route.from,
@@ -2082,10 +2140,10 @@ async function main() {
       directionalPairId: route.directionalPairId,
       pairedCandidateRouteId: route.pairedCandidateRouteId,
       distanceKm: route.distanceKm,
-      inVehicleMinutes: Number((route.freeFlowMinutes * 1.35 + 2).toFixed(1)),
-      headwayMinutes,
-      averageWaitMinutes: headwayMinutes / 2,
-      capacityPaxPerHour: Math.round((80 * 60) / headwayMinutes),
+      inVehicleMinutes: service.inVehicleMinutes,
+      headwayMinutes: service.headwayMinutes,
+      averageWaitMinutes: service.averageWaitMinutes,
+      capacityPaxPerHour: service.capacityPaxPerHour,
       candidateRouteId: route.id,
       traversals: route.traversals,
       edgeIds: route.edgeIds,
@@ -2101,10 +2159,41 @@ async function main() {
   const studyJobs = zones.reduce((sum, zone) => sum + zone.jobs2024, 0);
   const fallbackRouteCount = candidateRouteRecords.filter((route) => route.sourceClass === "synthetic").length;
   const fallbackArterialSeedCount = arterialSeedRecords.filter((route) => route.sourceClass === "synthetic").length;
+  const requests = [...sourceRequests.values()].sort((left, right) => left.file.localeCompare(right.file));
+  const generatedAt = requests
+    .map((request) => request.retrievedAt)
+    .sort()
+    .at(-1);
+  for (const [key, source] of Object.entries(sources)) {
+    const timestamps = requests
+      .filter((request) => request.source === key)
+      .map((request) => request.retrievedAt)
+      .sort();
+    if (!timestamps.length) continue;
+    source.retrieved = timestamps.at(-1).slice(0, 10);
+    source.firstRetrievedAt = timestamps[0];
+    source.lastRetrievedAt = timestamps.at(-1);
+    source.snapshotResponseCount = timestamps.length;
+  }
+  sources.osm.retrieved = sources.osrm.retrieved;
+  const sourceSnapshot = {
+    id: createHash("sha256")
+      .update(requests.map((request) => `${request.file}:${request.sha256}`).join("\n"))
+      .digest("hex"),
+    directory: "scripts/data/udes-v2-sources",
+    generatedAt,
+    requests,
+    rebuild: "node scripts/build-udes-v2-data.mjs",
+    refresh: "node scripts/build-udes-v2-data.mjs --refresh-sources",
+    note: "Default builds reuse and verify frozen gzip-compressed source responses. Missing requests are fetched and recorded; explicit refresh replaces responses. Outputs use the latest source retrieval timestamp, so identical snapshots produce identical generated datasets.",
+  };
   const baseline = {
-    schemaVersion: "2.1.0",
-    generatedAt: new Date().toISOString(),
+    schemaVersion: "2.2.0",
+    generatedAt,
+    sourceSnapshot,
     baseYear: 2024,
+    temporalAlignment:
+      "Population and employment reference year: 2024. Road and GIS conditions: the frozen source retrieval dates. This mixed-year scenario baseline is not a reconstructed 2024 traffic network.",
     scope: {
       name: "Greater Abu Dhabi City: focused UDES v2 study area",
       bounds,
@@ -2128,6 +2217,8 @@ async function main() {
     },
     sources,
     calibration: {
+      supplyAssumptions,
+      housingStockReference,
       officialAbuDhabiRegionPopulation2024: 2823340,
       officialAbuDhabiRegionPopulationSource: "scadPopulation",
       studyScopePopulation2024: studyPopulation,
@@ -2141,7 +2232,7 @@ async function main() {
         employedResidents2024: 2762715,
         residents2024: 4135985,
         observedEmployedResidentPercent: 66.8,
-        modeledOpeningAndTargetEmploymentPercent: 67,
+        modeledOpeningEmploymentPercent: 67,
         caveat:
           "The observed ratio is emirate-wide and is used as a transparent approximation for the selected Greater Abu Dhabi City study scope, not as a district-level labor-force calibration.",
       },
@@ -2171,7 +2262,7 @@ async function main() {
         publicTransportPercent: 2.3,
         walkingPercent: 19.7,
         caveat:
-          "Historical all-trip shares are used only to reject implausible synthetic model outputs; the model represents work trips and requires a current household travel survey for validation.",
+          "Historical all-trip shares are a contextual comparator only. They do not define acceptance or rejection bands for this work-trip model; current household travel observations are required for empirical validation.",
       },
       note: "All 18 model-zone population totals are mapped from SCAD's complete 2024 district table: 12 direct mappings and 6 grouped or relabeled mappings derived from observed records. District jobs and behavioral attributes remain synthetic baselines.",
     },
@@ -2198,6 +2289,8 @@ async function main() {
       nodes: physicalRoadGraph.nodes,
       edges: roadEdges,
       candidateRoutes,
+      turnRestrictions: physicalRoadGraph.turnRestrictions,
+      turnRestrictionEvidence: physicalRoadGraph.turnRestrictionEvidence,
       topology: {
         coordinatePrecisionDecimals: topologyCoordinatePrecision,
         maximumCollapsedEdgeKm,
@@ -2205,24 +2298,25 @@ async function main() {
         physicalNodeCount: physicalRoadGraph.nodes.length,
         physicalEdgeCount: roadEdges.length,
         loadBearingEdgeCount: physicalRoadGraph.loadBearingEdgeCount,
-        visibleArterialEdgeCount: physicalRoadGraph.visibleEdgeCount,
+        visiblePhysicalEdgeCount: physicalRoadGraph.visibleEdgeCount,
+        visibleArterialEdgeCount: roadEdges.filter((edge) => edge.displayClass === "arterial" || edge.displayClass === "gateway").length,
         visibleNamedNetworkEdgeCount: physicalRoadGraph.visibleNamedNetworkEdgeCount,
         nonRenderedMidRouteConnectorEdgeCount: physicalRoadGraph.nonRenderedMidRouteConnectorEdgeCount,
         hiddenAccessEdgeCount: physicalRoadGraph.hiddenAccessEdgeCount,
-        terminalAccessEdgeCount: physicalRoadGraph.terminalAccessEdgeCount,
         forcedAttachmentEdgeCount: physicalRoadGraph.forcedAttachmentEdgeCount,
-        aggregatedZonePortalEdgeCount: physicalRoadGraph.aggregatedZonePortalEdgeCount,
-        aggregatedZonePortalEdgesByZone: physicalRoadGraph.aggregatedZonePortalEdgesByZone,
-        maximumAggregatedZonePortalKm,
         contextOnlyEdgeCount: physicalRoadGraph.contextOnlyEdgeCount,
         directionalEdgeCount: physicalRoadGraph.directionalEdgeCount,
         bidirectionalEdgeCount: physicalRoadGraph.bidirectionalEdgeCount,
         closedContextEdgeCount: physicalRoadGraph.closedContextEdgeCount,
-        odCorridorPairCount: corridorSpecs.length,
+        integrity: physicalRoadGraph.integrity,
+        trimmedGatewayApproaches: physicalRoadGraph.trimmedGatewayApproaches,
+        odCorridorPairCount: completeRoadPairs.length,
+        directedDistrictPairCoverage:
+          "Every distinct ordered pair of the 18 district gateways has its own frozen genuine OSRM route in the physical union.",
         candidateRouteCount: candidateRoutes.length,
         bidirectionalSimplification: false,
         directionalityMethod:
-          "Each OD corridor is routed separately in both directions; one-sided traversal of a physical edge in the complete paired route union is retained as directed OSM/OSRM evidence.",
+          "Each OD corridor is routed in both directions. An edge direction is allowed only when every constituent road segment is traversed in that direction by the frozen OSRM routes. This is a conservative routable subset, not a complete legal one-way inventory; arbitrary geometric crossings do not create junctions.",
         sourceClass: "derived",
       },
       capacityModel: {
@@ -2284,6 +2378,12 @@ async function main() {
       officialStopsInBoundingBox: rawStops.features.length,
       officialStopsAssignedToStudyZones: stopFeatures.length,
       unassignedStopsInBoundingBox: rawStops.features.length - stopFeatures.length,
+      serviceAssumptions: {
+        path: "scripts/data/udes-v2-transit-services.json",
+        sourceClass: transitServiceAssumptions.sourceClass,
+        originalBaselineSha256: transitServiceAssumptions.sourceBaselineSha256,
+        note: "These 62 pre-existing synthetic service parameters are independent of the expanded car-road candidate set.",
+      },
       links: transitLinks,
       caveat:
         "Stops are observed. Published route and timetable data has not yet been integrated; links, frequency, capacity and travel time remain modeled.",
@@ -2292,14 +2392,15 @@ async function main() {
       "All selected-zone population values are mapped from SCAD's complete 2024 Abu Dhabi Region district table: 12 direct mappings and 6 grouped or relabeled mappings derived from observed records.",
       "Jobs, capacities, quality, rent indices, car ownership, salaries and employment themes are synthetic starting values, not forecasts or administrative statistics.",
       "Labor-force participation is explicitly but synthetically split into 67% employed residents, 3 percentage points of active job seekers and 30% nonparticipants (70% participation total). The 70/3/30 split is uncalibrated; nonparticipants remain outside job matching and use the worker's transparent modeled household/non-labor resource rule, which is not a named government benefit or forecast.",
-      "Mode-choice parameters are synthetic and checked only against a historical 2015 all-trip reference reported by UN-Habitat/UITP; they are not a current household-travel-survey calibration.",
+      "Mode-choice parameters are synthetic. The historical 2015 all-trip reference reported by UN-Habitat/UITP covers a different travel population and is a contextual comparator only, not a work-trip calibration or acceptance band.",
       "The reference standard pay-as-you-go bus fare uses Abu Dhabi Mobility's AED 2 base fare plus AED 0.05 per passenger-kilometre in each direction, capped at AED 5 per journey; pass products, transfers and exemptions are not modeled.",
-      "Same-zone mode shares, the 45-day commute escalation grace period and financial car-disposal guards are transparent synthetic work-trip calibration choices.",
+      "Same-zone reference mode probabilities are reweighted by service utility; those probabilities, the 45-day commute escalation grace period and financial vehicle-access cancellation guards are synthetic behavioral assumptions.",
       "Muroor uses the official Al Sa'adah polygon; Al Manhal represents the combined Al Manhal / Al Karamah label; Rabdan represents Rabdan / Al Maqta.",
-      "The road graph is a compressed, shared physical-segment union of 31 district OD corridor pairs routed separately in both directions (62 OSM/OSRM directional candidates), plus three named-spine seeds also routed both ways. Exact coordinate segments are deduplicated, stable zone portals and junctions are retained, and same-signature degree-2 chains are collapsed to at most 2 km.",
-      "Terminal first/last-mile chains, forced zone/seed attachments and aggregated-zone-portal chains are hidden non-load-bearing access edges. An aggregated portal is a non-gateway, seed-free edge within 2.5 km of one representative zone centroid, shared by at least two candidates whose only common endpoint is that zone; it remains routeable at free flow but cannot become a false capacity bottleneck created solely by concentrating a distributed district at one point. Seed-only named-spine remnants are visible reference-context features but are closed to assignment. Other OSM-derived mid-route connectors remain load-bearing for assignment but have modelVisible=false and are omitted from roads.geojson when they lack a normalized arterial/gateway identity.",
-      "OSM/OSRM supplies road geometry, legal directed route traversals and free-flow route duration. Where the strict documented spatial/semantic join passes, AD-SDI layer 407 supplies observed route ID, carriageway side, lane count and posted speed; unmatched lane counts and every per-lane capacity remain explicit assumptions. Turn-level restrictions, signal timing, observed traffic counts and incident conditions are not modeled.",
-      "Each zone centroid is a hand-selected representative activity/network anchor; geometryCentroid is calculated from its official grouped community polygons.",
+      "The road graph is the shared physical-segment union of every ordered pair of the 18 district gateways (306 frozen OSM/OSRM candidates). Every edge belongs to a complete route between fixed district gateways. Shared terminal approaches are trimmed to their first real junction; no standalone context seeds, synthetic connectors or straight-line fallbacks are included. Exact route vertices are deduplicated and same-signature degree-2 chains are split at geometry vertices near 2 km. The 62 pre-existing synthetic transit services retain their own frozen service parameters; road coverage does not create new bus services.",
+      "Turn prohibitions are derived conservatively from frozen OSRM intersection entry flags for matching incoming and outgoing directions. Every source candidate remains traversable; unobserved approaches and intersection delays remain limitations.",
+      "Every physical route segment is visible and accumulates directional car and transit demand, including unnamed roads and district gateway approaches. Shared roads aggregate all assigned OD traversals against the same directional capacity. Each district still uses one aggregate gateway, so local demand concentration is a spatial-resolution limitation rather than a reason to omit physical-road congestion.",
+      "OSM/OSRM supplies road geometry, legal directed route traversals and free-flow route duration. Where the strict documented spatial/semantic join passes, AD-SDI layer 407 supplies observed route ID, carriageway side, lane count and posted speed; unmatched lane counts and every per-lane capacity remain explicit assumptions. Cached source-supported turn prohibitions are enforced; a complete turn inventory, signal timing, observed traffic counts and incident conditions are not modeled.",
+      "Each zone centroid is an actual routed road gateway selected near a representative activity point inside its official grouped polygons. Frozen OSRM hints stabilize route endpoints; shared cul-de-sac approaches are trimmed to their first real road junction. geometryCentroid remains the grouped polygon centroid.",
       "All OSM-derived geometry requires visible OpenStreetMap attribution in the UI.",
     ],
   };
@@ -2325,7 +2426,7 @@ async function main() {
       source: "osm / osrm",
       sourceClass: "derived",
       attribution: "© OpenStreetMap contributors",
-      note: "Named shared physical arterials and gateways from the modeled route union. Necessary unnamed OSM mid-route connectors remain load-bearing in baseline.json but are intentionally omitted here, as are terminal, forced and aggregated-zone-portal access chains, plus the full internal district street network. Visible contextOnly features are named-spine references and are closed to assignment.",
+      note: "Complete shared real-road geometry for the modeled district-to-district route union. Every physical graph edge has one identical visible feature, including unnamed connectors. Standalone named-road seeds and cul-de-sac approach stubs are omitted; no synthetic road geometry is permitted.",
     },
     features: roadFeatures,
   };
@@ -2343,6 +2444,7 @@ async function main() {
   };
 
   const serialize = (value) => `${JSON.stringify(value, null, 2)}\n`;
+  await writeFile(path.join(snapshotDir, "manifest.json"), serialize(sourceSnapshot));
   await Promise.all([
     writeFile(path.join(outputDir, "baseline.json"), serialize(baseline)),
     writeFile(path.join(outputDir, "zones.geojson"), serialize(zonesGeoJson)),

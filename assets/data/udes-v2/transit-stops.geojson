@@ -2615,6 +2615,29 @@
     },
     {
       "type": "Feature",
+      "id": "adsdi-bus-2774",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          54.408736,
+          24.424422
+        ]
+      },
+      "properties": {
+        "id": "adsdi-bus-2774",
+        "objectId": 2774,
+        "gtfsId": 3060,
+        "code": "03060B",
+        "name": "Al Khaleej Al Arabi St / Al Gurm",
+        "nameAr": "شارع الخَلِيج العَرَبي / القرم",
+        "stopNumber": 3060,
+        "zoneId": "al-bateen",
+        "sourceClass": "observed",
+        "source": "adsdiBusStops"
+      }
+    },
+    {
+      "type": "Feature",
       "id": "adsdi-bus-450",
       "geometry": {
         "type": "Point",
@@ -3276,6 +3299,29 @@
         "nameAr": "شارع 79 / مسجد المرحوم عيد المريخي",
         "stopNumber": 12044,
         "zoneId": "mbz-zayed-city",
+        "sourceClass": "observed",
+        "source": "adsdiBusStops"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "adsdi-bus-3561",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          54.469154,
+          24.400152
+        ]
+      },
+      "properties": {
+        "id": "adsdi-bus-3561",
+        "objectId": 3561,
+        "gtfsId": 3325,
+        "code": "03325A",
+        "name": "Al Nada St / Abu Dhabi Ladies Club",
+        "nameAr": "شارع النَّدَى / نادي ابوظبي للسيدات",
+        "stopNumber": 3325,
+        "zoneId": "al-bateen",
         "sourceClass": "observed",
         "source": "adsdiBusStops"
       }
@@ -5438,6 +5484,29 @@
         "nameAr": "شارع الأنوار / مزيد مول",
         "stopNumber": 10098,
         "zoneId": "mbz-zayed-city",
+        "sourceClass": "observed",
+        "source": "adsdiBusStops"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "adsdi-bus-522",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          54.469805,
+          24.402882
+        ]
+      },
+      "properties": {
+        "id": "adsdi-bus-522",
+        "objectId": 522,
+        "gtfsId": 3327,
+        "code": "03327B",
+        "name": "Al Nada St / Armed Forces Officers Club",
+        "nameAr": "شارع النَّدَى / نادي الضباط",
+        "stopNumber": 3327,
+        "zoneId": "al-bateen",
         "sourceClass": "observed",
         "source": "adsdiBusStops"
       }
@@ -11286,6 +11355,29 @@
     },
     {
       "type": "Feature",
+      "id": "adsdi-bus-2495",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          54.395081,
+          24.428382
+        ]
+      },
+      "properties": {
+        "id": "adsdi-bus-2495",
+        "objectId": 2495,
+        "gtfsId": 3048,
+        "code": "03048B",
+        "name": "Al Khaleej Al Arabi St / ADNOC",
+        "nameAr": "شارع الخليج العربي / ادنوك",
+        "stopNumber": 3048,
+        "zoneId": "al-bateen",
+        "sourceClass": "observed",
+        "source": "adsdiBusStops"
+      }
+    },
+    {
+      "type": "Feature",
       "id": "adsdi-bus-3823",
       "geometry": {
         "type": "Point",
@@ -13005,6 +13097,29 @@
         "nameAr": "شارع خليفة بن زايد/ شارع اللُّؤْلُؤ",
         "stopNumber": 304,
         "zoneId": "al-danah",
+        "sourceClass": "observed",
+        "source": "adsdiBusStops"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "adsdi-bus-5",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          54.470346,
+          24.404573
+        ]
+      },
+      "properties": {
+        "id": "adsdi-bus-5",
+        "objectId": 5,
+        "gtfsId": 3329,
+        "code": "03329B",
+        "name": "Al Nada St / Abu Dhabi Hills",
+        "nameAr": "شارع النَّدَى / تلال ابوظبي",
+        "stopNumber": 3329,
+        "zoneId": "al-bateen",
         "sourceClass": "observed",
         "source": "adsdiBusStops"
       }
@@ -20210,6 +20325,29 @@
     },
     {
       "type": "Feature",
+      "id": "adsdi-bus-1296",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          54.470603,
+          24.404457
+        ]
+      },
+      "properties": {
+        "id": "adsdi-bus-1296",
+        "objectId": 1296,
+        "gtfsId": 3329,
+        "code": "03329A",
+        "name": "Al Nada St / Abu Dhabi Hills",
+        "nameAr": "شارع النَّدَى / تلال ابوظبي",
+        "stopNumber": 3329,
+        "zoneId": "al-bateen",
+        "sourceClass": "observed",
+        "source": "adsdiBusStops"
+      }
+    },
+    {
+      "type": "Feature",
       "id": "adsdi-bus-3211",
       "geometry": {
         "type": "Point",
@@ -20877,6 +21015,29 @@
     },
     {
       "type": "Feature",
+      "id": "adsdi-bus-3881",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          54.426655,
+          24.419673
+        ]
+      },
+      "properties": {
+        "id": "adsdi-bus-3881",
+        "objectId": 3881,
+        "gtfsId": 3066,
+        "code": "03066B",
+        "name": "Khaleej Al Arabi St / Zayed Military Hospital",
+        "nameAr": "شارع الخَلِيج العَرَبي / مستشفى زايد العسكري",
+        "stopNumber": 3066,
+        "zoneId": "al-bateen",
+        "sourceClass": "observed",
+        "source": "adsdiBusStops"
+      }
+    },
+    {
+      "type": "Feature",
       "id": "adsdi-bus-300",
       "geometry": {
         "type": "Point",
@@ -20963,6 +21124,29 @@
         "nameAr": "شارع المِطْلَعِي/ شارع هزاع بن زايد",
         "stopNumber": 1058,
         "zoneId": "al-reem",
+        "sourceClass": "observed",
+        "source": "adsdiBusStops"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "adsdi-bus-2358",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          54.470042,
+          24.402847
+        ]
+      },
+      "properties": {
+        "id": "adsdi-bus-2358",
+        "objectId": 2358,
+        "gtfsId": 3327,
+        "code": "03327A",
+        "name": "Al Nada St / Armed Forces Officers Club",
+        "nameAr": "شارع النَّدَى / نادي الضباط",
+        "stopNumber": 3327,
+        "zoneId": "al-bateen",
         "sourceClass": "observed",
         "source": "adsdiBusStops"
       }

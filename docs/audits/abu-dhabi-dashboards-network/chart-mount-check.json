@@ -1,0 +1,745 @@
+[
+  {
+    "charts": [
+      {
+        "canvas": true,
+        "h": 193,
+        "id": "outcomes:occupancy",
+        "w": 313
+      },
+      {
+        "canvas": true,
+        "h": 143,
+        "id": "mobility:modes",
+        "w": 313
+      },
+      {
+        "canvas": true,
+        "h": 143,
+        "id": "citizens:states",
+        "w": 313
+      },
+      {
+        "canvas": true,
+        "h": 143,
+        "id": "enterprises:states",
+        "w": 313
+      },
+      {
+        "canvas": true,
+        "h": 143,
+        "id": "analysis:labor-composition",
+        "w": 313
+      },
+      {
+        "canvas": true,
+        "h": 131,
+        "id": "analysis:resource-distribution",
+        "w": 313
+      },
+      {
+        "canvas": true,
+        "h": 143,
+        "id": "analysis:commute-distribution",
+        "w": 313
+      },
+      {
+        "canvas": true,
+        "h": 143,
+        "id": "analysis:vehicle-access",
+        "w": 313
+      },
+      {
+        "canvas": true,
+        "h": 143,
+        "id": "analysis:enterprise-size",
+        "w": 313
+      }
+    ],
+    "id": "workspace:city"
+  },
+  {
+    "charts": [
+      {
+        "canvas": true,
+        "h": 143,
+        "id": "analysis:district-population-history",
+        "w": 313
+      },
+      {
+        "canvas": true,
+        "h": 143,
+        "id": "analysis:district-resident-states",
+        "w": 313
+      },
+      {
+        "canvas": true,
+        "h": 143,
+        "id": "analysis:district-travel-modes",
+        "w": 313
+      },
+      {
+        "canvas": true,
+        "h": 143,
+        "id": "analysis:district-rent-history",
+        "w": 313
+      },
+      {
+        "canvas": true,
+        "h": 143,
+        "id": "analysis:district-employment-history",
+        "w": 313
+      },
+      {
+        "canvas": true,
+        "h": 143,
+        "id": "analysis:district-work-destinations",
+        "w": 313
+      },
+      {
+        "canvas": true,
+        "h": 143,
+        "id": "analysis:district-enterprise-states",
+        "w": 313
+      },
+      {
+        "canvas": true,
+        "h": 143,
+        "id": "analysis:district-commute-destinations",
+        "w": 313
+      }
+    ],
+    "id": "workspace:district"
+  },
+  {
+    "charts": [
+      {
+        "canvas": true,
+        "h": 236,
+        "id": "mobility:modes",
+        "w": 318
+      },
+      {
+        "canvas": true,
+        "h": 224,
+        "id": "mobility:links",
+        "w": 318
+      },
+      {
+        "canvas": true,
+        "h": 236,
+        "id": "analysis:commute-distribution",
+        "w": 318
+      },
+      {
+        "canvas": true,
+        "h": 236,
+        "id": "analysis:vehicle-access",
+        "w": 318
+      },
+      {
+        "canvas": true,
+        "h": 236,
+        "id": "analysis:district-commutes",
+        "w": 318
+      },
+      {
+        "canvas": true,
+        "h": 236,
+        "id": "analysis:network-coverage",
+        "w": 318
+      }
+    ],
+    "id": "workspace:transport"
+  },
+  {
+    "charts": [
+      {
+        "canvas": true,
+        "h": 236,
+        "id": "districts:stocks",
+        "w": 318
+      },
+      {
+        "canvas": true,
+        "h": 236,
+        "id": "analysis:district-commutes",
+        "w": 318
+      },
+      {
+        "canvas": true,
+        "h": 236,
+        "id": "analysis:district-housing",
+        "w": 318
+      },
+      {
+        "canvas": true,
+        "h": 236,
+        "id": "analysis:district-tradeoff",
+        "w": 318
+      },
+      {
+        "canvas": true,
+        "h": 236,
+        "id": "analysis:labor-composition",
+        "w": 318
+      },
+      {
+        "canvas": true,
+        "h": 224,
+        "id": "analysis:resource-distribution",
+        "w": 318
+      }
+    ],
+    "id": "workspace:districts"
+  },
+  {
+    "charts": [
+      {
+        "canvas": true,
+        "h": 236,
+        "id": "outcomes:occupancy",
+        "w": 318
+      },
+      {
+        "canvas": true,
+        "h": 236,
+        "id": "outcomes:residual",
+        "w": 318
+      },
+      {
+        "canvas": true,
+        "h": 236,
+        "id": "districts:stocks",
+        "w": 318
+      },
+      {
+        "canvas": true,
+        "h": 236,
+        "id": "analysis:district-housing",
+        "w": 318
+      },
+      {
+        "canvas": true,
+        "h": 236,
+        "id": "analysis:district-tradeoff",
+        "w": 318
+      },
+      {
+        "canvas": true,
+        "h": 224,
+        "id": "analysis:resource-distribution",
+        "w": 318
+      }
+    ],
+    "id": "workspace:housing"
+  },
+  {
+    "charts": [
+      {
+        "canvas": true,
+        "h": 224,
+        "id": "citizens:finance",
+        "w": 318
+      },
+      {
+        "canvas": true,
+        "h": 236,
+        "id": "citizens:states",
+        "w": 318
+      },
+      {
+        "canvas": true,
+        "h": 224,
+        "id": "analysis:resource-distribution",
+        "w": 318
+      },
+      {
+        "canvas": true,
+        "h": 236,
+        "id": "analysis:labor-composition",
+        "w": 318
+      },
+      {
+        "canvas": true,
+        "h": 236,
+        "id": "analysis:resident-transitions",
+        "w": 318
+      },
+      {
+        "canvas": true,
+        "h": 236,
+        "id": "analysis:vehicle-access",
+        "w": 318
+      }
+    ],
+    "id": "workspace:residents"
+  },
+  {
+    "charts": [
+      {
+        "canvas": true,
+        "h": 236,
+        "id": "outcomes:unemployment",
+        "w": 318
+      },
+      {
+        "canvas": true,
+        "h": 236,
+        "id": "districts:stocks",
+        "w": 318
+      },
+      {
+        "canvas": true,
+        "h": 236,
+        "id": "enterprises:states",
+        "w": 318
+      },
+      {
+        "canvas": true,
+        "h": 236,
+        "id": "enterprises:viability",
+        "w": 318
+      },
+      {
+        "canvas": true,
+        "h": 236,
+        "id": "analysis:enterprise-size",
+        "w": 318
+      },
+      {
+        "canvas": true,
+        "h": 236,
+        "id": "analysis:labor-composition",
+        "w": 318
+      }
+    ],
+    "id": "workspace:firms"
+  },
+  {
+    "charts": [
+      {
+        "canvas": true,
+        "h": 236,
+        "id": "outcomes:commute",
+        "w": 318
+      },
+      {
+        "canvas": true,
+        "h": 236,
+        "id": "mobility:modes",
+        "w": 318
+      },
+      {
+        "canvas": true,
+        "h": 224,
+        "id": "mobility:links",
+        "w": 318
+      },
+      {
+        "canvas": true,
+        "h": 236,
+        "id": "analysis:network-coverage",
+        "w": 318
+      },
+      {
+        "canvas": true,
+        "h": 236,
+        "id": "analysis:commute-distribution",
+        "w": 318
+      },
+      {
+        "canvas": true,
+        "h": 236,
+        "id": "analysis:district-commutes",
+        "w": 318
+      }
+    ],
+    "id": "workspace:roads"
+  },
+  {
+    "charts": [
+      {
+        "canvas": true,
+        "h": 400,
+        "id": "outcomes:commute",
+        "w": 536
+      }
+    ],
+    "id": "outcomes:commute"
+  },
+  {
+    "charts": [
+      {
+        "canvas": true,
+        "h": 400,
+        "id": "outcomes:transit",
+        "w": 536
+      }
+    ],
+    "id": "outcomes:transit"
+  },
+  {
+    "charts": [
+      {
+        "canvas": true,
+        "h": 400,
+        "id": "outcomes:occupancy",
+        "w": 536
+      }
+    ],
+    "id": "outcomes:occupancy"
+  },
+  {
+    "charts": [
+      {
+        "canvas": true,
+        "h": 400,
+        "id": "outcomes:satisfaction",
+        "w": 536
+      }
+    ],
+    "id": "outcomes:satisfaction"
+  },
+  {
+    "charts": [
+      {
+        "canvas": true,
+        "h": 400,
+        "id": "outcomes:unemployment",
+        "w": 536
+      }
+    ],
+    "id": "outcomes:unemployment"
+  },
+  {
+    "charts": [
+      {
+        "canvas": true,
+        "h": 400,
+        "id": "outcomes:residual",
+        "w": 536
+      }
+    ],
+    "id": "outcomes:residual"
+  },
+  {
+    "charts": [
+      {
+        "canvas": true,
+        "h": 400,
+        "id": "districts:stocks",
+        "w": 536
+      }
+    ],
+    "id": "districts:stocks"
+  },
+  {
+    "charts": [
+      {
+        "canvas": true,
+        "h": 330,
+        "id": "districts:selected",
+        "w": 536
+      }
+    ],
+    "id": "districts:selected"
+  },
+  {
+    "charts": [
+      {
+        "canvas": true,
+        "h": 400,
+        "id": "analysis:district-tradeoff",
+        "w": 536
+      }
+    ],
+    "id": "district-tradeoff"
+  },
+  {
+    "charts": [
+      {
+        "canvas": true,
+        "h": 404,
+        "id": "analysis:district-commutes",
+        "w": 536
+      }
+    ],
+    "id": "district-commutes"
+  },
+  {
+    "charts": [
+      {
+        "canvas": true,
+        "h": 424,
+        "id": "analysis:district-housing",
+        "w": 521
+      }
+    ],
+    "id": "district-housing"
+  },
+  {
+    "charts": [
+      {
+        "canvas": true,
+        "h": 364,
+        "id": "flows:routes",
+        "w": 536
+      }
+    ],
+    "id": "flows:routes"
+  },
+  {
+    "charts": [
+      {
+        "canvas": true,
+        "h": 294,
+        "id": "flows:district",
+        "w": 536
+      }
+    ],
+    "id": "flows:district"
+  },
+  {
+    "charts": [
+      {
+        "canvas": true,
+        "h": 400,
+        "id": "mobility:modes",
+        "w": 536
+      }
+    ],
+    "id": "mobility:modes"
+  },
+  {
+    "charts": [
+      {
+        "canvas": true,
+        "h": 400,
+        "id": "mobility:links",
+        "w": 536
+      }
+    ],
+    "id": "mobility:links"
+  },
+  {
+    "charts": [
+      {
+        "canvas": true,
+        "h": 400,
+        "id": "analysis:commute-distribution",
+        "w": 536
+      }
+    ],
+    "id": "commute-distribution"
+  },
+  {
+    "charts": [
+      {
+        "canvas": true,
+        "h": 400,
+        "id": "analysis:vehicle-access",
+        "w": 536
+      }
+    ],
+    "id": "vehicle-access"
+  },
+  {
+    "charts": [
+      {
+        "canvas": true,
+        "h": 400,
+        "id": "analysis:network-coverage",
+        "w": 536
+      }
+    ],
+    "id": "network-coverage"
+  },
+  {
+    "charts": [
+      {
+        "canvas": true,
+        "h": 400,
+        "id": "citizens:finance",
+        "w": 536
+      }
+    ],
+    "id": "citizens:finance"
+  },
+  {
+    "charts": [
+      {
+        "canvas": true,
+        "h": 400,
+        "id": "citizens:states",
+        "w": 536
+      }
+    ],
+    "id": "citizens:states"
+  },
+  {
+    "charts": [
+      {
+        "canvas": true,
+        "h": 400,
+        "id": "analysis:resource-distribution",
+        "w": 536
+      }
+    ],
+    "id": "resource-distribution"
+  },
+  {
+    "charts": [
+      {
+        "canvas": true,
+        "h": 330,
+        "id": "analysis:resident-transitions",
+        "w": 536
+      }
+    ],
+    "id": "resident-transitions"
+  },
+  {
+    "charts": [
+      {
+        "canvas": true,
+        "h": 400,
+        "id": "analysis:labor-composition",
+        "w": 536
+      }
+    ],
+    "id": "labor-composition"
+  },
+  {
+    "charts": [
+      {
+        "canvas": true,
+        "h": 400,
+        "id": "enterprises:states",
+        "w": 536
+      }
+    ],
+    "id": "enterprises:states"
+  },
+  {
+    "charts": [
+      {
+        "canvas": true,
+        "h": 400,
+        "id": "enterprises:viability",
+        "w": 536
+      }
+    ],
+    "id": "enterprises:viability"
+  },
+  {
+    "charts": [
+      {
+        "canvas": true,
+        "h": 400,
+        "id": "analysis:enterprise-size",
+        "w": 536
+      }
+    ],
+    "id": "enterprise-size"
+  },
+  {
+    "charts": [
+      {
+        "canvas": true,
+        "h": 400,
+        "id": "analysis:outcome-comparison",
+        "w": 536
+      }
+    ],
+    "id": "outcome-comparison"
+  },
+  {
+    "charts": [
+      {
+        "canvas": true,
+        "h": 330,
+        "id": "analysis:district-population-history",
+        "w": 536
+      }
+    ],
+    "id": "district-population-history"
+  },
+  {
+    "charts": [
+      {
+        "canvas": true,
+        "h": 330,
+        "id": "analysis:district-rent-history",
+        "w": 536
+      }
+    ],
+    "id": "district-rent-history"
+  },
+  {
+    "charts": [
+      {
+        "canvas": true,
+        "h": 330,
+        "id": "analysis:district-employment-history",
+        "w": 536
+      }
+    ],
+    "id": "district-employment-history"
+  },
+  {
+    "charts": [
+      {
+        "canvas": true,
+        "h": 538,
+        "id": "analysis:district-work-destinations",
+        "w": 521
+      }
+    ],
+    "id": "district-work-destinations"
+  },
+  {
+    "charts": [
+      {
+        "canvas": true,
+        "h": 330,
+        "id": "analysis:district-resident-states",
+        "w": 536
+      }
+    ],
+    "id": "district-resident-states"
+  },
+  {
+    "charts": [
+      {
+        "canvas": true,
+        "h": 330,
+        "id": "analysis:district-travel-modes",
+        "w": 536
+      }
+    ],
+    "id": "district-travel-modes"
+  },
+  {
+    "charts": [
+      {
+        "canvas": true,
+        "h": 330,
+        "id": "analysis:district-enterprise-states",
+        "w": 536
+      }
+    ],
+    "id": "district-enterprise-states"
+  },
+  {
+    "charts": [
+      {
+        "canvas": true,
+        "h": 538,
+        "id": "analysis:district-commute-destinations",
+        "w": 521
+      }
+    ],
+    "id": "district-commute-destinations"
+  }
+]

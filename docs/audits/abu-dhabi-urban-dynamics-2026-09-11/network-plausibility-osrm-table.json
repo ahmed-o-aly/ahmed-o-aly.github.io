@@ -1,0 +1,1082 @@
+{
+  "purpose": "Read-only plausibility benchmark at current gateways; not installed as model data",
+  "retrievedAt": "2026-09-12T10:17:48.660Z",
+  "source": "https://router.project-osrm.org/table/v1/driving/54.3473,24.4501;54.369111,24.485869;54.350897,24.466918;54.365994,24.462006;54.38923,24.44059;54.388048,24.463949;54.429013,24.436074;54.453035,24.417889;54.37947,24.49915;54.41649,24.504694;54.389995,24.502;54.439955,24.539962;54.499972,24.397008;54.600554,24.450268;54.602998,24.491999;54.578289,24.419081;54.573942,24.354974;54.50066,24.35033?annotations=duration,distance",
+  "baselineSha256": "9ec52d0cc9dd5d1206965b00ff6865534b01ce1e72c9066b2f568db2be950123",
+  "zoneOrder": [
+    "al-bateen",
+    "al-danah",
+    "al-khalidiyah",
+    "al-manhal-karamah",
+    "al-mushrif",
+    "al-nahyan",
+    "muroor-al-saadah",
+    "al-rawdah",
+    "al-zahiyah",
+    "al-reem",
+    "al-maryah",
+    "al-saadiyat",
+    "rabdan-al-maqta",
+    "al-raha",
+    "yas-island",
+    "khalifa-city",
+    "mbz-zayed-city",
+    "musaffah"
+  ],
+  "responseSha256": "241d3e4c6994a002c5be1096d6caeace608eb7b65a4073dd0c34397d85127205",
+  "response": {
+    "code": "Ok",
+    "distances": [
+      [
+        0,
+        5773,
+        2806.6,
+        2745.1,
+        6282.9,
+        5975.4,
+        11683.9,
+        13588.7,
+        8267.1,
+        10287.5,
+        8823.9,
+        19964.9,
+        17931.7,
+        31092.1,
+        35468.2,
+        29546.5,
+        30092.4,
+        27143.9
+      ],
+      [
+        5781.2,
+        0,
+        3674.8,
+        3874.8,
+        6873.2,
+        4083.5,
+        10282.6,
+        13362.4,
+        2310.6,
+        6661.9,
+        3787.4,
+        14186.7,
+        18773.1,
+        28636,
+        29690.1,
+        27543.6,
+        31232.8,
+        28928
+      ],
+      [
+        3043.3,
+        3984.5,
+        0,
+        2646.3,
+        6338.2,
+        5977.9,
+        11660,
+        14303.7,
+        5487.2,
+        9392.7,
+        6963.9,
+        17334.9,
+        18646.6,
+        31165.5,
+        32838.2,
+        30261.5,
+        30807.3,
+        27858.9
+      ],
+      [
+        3011.4,
+        3629.9,
+        2580.2,
+        0,
+        3760.7,
+        3369.9,
+        9052.1,
+        12199.8,
+        6026.2,
+        8144.4,
+        6680.8,
+        17902.3,
+        17710,
+        28557.5,
+        33405.6,
+        29324.8,
+        29870.7,
+        26922.2
+      ],
+      [
+        6169.4,
+        6816.9,
+        5952.8,
+        4462.1,
+        0,
+        4321.6,
+        6038.9,
+        9029.8,
+        8455.2,
+        10451.8,
+        9538.1,
+        20424.4,
+        15453.8,
+        25165.5,
+        35927.7,
+        24073,
+        26428.5,
+        24666
+      ],
+      [
+        6096.3,
+        4024.8,
+        5708.8,
+        4218.1,
+        3812.9,
+        0,
+        6581.4,
+        10162.3,
+        6166.5,
+        8163.1,
+        7056,
+        18135.7,
+        15573,
+        25369.5,
+        33639,
+        24277,
+        27561,
+        24785.3
+      ],
+      [
+        11652.6,
+        9353.5,
+        12049.3,
+        9511.5,
+        5927.3,
+        6833.1,
+        0,
+        4481,
+        10977.5,
+        12974.2,
+        12060.4,
+        22946.7,
+        9891.7,
+        20942,
+        34588.9,
+        19849.5,
+        21879.6,
+        19104
+      ],
+      [
+        12930.6,
+        13140,
+        13327.3,
+        12782.3,
+        9391.1,
+        10619.6,
+        4767.7,
+        0,
+        14770.3,
+        17042.2,
+        15853.2,
+        26739.5,
+        6423.5,
+        17594.4,
+        31241.3,
+        15975.3,
+        18791.9,
+        15635.8
+      ],
+      [
+        8361.3,
+        2610.9,
+        6196.8,
+        6396.8,
+        8871.3,
+        6258.3,
+        10888.8,
+        14921.6,
+        0,
+        6107.9,
+        1565.5,
+        11531.5,
+        20679.2,
+        29242.3,
+        27034.8,
+        28149.8,
+        31839.1,
+        29534.3
+      ],
+      [
+        11207.2,
+        7268.4,
+        9954.4,
+        9236.7,
+        11626.4,
+        9018,
+        13643.9,
+        18021.6,
+        5316.8,
+        0,
+        4896.4,
+        12275.2,
+        23326.2,
+        38298,
+        27778.5,
+        30796.8,
+        34486,
+        32181.3
+      ],
+      [
+        8153.4,
+        3390.2,
+        6030.6,
+        6182.9,
+        8665.9,
+        6052.9,
+        10683.4,
+        14716.2,
+        1438.6,
+        4642.5,
+        0,
+        13116.9,
+        20473.8,
+        29036.9,
+        28620.2,
+        27944.4,
+        31633.7,
+        29328.9
+      ],
+      [
+        17392.8,
+        11327.4,
+        14925.3,
+        15896.3,
+        17948.9,
+        15346.8,
+        19966.4,
+        23999.2,
+        9755.2,
+        10640.8,
+        10586,
+        0,
+        29756.8,
+        31643.3,
+        21123.8,
+        36757.1,
+        40916.7,
+        38611.9
+      ],
+      [
+        18741.7,
+        20117.4,
+        19138.3,
+        18593.3,
+        15545.6,
+        17597,
+        11252.2,
+        7243,
+        20197.6,
+        22394.7,
+        21280.5,
+        32166.7,
+        0,
+        16642.8,
+        30289.7,
+        12413.3,
+        12959.1,
+        10010.7
+      ],
+      [
+        29729.4,
+        27736.1,
+        29958.7,
+        28389.4,
+        24661.8,
+        25486.4,
+        20592.2,
+        16666.6,
+        28068.9,
+        30266,
+        29151.8,
+        32704.5,
+        14450.7,
+        0,
+        8390.8,
+        6045,
+        24651.7,
+        22346.9
+      ],
+      [
+        35672.5,
+        29607.2,
+        33205.1,
+        34176,
+        37392.8,
+        33626.5,
+        33323.2,
+        29397.6,
+        28034.9,
+        28920.6,
+        28865.7,
+        19953,
+        27181.7,
+        13635.8,
+        0,
+        18749.7,
+        38468.7,
+        35077.9
+      ],
+      [
+        28182.5,
+        29558.3,
+        28579.2,
+        28034.2,
+        24986.4,
+        27037.9,
+        20693,
+        16683.9,
+        28862.5,
+        31059.6,
+        29945.4,
+        36684.7,
+        11494.7,
+        6075.8,
+        14194.8,
+        0,
+        16054.7,
+        15781.5
+      ],
+      [
+        27807.7,
+        28311.4,
+        28204.4,
+        27659.4,
+        24611.6,
+        25708.6,
+        19856.8,
+        16597.7,
+        28644.2,
+        30841.3,
+        29727.1,
+        40613.4,
+        11119.9,
+        22156.3,
+        35803.2,
+        13411.3,
+        0,
+        9117.1
+      ],
+      [
+        28622.2,
+        29997.9,
+        29018.8,
+        28473.8,
+        25426.1,
+        27477.5,
+        21132.7,
+        17123.5,
+        29692.2,
+        31889.3,
+        30775.1,
+        41661.4,
+        11934.3,
+        23204.4,
+        36851.3,
+        17101.9,
+        9769.6,
+        0
+      ]
+    ],
+    "destinations": [
+      {
+        "hint": "62cQgP___38AAAAACwAAAAAAAAALAAAAAAAAAJJ690AAAAAAVKn2QAAAAAALAAAAAAAAAAsAAADjHQAAJUY9Ay8UdQEkRj0DNBR1AQAArwcAAAAA",
+        "location": [
+          54.347301,
+          24.450095
+        ],
+        "name": "",
+        "distance": 0.5630272675
+      },
+      {
+        "hint": "_5EWgF2bo4gyAAAABgAAAAAAAACWAAAAqC40QrqYkkAAAAAA9CwFQzIAAAAGAAAAAAAAAJYAAADjHQAAV5s9A-2fdQFXmz0D7Z91AQAAjw4AAAAA",
+        "location": [
+          54.369111,
+          24.485869
+        ],
+        "name": "شارع القِصَيص",
+        "distance": 0
+      },
+      {
+        "hint": "XnUQgP___38MAAAAHQAAAAAAAAAAAAAANtWDQQrerUEAAAAAAAAAAAwAAAAdAAAAAAAAAAAAAADjHQAAMVQ9A-ZVdQExVD0D5lV1AQAA7xMAAAAA",
+        "location": [
+          54.350897,
+          24.466918
+        ],
+        "name": "شارع خليفة بن شخبوط",
+        "distance": 0
+      },
+      {
+        "hint": "CngQgBN4EIA7AAAARAAAAAAAAAAAAAAApjVUQhujcEIAAAAAAAAAADsAAABEAAAAAAAAAAAAAADjHQAAKo89A7ZCdQEqjz0DtkJ1AQAAXw4AAAAA",
+        "location": [
+          54.365994,
+          24.462006
+        ],
+        "name": "شارع وَعَب العَقَبة",
+        "distance": 0
+      },
+      {
+        "hint": "GsY5g7Yb_ogBAAAAEwAAAAAAAAB3AAAA1vwWPxdI8UAAAAAAytdDQgEAAAATAAAAAAAAAHcAAADjHQAA7Ok9Aw3vdAHu6T0DDu90AQAArwkAAAAA",
+        "location": [
+          54.389228,
+          24.440589
+        ],
+        "name": "",
+        "distance": 0.231103046
+      },
+      {
+        "hint": "0aV8iP___39dAAAA-QAAAJ4BAAAZAAAAbqSbQYRKAUJETKxC-JapQC4AAAB8AAAAzAAAAA0AAADjHQAAUOU9A01KdQFQ5T0DTUp1ARoAHwMAAAAA",
+        "location": [
+          54.388048,
+          24.463949
+        ],
+        "name": "",
+        "distance": 0
+      },
+      {
+        "hint": "2DoRgKOzAoEyAAAAWwAAAAAAAAAAAAAAm940Qp7AoEIAAAAAAAAAADIAAABbAAAAAAAAAAAAAADjHQAAVYU-A2rddAFVhT4Dat10AQAAPwYAAAAA",
+        "location": [
+          54.429013,
+          24.436074
+        ],
+        "name": "شارع الوِجِينة",
+        "distance": 0
+      },
+      {
+        "hint": "JxgRgC8YEYALAAAAHwAAAHwBAAB_AAAAAf6UQDV8T0FAJR5DCkFUQgsAAAAfAAAAfAEAAH8AAADjHQAAK-M-A2GWdAEr4z4DYZZ0ARQA3w8AAAAA",
+        "location": [
+          54.453035,
+          24.417889
+        ],
+        "name": "",
+        "distance": 0
+      },
+      {
+        "hint": "qrVzgEZnaYEmAAAAAwAAADwAAAAAAAAAHp4CQfaT7D7TREhBAAAAABMAAAACAAAAHgAAAAAAAADjHQAAzsM9A87TdQHOwz0DztN1AQIA_w4AAAAA",
+        "location": [
+          54.37947,
+          24.49915
+        ],
+        "name": "",
+        "distance": 0
+      },
+      {
+        "hint": "Ei19iP___38SAAAAEgAAAMsAAAD4AAAA0RFHQQAAAADUYw1DZZkrQxIAAAASAAAAywAAAPgAAADjHQAAalQ-A3bpdQFqVD4Ddul1AR4ArxQAAAAA",
+        "location": [
+          54.41649,
+          24.504694
+        ],
+        "name": "",
+        "distance": 0
+      },
+      {
+        "hint": "bIJJiP___38QAAAAOwAAADEAAAAAAAAAaF2qQZdmY0I1VoJCAAAAABAAAAA7AAAAMQAAAAAAAADjHQAA6-w9A_DedQHr7D0D8N51AQIArwsAAAAA",
+        "location": [
+          54.389995,
+          24.502
+        ],
+        "name": "شارع حمودة بن علي الظاهري",
+        "distance": 0
+      },
+      {
+        "hint": "Wl5CiP___386AAAATAAAAD8AAACSAAAAqM_BQRQF60Ctms5BxBFxQjoAAABMAAAAPwAAAJIAAADjHQAAE7A-AzpzdgETsD4DOnN2AQoAzxMAAAAA",
+        "location": [
+          54.439955,
+          24.539962
+        ],
+        "name": "",
+        "distance": 0
+      },
+      {
+        "hint": "do6fgybXeogIAAAALQAAAAAAAAAAAAAAtEPwQBFHH0IAAAAAAAAAAAgAAAAtAAAAAAAAAAAAAADjHQAAhJo_A9BEdAGEmj8D0ER0AQAADwEAAAAA",
+        "location": [
+          54.499972,
+          24.397008
+        ],
+        "name": "شارع الزُّهُور",
+        "distance": 0
+      },
+      {
+        "hint": "T5psgjL1rYgUAAAAAAAAAGsAAABiAAAAoU8GQQAAAACEfzJClX4jQhQAAAAAAAAAawAAAGIAAADjHQAAaiNBA9wUdQFqI0ED3BR1AQIAzxIAAAAA",
+        "location": [
+          54.600554,
+          24.450268
+        ],
+        "name": "",
+        "distance": 0
+      },
+      {
+        "hint": "RLpigf___38ZAAAAIgAAAAAAAAAjAAAAzuYFQsKKOkEAAAAAyw6cQRkAAAAiAAAAAAAAACMAAADjHQAA9ixBA9-3dQH2LEED37d1AQAArwgAAAAA",
+        "location": [
+          54.602998,
+          24.491999
+        ],
+        "name": "شارع المسرى",
+        "distance": 0
+      },
+      {
+        "hint": "e0kRgEVugoVYAAAANwAAAAAAAAAAAAAAu3WcQic4Q0IAAAAAAAAAAFgAAAA3AAAAAAAAAAAAAADjHQAAccxAAwmbdAFxzEADCZt0AQAAbxUAAAAA",
+        "location": [
+          54.578289,
+          24.419081
+        ],
+        "name": "شارع المساع 1",
+        "distance": 0
+      },
+      {
+        "hint": "1sU5h____38bAAAAGwAAABgBAAAQAAAAm1SWQQAAAAC_XEJD0MAyQRsAAAAbAAAAGAEAABAAAADjHQAAdrtAA56gcwF2u0ADnqBzAQYAbxUAAAAA",
+        "location": [
+          54.573942,
+          24.354974
+        ],
+        "name": "",
+        "distance": 0
+      },
+      {
+        "hint": "b4YRgFOgsYgAAAAAeQAAAAAAAAAAAAAAg8fPPrMe1kIAAAAAAAAAAAAAAAB5AAAAAAAAAAAAAADjHQAANJ0_A3mOcwE0nT8Deo5zAQAAfwUAAAAA",
+        "location": [
+          54.50066,
+          24.350329
+        ],
+        "name": "شارع الجَزِّيم 9",
+        "distance": 0.1107636667
+      }
+    ],
+    "durations": [
+      [
+        0,
+        426.1,
+        197.8,
+        230,
+        396.1,
+        425.2,
+        656.7,
+        780.5,
+        540.9,
+        767.1,
+        597.2,
+        1164.1,
+        800.1,
+        1515.1,
+        1647.9,
+        1427.4,
+        1491.7,
+        1265.7
+      ],
+      [
+        421.2,
+        0,
+        273.8,
+        312.4,
+        493.5,
+        357.9,
+        580.3,
+        835.5,
+        192.9,
+        566,
+        280.3,
+        838.5,
+        1045.5,
+        1411.2,
+        1322.3,
+        1492,
+        1630.2,
+        1495.5
+      ],
+      [
+        222.2,
+        300.6,
+        0,
+        236.8,
+        421,
+        436.7,
+        676.3,
+        836.6,
+        393.5,
+        730.3,
+        480.9,
+        1032.2,
+        856.2,
+        1541.9,
+        1516,
+        1483.5,
+        1547.8,
+        1321.8
+      ],
+      [
+        261.9,
+        314.3,
+        223.8,
+        0,
+        280,
+        297.7,
+        537.3,
+        733.8,
+        431.8,
+        655.3,
+        485.4,
+        1077.4,
+        849.6,
+        1402.9,
+        1561.2,
+        1476.9,
+        1541.2,
+        1315.2
+      ],
+      [
+        406,
+        486.2,
+        388.2,
+        341.4,
+        0,
+        340.7,
+        365,
+        571.9,
+        553.1,
+        749.9,
+        611.1,
+        1193.6,
+        724.8,
+        1243.6,
+        1677.4,
+        1324.4,
+        1392.6,
+        1190.4
+      ],
+      [
+        382.3,
+        308.5,
+        360,
+        313.2,
+        274.7,
+        0,
+        379.8,
+        621.9,
+        430.4,
+        627.2,
+        484.6,
+        1070.9,
+        831.9,
+        1253.3,
+        1554.7,
+        1334.1,
+        1442.6,
+        1297.5
+      ],
+      [
+        571.3,
+        558.3,
+        589.9,
+        567.7,
+        375.8,
+        422.6,
+        0,
+        322.4,
+        628.9,
+        825.7,
+        686.9,
+        1269.4,
+        532.4,
+        1010.3,
+        1450.7,
+        1091.1,
+        1143.1,
+        998
+      ],
+      [
+        775,
+        828.8,
+        793.6,
+        799.2,
+        610.4,
+        693.1,
+        349.3,
+        0,
+        897.4,
+        1048.4,
+        955.4,
+        1537.9,
+        476.5,
+        980.5,
+        1420.9,
+        1053.1,
+        1085.8,
+        942.1
+      ],
+      [
+        557.7,
+        238.2,
+        411,
+        449.6,
+        563.4,
+        468.3,
+        594,
+        875.3,
+        0,
+        534.7,
+        105.2,
+        664.2,
+        1072.6,
+        1424.9,
+        1148,
+        1505.7,
+        1643.9,
+        1509.2
+      ],
+      [
+        833.7,
+        662.9,
+        780.5,
+        728.6,
+        857.5,
+        750.2,
+        888.1,
+        1150.6,
+        487.3,
+        0,
+        443.6,
+        857.8,
+        1350.9,
+        1664.7,
+        1341.6,
+        1784,
+        1922.2,
+        1787.5
+      ],
+      [
+        569.6,
+        300.5,
+        427,
+        464.5,
+        560,
+        464.9,
+        590.6,
+        871.9,
+        124.9,
+        458.3,
+        0,
+        782,
+        1069.2,
+        1421.5,
+        1265.8,
+        1502.3,
+        1640.5,
+        1505.8
+      ],
+      [
+        1101.7,
+        821.4,
+        960.7,
+        1031.5,
+        1117.7,
+        1023.2,
+        1148.3,
+        1429.6,
+        705.4,
+        902.2,
+        732.7,
+        0,
+        1626.9,
+        1357.8,
+        1034.7,
+        1751.6,
+        2198.2,
+        2063.5
+      ],
+      [
+        843.5,
+        1016.3,
+        862.1,
+        867.7,
+        718,
+        880.6,
+        538.2,
+        465.9,
+        1055,
+        1225.2,
+        1113,
+        1695.5,
+        0,
+        994.7,
+        1435.1,
+        732.5,
+        796.8,
+        570.8
+      ],
+      [
+        1360.6,
+        1289.8,
+        1374.9,
+        1322.7,
+        1124.1,
+        1191.5,
+        907.1,
+        840.1,
+        1277.9,
+        1448.1,
+        1335.9,
+        1500.6,
+        807.7,
+        0,
+        710.9,
+        483.7,
+        1311.6,
+        1176.9
+      ],
+      [
+        1681.4,
+        1401.1,
+        1540.4,
+        1611.2,
+        1648.9,
+        1602.9,
+        1431.9,
+        1364.9,
+        1285.1,
+        1481.9,
+        1312.4,
+        1051.4,
+        1332.5,
+        668.8,
+        0,
+        1062.6,
+        1733.2,
+        1701.7
+      ],
+      [
+        1324.9,
+        1497.7,
+        1343.5,
+        1349.1,
+        1199.4,
+        1362,
+        1019.6,
+        947.3,
+        1497.5,
+        1667.7,
+        1555.5,
+        1793.3,
+        716.7,
+        486.4,
+        1086.3,
+        0,
+        1044,
+        991.5
+      ],
+      [
+        1327.5,
+        1418.4,
+        1346.1,
+        1351.7,
+        1202,
+        1291,
+        947.2,
+        876.1,
+        1406.5,
+        1576.7,
+        1464.5,
+        2047,
+        719.3,
+        1123.8,
+        1564.2,
+        900,
+        0,
+        662.8
+      ],
+      [
+        1352.6,
+        1525.4,
+        1371.2,
+        1376.8,
+        1227.1,
+        1389.7,
+        1047.3,
+        975,
+        1533.6,
+        1703.8,
+        1591.6,
+        2174.1,
+        744.4,
+        1250.9,
+        1691.3,
+        1045.8,
+        739.1,
+        0
+      ]
+    ],
+    "sources": [
+      {
+        "hint": "62cQgP___38AAAAACwAAAAAAAAALAAAAAAAAAJJ690AAAAAAVKn2QAAAAAALAAAAAAAAAAsAAADjHQAAJUY9Ay8UdQEkRj0DNBR1AQAArwcAAAAA",
+        "location": [
+          54.347301,
+          24.450095
+        ],
+        "name": "",
+        "distance": 0.5630272675
+      },
+      {
+        "hint": "_5EWgF2bo4gyAAAABgAAAAAAAACWAAAAqC40QrqYkkAAAAAA9CwFQzIAAAAGAAAAAAAAAJYAAADjHQAAV5s9A-2fdQFXmz0D7Z91AQAAjw4AAAAA",
+        "location": [
+          54.369111,
+          24.485869
+        ],
+        "name": "شارع القِصَيص",
+        "distance": 0
+      },
+      {
+        "hint": "XnUQgP___38MAAAAHQAAAAAAAAAAAAAANtWDQQrerUEAAAAAAAAAAAwAAAAdAAAAAAAAAAAAAADjHQAAMVQ9A-ZVdQExVD0D5lV1AQAA7xMAAAAA",
+        "location": [
+          54.350897,
+          24.466918
+        ],
+        "name": "شارع خليفة بن شخبوط",
+        "distance": 0
+      },
+      {
+        "hint": "CngQgBN4EIA7AAAARAAAAAAAAAAAAAAApjVUQhujcEIAAAAAAAAAADsAAABEAAAAAAAAAAAAAADjHQAAKo89A7ZCdQEqjz0DtkJ1AQAAXw4AAAAA",
+        "location": [
+          54.365994,
+          24.462006
+        ],
+        "name": "شارع وَعَب العَقَبة",
+        "distance": 0
+      },
+      {
+        "hint": "GsY5g7Yb_ogBAAAAEwAAAAAAAAB3AAAA1vwWPxdI8UAAAAAAytdDQgEAAAATAAAAAAAAAHcAAADjHQAA7Ok9Aw3vdAHu6T0DDu90AQAArwkAAAAA",
+        "location": [
+          54.389228,
+          24.440589
+        ],
+        "name": "",
+        "distance": 0.231103046
+      },
+      {
+        "hint": "0aV8iP___39dAAAA-QAAAJ4BAAAZAAAAbqSbQYRKAUJETKxC-JapQC4AAAB8AAAAzAAAAA0AAADjHQAAUOU9A01KdQFQ5T0DTUp1ARoAHwMAAAAA",
+        "location": [
+          54.388048,
+          24.463949
+        ],
+        "name": "",
+        "distance": 0
+      },
+      {
+        "hint": "2DoRgKOzAoEyAAAAWwAAAAAAAAAAAAAAm940Qp7AoEIAAAAAAAAAADIAAABbAAAAAAAAAAAAAADjHQAAVYU-A2rddAFVhT4Dat10AQAAPwYAAAAA",
+        "location": [
+          54.429013,
+          24.436074
+        ],
+        "name": "شارع الوِجِينة",
+        "distance": 0
+      },
+      {
+        "hint": "JxgRgC8YEYALAAAAHwAAAHwBAAB_AAAAAf6UQDV8T0FAJR5DCkFUQgsAAAAfAAAAfAEAAH8AAADjHQAAK-M-A2GWdAEr4z4DYZZ0ARQA3w8AAAAA",
+        "location": [
+          54.453035,
+          24.417889
+        ],
+        "name": "",
+        "distance": 0
+      },
+      {
+        "hint": "qrVzgEZnaYEmAAAAAwAAADwAAAAAAAAAHp4CQfaT7D7TREhBAAAAABMAAAACAAAAHgAAAAAAAADjHQAAzsM9A87TdQHOwz0DztN1AQIA_w4AAAAA",
+        "location": [
+          54.37947,
+          24.49915
+        ],
+        "name": "",
+        "distance": 0
+      },
+      {
+        "hint": "Ei19iP___38SAAAAEgAAAMsAAAD4AAAA0RFHQQAAAADUYw1DZZkrQxIAAAASAAAAywAAAPgAAADjHQAAalQ-A3bpdQFqVD4Ddul1AR4ArxQAAAAA",
+        "location": [
+          54.41649,
+          24.504694
+        ],
+        "name": "",
+        "distance": 0
+      },
+      {
+        "hint": "bIJJiP___38QAAAAOwAAADEAAAAAAAAAaF2qQZdmY0I1VoJCAAAAABAAAAA7AAAAMQAAAAAAAADjHQAA6-w9A_DedQHr7D0D8N51AQIArwsAAAAA",
+        "location": [
+          54.389995,
+          24.502
+        ],
+        "name": "شارع حمودة بن علي الظاهري",
+        "distance": 0
+      },
+      {
+        "hint": "Wl5CiP___386AAAATAAAAD8AAACSAAAAqM_BQRQF60Ctms5BxBFxQjoAAABMAAAAPwAAAJIAAADjHQAAE7A-AzpzdgETsD4DOnN2AQoAzxMAAAAA",
+        "location": [
+          54.439955,
+          24.539962
+        ],
+        "name": "",
+        "distance": 0
+      },
+      {
+        "hint": "do6fgybXeogIAAAALQAAAAAAAAAAAAAAtEPwQBFHH0IAAAAAAAAAAAgAAAAtAAAAAAAAAAAAAADjHQAAhJo_A9BEdAGEmj8D0ER0AQAADwEAAAAA",
+        "location": [
+          54.499972,
+          24.397008
+        ],
+        "name": "شارع الزُّهُور",
+        "distance": 0
+      },
+      {
+        "hint": "T5psgjL1rYgUAAAAAAAAAGsAAABiAAAAoU8GQQAAAACEfzJClX4jQhQAAAAAAAAAawAAAGIAAADjHQAAaiNBA9wUdQFqI0ED3BR1AQIAzxIAAAAA",
+        "location": [
+          54.600554,
+          24.450268
+        ],
+        "name": "",
+        "distance": 0
+      },
+      {
+        "hint": "RLpigf___38ZAAAAIgAAAAAAAAAjAAAAzuYFQsKKOkEAAAAAyw6cQRkAAAAiAAAAAAAAACMAAADjHQAA9ixBA9-3dQH2LEED37d1AQAArwgAAAAA",
+        "location": [
+          54.602998,
+          24.491999
+        ],
+        "name": "شارع المسرى",
+        "distance": 0
+      },
+      {
+        "hint": "e0kRgEVugoVYAAAANwAAAAAAAAAAAAAAu3WcQic4Q0IAAAAAAAAAAFgAAAA3AAAAAAAAAAAAAADjHQAAccxAAwmbdAFxzEADCZt0AQAAbxUAAAAA",
+        "location": [
+          54.578289,
+          24.419081
+        ],
+        "name": "شارع المساع 1",
+        "distance": 0
+      },
+      {
+        "hint": "1sU5h____38bAAAAGwAAABgBAAAQAAAAm1SWQQAAAAC_XEJD0MAyQRsAAAAbAAAAGAEAABAAAADjHQAAdrtAA56gcwF2u0ADnqBzAQYAbxUAAAAA",
+        "location": [
+          54.573942,
+          24.354974
+        ],
+        "name": "",
+        "distance": 0
+      },
+      {
+        "hint": "b4YRgFOgsYgAAAAAeQAAAAAAAAAAAAAAg8fPPrMe1kIAAAAAAAAAAAAAAAB5AAAAAAAAAAAAAADjHQAANJ0_A3mOcwE0nT8Deo5zAQAAfwUAAAAA",
+        "location": [
+          54.50066,
+          24.350329
+        ],
+        "name": "شارع الجَزِّيم 9",
+        "distance": 0.1107636667
+      }
+    ]
+  }
+}

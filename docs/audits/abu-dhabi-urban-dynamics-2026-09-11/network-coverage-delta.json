@@ -1,0 +1,675 @@
+{
+  "generatedAt": "2026-09-12T10:36:21.601Z",
+  "sourceHashes": {
+    "before": "9ec52d0cc9dd5d1206965b00ff6865534b01ce1e72c9066b2f568db2be950123",
+    "after": "02970f782667a391da60198f3e006cdb282710ddd0d91c7ae36195a7e70461da"
+  },
+  "methodology": "Undirected geometric segments compared at the graph's 5-decimal precision, independent of changed collapsed edge IDs. Lengths follow the quantized polylines. The review box is a diagnostic coordinate window, not an administrative boundary.",
+  "counts": {
+    "beforeEdges": 543,
+    "afterEdges": 1115,
+    "beforeUniqueGeometrySegments": 7880,
+    "afterUniqueGeometrySegments": 13095,
+    "addedGeometrySegments": 5215,
+    "removedGeometrySegments": 0,
+    "addedGeometryKm": 267.2515975882629
+  },
+  "northRabdanReviewBox": {
+    "bounds": [
+      54.43,
+      24.397,
+      54.56,
+      24.445
+    ],
+    "addedGeometrySegments": 1044,
+    "addedGeometryKm": 66.06175207361657,
+    "addedRoadNames": [
+      {
+        "name": "Unnamed OSM road connector",
+        "km": 18.49753980833465
+      },
+      {
+        "name": "Sheikh Rashid bin Saeed Street",
+        "km": 16.82154078722289
+      },
+      {
+        "name": "Sheikh Zayed bin Sultan Street",
+        "km": 12.65395878613545
+      },
+      {
+        "name": "Al Khaleej Al Arabi Street",
+        "km": 8.64443463086964
+      },
+      {
+        "name": "Al Ain Road",
+        "km": 4.027013921245372
+      },
+      {
+        "name": "Ar Rawdah Road",
+        "km": 2.957529694217583
+      },
+      {
+        "name": "Rabdan Street",
+        "km": 2.343539532666481
+      },
+      {
+        "name": "Sultan bin Zayed the First Street",
+        "km": 0.11619491292448397
+      }
+    ]
+  },
+  "examples": [
+    {
+      "id": "yas-island--al-saadiyat",
+      "distanceKm": 19.944,
+      "modelFreeFlowMinutes": 17.92,
+      "alreadyDirectlyCovered": true,
+      "newlyCoveredGeometryKm": 0,
+      "namedRoads": [
+        "Al Masar Street",
+        "Sheikh Khalifa bin Zayed Street",
+        "Unnamed OSM road connector",
+        "Saadiyat Street"
+      ],
+      "sourceRequest": {
+        "url": "https://router.project-osrm.org/route/v1/driving/54.602998,24.491999;54.439955,24.539962?overview=full&geometries=geojson&steps=true&continue_straight=false&hints=RLpigf___38ZAAAAIgAAAAAAAAAjAAAAzuYFQsKKOkEAAAAAyw6cQRkAAAAiAAAAAAAAACMAAADjHQAA9ixBA9-3dQH4LEED4Ld1AQAArwgAAAAA%3BWl5CiP___386AAAATAAAAD8AAACSAAAAqM_BQRQF60Ctms5BxBFxQjoAAABMAAAAPwAAAJIAAADjHQAAE7A-AzpzdgFAsD4DYHN2AQoAzxMAAAAA",
+        "snapshotFile": "309a5df2370a83ff02f3d0717d1f184bf90506e592677139d39191d915bf2ca4.json.gz",
+        "retrievedAt": "2026-09-11T15:54:58.840Z"
+      },
+      "traversals": [
+        {
+          "edgeId": "road-edge-1087",
+          "direction": 1
+        },
+        {
+          "edgeId": "road-edge-1082",
+          "direction": -1
+        },
+        {
+          "edgeId": "road-edge-1045",
+          "direction": -1
+        },
+        {
+          "edgeId": "road-edge-1038",
+          "direction": -1
+        },
+        {
+          "edgeId": "road-edge-1035",
+          "direction": -1
+        },
+        {
+          "edgeId": "road-edge-1012",
+          "direction": -1
+        },
+        {
+          "edgeId": "road-edge-0982",
+          "direction": -1
+        },
+        {
+          "edgeId": "road-edge-0962",
+          "direction": -1
+        },
+        {
+          "edgeId": "road-edge-0937",
+          "direction": -1
+        },
+        {
+          "edgeId": "road-edge-0892",
+          "direction": -1
+        },
+        {
+          "edgeId": "road-edge-0843",
+          "direction": -1
+        },
+        {
+          "edgeId": "road-edge-0826",
+          "direction": -1
+        },
+        {
+          "edgeId": "road-edge-0779",
+          "direction": -1
+        },
+        {
+          "edgeId": "road-edge-0771",
+          "direction": -1
+        },
+        {
+          "edgeId": "road-edge-0772",
+          "direction": 1
+        },
+        {
+          "edgeId": "road-edge-0774",
+          "direction": -1
+        },
+        {
+          "edgeId": "road-edge-0728",
+          "direction": -1
+        },
+        {
+          "edgeId": "road-edge-0727",
+          "direction": -1
+        },
+        {
+          "edgeId": "road-edge-0726",
+          "direction": 1
+        }
+      ]
+    },
+    {
+      "id": "al-saadiyat--yas-island",
+      "distanceKm": 21.123,
+      "modelFreeFlowMinutes": 17.52,
+      "alreadyDirectlyCovered": true,
+      "newlyCoveredGeometryKm": 0,
+      "namedRoads": [
+        "Unnamed OSM road connector",
+        "Saadiyat Street",
+        "Sheikh Khalifa bin Zayed Street",
+        "Al Masar Street"
+      ],
+      "sourceRequest": {
+        "url": "https://router.project-osrm.org/route/v1/driving/54.439955,24.539962;54.602998,24.491999?overview=full&geometries=geojson&steps=true&continue_straight=false&hints=Wl5CiP___386AAAATAAAAD8AAACSAAAAqM_BQRQF60Ctms5BxBFxQjoAAABMAAAAPwAAAJIAAADjHQAAE7A-AzpzdgFAsD4DYHN2AQoAzxMAAAAA%3BRLpigf___38ZAAAAIgAAAAAAAAAjAAAAzuYFQsKKOkEAAAAAyw6cQRkAAAAiAAAAAAAAACMAAADjHQAA9ixBA9-3dQH4LEED4Ld1AQAArwgAAAAA",
+        "snapshotFile": "42e2482ad32023004e22beb9e5f0d9e5d63ae6546410b7be93d60e2f9a3a5505.json.gz",
+        "retrievedAt": "2026-09-11T15:54:58.696Z"
+      },
+      "traversals": [
+        {
+          "edgeId": "road-edge-0723",
+          "direction": -1
+        },
+        {
+          "edgeId": "road-edge-0722",
+          "direction": 1
+        },
+        {
+          "edgeId": "road-edge-0727",
+          "direction": 1
+        },
+        {
+          "edgeId": "road-edge-0711",
+          "direction": -1
+        },
+        {
+          "edgeId": "road-edge-0708",
+          "direction": -1
+        },
+        {
+          "edgeId": "road-edge-0706",
+          "direction": -1
+        },
+        {
+          "edgeId": "road-edge-0703",
+          "direction": -1
+        },
+        {
+          "edgeId": "road-edge-0704",
+          "direction": 1
+        },
+        {
+          "edgeId": "road-edge-0709",
+          "direction": 1
+        },
+        {
+          "edgeId": "road-edge-0765",
+          "direction": 1
+        },
+        {
+          "edgeId": "road-edge-0818",
+          "direction": 1
+        },
+        {
+          "edgeId": "road-edge-0841",
+          "direction": 1
+        },
+        {
+          "edgeId": "road-edge-0865",
+          "direction": 1
+        },
+        {
+          "edgeId": "road-edge-0921",
+          "direction": 1
+        },
+        {
+          "edgeId": "road-edge-0956",
+          "direction": 1
+        },
+        {
+          "edgeId": "road-edge-0974",
+          "direction": 1
+        },
+        {
+          "edgeId": "road-edge-1010",
+          "direction": 1
+        },
+        {
+          "edgeId": "road-edge-1029",
+          "direction": 1
+        },
+        {
+          "edgeId": "road-edge-1039",
+          "direction": 1
+        },
+        {
+          "edgeId": "road-edge-1083",
+          "direction": 1
+        }
+      ]
+    },
+    {
+      "id": "al-reem--mbz-zayed-city",
+      "distanceKm": 34.525,
+      "modelFreeFlowMinutes": 32.05,
+      "alreadyDirectlyCovered": false,
+      "newlyCoveredGeometryKm": 21.22429759533192,
+      "namedRoads": [
+        "Unnamed OSM road connector",
+        "Umm Yifeenah Street",
+        "Sheikh Zayed bin Sultan Street",
+        "Sheikh Rashid bin Saeed Street",
+        "Al Ain Road",
+        "Mohammed Bin Khalifa Al Kindi Street"
+      ],
+      "sourceRequest": {
+        "url": "https://router.project-osrm.org/route/v1/driving/54.41649,24.504694;54.573942,24.354974?overview=full&geometries=geojson&steps=true&continue_straight=false&hints=Ei19iP___38AAAAAEgAAAN0AAADmAAAAAAAAAFbFR0Hx1BlDEB0fQwAAAAASAAAA3QAAAOYAAADjHQAAalQ-A3bpdQFoVj4DqOp1ASAAbxQAAAAA%3B1sU5h____38bAAAAGwAAABgBAAAQAAAAm1SWQQAAAAC_XEJD0MAyQRsAAAAbAAAAGAEAABAAAADjHQAAdrtAA56gcwGwu0ADuKBzAQYAbxUAAAAA",
+        "snapshotFile": "00d8374b9f4101202525f733499c35321abb39057b53f69bd25adf4181f6ae91.json.gz",
+        "retrievedAt": "2026-09-12T10:25:21.353Z"
+      },
+      "traversals": [
+        {
+          "edgeId": "road-edge-0649",
+          "direction": -1
+        },
+        {
+          "edgeId": "road-edge-0644",
+          "direction": -1
+        },
+        {
+          "edgeId": "road-edge-0627",
+          "direction": -1
+        },
+        {
+          "edgeId": "road-edge-0624",
+          "direction": -1
+        },
+        {
+          "edgeId": "road-edge-0625",
+          "direction": 1
+        },
+        {
+          "edgeId": "road-edge-0637",
+          "direction": -1
+        },
+        {
+          "edgeId": "road-edge-0631",
+          "direction": -1
+        },
+        {
+          "edgeId": "road-edge-0632",
+          "direction": 1
+        },
+        {
+          "edgeId": "road-edge-0635",
+          "direction": -1
+        },
+        {
+          "edgeId": "road-edge-0634",
+          "direction": 1
+        },
+        {
+          "edgeId": "road-edge-0636",
+          "direction": 1
+        },
+        {
+          "edgeId": "road-edge-0699",
+          "direction": 1
+        },
+        {
+          "edgeId": "road-edge-0777",
+          "direction": 1
+        },
+        {
+          "edgeId": "road-edge-0781",
+          "direction": -1
+        },
+        {
+          "edgeId": "road-edge-0744",
+          "direction": -1
+        },
+        {
+          "edgeId": "road-edge-0742",
+          "direction": -1
+        },
+        {
+          "edgeId": "road-edge-0740",
+          "direction": -1
+        },
+        {
+          "edgeId": "road-edge-0741",
+          "direction": 1
+        },
+        {
+          "edgeId": "road-edge-0759",
+          "direction": 1
+        },
+        {
+          "edgeId": "road-edge-0815",
+          "direction": -1
+        },
+        {
+          "edgeId": "road-edge-0816",
+          "direction": 1
+        },
+        {
+          "edgeId": "road-edge-0828",
+          "direction": 1
+        },
+        {
+          "edgeId": "road-edge-0838",
+          "direction": 1
+        },
+        {
+          "edgeId": "road-edge-0852",
+          "direction": 1
+        },
+        {
+          "edgeId": "road-edge-0854",
+          "direction": 1
+        },
+        {
+          "edgeId": "road-edge-0910",
+          "direction": 1
+        },
+        {
+          "edgeId": "road-edge-0912",
+          "direction": 1
+        },
+        {
+          "edgeId": "road-edge-0945",
+          "direction": 1
+        },
+        {
+          "edgeId": "road-edge-0954",
+          "direction": 1
+        },
+        {
+          "edgeId": "road-edge-0968",
+          "direction": 1
+        },
+        {
+          "edgeId": "road-edge-0975",
+          "direction": 1
+        },
+        {
+          "edgeId": "road-edge-0987",
+          "direction": 1
+        },
+        {
+          "edgeId": "road-edge-0980",
+          "direction": -1
+        },
+        {
+          "edgeId": "road-edge-0978",
+          "direction": -1
+        },
+        {
+          "edgeId": "road-edge-0979",
+          "direction": 1
+        },
+        {
+          "edgeId": "road-edge-0981",
+          "direction": 1
+        },
+        {
+          "edgeId": "road-edge-1000",
+          "direction": 1
+        },
+        {
+          "edgeId": "road-edge-1006",
+          "direction": 1
+        }
+      ]
+    },
+    {
+      "id": "rabdan-al-maqta--al-reem",
+      "distanceKm": 22.415,
+      "modelFreeFlowMinutes": 20.46,
+      "alreadyDirectlyCovered": false,
+      "newlyCoveredGeometryKm": 12.310257398580257,
+      "namedRoads": [
+        "Unnamed OSM road connector",
+        "Al Ittihad Street",
+        "Al Khaleej Al Arabi Street",
+        "Sheikh Zayed bin Sultan Street",
+        "Umm Yifeenah Street"
+      ],
+      "sourceRequest": {
+        "url": "https://router.project-osrm.org/route/v1/driving/54.499972,24.397008;54.41649,24.504694?overview=full&geometries=geojson&steps=true&continue_straight=false&hints=do6fgybXeogIAAAALQAAAAAAAAAAAAAAtEPwQBFHH0IAAAAAAAAAAAgAAAAtAAAAAAAAAAAAAADjHQAAhJo_A9BEdAGgmj8DyER0AQAADwEAAAAA%3BEi19iP___38AAAAAEgAAAN0AAADmAAAAAAAAAFbFR0Hx1BlDEB0fQwAAAAASAAAA3QAAAOYAAADjHQAAalQ-A3bpdQFoVj4DqOp1ASAAbxQAAAAA",
+        "snapshotFile": "76c44b42de2d938b2fc6f2382dc8245d99d4b1c278e3a02ed7b130c8cd8cf957.json.gz",
+        "retrievedAt": "2026-09-12T10:25:14.275Z"
+      },
+      "traversals": [
+        {
+          "edgeId": "road-edge-0859",
+          "direction": 1
+        },
+        {
+          "edgeId": "road-edge-0861",
+          "direction": 1
+        },
+        {
+          "edgeId": "road-edge-0871",
+          "direction": 1
+        },
+        {
+          "edgeId": "road-edge-0875",
+          "direction": 1
+        },
+        {
+          "edgeId": "road-edge-0884",
+          "direction": 1
+        },
+        {
+          "edgeId": "road-edge-0882",
+          "direction": -1
+        },
+        {
+          "edgeId": "road-edge-0840",
+          "direction": -1
+        },
+        {
+          "edgeId": "road-edge-0837",
+          "direction": -1
+        },
+        {
+          "edgeId": "road-edge-0836",
+          "direction": 1
+        },
+        {
+          "edgeId": "road-edge-0832",
+          "direction": -1
+        },
+        {
+          "edgeId": "road-edge-0813",
+          "direction": -1
+        },
+        {
+          "edgeId": "road-edge-0812",
+          "direction": 1
+        },
+        {
+          "edgeId": "road-edge-0757",
+          "direction": -1
+        },
+        {
+          "edgeId": "road-edge-0743",
+          "direction": -1
+        },
+        {
+          "edgeId": "road-edge-0738",
+          "direction": -1
+        },
+        {
+          "edgeId": "road-edge-0737",
+          "direction": 1
+        },
+        {
+          "edgeId": "road-edge-0739",
+          "direction": 1
+        },
+        {
+          "edgeId": "road-edge-0780",
+          "direction": 1
+        },
+        {
+          "edgeId": "road-edge-0763",
+          "direction": -1
+        },
+        {
+          "edgeId": "road-edge-0696",
+          "direction": -1
+        },
+        {
+          "edgeId": "road-edge-0643",
+          "direction": -1
+        },
+        {
+          "edgeId": "road-edge-0638",
+          "direction": -1
+        },
+        {
+          "edgeId": "road-edge-0639",
+          "direction": 1
+        },
+        {
+          "edgeId": "road-edge-0646",
+          "direction": -1
+        },
+        {
+          "edgeId": "road-edge-0647",
+          "direction": 1
+        },
+        {
+          "edgeId": "road-edge-0648",
+          "direction": 1
+        },
+        {
+          "edgeId": "road-edge-0650",
+          "direction": 1
+        }
+      ]
+    },
+    {
+      "id": "rabdan-al-maqta--muroor-al-saadah",
+      "distanceKm": 11.251,
+      "modelFreeFlowMinutes": 8.93,
+      "alreadyDirectlyCovered": false,
+      "newlyCoveredGeometryKm": 5.14149943946507,
+      "namedRoads": [
+        "Unnamed OSM road connector",
+        "Al Ittihad Street",
+        "Al Khaleej Al Arabi Street",
+        "Rabdan Street",
+        "Sultan bin Zayed the First Street"
+      ],
+      "sourceRequest": {
+        "url": "https://router.project-osrm.org/route/v1/driving/54.499972,24.397008;54.429013,24.436074?overview=full&geometries=geojson&steps=true&continue_straight=false&hints=do6fgybXeogIAAAALQAAAAAAAAAAAAAAtEPwQBFHH0IAAAAAAAAAAAgAAAAtAAAAAAAAAAAAAADjHQAAhJo_A9BEdAGgmj8DyER0AQAADwEAAAAA%3B2DoRgKOzAoEyAAAAWwAAAAAAAAAAAAAAm940Qp7AoEIAAAAAAAAAADIAAABbAAAAAAAAAAAAAADjHQAAVYU-A2rddAFIhT4DIN10AQAAPwYAAAAA",
+        "snapshotFile": "9fc54f21b85aa3b5244f963089d1786613272c9ea87b0e1a709ee88828a02e2a.json.gz",
+        "retrievedAt": "2026-09-12T10:24:29.843Z"
+      },
+      "traversals": [
+        {
+          "edgeId": "road-edge-0859",
+          "direction": 1
+        },
+        {
+          "edgeId": "road-edge-0861",
+          "direction": 1
+        },
+        {
+          "edgeId": "road-edge-0871",
+          "direction": 1
+        },
+        {
+          "edgeId": "road-edge-0875",
+          "direction": 1
+        },
+        {
+          "edgeId": "road-edge-0884",
+          "direction": 1
+        },
+        {
+          "edgeId": "road-edge-0882",
+          "direction": -1
+        },
+        {
+          "edgeId": "road-edge-0840",
+          "direction": -1
+        },
+        {
+          "edgeId": "road-edge-0807",
+          "direction": -1
+        },
+        {
+          "edgeId": "road-edge-0776",
+          "direction": -1
+        },
+        {
+          "edgeId": "road-edge-0698",
+          "direction": -1
+        },
+        {
+          "edgeId": "road-edge-0671",
+          "direction": -1
+        },
+        {
+          "edgeId": "road-edge-0668",
+          "direction": -1
+        },
+        {
+          "edgeId": "road-edge-0669",
+          "direction": 1
+        },
+        {
+          "edgeId": "road-edge-0680",
+          "direction": 1
+        },
+        {
+          "edgeId": "road-edge-0682",
+          "direction": 1
+        },
+        {
+          "edgeId": "road-edge-0691",
+          "direction": 1
+        },
+        {
+          "edgeId": "road-edge-0689",
+          "direction": -1
+        },
+        {
+          "edgeId": "road-edge-0684",
+          "direction": -1
+        },
+        {
+          "edgeId": "road-edge-0679",
+          "direction": -1
+        },
+        {
+          "edgeId": "road-edge-0666",
+          "direction": -1
+        },
+        {
+          "edgeId": "road-edge-0662",
+          "direction": -1
+        },
+        {
+          "edgeId": "road-edge-0663",
+          "direction": 1
+        },
+        {
+          "edgeId": "road-edge-0667",
+          "direction": 1
+        }
+      ]
+    }
+  ]
+}

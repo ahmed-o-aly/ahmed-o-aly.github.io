@@ -1,718 +1,857 @@
 import assert from "node:assert/strict";
 import crypto from "node:crypto";
-import { readFileSync } from "node:fs";
-import { assertContains, readRoute } from "./helpers/site.mjs";
+import { existsSync, readFileSync } from "node:fs";
+import { createRequire } from "node:module";
+import { fileURLToPath } from "node:url";
+import path from "node:path";
+import { gunzipSync } from "node:zlib";
+import { readRoute } from "./helpers/site.mjs";
+import { validateRoadNetwork } from "../scripts/lib/udes-v2-network-integrity.mjs";
+import { assertCurrentPresentationProvenance, VERIFIER_PATH } from "../scripts/refresh-udes-v2-presentation-provenance.mjs";
 
+const require = createRequire(import.meta.url);
+const controller = require("../assets/js/udes-v2-app.js");
+const { DEFAULT_CONFIG, UdesV2Engine } = require("../assets/js/udes-v2-worker.js");
+const read = (path) => readFileSync(new URL("../" + path, import.meta.url));
+const json = (path) => JSON.parse(read(path));
 const html = readRoute("/projects/abu-dhabi-urban-dynamics-v2/");
-const projects = readRoute("/projects/");
-const css = readFileSync(new URL("../_site/assets/css/garden.css", import.meta.url), "utf8");
-const scss = readFileSync(new URL("../_sass/garden/_simulation-v2.scss", import.meta.url), "utf8");
-const appBuffer = readFileSync(new URL("../assets/js/udes-v2-app.js", import.meta.url));
-const workerBuffer = readFileSync(new URL("../assets/js/udes-v2-worker.js", import.meta.url));
-const baselineBuffer = readFileSync(new URL("../assets/data/udes-v2/baseline.json", import.meta.url));
-const validationHarnessBuffer = readFileSync(new URL("../scripts/validate-udes-v2-full.mjs", import.meta.url));
-const app = appBuffer.toString("utf8");
-const worker = workerBuffer.toString("utf8");
-const baseline = JSON.parse(baselineBuffer.toString("utf8"));
-const zones = JSON.parse(readFileSync(new URL("../assets/data/udes-v2/zones.geojson", import.meta.url), "utf8"));
-const roads = JSON.parse(readFileSync(new URL("../assets/data/udes-v2/roads.geojson", import.meta.url), "utf8"));
-const stops = JSON.parse(readFileSync(new URL("../assets/data/udes-v2/transit-stops.geojson", import.meta.url), "utf8"));
-const validation = JSON.parse(readFileSync(new URL("../assets/data/udes-v2/validation-report.json", import.meta.url), "utf8"));
+const app = read("assets/js/udes-v2-app.js").toString();
+const scss = read("_sass/garden/_simulation-v2.scss").toString();
+const css = read("_site/assets/css/garden.css").toString();
+const baseline = json("assets/data/udes-v2/baseline.json");
+const roads = json("assets/data/udes-v2/roads.geojson");
+const zones = json("assets/data/udes-v2/zones.geojson");
+const stops = json("assets/data/udes-v2/transit-stops.geojson");
+const validation = json("assets/data/udes-v2/validation-report.json");
 const sha256 = (value) => crypto.createHash("sha256").update(value).digest("hex");
+const failures = [];
+function section(name, check) {
+  try {
+    check();
+    console.log("PASS " + name);
+  } catch (error) {
+    failures.push(name + ": " + error.message);
+    console.error("FAIL " + name + ": " + error.message);
+  }
+}
+// Parse only opening tags and quoted attributes used by this server-rendered page.
+const elements = [...html.matchAll(/<([a-z][\w-]*)\b([^<>]*?)>/gi)].map((match) => {
+  const attrs = Object.fromEntries([...match[2].matchAll(/([\w:-]+)(?:\s*=\s*"([^"]*)")?/g)].map((attribute) => [attribute[1], attribute[2] ?? ""]));
+  return { tag: match[1].toLowerCase(), attrs };
+});
+const all = (attribute, value) =>
+  elements.filter(({ attrs }) => Object.hasOwn(attrs, attribute) && (value === undefined || attrs[attribute] === value));
+function one(attribute, value) {
+  const matches = all(attribute, value);
+  assert.equal(matches.length, 1, attribute + (value === undefined ? "" : "=" + value) + " has exactly one binding");
+  return matches[0];
+}
+function selectValues(attribute) {
+  one(attribute);
+  const block = html.match(new RegExp("<select\\b[^>]*" + attribute + "[^>]*>([\\s\\S]*?)</select>"))?.[1];
+  assert.ok(block, attribute + " is a native select");
+  return [...block.matchAll(/<option\b[^>]*value="([^"]+)"/g)].map((match) => match[1]);
+}
+function tabs(kind, names) {
+  assert.deepEqual(
+    all("data-udes-v2-" + kind + "-tab").map(({ attrs }) => attrs["data-udes-v2-" + kind + "-tab"]),
+    names
+  );
+  for (const name of names) {
+    const tab = one("data-udes-v2-" + kind + "-tab", name).attrs;
+    const panel = one("data-udes-v2-" + kind + "-panel", name).attrs;
+    assert.equal(tab.role, "tab");
+    assert.equal(panel.role, "tabpanel");
+    assert.equal(tab["aria-controls"], panel.id);
+    assert.equal(panel["aria-labelledby"], tab.id);
+    assert.equal(tab["aria-selected"], String(name === names[0]));
+    assert.equal(Object.hasOwn(panel, "hidden"), name !== names[0]);
+  }
+}
 
-assert.equal((html.match(/<h1\b/g) || []).length, 1, "v2 has one page heading");
-assertContains(html, /class="[^"]*garden-body--simulation-v2/, "v2 uses its fixed analyst shell");
-assertContains(
-  html,
-  /class="udes-v2-back" href="\/projects\/abu-dhabi-urban-dynamics\/" aria-label="Back to the project write-up"/,
-  "v2 links back to its readable project note"
-);
-assertContains(html, /data-model-url="\/assets\/data\/udes-v2\/baseline\.json"/, "v2 emits the scenario baseline URL");
-assertContains(html, /data-worker-url="\/assets\/js\/udes-v2-worker\.js"/, "v2 emits its agent worker URL");
-assertContains(html, /aria-label="Interactive map of Greater Abu Dhabi City/, "map has the correct city boundary description");
-assertContains(
-  html,
-  /Official AD-SDI district groups · OSM basemap and routed named arterials/,
-  "map provenance distinguishes official district groups and the routed named-arterial model layer"
-);
-assertContains(html, /data-udes-v2-map-layer="agents"[^>]*aria-pressed="true"[^>]*>Agents</, "the default map exposes actual modeled agents");
-assertContains(html, /data-udes-v2-view="overview"/, "the simulation opens in its map-first executive overview");
-assertContains(html, /data-udes-v2-view-toggle/, "the overview exposes the detailed studio on demand");
-for (const metric of ["cityPopulation", "cityEnterprises", "peakRoadUsage", "mapCommute", "cityNetIncome"]) {
-  assertContains(html, new RegExp(`data-udes-v2-metric="${metric}"`), `${metric} is visible in the map pulse`);
-}
-assert.equal((html.match(/data-udes-v2-agent-layer=/g) || []).length, 3, "citizens, enterprises, and flows can be isolated independently");
-assertContains(
-  html,
-  /aria-pressed="false"[^>]*data-udes-v2-agent-layer="flows"[^>]*>[\s\S]*?Home → work</,
-  "home-to-work commuter stock is clearly labeled and off by default"
-);
-assert.equal((html.match(/data-udes-v2-inspector-tab=/g) || []).length, 4, "four object inspectors are available");
-assert.equal((html.match(/data-udes-v2-control-tab=/g) || []).length, 4, "four focused control workspaces are available");
-for (const name of ["setup", "policy", "model", "evidence"]) {
-  assertContains(
-    html,
-    new RegExp(`id="udes-v2-control-tab-${name}"[^>]+aria-controls="udes-v2-control-panel-${name}"`),
-    `${name} control tab identifies its panel`
-  );
-  assertContains(
-    html,
-    new RegExp(`id="udes-v2-control-panel-${name}"[^>]+role="tabpanel"[^>]+aria-labelledby="udes-v2-control-tab-${name}"`),
-    `${name} control panel identifies its tab`
-  );
-}
-const chartWorkspaceNames = ["outcomes", "districts", "flows", "mobility", "citizens", "enterprises"];
-assert.equal((html.match(/data-udes-v2-chart-tab=/g) || []).length, 6, "six decision-oriented analysis workspaces are available");
-assert.equal((html.match(/data-udes-v2-chart-panel=/g) || []).length, 6, "six analysis tab panels are available");
-for (const name of chartWorkspaceNames) {
-  assertContains(
-    html,
-    new RegExp(`id="udes-v2-chart-tab-${name}"[^>]+aria-controls="udes-v2-chart-panel-${name}"[^>]+data-udes-v2-chart-tab="${name}"`),
-    `${name} chart tab identifies its panel`
-  );
-  assertContains(
-    html,
-    new RegExp(
-      `id="udes-v2-chart-panel-${name}"[^>]+role="tabpanel"[^>]+aria-labelledby="udes-v2-chart-tab-${name}"[^>]+data-udes-v2-chart-panel="${name}"`
-    ),
-    `${name} chart panel identifies its tab`
-  );
-  assertContains(html, new RegExp(`data-udes-v2-chart="${name}"`), `${name} chart panel exposes a stable mount`);
-}
-const flowControls = html.match(/<div[^>]+data-udes-v2-flow-controls[^>]*>[\s\S]*?<\/div>/)?.[0] || "";
-assert.ok(flowControls, "cross-district flow controls are rendered beside the analysis tabs");
-for (const kind of ["residential", "job", "workplace", "enterprise", "replacement", "commute"]) {
-  assertContains(flowControls, new RegExp(`<option value="${kind}"`), `${kind} flow analysis is selectable`);
-}
-assert.equal((flowControls.match(/<option value="commute"/g) || []).length, 1, "home-to-work stock appears once in the flow selector");
-assertContains(flowControls, /data-udes-v2-flow-measure/, "flow charts can switch between modeled agents and represented equivalents");
-for (const days of [1, 7, 30]) {
-  assertContains(flowControls, new RegExp(`<option value="${days}"`), `${days}-day flow window is selectable`);
-}
-assert.equal((html.match(/data-udes-v2-step-days=/g) || []).length, 3, "one-, seven-, and thirty-day step controls are available");
-assertContains(html, /Citizen and enterprise objectives/, "citizen and enterprise objectives are documented in the model panel");
-assertContains(html, /Essential consumption: AED 2,500\/month/, "household saving assumptions are disclosed beside the controls");
-assertContains(
-  html,
-  /Commutes, network loading, citizen decisions, job matching and enterprise actions run daily/,
-  "daily agent cadence is disclosed"
-);
-assertContains(html, /Apply next day/, "policy changes are staged at a clear daily boundary");
-for (const lever of ["transitWait", "parkingCost", "householdMoveChance", "householdMinimumStay", "firmMoveChance", "firmMinimumStay"]) {
-  assertContains(html, new RegExp(`data-udes-v2-lever="${lever}"`), `${lever} is exposed as a transparent scenario or model control`);
-}
-assertContains(html, /12 direct \+ 6 grouped \/ relabeled mappings/, "the evidence panel distinguishes direct and derived SCAD mappings");
-assertContains(html, /validation-report\.json/, "the console links to its reproducible full-scale validation report");
-assertContains(html, /data-udes-v2-provenance/, "the inspector exposes field provenance");
-assert.doesNotMatch(html, /udes-v2-map-placeholder__(?:land|corridors|minor-roads|water-lines)/, "the loading state does not fabricate map geometry");
-assert.doesNotMatch(html, /<option[^>]*>(?:Al Ain|Al Dhafra|Ruwais)/i, "out-of-scope regions are not selectable");
-assertContains(html, /assets\/js\/udes-v2-app\.js/, "v2 controller is loaded");
-assertContains(html, /echarts(?:\.min)?\.js/, "v2 loads the chart engine");
-assertContains(
-  css,
-  /\.udes-v2-console\{display:grid;grid-template-columns:280px minmax\(0,\s*1fr\) 340px/,
-  "compiled CSS keeps the no-scroll analyst grid"
-);
-assertContains(css, /\.garden-body--simulation-v2\{overflow:hidden/, "desktop page scrolling is disabled");
-assert.match(
-  scss,
-  /data-udes-v2-view="overview"[\s\S]*?grid-template-columns: minmax\(0, 1fr\) clamp\(380px, 32vw, 440px\)/,
-  "desktop overview reserves a fixed analytics rail beside the full-height map"
-);
-assert.match(scss, /\.udes-v2-map-pulse[\s\S]*?display: grid/, "the overview restores the five-metric map pulse");
-assertContains(projects, /href="\/projects\/abu-dhabi-urban-dynamics\/"/, "the Urban Dynamics write-up is published in the project index");
-assert.doesNotMatch(
-  projects,
-  /href="\/projects\/abu-dhabi-urban-dynamics-v2\/"/,
-  "the project index does not drop readers directly into the console"
-);
+section("published worker and baseline preserve the tested source bytes", () => {
+  const root = one("data-udes-v2-root").attrs;
+  for (const attribute of ["data-worker-url", "data-model-url"]) {
+    const url = root[attribute];
+    assert.ok(url?.startsWith("/assets/"), `${attribute} identifies a local model asset`);
+    assert.equal(
+      sha256(read("_site" + url)),
+      sha256(read(url.slice(1))),
+      `${url} must be served byte-for-byte as tested; build-time minification would invalidate its recorded fingerprint`
+    );
+  }
+});
 
-assert.equal(baseline.zones.length, 18, "baseline contains 18 Greater Abu Dhabi districts");
-for (const id of ["al-mushrif", "al-danah", "al-zahiyah", "al-khalidiyah", "al-bateen", "al-reem", "yas-island", "musaffah"]) {
-  assert.ok(
-    baseline.zones.some((zone) => zone.id === id),
-    `${id} remains a distinct model district`
+section("published page and accessible results navigation", () => {
+  assert.equal(elements.filter(({ tag }) => tag === "h1").length, 1);
+  const ids = all("id").map(({ attrs }) => attrs.id);
+  assert.equal(new Set(ids).size, ids.length, "rendered element IDs are unique");
+  const root = one("data-udes-v2-root").attrs;
+  assert.equal(root["data-udes-v2-view"], "overview");
+  assert.equal(root["data-udes-v2-inspection"], "closed");
+  assert.equal(root["data-model-url"], "/assets/data/udes-v2/baseline.json");
+  assert.equal(root["data-worker-url"], "/assets/js/udes-v2-worker.js");
+  for (const url of [root["data-model-url"], root["data-worker-url"]]) assert.ok(existsSync(new URL("../_site" + url, import.meta.url)));
+  assert.doesNotMatch(html, /class="[^"]*udes-v2-map-pulse(?:\s|")/, "map has no duplicate metric overlay");
+  const selectedLayers = all("data-udes-v2-map-layer").filter(({ attrs }) => attrs["aria-pressed"] === "true");
+  assert.deepEqual(
+    selectedLayers.map(({ attrs }) => attrs["data-udes-v2-map-layer"]),
+    ["network"]
   );
-}
-const roadNodes = baseline.roadGraph.nodes;
-const roadEdges = baseline.roadGraph.edges;
-const assignmentRoadEdges = roadEdges.filter((edge) => edge.loadBearing);
-const modelVisibleRoadEdges = roadEdges.filter((edge) => edge.modelVisible);
-const midRouteConnectors = roadEdges.filter((edge) => edge.loadBearing && !edge.modelVisible);
-const contextRoadEdges = roadEdges.filter((edge) => edge.contextOnly);
-const hiddenAccessEdges = roadEdges.filter((edge) => edge.hidden);
-const aggregatedZonePortals = roadEdges.filter((edge) => edge.hiddenReason === "aggregated-zone-portal");
-const roadNodeIds = new Set(roadNodes.map((node) => node.id));
-const roadEdgeIds = new Set(roadEdges.map((edge) => edge.id));
-const roadFeatureIds = new Set(roads.features.map((feature) => String(feature.id || feature.properties?.id)));
-assert.equal(roadNodeIds.size, roadNodes.length, "physical road-node IDs are unique");
-assert.equal(roadEdgeIds.size, roadEdges.length, "physical road-edge IDs are unique");
-assert.ok(roadNodes.length > baseline.zones.length, "the road graph contains physical junction nodes rather than one node per district");
-assert.ok(roadEdges.length > 31, "the road graph replaces 31 cosmetic routes with shared physical edges");
-assert.ok(assignmentRoadEdges.length > 100, "physical assignment retains a useful load-bearing segment network");
-assert.ok(modelVisibleRoadEdges.length > 100, "the public overlay retains a useful named arterial and gateway network");
-assert.ok(midRouteConnectors.length > 0, "unnamed mid-route OSM connectors remain load-bearing even when omitted from the public overlay");
-assert.ok(contextRoadEdges.length > 0, "named roads outside OD paths remain available as explicit map context");
-assert.ok(hiddenAccessEdges.length > 0, "zone access is explicit in the graph without being presented as a physical arterial");
-assert.ok(aggregatedZonePortals.length > 0, "shared centroid terminal chains are identified as aggregate-zone portals");
-assert.equal(zones.features.length, 18, "grouped official polygon geometry joins every model district");
-assert.equal(roads.features.length, modelVisibleRoadEdges.length, "each model-visible physical road edge has one GeoJSON feature");
-assert.deepEqual(
-  [...roadFeatureIds].sort(),
-  modelVisibleRoadEdges.map((edge) => String(edge.geometryFeatureId)).sort(),
-  "model-visible physical edge IDs match the published GeoJSON IDs exactly"
-);
-assert.ok(
-  midRouteConnectors.every(
-    (edge) => !edge.hidden && edge.displayClass === "connector" && edge.modelRole === "mid-route-connector" && edge.geometryFeatureId === null
-  ),
-  "non-rendered mid-route connectors remain explicit physical assignment edges"
-);
-assert.ok(
-  hiddenAccessEdges.every(
-    (edge) => !edge.loadBearing && !edge.modelVisible && !edge.contextOnly && edge.geometryFeatureId === null && edge.displayClass === "access"
-  ),
-  "non-load-bearing access edges are explicitly distinguished from published and assigned road geometry"
-);
-for (const [zoneId, minimumPortalEdges] of [
-  ["rabdan-al-maqta", 7],
-  ["musaffah", 3],
-]) {
-  const zonePortals = aggregatedZonePortals.filter((edge) => edge.aggregatedZonePortalFor === zoneId);
-  assert.ok(
-    zonePortals.length >= minimumPortalEdges,
-    `${zoneId} centroid-terminal artifacts are classified by semantic zone identity instead of unstable edge IDs`
+  assert.match(app, /mapMode:\s*"network"/);
+  one("data-udes-v2-action", "close-inspector");
+  one("data-udes-v2-view-toggle");
+  tabs("control", ["setup", "policy", "model", "evidence"]);
+  const resultViews = ["outcomes", "districts", "flows", "mobility", "citizens", "enterprises", "analysis"];
+  for (const name of resultViews) one("data-udes-v2-chart", name);
+  assert.equal(root["data-udes-v2-analysis"], "closed");
+  assert.ok(Object.hasOwn(one("data-udes-v2-tray").attrs, "hidden"), "charts are opt-in, including before JavaScript initializes");
+  const openCharts = one("data-udes-v2-action", "open-analysis").attrs;
+  assert.equal(openCharts["aria-expanded"], "false");
+  assert.equal(openCharts["aria-controls"], one("data-udes-v2-tray").attrs.id);
+  one("data-udes-v2-action", "close-analysis");
+  assert.equal(one("data-udes-v2-analysis-picker").tag, "select");
+  assert.equal(one("data-udes-v2-analysis-picker").attrs["aria-label"], "Choose analysis view");
+  assert.equal(all("data-udes-v2-open-chart").length, 7, "six city indicators and the road legend open related analysis views");
+  for (const button of all("data-udes-v2-open-chart")) assert.equal(button.tag, "button");
+  assert.deepEqual(selectValues("data-udes-v2-window"), ["30", "90", "365", "0"]);
+  assert.deepEqual(selectValues("data-udes-v2-transition-window"), ["1", "7", "30"]);
+  one("data-udes-v2-analysis-district");
+  assert.match(html, /assets\/js\/udes-v2-analysis\.js/, "complete-output chart module is loaded");
+  assert.match(app, /state\.analysisCharts\.includes\(`outcomes:\$\{key\}`\)/, "outcome rendering follows the requested dashboard metrics");
+  assert.match(app, /state\.analysisCharts\.includes\(`\$\{kind\}:\$\{key\}`\)/, "only the charts requested by the selected view are mounted");
+  assert.match(app, /matchMedia\("\(max-width: 719px\)"\)/, "ordinary desktop panes retain simulation controls");
+  assert.deepEqual(selectValues("data-udes-v2-flow-kind"), ["residential", "job", "workplace", "enterprise", "replacement", "commute"]);
+  assert.deepEqual(
+    all("data-udes-v2-step-days").map(({ attrs }) => Number(attrs["data-udes-v2-step-days"])),
+    [1, 7, 30]
   );
   assert.ok(
-    zonePortals.every(
-      (edge) =>
-        edge.hidden &&
-        !edge.loadBearing &&
-        !edge.modelVisible &&
-        !edge.contextOnly &&
-        edge.modelRole === "zone-access" &&
-        edge.displayClass === "access" &&
-        edge.geometryFeatureId === null &&
-        edge.aggregatedZonePortalEvidence?.zoneId === zoneId &&
-        edge.aggregatedZonePortalEvidence?.candidateRouteCount > 1 &&
-        edge.aggregatedZonePortalEvidence?.sourceClass === "derived"
+    css.includes(".udes-v2-analysis-controls") && css.includes(".udes-v2-monitor"),
+    "compiled CSS contains the chart explorer and metric shortcuts"
+  );
+  assert.match(scss, /data-udes-v2-inspection="open"[^{}]*\.udes-v2-inspector/);
+  assert.match(scss, /@media\s*\(prefers-reduced-motion:\s*reduce\)/);
+  assert.match(readRoute("/projects/"), /href="\/projects\/abu-dhabi-urban-dynamics\/"/);
+});
+
+section("methods, evidence and paired comparison controls", () => {
+  const dialog = one("data-udes-v2-methods");
+  assert.equal(dialog.tag, "dialog");
+  one("id", dialog.attrs["aria-labelledby"]);
+  one("data-udes-v2-methods-body");
+  assert.ok(all("data-udes-v2-action", "methods").length > 0);
+  for (const action of ["close-methods", "export", "export-experiment"]) one("data-udes-v2-action", action);
+  assert.match(app, /dialog\.showModal\(\)/);
+  assert.match(app, /comparisonToCsv\(state\.history,\s*state\.referenceHistory/);
+  assert.match(app, /referenceWorker = new WorkerClient/);
+  assert.match(app, /referenceWorker\.request\("init",\s*\{[^\n]*seed:\s*state\.seed[^\n]*mapFrame:\s*"none"/);
+  assert.match(app, /state\.worker\.request\("init",\s*\{[^\n]*seed:\s*state\.seed[^\n]*mapFrame:\s*"all"/);
+  assert.match(html, /validation-report\.json/);
+  assert.equal(typeof controller.comparisonToCsv, "function");
+  assert.equal(controller.COMPARISON_METRICS.meanCommute, "round_trip_commute_minutes");
+  assert.equal(controller.COMPARISON_METRICS.residualAfterEssentials, "disposable_resources_aed_per_month");
+  const csv = controller.comparisonToCsv([{ day: 1, date: "2024-01-02", meanCommute: 30 }], [{ day: 1, date: "2024-01-02", meanCommute: 40 }], {
+    seed: 17,
+    scenario: "trial, quoted",
+  });
+  assert.ok(csv.includes("round_trip_commute_minutes") && csv.includes('"trial, quoted"'));
+  assert.ok(csv.includes('"30","40","-10"'), "comparison uses aligned active minus reference values");
+});
+
+section("observed population mappings and explicit synthetic inputs", () => {
+  assert.equal(baseline.zones.length, 18);
+  assert.equal(zones.features.length, baseline.zones.length);
+  const total = baseline.zones.reduce((sum, zone) => sum + zone.population2024, 0);
+  assert.equal(total, 1517535, "committed 2024 SCAD study-boundary total");
+  assert.equal(total, baseline.calibration.studyScopePopulation2024);
+  assert.equal(total, baseline.calibration.officialMappedDistrictPopulationSubtotal);
+  const mapped = { observed: 0, "derived-from-observed": 0 };
+  for (const zone of baseline.zones) {
+    assert.equal(
+      zone.populationComponents.reduce((sum, item) => sum + item.value, 0),
+      zone.population2024,
+      zone.id + " population has an auditable census crosswalk"
+    );
+    mapped[zone.sourceClassByField.population2024] += 1;
+    for (const field of [
+      "jobs2024",
+      "housingCapacityPersons",
+      "jobCapacityPersons",
+      "enterprisePlaceCapacity",
+      "quality",
+      "housingRentIndex",
+      "businessRentIndex",
+      "carOwnershipRate",
+      "averageMonthlySalaryAed",
+    ]) {
+      assert.equal(zone.sourceClassByField[field], "synthetic", zone.id + " " + field + " must not appear observed");
+    }
+    assert.ok(zones.features.some((feature) => feature.id === zone.geometryFeatureId));
+  }
+  assert.deepEqual(mapped, { observed: 12, "derived-from-observed": 6 });
+  assert.deepEqual(
+    baseline.zones
+      .find((zone) => zone.id === "al-bateen")
+      .officialDistrictIds.slice()
+      .sort(),
+    [1287, 1292, 1300]
+  );
+  assert.equal(baseline.temporal.observedDailyProfiles, false);
+  assert.equal(baseline.temporal.simulationStep, "1 calendar day");
+  assert.match(baseline.temporalAlignment, /mixed-year/);
+  for (const source of Object.values(baseline.sources)) assert.ok(Object.hasOwn(baseline.classifications, source.classification));
+  assert.equal(baseline.calibration.supplyAssumptions.sourceClass, "synthetic");
+  assert.equal(baseline.calibration.housingStockReference.usedForCapacity, false, "all-use property-unit counts are not residential capacity");
+  assert.ok(baseline.calibration.housingStockReference.tables.length >= 2);
+  assert.equal(baseline.calibration.employmentAnchor.modeledOpeningEmploymentPercent, 67);
+  assert.equal(baseline.calibration.employmentAnchor.modeledOpeningAndTargetEmploymentPercent, undefined);
+  assert.match(baseline.calibration.historicalAllTripModeShareReference.caveat, /contextual comparator only/);
+  assert.equal(stops.features.length, baseline.transit.officialStopsAssignedToStudyZones);
+  assert.equal(stops.metadata.sourceClass, "observed");
+  assert.ok(baseline.transit.links.every((link) => link.serviceSourceClass === "synthetic" && link.topologySourceClass === "derived"));
+  assert.match(baseline.transit.caveat, /route and timetable data has not yet been integrated/i);
+});
+
+section("frozen source evidence is intact and reproducible", () => {
+  const manifest = json("scripts/data/udes-v2-sources/manifest.json");
+  assert.equal(manifest.id, baseline.sourceSnapshot.id);
+  assert.deepEqual(manifest.requests, baseline.sourceSnapshot.requests);
+  assert.ok(manifest.requests.length > 60, "districts, routed directions and evidence tables are frozen");
+  for (const entry of manifest.requests) {
+    assert.match(entry.file, /^[a-f0-9]{64}\.json\.gz$/);
+    const cached = JSON.parse(gunzipSync(read("scripts/data/udes-v2-sources/" + entry.file)));
+    assert.equal(sha256(cached.responseText), entry.sha256, entry.file + " response hash");
+    assert.equal(cached.sha256, entry.sha256);
+    assert.equal(cached.retrievedAt, entry.retrievedAt);
+    assert.ok(Number.isFinite(Date.parse(entry.retrievedAt)));
+    assert.equal(cached.request.url, entry.url);
+    assert.equal(cached.request.method, entry.method);
+  }
+  assert.ok(
+    manifest.requests.some((entry) => entry.method === "POST" && entry.url.includes("census.scad.gov.ae")),
+    "published census values have a captured source response"
+  );
+});
+
+section("shared directed road graph and complete physical rendering", () => {
+  const graph = baseline.roadGraph;
+  const evidence = validateRoadNetwork(baseline.zones, graph.nodes, graph.edges, graph.candidateRoutes, roads.features);
+  assert.equal(evidence.directedDistrictPairs, baseline.zones.length * (baseline.zones.length - 1));
+  assert.equal(evidence.stronglyConnectedComponents, 1);
+  assert.equal(evidence.danglingNonGatewayNodes, 0);
+  assert.deepEqual(evidence.gatewayTerminalNodes, []);
+  assert.equal(graph.fallbackRouteCount, 0);
+  assert.equal(graph.fallbackArterialSeedCount, 0);
+  assert.equal(graph.edges.length, graph.topology.physicalEdgeCount);
+  assert.equal(roads.features.length, graph.edges.length);
+  assert.equal(graph.topology.visiblePhysicalEdgeCount, graph.edges.length);
+  const assigned = graph.edges.filter((edge) => edge.loadBearing);
+  const excluded = graph.edges.filter((edge) => !edge.loadBearing);
+  assert.equal(assigned.length, graph.topology.loadBearingEdgeCount);
+  assert.equal(excluded.length, 0, "every real physical road receives shared directional demand");
+  assert.equal(assigned.length, graph.edges.length);
+  assert.ok(graph.edges.every((edge) => edge.modelVisible && !edge.contextOnly && !edge.hidden && !edge.hiddenReason));
+  assert.equal(
+    graph.officialAttributeJoin.laneMatchedEdgeCount,
+    graph.edges.filter((edge) => edge.sourceClassByField.lanesPerDirection === "observed").length
+  );
+  assert.equal(graph.capacityModel.sourceClass, "synthetic");
+  assert.equal(graph.capacityModel.assignmentWindowHours, DEFAULT_CONFIG.assignmentPeakHours);
+  assert.ok(graph.edges.some((edge) => edge.allowAB && !edge.allowBA));
+  assert.ok(graph.edges.some((edge) => edge.allowBA && !edge.allowAB));
+  const routeById = new Map(graph.candidateRoutes.map((route) => [route.id, route]));
+  for (const route of graph.candidateRoutes) {
+    const reciprocal = routeById.get(route.pairedCandidateRouteId);
+    assert.equal(reciprocal.from, route.to);
+    assert.equal(reciprocal.to, route.from);
+    assert.equal(reciprocal.pairedCandidateRouteId, route.id);
+  }
+  assert.equal(graph.edges.filter(controller.isRenderedAnalysisLink).length, assigned.length, "capacity charts include every real physical road");
+  assert.match(app, /filter:\s*\(feature\)\s*=>\s*feature\.properties\?\.modelVisible !== false && feature\.properties\?\.contextOnly !== true/);
+  assert.match(app, /UdesRoadFlow\.createLayer\(window\.L\)/);
+  assert.equal(one("data-udes-v2-road-flow-toggle").attrs["aria-pressed"], "true");
+  const scripts = all("src").map(({ attrs }) => attrs.src);
+  const flowIndex = scripts.findIndex((src) => src.includes("udes-v2-road-flow.js"));
+  assert.ok(flowIndex >= 0 && flowIndex < scripts.findIndex((src) => src.includes("udes-v2-app.js")), "flow canvas is loaded before its controller");
+});
+
+section("public controls and worker outputs share explicit actor and accounting units", () => {
+  assert.deepEqual(Object.keys(controller.PUBLIC_PRESETS), ["reference", "transit", "housing", "balanced"]);
+  for (const preset of Object.values(controller.PUBLIC_PRESETS)) {
+    assert.equal(preset.dailyJobSearchProbability, 0.04);
+    assert.equal(preset.targetEmploymentRate, undefined, "scenario choices do not force an employment target");
+    assert.ok(Object.values(preset).every(Number.isFinite));
+  }
+  assert.equal(one("data-udes-v2-lever", "jobSearchProbability").attrs.value, "4");
+  assert.equal(all("data-udes-v2-lever", "targetEmploymentRate").length, 0);
+  assert.equal(DEFAULT_CONFIG.initialEmploymentRate, 0.67);
+  assert.equal(DEFAULT_CONFIG.employmentClosure, "endogenous");
+  assert.equal(DEFAULT_CONFIG.dailyJobSearchProbability, 0.04);
+  const engine = new UdesV2Engine({
+    seed: 240124,
+    data: {
+      zones: baseline.zones,
+      nodes: baseline.roadGraph.nodes,
+      links: baseline.roadGraph.edges,
+      candidateRoutes: baseline.roadGraph.candidateRoutes,
+      turnRestrictions: baseline.roadGraph.turnRestrictions,
+      transit: baseline.transit,
+      calibration: baseline.calibration,
+    },
+    config: { ...controller.PUBLIC_PRESETS.reference, startDate: "2024-01-01", citizenCount: 360, enterpriseCount: 36, citizenWeight: 250 },
+  });
+  engine.step(1);
+  assert.deepEqual(engine.validateInvariants(), []);
+  const snapshot = engine.snapshot({ mapFrame: "all", historyLimit: 0 });
+  assert.equal(snapshot.links.length, baseline.roadGraph.edges.length);
+  assert.equal(snapshot.zones.length, baseline.zones.length);
+  assert.equal(snapshot.city.representedPopulation, engine.citizens.length * engine.config.citizenWeight);
+  assert.equal(snapshot.city.representedEmployed + snapshot.city.representedUnemployed, snapshot.city.representedLaborForce);
+  assert.equal(snapshot.city.representedLaborForce + snapshot.city.representedNonparticipants, snapshot.city.representedPopulation);
+  assert.equal(snapshot.mapFrame.citizenCount, engine.citizens.length);
+  assert.equal(snapshot.mapFrame.enterpriseCount, engine.enterprises.length);
+  assert.equal(snapshot.mapFrame.citizens.laborForceStatuses.length, engine.citizens.length);
+  assert.deepEqual(snapshot.mapFrame.codes.citizenLaborForceStatuses, ["nonparticipant", "unemployed", "employed"]);
+  assert.equal(engine.snapshot({ mapFrame: "none" }).mapFrame, null);
+  assert.match(app, /state\.agentCanvas\.setFrame\(state\.snapshot\.mapFrame\)/);
+  const citizen = engine.inspect("citizen", engine.citizens[0].id, 3);
+  const account = citizen.financialAccount;
+  assert.ok(account && citizen.decisionExplanation);
+  assert.equal(account.accountingCadence, "daily-accrual-monthly-settlement");
+  assert.equal(account.accountingReconciliationDifferenceAed, 0);
+  assert.ok(Math.abs(account.totalMobilityCostAed - account.commutingCostAed - account.ownershipCostAed) <= 0.02);
+  assert.match(app, /ownershipCostAed/);
+  assert.match(app, /Vehicle access/);
+  assert.ok(
+    snapshot.links.every((link) =>
+      [link.loadABVehicles, link.loadBAVehicles, link.capacityVehiclesAB, link.capacityVehiclesBA].every(Number.isFinite)
     ),
-    `${zoneId} aggregate-zone portals are excluded from assignment and publication with auditable evidence`
+    "animation receives directional vehicle demand and capacity"
   );
+});
+
+// Exercise browser-bound orchestration with small dependency substitutes. The
+// controller functions themselves come from the shipped source, not a copy.
+function browserFunction(name, dependencies) {
+  const match = new RegExp("\\n  (?:async )?function " + name + "\\(").exec(app);
+  assert.ok(match, name + " is defined in the controller");
+  const start = match.index + 1;
+  const tail = app.slice(start + 1);
+  const next = tail.search(/\n  (?:async )?function /);
+  const definition = app.slice(start, next < 0 ? undefined : start + 1 + next);
+  return Function(...Object.keys(dependencies), '"use strict";\n' + definition + "\nreturn " + name)(...Object.values(dependencies));
 }
-assert.ok(
-  contextRoadEdges.every((edge) => edge.modelVisible && !edge.hidden && !edge.loadBearing && edge.geometryFeatureId === edge.id),
-  "context-only named roads are rendered but cannot receive OD demand or enter road-load metrics"
-);
-assert.equal(stops.features.length, 924, "official transit-stop snapshot is complete");
-assert.ok(
-  roads.features.every((feature) => feature.geometry.coordinates.length >= 2),
-  "all physical road segments contain routed coordinates"
-);
-assert.ok(
-  roadEdges.every((edge) => edge.from !== edge.to && roadNodeIds.has(String(edge.from)) && roadNodeIds.has(String(edge.to))),
-  "every physical edge has two distinct endpoints that exist in the road-node table"
-);
-const roadNodeById = new Map(roadNodes.map((node) => [String(node.id), node]));
-assert.ok(
-  roadEdges.every((edge) => {
-    const coordinates = edge.geometry?.coordinates || [];
-    const fromCoord = roadNodeById.get(String(edge.from))?.coord;
-    const toCoord = roadNodeById.get(String(edge.to))?.coord;
-    return (
-      coordinates.length >= 2 &&
-      coordinates[0].every((value, index) => Math.abs(value - fromCoord[index]) <= 1e-6) &&
-      coordinates.at(-1).every((value, index) => Math.abs(value - toCoord[index]) <= 1e-6)
-    );
-  }),
-  "every edge geometry begins and ends at its declared physical graph nodes"
-);
-const physicalEdgesByNodePair = new Map();
-for (const edge of roadEdges) {
-  const key = [String(edge.from), String(edge.to)].sort().join("|");
-  const parallelEdges = physicalEdgesByNodePair.get(key) || [];
-  assert.ok(
-    parallelEdges.every((parallel) => !parallel.loadBearing && !edge.loadBearing && parallel.hidden && edge.hidden),
-    `${edge.id} does not create parallel assignment capacity between ${edge.from} and ${edge.to}`
+async function asyncSection(name, check) {
+  try {
+    await check();
+    console.log("PASS " + name);
+  } catch (error) {
+    failures.push(name + ": " + error.message);
+    console.error("FAIL " + name + ": " + error.message);
+  }
+}
+
+section("dashboard outcomes keep distinct scales and requested mounts", () => {
+  const plotted = [];
+  const state = { analysisCharts: ["outcomes:occupancy", "outcomes:residual"], compare: true };
+  const render = browserFunction("renderOutcomeCharts", {
+    state,
+    palette: { green: "green", muted: "gray" },
+    prepareChartPanel: (_kind, definitions) => definitions.map(([id]) => id),
+    chartSource: () => ({
+      history: [{ housingOccupancy: 0.85, residualAfterEssentials: -120 }],
+      reference: [{ housingOccupancy: 0.8, residualAfterEssentials: 250 }],
+      labels: ["1 Jan 24"],
+    }),
+    baseChartOptions: () => ({ xAxis: {}, yAxis: { axisLabel: {} } }),
+    addInterventionMarkers: () => {},
+    mountChart: (node, key, option) => plotted.push({ node, key, option }),
+  });
+  render();
+  assert.deepEqual(
+    plotted.map((chart) => chart.key),
+    ["outcomes:occupancy", "outcomes:residual"]
   );
-  parallelEdges.push(edge);
-  physicalEdgesByNodePair.set(key, parallelEdges);
-}
-const atomicGeometryOwners = new Map();
-for (const edge of roadEdges) {
-  const coordinates = edge.geometry.coordinates;
-  for (let index = 1; index < coordinates.length; index += 1) {
-    const first = coordinates[index - 1].map((value) => Number(value).toFixed(6)).join(",");
-    const second = coordinates[index].map((value) => Number(value).toFixed(6)).join(",");
-    if (first === second) continue;
-    const key = [first, second].sort().join("|");
-    const previousOwner = atomicGeometryOwners.get(key);
-    assert.ok(!previousOwner || previousOwner === edge.id, `${edge.id} does not duplicate a physical coordinate segment owned by ${previousOwner}`);
-    atomicGeometryOwners.set(key, edge.id);
-  }
-}
-assert.ok(
-  roads.features.every(
-    (feature) =>
-      roadNodeIds.has(String(feature.properties.fromNodeId)) &&
-      roadNodeIds.has(String(feature.properties.toNodeId)) &&
-      feature.properties.modelVisible === true &&
-      feature.properties.loadBearing === !feature.properties.contextOnly &&
-      feature.properties.capacityDirection === "per direction"
-  ),
-  "published roads distinguish assignment edges from context-only roads and label capacity as directional"
-);
-assert.ok(
-  roadEdges.every(
-    (edge) =>
-      edge.directionEvidence &&
-      edge.capacityDirection === "per direction" &&
-      (edge.allowAB ? edge.capacityVehPerHourAB > 0 : edge.capacityVehPerHourAB === 0) &&
-      (edge.allowBA ? edge.capacityVehPerHourBA > 0 : edge.capacityVehPerHourBA === 0)
-  ),
-  "each physical edge has auditable direction evidence and capacity only in permitted directions"
-);
-assert.ok(
-  modelVisibleRoadEdges.some((edge) => edge.officialMainRoadMatch),
-  "the visible road network retains strict AD-SDI main-road reference matches where available"
-);
-assert.ok(
-  roadEdges.some((edge) => Array.isArray(edge.candidateRouteIds) && edge.candidateRouteIds.length > 1),
-  "the graph records physical edges shared by multiple candidate district routes"
-);
-function edgeAllowsDirection(edge, direction) {
-  const oneWay = String(edge.oneway ?? edge.oneWay ?? "").toLowerCase();
-  let allowAB = edge.allowAB !== false;
-  let allowBA = edge.allowBA !== false && edge.bidirectional !== false;
-  if (["-1", "reverse", "backward"].includes(oneWay)) {
-    allowAB = false;
-    allowBA = true;
-  } else if (["1", "yes", "true", "forward"].includes(oneWay)) {
-    allowAB = true;
-    allowBA = false;
-  }
-  return Number(direction) === 1 ? allowAB : allowBA;
-}
-assert.ok(
-  assignmentRoadEdges.some((edge) => edgeAllowsDirection(edge, 1) !== edgeAllowsDirection(edge, -1)),
-  "the physical baseline retains observed one-way traversal instead of forcing every road bidirectional"
-);
-const roadEdgeById = new Map(roadEdges.map((edge) => [String(edge.id), edge]));
-assert.ok(
-  baseline.roadGraph.candidateRoutes.every(
-    (route) =>
-      route.fromNodeId &&
-      route.toNodeId &&
-      route.traversals.length > 0 &&
-      route.traversals.every((step) => {
-        const edge = roadEdgeById.get(String(step.edgeId));
-        return edge && [1, -1].includes(Number(step.direction)) && edgeAllowsDirection(edge, step.direction);
-      })
-  ),
-  "every candidate route is an auditable, directionally legal traversal of physical edge IDs"
-);
-const candidateById = new Map(baseline.roadGraph.candidateRoutes.map((route) => [String(route.id), route]));
-assert.ok(
-  baseline.roadGraph.candidateRoutes.every((route) => {
-    const paired = candidateById.get(String(route.pairedCandidateRouteId));
-    return (
-      route.bidirectional === false &&
-      paired &&
-      paired.from === route.to &&
-      paired.to === route.from &&
-      paired.directionalPairId === route.directionalPairId &&
-      paired.pairedCandidateRouteId === route.id
+  assert.deepEqual(
+    plotted[0].option.series.map((series) => series.data),
+    [[85], [80]]
+  );
+  assert.deepEqual(
+    plotted[1].option.series.map((series) => series.data),
+    [[-120], [250]],
+    "currency retains signed values rather than percent scaling"
+  );
+});
+
+section("scope dashboards retain individual charts and render only their requested families", () => {
+  const catalog = browserFunction("analysisCatalog", { window: { UdesV2Analysis: require("../assets/js/udes-v2-analysis.js") } })();
+  const identities = new Set(catalog.map((entry) => entry.id));
+  assert.equal(identities.size, catalog.length);
+  const pairs = catalog.filter((entry) => entry.charts);
+  assert.equal(pairs.length, 8);
+  for (const pair of pairs) {
+    assert.ok(pair.charts.length >= 6 && pair.charts.length <= 9);
+    assert.equal(new Set(pair.charts).size, pair.charts.length);
+    assert.ok(
+      pair.charts.every((id) => identities.has(id)),
+      `${pair.id} points to available individual charts`
     );
-  }),
-  "every one-way district candidate identifies a separately routed reciprocal candidate"
-);
-for (const route of baseline.roadGraph.candidateRoutes) {
-  let cursor = String(route.fromNodeId);
-  for (const traversal of route.traversals) {
-    const edge = roadEdgeById.get(String(traversal.edgeId));
-    assert.ok(edge.candidateRouteIds.includes(String(route.id)), `${traversal.edgeId} retains ${route.id} in its route-membership audit field`);
-    const traversalFrom = Number(traversal.direction) === 1 ? String(edge.from) : String(edge.to);
-    const traversalTo = Number(traversal.direction) === 1 ? String(edge.to) : String(edge.from);
-    assert.equal(traversalFrom, cursor, `${route.id} traversal is continuous at ${traversal.edgeId}`);
-    cursor = traversalTo;
   }
-  assert.equal(cursor, String(route.toNodeId), `${route.id} traversal terminates at its destination access node`);
-}
-const accessNodeIds = baseline.zones.map((zone) => String(zone.networkNodeId || ""));
-assert.ok(
-  accessNodeIds.every((nodeId) => roadNodeIds.has(nodeId)),
-  "every district has an access node in the physical road graph"
-);
-const roadAdjacency = new Map(roadNodes.map((node) => [String(node.id), new Set()]));
-for (const edge of roadEdges) {
-  if (edgeAllowsDirection(edge, 1)) roadAdjacency.get(String(edge.from)).add(String(edge.to));
-  if (edgeAllowsDirection(edge, -1)) roadAdjacency.get(String(edge.to)).add(String(edge.from));
-}
-for (const origin of accessNodeIds) {
-  const reached = new Set([origin]);
-  const queue = [origin];
-  while (queue.length) {
-    for (const destination of roadAdjacency.get(queue.shift()) || []) {
-      if (reached.has(destination)) continue;
-      reached.add(destination);
-      queue.push(destination);
+  const calls = [];
+  const state = { snapshot: {}, analysisOpen: true, analysisCharts: ["analysis:enterprise-size", "enterprises:states"], analysisNotes: new Map() };
+  const noteNode = {};
+  const families = ["Outcome", "District", "Flow", "Mobility", "Citizen", "Enterprise"];
+  const dependencies = Object.fromEntries(families.map((family) => [`render${family}Charts`, () => calls.push(family)]));
+  const render = browserFunction("renderChartPanel", {
+    ...dependencies,
+    state,
+    $: () => noteNode,
+    renderDetailedAnalysis: () => calls.push("Detailed"),
+  });
+  render("workspace");
+  assert.deepEqual(calls, ["Detailed", "Enterprise"]);
+  calls.length = 0;
+  state.analysisOpen = false;
+  render("workspace");
+  assert.deepEqual(calls, [], "closed views perform no chart rendering");
+  const signature = browserFunction("chartDataSignature", {});
+  const analysis = require("../assets/js/udes-v2-analysis.js");
+  const context = { snapshot: { clock: { day: 1, date: "2024-01-02" }, city: { representedPopulation: 100, carOwnershipRate: 45 } } };
+  const withoutReference = analysis.buildOption("outcome-comparison", { ...context, compare: false });
+  const missingReference = analysis.buildOption("outcome-comparison", { ...context, compare: true });
+  assert.notEqual(
+    signature(withoutReference.option),
+    signature(missingReference.option),
+    "reference availability annotations update even when plotted values are unchanged"
+  );
+});
+
+await asyncSection("export fingerprint belongs to both running workers and retains exact intervention patches", async () => {
+  const workerSource = "// Frozen worker bytes, including UTF-8: أبو ظبي\n";
+  const state = { dataset: baseline, seed: 123, horizonDays: 366, busy: false };
+  const workers = [],
+    requests = [],
+    blobs = new Map();
+  let fetches = 0;
+  let requestedPolicy = { ...controller.PUBLIC_PRESETS.reference, scenario: "reference", policyScopeZoneId: "city" };
+  let activePatch = {},
+    referencePatch = {};
+  let saved;
+  const noop = () => {};
+  const env = {
+    state,
+    root: { dataset: { workerUrl: "/engine.js" } },
+    window: { location: { href: "https://example.test/" } },
+    Blob,
+    TextEncoder,
+    crypto: crypto.webcrypto,
+    URL: {
+      createObjectURL(blob) {
+        const url = "blob:engine-" + blobs.size;
+        blobs.set(url, blob);
+        return url;
+      },
+      revokeObjectURL: noop,
+    },
+    resolveAsset: (url) => url,
+    async fetch() {
+      fetches += 1;
+      return { ok: true, text: async () => workerSource };
+    },
+    WorkerClient: class {
+      constructor(url) {
+        this.url = url;
+        workers.push(this);
+      }
+      terminate() {}
+      async request(type, payload) {
+        requests.push({ worker: this, type, payload: structuredClone(payload) });
+        return { snapshot: { clock: { day: 0 }, city: { actorUnits: { citizen: "weighted resident" } } } };
+      }
+    },
+    renderProgress: noop,
+    workerDataset: (data) => data,
+    policyFromControls: () => requestedPolicy,
+    referencePolicyFromControls: () => ({ ...controller.PUBLIC_PRESETS.reference, scenario: "reference", policyScopeZoneId: "city" }),
+    structuralConfig: () => ({ startDate: "2024-01-01" }),
+    enginePolicyPatch: (policy) => policy,
+    snapshotFrom: (reply) => reply.snapshot,
+    modelDay: (snapshot) => snapshot.clock.day,
+    seedAppliedZonePolicies: noop,
+    recordHistory: (snapshot, target, policy) =>
+      target.push({ day: snapshot.clock.day, ...policy, zonePolicyState: [{ id: "al-bateen", housingCapacityMultiplier: 1 }] }),
+    clearDraftDirty() {
+      state.draftDirty = false;
+    },
+    renderAll: noop,
+    setRuntime: noop,
+    announce: noop,
+    setMutationControlsDisabled: noop,
+    stagedEnginePatch: (_policy, reference) => structuredClone(reference ? referencePatch : activePatch),
+    mergeAppliedPolicy: (current, requested) => ({ ...current, ...requested }),
+    updateAppliedZonePolicies: noop,
+    simulationStartDate: () => new Date("2024-01-01T00:00:00Z"),
+    DAY_MS: 86400000,
+    interventionDescriptor: (_policy, fields) => ({ scope: requestedPolicy.policyScopeZoneId, fields, label: "Changed " + fields.join(", ") }),
+    historyDate: (date) => date.toISOString().slice(0, 10),
+    formatLongDate: (date) => date.toISOString(),
+    TARGETED_LAND_USE_FIELDS: ["housingCapacityMultiplier", "businessCapacityMultiplier", "placeQuality"],
+    stopPlayback: noop,
+    clearPendingWork: noop,
+    handleError(error) {
+      throw error;
+    },
+    restoreMutationControlAvailability: noop,
+    drainPendingWork: noop,
+    resolveHistoryPolicy: controller.resolveHistoryPolicy,
+    presets: controller.PUBLIC_PRESETS,
+    appliedZonePolicyList: () => state.history[0].zonePolicyState,
+    COMPARISON_METRICS: controller.COMPARISON_METRICS,
+    FLOW_HISTORY_DETAIL_DAYS: 30,
+    downloadArtifact(content, extension) {
+      assert.equal(extension, "json");
+      saved = JSON.parse(content);
+    },
+  };
+  await browserFunction("startWorkers", env)();
+  assert.equal(fetches, 1, "load the engine once before creating the pair");
+  assert.equal(workers.length, 2);
+  assert.equal(workers[0].url, workers[1].url, "both workers execute one frozen Blob URL");
+  const frozenSource = await blobs.get(workers[0].url).text();
+  assert.equal(frozenSource, workerSource);
+  assert.equal(state.engineSha256, sha256(frozenSource), "fingerprint hashes the actual executed bytes");
+  assert.deepEqual(
+    requests.filter((request) => request.type === "init").map((request) => request.payload.seed),
+    [123, 123]
+  );
+  const initialPolicy = structuredClone(state.history[0]);
+  const initialReference = structuredClone(state.referenceHistory[0]);
+  state.elapsedDays = 10;
+  const apply = browserFunction("applyDraftPolicy", env);
+  for (const [zoneId, multiplier] of [
+    ["al-bateen", 1.4],
+    ["al-danah", 1.8],
+  ]) {
+    requestedPolicy = {
+      ...requestedPolicy,
+      scenario: "custom",
+      policyScopeZoneId: zoneId,
+      housingCapacityMultiplier: multiplier,
+      dailyJobSearchProbability: 0.07,
+    };
+    activePatch = { housingCapacityMultiplier: multiplier, policyScopeZoneId: zoneId, dailyJobSearchProbability: 0.07 };
+    referencePatch = { dailyJobSearchProbability: 0.07 };
+    state.draftFields = new Set(Object.keys(activePatch).filter((key) => key !== "policyScopeZoneId"));
+    state.draftDirty = true;
+    await apply();
+  }
+  assert.equal(state.interventions.length, 1, "same-day display markers may merge");
+  assert.equal(state.interventionPatches.length, 2, "distinct same-day configuration operations must not merge");
+  assert.deepEqual(
+    state.interventionPatches.map((patch) => [patch.sequence, patch.effectiveDay]),
+    [
+      [1, 11],
+      [2, 11],
+    ]
+  );
+  const configured = requests.filter((request) => request.type === "configure");
+  for (const [index, patch] of state.interventionPatches.entries()) {
+    assert.deepEqual(patch.activePatch, configured[index * 2].payload.patch);
+    assert.deepEqual(patch.referencePatch, configured[index * 2 + 1].payload.patch);
+  }
+  // A deployment after initialization must not replace the identity of this run.
+  env.fetch = async () => {
+    throw new Error("Export must not download a different engine");
+  };
+  const exportExperiment = browserFunction("exportExperiment", env);
+  await exportExperiment();
+  assert.equal(saved.model.engineSha256, sha256(workerSource));
+  assert.equal(saved.model.baselineSha256, sha256(JSON.stringify(baseline)));
+  assert.deepEqual(saved.initialPolicy, controller.resolveHistoryPolicy(initialPolicy, controller.PUBLIC_PRESETS.reference));
+  assert.deepEqual(saved.initialReferencePolicy, controller.resolveHistoryPolicy(initialReference, controller.PUBLIC_PRESETS.reference));
+  assert.deepEqual(saved.initialZonePolicies, initialPolicy.zonePolicyState);
+  assert.ok(saved.interventionPatches.every((patch) => patch.status === "pending"));
+  state.elapsedDays = 11;
+  await exportExperiment();
+  assert.ok(saved.interventionPatches.every((patch) => patch.status === "effective"));
+  assert.equal(fetches, 1);
+});
+
+section("negative margins and financial units survive presentation", () => {
+  const charts = new Map();
+  const noop = () => {};
+  const history = [
+    {
+      enterprisePortfolioMargin: -0.173,
+      activeEnterpriseShare: 0.9,
+      lossMakingEnterpriseShare: 0.55,
+      enterpriseStates: {},
+      transitions: {},
+      firmMoves: 0,
+      firmRestarts: 0,
+    },
+  ];
+  browserFunction("renderEnterpriseCharts", {
+    prepareChartPanel: () => ["states", "viability"],
+    chartSource: () => ({ history, labels: ["1 Jan"] }),
+    baseChartOptions: () => ({ grid: {}, xAxis: {}, yAxis: { axisLabel: {} } }),
+    palette: {},
+    formatCompact: String,
+    addInterventionMarkers: noop,
+    mountChart: (_node, key, option) => charts.set(key, option),
+  })();
+  const viability = charts.get("enterprises:viability");
+  assert.ok(viability.yAxis[0].min <= -17.3, "a negative operating margin stays within the visible axis");
+  assert.ok(Math.abs(viability.series.find((series) => series.name === "Portfolio margin").data[0] + 17.3) < 1e-9);
+  const column = controller.HISTORY_CSV_HEADERS.indexOf("daily_job_search_probability");
+  assert.ok(column >= 0);
+  assert.equal(controller.historyEntryCsvRow({ dailyJobSearchProbability: 0.07 })[column], 0.07);
+  assert.ok(!controller.HISTORY_CSV_HEADERS.includes("target_employment_rate"));
+  assert.match(app, /Per represented resident · account at/, "weighted actor counts do not turn personal AED budgets into cohort totals");
+});
+
+section("validation separates software invariants from model diagnostics", () => {
+  assert.equal(validation.status, "passed-structural-checks", "regenerate the structural validation report after the model/controller freeze");
+  assert.equal(validation.empiricalValidation.status, "not-performed");
+  assert.equal(validation.empiricalValidation.fittedBehavioralParameters, false);
+  assert.equal(validation.empiricalValidation.heldOutPredictionTest, false);
+  const required = [
+    "no-invariant-violations",
+    "resident-account-components-reconcile",
+    "population-conserved",
+    "labor-force-stocks-reconcile",
+    "mode-shares-close",
+    "physical-roads-carry-assigned-load",
+  ];
+  assert.deepEqual(
+    validation.scenarios.map((scenario) => scenario.id),
+    ["reference-1y", "transit-1y", "reference-10y", "transit-10y", "housing-10y", "balanced-10y"]
+  );
+  for (const scenario of validation.scenarios) {
+    assert.equal(scenario.status, "passed");
+    assert.equal(scenario.invariants.issueCount, 0);
+    assert.equal(scenario.resolvedScope.roadGraphEdges, baseline.roadGraph.edges.length);
+    assert.equal(scenario.resolvedScope.zones, baseline.zones.length);
+    assert.equal(scenario.resolvedValidationParameters.employmentClosure, "endogenous");
+    assert.equal(scenario.resolvedValidationParameters.initialEmploymentRatePercent, 67);
+    assert.ok(scenario.requestedDays === (scenario.id.endsWith("1y") ? 366 : 3653));
+    const checkIds = new Set(scenario.checks.map((check) => check.id));
+    assert.equal(checkIds.size, scenario.checks.length);
+    for (const id of required) assert.ok(checkIds.has(id), scenario.id + " missing " + id);
+    assert.ok(scenario.diagnostics.length > 0);
+    for (const diagnostic of scenario.diagnostics) {
+      assert.ok(!checkIds.has(diagnostic.id), "diagnostic is not an acceptance check");
+      assert.equal(diagnostic.passed, undefined);
+      assert.equal(typeof diagnostic.withinReviewBand, "boolean");
+      assert.equal(diagnostic.status, diagnostic.withinReviewBand ? "within-review-band" : "review-needed");
     }
   }
-  assert.ok(
-    accessNodeIds.every((nodeId) => reached.has(nodeId)),
-    `${origin} can reach every district access node`
-  );
-}
-assert.ok(
-  baseline.zones.every((zone) => zone.sourceClassByField),
-  "zone inputs expose field-level provenance"
-);
-const studyPopulation = baseline.zones.reduce((total, zone) => total + Number(zone.population2024 || 0), 0);
-assert.equal(studyPopulation, 1517535, "the focused study-area population matches the mapped 2024 SCAD district table");
-assert.equal(baseline.calibration.studyScopePopulation2024, studyPopulation, "the study-scope population is derived from the 18 model zones");
-assert.equal(
-  baseline.zones.filter((zone) => zone.sourceClassByField.population2024 === "observed").length,
-  12,
-  "twelve modeled district populations map directly to observed records"
-);
-assert.equal(
-  baseline.zones.filter((zone) => zone.sourceClassByField.population2024 === "derived-from-observed").length,
-  6,
-  "six modeled district populations are grouped or relabeled from observed records"
-);
-assert.equal(zones.metadata.sourceClass, "derived", "grouped and simplified district geometry is classified as derived");
-assert.ok(
-  Object.values(baseline.sources).every((source) => Object.prototype.hasOwnProperty.call(baseline.classifications, source.classification)),
-  "every source uses a defined provenance classification"
-);
-assert.equal(baseline.temporal.simulationStep, "1 calendar day", "the temporal contract is explicitly daily");
-assert.equal(baseline.temporal.observedDailyProfiles, false, "the absence of observed day profiles is explicit");
-assert.match(baseline.calibration.note, /synthetic/i, "calibration limitations are explicit");
-
-assert.match(worker, /class UdesV2Engine/, "worker contains the persistent agent engine");
-assert.match(worker, /Happy|Waiting|Extreme|Recovery/, "citizen statechart is implemented");
-assert.match(worker, /Working|Grow|Lesser/, "enterprise statechart is implemented");
-assert.match(worker, /validateInvariants\(\)/, "engine exposes reciprocal-link validation");
-assert.match(worker, /housingCapacityIsSoft: true/, "housing overcrowding is an explicit soft-capacity assumption");
-assert.match(worker, /allowCapacityOverflow: true/, "network overflow is modeled as congestion instead of forced walking");
-assert.match(worker, /initialEmploymentRate: 0\.67/, "opening employment uses the evidence-anchored employed-resident share");
-assert.match(worker, /targetEmploymentRate: 0\.67/, "labor matching targets the same evidence-anchored employed-resident share");
-assert.match(worker, /assignmentPeakHours: 13/, "the documented daily assignment window is thirteen hours");
-assert.match(worker, /captureDaily/, "the engine can return one compact observation for each simulated day");
-assert.match(worker, /networkAssignmentStatus/, "daily output distinguishes current and retained workday network assignments");
-assert.match(worker, /policyScopeZoneId/, "land-use policy can target a named modeled district");
-assert.match(worker, /serializeMapFrame\(\)/, "worker can serialize the complete citizen and enterprise map state");
-assert.match(worker, /const mapFrame = options\.mapFrame === "all"/, "the complete map frame is emitted only when requested");
-assert.match(worker, /residentialMoveCooldownDays: 365/, "household relocation uses a one-year default minimum stay");
-assert.match(worker, /firmMoveCooldownDays: 730/, "firm relocation uses a two-year default minimum stay");
-assert.match(worker, /betterJobMinimumRaise: 1\.08/, "voluntary job changes require a material gross raise");
-assert.match(worker, /this\.employedAgentDays \+=/, "employment-based movement rates integrate daily exposure");
-assert.match(
-  worker,
-  /crossDistrictVoluntaryJobSwitchesPer100EmployedAgentYears/,
-  "cross-district job-switch charts have a matching annualized event rate"
-);
-assert.match(worker, /eventClass === "reentry"/, "enterprise restart placements are separated from incumbent relocations");
-assert.match(worker, /applyExplicitZonePolicies\(/, "heterogeneous district policies survive model resets");
-assert.match(worker, /activeEnterpriseSharePercent/, "daily snapshots expose an aggregate enterprise outcome");
-assert.match(worker, /monthlyEssentialConsumptionAed: 2500/, "household essential-consumption assumption is explicit");
-assert.match(worker, /positiveResidualSavingsRate: 0\.25/, "positive residual saving rate is explicit");
-assert.match(
-  worker,
-  /representedVacancies: vacancyCount \* this\.config\.citizenWeight/,
-  "enterprise inspection serializes only hiring-aware represented vacancies"
-);
-assert.match(app, /referenceWorker = new WorkerClient/, "controller runs a same-seed reference worker");
-assert.match(app, /function renderOutcomeCharts\(/, "controller renders focused scenario outcomes");
-for (const key of ["satisfaction", "commute", "transit", "occupancy"]) {
-  assert.match(app, new RegExp(`"outcomes:${key}"`), `outcomes:${key} remains a stable overview chart key`);
-}
-assert.match(app, /finitePointCount <= 1/, "single-point line charts render a visible symbol at Day 0");
-assert.match(app, /function setConsoleView\(/, "the map-first overview and detailed studio share an explicit view controller");
-assert.match(app, /className: "udes-v2-road-feature"/, "explicit road clicks retain priority over nearby canvas agents");
-assert.match(app, /className: "udes-v2-commute-flow-feature"/, "explicit commute-flow clicks retain priority over nearby canvas agents");
-assert.match(app, /interactive: true/, "permanent district labels remain directly inspectable in the agent view");
-assert.match(app, /function renderDistrictCharts\(/, "controller renders current and daily district outcomes");
-assert.match(app, /function renderFlowCharts\(/, "controller renders cross-district movement outcomes");
-assert.match(app, /function renderMobilityCharts\(/, "controller renders the mobility analysis workspace");
-assert.match(app, /function renderCitizenCharts\(/, "controller renders citizen finance and state outcomes");
-assert.match(app, /function renderEnterpriseCharts\(/, "controller renders enterprise state and viability outcomes");
-for (const [kind, keys] of Object.entries({
-  districts: ["stocks", "selected"],
-  flows: ["routes", "district"],
-  citizens: ["finance", "states"],
-  enterprises: ["states", "viability"],
-})) {
-  assert.match(app, new RegExp(`prepareChartPanel\\("${kind}"`), `${kind} charts use their dedicated stable panel`);
-  for (const key of keys) assert.match(app, new RegExp(`"${kind}:${key}"`), `${kind}:${key} remains a stable chart key`);
-}
-assert.match(app, /function districtHistory\(/, "selected districts have a dedicated daily trajectory source");
-assert.match(app, /daily district trajectory/, "district analysis labels its daily population, jobs, and rent trajectory");
-assert.match(
-  app,
-  /aggregateFlowRoutes\(state\.history, kind, state\.flowWindowDays, latestDay, state\.flowMeasure\)/,
-  "flow charts aggregate exact OD rows over the chosen window"
-);
-assert.match(
-  app,
-  /flowSeriesForZone\(state\.history, kind, selectedId, state\.flowWindowDays, latestDay, state\.flowMeasure\)/,
-  "selected districts receive daily in, out, and net movement series"
-);
-assert.match(app, /origin → destination/, "route charts state their origin-to-destination direction");
-assert.match(app, /state\.snapshot\?\.commuteOd/, "flow analysis can inspect the current home-to-work stock separately from relocation events");
-for (const helper of ["commuteLiveWorkByDistrict", "commuteOdMatrix", "selectedDistrictCommuteExchange"]) {
-  assert.match(app, new RegExp(`function ${helper}\\(`), `${helper} derives a focused commute-stock diagnostic`);
-}
-assert.match(app, /Employed residents vs jobs located/, "district analysis distinguishes where employed residents live from where jobs are located");
-assert.match(app, /rows = home, columns = work · not relocation events/, "the OD matrix states its direction and stock semantics");
-assert.match(app, /Residents working out/, "selected districts expose residents' external work destinations");
-assert.match(app, /Workers commuting in/, "selected districts expose workers' external home origins");
-assert.match(app, /tile\.openstreetmap\.org/, "the analyst map uses a labeled OpenStreetMap basemap beneath modeled overlays");
-assert.match(app, /state\.hoveredMapFeatureKey !== entry\.key/, "hovered agent and commute-flow features are not mutated during a daily update");
-assert.match(app, /topInterDistrictCommutes\(state\.snapshot\?\.commuteOd, 18\)/, "the agent map shows a bounded set of directed home-to-work flows");
-assert.match(app, /function createAgentCanvasLayer\(/, "the complete modeled population uses one persistent canvas layer");
-assert.match(app, /agentVisibility: \{ citizens: true, enterprises: true, flows: false \}/, "commuter stock does not obscure road load by default");
-assert.match(app, /Math\.imul\(value, 0x7feb352d\)/, "agent placement uses a nonlinear hash mixer without diagonal axis correlation");
-assert.match(app, /positionSlotCache = new Map\(\)/, "agents retain stable district-level distribution slots");
-assert.match(app, /nearestSpacing > bestSpacing/, "district placement chooses separated in-polygon candidates instead of visible bands");
-assert.match(app, /map\.on\("zoomanim", this\.onZoomAnimation, this\)/, "the custom agent canvas participates in Leaflet zoom animation");
-assert.match(app, /DomUtil\.setTransform\(this\.canvas, position, scale\)/, "agent dots use the animated map transform before a crisp redraw");
-assert.match(app, /latlngs: commuteArcLatLngs\(/, "home-to-work stock uses district arcs rather than masking road centerlines");
-assert.match(
-  app,
-  /state\.worker\.request\("init", \{ data, config: activeConfig, seed: state\.seed, snapshot: \{ mapFrame: "all" \} \}\)/,
-  "the active worker requests the complete map frame"
-);
-assert.match(
-  app,
-  /state\.referenceWorker\.request\("init", \{ data, config: referenceConfig, seed: state\.seed, snapshot: \{ mapFrame: "none" \} \}\)/,
-  "the reference worker explicitly omits the full map frame"
-);
-assert.match(
-  app,
-  /state\.agentCanvas\.setFrame\(state\.snapshot\.mapFrame\)/,
-  "daily active snapshots update the persistent agent canvas from the full frame"
-);
-assert.match(app, /frame\.codes\?\.citizenLaborForceStatuses/, "the map frame decodes the worker's citizen labor-force status vocabulary");
-assert.match(app, /frame\.citizens\.laborForceStatuses/, "every mapped citizen receives its compact labor-force status code");
-assert.match(app, /point\.laborForceStatus === "nonparticipant"/, "map agent labels distinguish citizens outside the modeled labor force");
-assert.match(app, /Active job seeker/, "map and inspector copy identifies unemployed participants as active job seekers");
-assert.match(app, /requestAnimationFrame\(\(\) =>/, "agent-canvas redraws are coalesced through animation frames");
-assert.match(app, /this\.canvas\.tabIndex = 0/, "the all-agent canvas is one keyboard-reachable explorer rather than thousands of tab stops");
-assert.match(
-  app,
-  /this\.container\.addEventListener\("click", this\.clickListener, true\)/,
-  "agent hit testing no longer requires a pointer-blocking canvas"
-);
-assert.match(app, /state\.agentVisibility/, "citizens, enterprises, and commute flows retain independent visibility state");
-assert.match(app, /this\.keyboardKey = null/, "changing an agent filter clears stale keyboard selection");
-assert.match(app, /agentAriaLabel\(\)/, "the agent explorer description follows the visible filter set");
-assert.match(
-  scss,
-  /\.udes-v2-agent-canvas\s*\{[^}]*pointer-events:\s*none/s,
-  "the agent canvas leaves roads, districts, and flows pointer-accessible"
-);
-assert.match(
-  scss,
-  /data-udes-v2-view="studio"[\s\S]*?grid-auto-rows: 176px/,
-  "the detailed studio keeps outcome charts tall enough to read inside its scrollable tray"
-);
-assert.match(app, /window\.L\.svg\(\{ pane: "udesV2CommuteFlows"/, "commute routes use a dedicated SVG renderer for keyboard access");
-assert.match(app, /element\.setAttribute\("tabindex", "0"\)/, "interactive map features participate in sequential keyboard navigation");
-assert.match(app, /line\.udesV2PendingRemoval = true/, "an interacting commute route is retained when it leaves the top-route set");
-assert.match(
-  app,
-  /if \(line\.udesV2PendingRemoval\) removeCommuteFlowLayer\(line\)/,
-  "a stale hovered route is removed only after its interaction ends"
-);
-assert.match(app, /distributions\?\.financialStatus/, "citizen charts use mutually exclusive financial-status output");
-assert.match(app, /"outside-labor-force": "Outside labor force"/, "financial charts map nonparticipants to an explicit outside-labor-force bin");
-assert.match(app, /no [‘']net zero[’'] bucket/, "financial-status chart explicitly rejects a misleading net-zero bucket");
-assert.doesNotMatch(app, /Net-income distribution|agents:income/, "the ambiguous net-income histogram contract has been removed");
-assert.match(app, /stack: "citizen-state"/, "citizen Happy, Waiting, Extreme, and Recovery states are charted as a complete stock");
-assert.match(app, /stack: "enterprise-state"/, "enterprise Starting, Working, Grow, and Lesser states are charted as a complete stock");
-assert.match(app, /const corridors = new Map\(\)/, "named-corridor pressure groups physical road segments by road name");
-assert.match(
-  app,
-  /current\.roadPressure = Math\.max\(current\.roadPressure, roadPressure\)/,
-  "named-corridor pressure reports maximum directional road load rather than duplicate segment bars"
-);
-assert.match(app, /captureDaily: true/, "controller requests consecutive daily observations from both workers");
-assert.match(app, /const HISTORY_POINT_LIMIT = 3654/, "controller retains Day 0 plus a full ten-year daily run");
-assert.match(app, /const FLOW_HISTORY_DETAIL_DAYS = 30/, "high-volume OD rows are retained only for the longest selectable flow window");
-assert.match(app, /detailCutoff/, "expired OD and transition detail is compacted while daily aggregate history remains available");
-assert.match(app, /normalized\.zoneSeries = \[\]/, "unused reference-run district rows are discarded to keep ten-year daily playback bounded");
-assert.match(app, /function filterHistoryWindow\(/, "daily charts support bounded display windows without changing the run");
-assert.match(app, /function stagedEnginePatch\(/, "only explicitly changed intervention fields are applied to the live model");
-assert.match(app, /inspectionRequestToken/, "late inspection responses cannot overwrite the current agent selection");
-assert.match(app, /data-udes-v2-agent-search/, "inspectors support direct typed IDs alongside the all-agent canvas explorer");
-assert.match(app, /\["representedVacancies"\]/, "enterprise inspector reads the hiring-aware vacancy field");
-assert.match(app, /sourceClassByField\.lanesPerDirection/, "road inspection reads field-level lane-count provenance");
-assert.match(
-  app,
-  /"AD-SDI observed" : "road-class assumption"/,
-  "road inspection distinguishes observed AD-SDI lanes from modeled road-class assumptions"
-);
-assert.match(app, /statechart\(\s*\["Happy", "Waiting", "Extreme", "Recovery"\]/, "citizen inspector exposes all satisfaction states");
-for (const helper of ["decisionSummary", "citizenAccounting", "agentEvents", "eventDescription"]) {
-  assert.match(app, new RegExp(`function ${helper}\\(`), `${helper} keeps agent decisions and retained actions inspectable`);
-}
-assert.match(app, /decisionExplanation/, "agent inspectors consume the worker's explicit goal and current assessment");
-assert.match(app, /Cash after housing \+ commute/, "citizen accounting separates salary, housing, commuting, essentials, and savings");
-assert.match(app, /Recent actions/, "citizen and enterprise inspectors expose their retained event ledger");
-assert.match(app, /event\.fromWorkZoneId/, "citizen job-change events retain their origin work district in the inspector");
-assert.match(app, /event\.toWorkZoneId/, "citizen job-change events retain their destination work district in the inspector");
-assert.match(app, /const signed = values\.some/, "signed household finance histories cannot render deficits as positive bars");
-assert.match(css, /\.udes-v2-agent-history\s*>\s*div\.is-signed/, "signed household histories use a zero-centered visual treatment");
-assert.match(app, /function panelIsInteracting\(/, "inspector refreshes detect active hover and keyboard interaction");
-assert.match(app, /state\.pendingPanelRenders\.set\(panel, render\)/, "inspector updates queue while the user is interacting");
-assert.match(
-  app,
-  /pointerleave[\s\S]*flushPendingPanelRender\(panel\)[\s\S]*focusout/,
-  "queued inspector updates flush after pointer or focus interaction ends"
-);
-assert.match(app, /state\.pendingChartOptions\.set\(key, \{ option, structureKey \}\)/, "chart updates queue while a tooltip interaction is active");
-assert.match(
-  app,
-  /firstRender \|\| structureChanged[\s\S]*?\? \{ notMerge: true, lazyUpdate: true \}[\s\S]*?: \{ notMerge: false, lazyUpdate: true, silent: true, replaceMerge: \["series"\] \}/,
-  "normal chart ticks merge into existing instances and replace only series data"
-);
-assert.match(
-  app,
-  /mountChart\(routesNode, "flows:routes", routeChart, commuteStock \? "commute-od-heatmap" : "event-route-bars"\)/,
-  "switching between the OD heatmap and event bars declares an explicit chart structure boundary"
-);
-assert.match(app, /state\.chartStructureKeys\.get\(key\) !== structureKey/, "chart structure changes fully replace incompatible ECharts state");
-assert.match(
-  app,
-  /state\.chartInteractionLocks\.has\(key\) && !structureChanged/,
-  "an intentional chart-mode switch is applied immediately while ordinary daily updates remain interaction-locked"
-);
-assert.equal((app.match(/window\.echarts\.init\(/g) || []).length, 1, "chart mode changes reuse the existing ECharts instance");
-assert.match(app, /if \(!series\.id\)\s+series\.id = `\$\{key\}:/, "chart series receive stable IDs before incremental updates");
-assert.match(app, /function summarizeChart\(/, "rendered charts receive data-derived accessible summaries");
-assert.match(app, /function updateAccessibleOdTable\(/, "the OD heatmap has a nonvisual semantic table companion");
-assert.match(app, /document\.createElement\("table"\)/, "the OD companion uses native table semantics");
-assert.match(app, /header\.scope = "row"/, "OD matrix home districts are exposed as row headers");
-assert.match(app, /node\.setAttribute\("aria-describedby", detail\.id\)/, "the visible OD chart references its semantic table");
-assert.match(app, /This table is not relocation-event data/, "the accessible OD description distinguishes stock from relocation events");
-assert.match(app, /residential: "citizen-agent-years"/, "residential movement rates identify their citizen-agent exposure denominator");
-assert.match(app, /job: "employed-agent-years"/, "job movement rates identify its employed-agent exposure denominator");
-assert.match(app, /workplace: "employed-agent-years"/, "workplace movement rates identify its employed-agent exposure denominator");
-assert.match(app, /enterprise: "firm-agent-years"/, "enterprise movement rates identify their firm-agent exposure denominator");
-assert.doesNotMatch(app, /events \/ 100 actor-years/, "flow rates do not use an ambiguous generic denominator");
-assert.match(
-  scss,
-  /@media \(max-width: 1399px\) and \(min-width: 1100px\)[\s\S]*?grid-template-columns: 240px minmax\(0, 1fr\) 290px;[\s\S]*?data-udes-v2-flow-chart-mode="commute"[\s\S]*?minmax\(320px, 1\.35fr\)/,
-  "narrow desktop layouts reserve usable width and height for the OD matrix"
-);
-assert.match(app, /root\.dataset\.udesV2Mobile = compact\.matches \? "readonly" : "interactive"/, "compact simulation view is explicitly read-only");
-assert.match(app, /setMutationControlsDisabled\(true\)/, "scenario mutation controls are disabled during model initialization");
-assert.match(
-  app,
-  /if \(!state\.worker \|\| !state\.referenceWorker \|\| state\.busy\)/,
-  "playback cannot start before initialization or during another model operation"
-);
-assert.match(app, /let operationFailed = false/, "worker failures are retained as model errors instead of being relabeled ready");
-assert.doesNotMatch(app, /normalizeShare/, "controller does not guess whether percentage fields are ratios");
-assert.doesNotMatch(app, /emissions/i, "the interface does not claim an unmodeled emissions output");
-assert.doesNotMatch(
-  app,
-  /monthlyHiresRepresented|monthlyFiresRepresented|monthlyMovesRepresented/,
-  "daily charts do not repeat completed-month event totals"
-);
-assert.match(
-  validationHarnessBuffer.toString("utf8"),
-  /\["car", "pt", "walk"\]\.map\(\(mode\) => Number\(metrics\.modeCountsRepresented\?\.\[mode\]\) \|\| 0\)/,
-  "validation conserves commute distributions against completed modes, including weekend snapshots"
-);
-
-assert.equal(validation.status, "passed-regression-and-provisional-sanity-checks", "full-scale validation report passes");
-assert.equal(validation.checkSummary.failed, 0, "full-scale validation report has no failed checks");
-assert.equal(
-  validation.sourceScope.citizenAgents,
-  Math.round(studyPopulation / baseline.calibration.citizenAgentPersonsRecommended),
-  "validation uses the full weighted citizen model"
-);
-assert.equal(
-  validation.sourceScope.scadMappedDistrictPopulationSubtotal2024,
-  studyPopulation,
-  "validation reports the current SCAD-mapped district subtotal"
-);
-assert.equal(validation.sourceScope.enterpriseAgents, 600, "validation uses all enterprise agents");
-const expectedValidationScenarioIds = ["reference-1y", "transit-1y", "reference-10y", "transit-10y", "housing-10y", "balanced-10y"];
-assert.deepEqual(
-  validation.scenarios.map((scenario) => scenario.id),
-  expectedValidationScenarioIds,
-  "full-scale evidence contains both one-year comparisons and all four ten-year policy packages"
-);
-for (const scenario of validation.scenarios) {
-  assert.equal(scenario.clock.date, scenario.id.endsWith("-1y") ? "2025-01-01" : "2034-01-01", `${scenario.id} reaches its exact calendar horizon`);
-  const scenarioCheckIds = new Set(scenario.checks.map((check) => check.id));
-  for (const requiredId of [
-    "loss-making-firms-broad-distribution-guard",
-    "enterprise-median-margin-broad-plausibility-guard",
-    "enterprise-severe-distress-below-ten-percent",
-    "residential-relocation-rate-below-provisional-churn-ceiling",
-    "firm-relocation-rate-below-provisional-churn-ceiling",
-    "voluntary-job-switch-rate-below-provisional-churn-ceiling",
-    "cross-district-job-switch-rate-reconciles-to-all-switches",
-    "employer-carried-workplace-change-rate-below-provisional-churn-ceiling",
-    "full-agent-scale-resolved",
-    "labor-force-stocks-reconcile",
-    "labor-force-rates-use-disclosed-denominators",
-    "outside-labor-force-financial-bin-reconciles",
-    "extreme-state-not-dominated-by-nonparticipants",
-    "fresh-scenario-zoned-job-capacity-respected",
-    "capacity-overflow-within-horizon-stress-guard",
-    "maximum-directional-road-volume-capacity-within-horizon-stress-guard",
-    "aggregate-zone-portals-carry-no-assignment-load",
-  ]) {
-    assert.ok(scenarioCheckIds.has(requiredId), `${scenario.id} retains ${requiredId}`);
+  assert.ok(validation.crossScenarioDiagnostics.length > 0);
+  for (const diagnostic of validation.crossScenarioDiagnostics) {
+    assert.equal(diagnostic.passed, undefined);
+    assert.equal(typeof diagnostic.expectedDirection, "boolean");
   }
-  assert.equal(
-    scenario.metrics.enterprisePortfolio.restartMarginThresholdPercent,
-    scenario.resolvedValidationParameters.enterpriseRestartMarginThresholdPercent,
-    `${scenario.id} severe-distress evidence uses its configured restart threshold`
+  const checks = [...validation.scenarios.flatMap((scenario) => scenario.checks), ...validation.crossScenarioChecks];
+  const diagnostics = [...validation.scenarios.flatMap((scenario) => scenario.diagnostics), ...validation.crossScenarioDiagnostics];
+  assert.ok(checks.every((check) => check.passed === true));
+  assert.deepEqual(validation.checkSummary, { passed: checks.length, failed: 0, total: checks.length });
+  assert.equal(validation.diagnosticSummary.total, diagnostics.length);
+  assert.equal(validation.diagnosticSummary.reviewNeeded, diagnostics.filter((diagnostic) => diagnostic.status === "review-needed").length);
+  assert.equal(validation.sourceScope.scadMappedDistrictPopulationSubtotal2024, baseline.calibration.studyScopePopulation2024);
+});
+
+// Read the harness's declared dependencies without importing its executable
+// simulation. New hash dependencies cannot silently fall outside this check.
+function declaredSourceHashes(harnessPath) {
+  const source = read(harnessPath).toString();
+  const declaration = source.match(/const (?:SOURCE_PATHS|sourcePaths) = \{([\s\S]*?)\n\};/);
+  assert.ok(declaration, harnessPath + " declares its evidence dependencies");
+  return Object.fromEntries(
+    declaration[1]
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .map((line) => {
+        const entry = line.match(/^(\w+):\s*(.+),$/);
+        assert.ok(entry, "Unsupported source dependency declaration: " + line);
+        const [, key, expression] = entry;
+        let file;
+        if (expression === "fileURLToPath(import.meta.url)") file = fileURLToPath(new URL("../" + harnessPath, import.meta.url));
+        else {
+          const joined = expression.match(/^path\.join\(ROOT,\s*(.+)\)$/);
+          assert.ok(joined, "Unsupported dependency path: " + expression);
+          const components = JSON.parse("[" + joined[1] + "]");
+          assert.ok(components.every((part) => typeof part === "string"));
+          file = path.join(fileURLToPath(new URL("../", import.meta.url)), ...components);
+        }
+        return [key, sha256(readFileSync(file))];
+      })
   );
 }
-const validationCrossCheckIds = new Set(validation.crossScenarioChecks.map((check) => check.id));
-for (const requiredId of [
-  "ten-year-transit-reduces-car-share",
-  "ten-year-transit-increases-public-transport-share",
-  "ten-year-transit-ownership-stock-reconciles-with-agent-flows",
-  "ten-year-housing-reduces-occupancy-pressure",
-  "ten-year-housing-lowers-mean-housing-rent",
-  "ten-year-housing-financial-tradeoff-remains-bounded",
-  "ten-year-housing-network-tradeoff-remains-served",
-  "ten-year-balanced-increases-housing-capacity",
-  "ten-year-balanced-increases-employment-space-capacity",
-]) {
-  assert.ok(validationCrossCheckIds.has(requiredId), `validation retains ${requiredId}`);
-}
-assert.deepEqual(
-  validation.sourceHashes,
-  {
-    engineSha256: sha256(workerBuffer),
-    baselineSha256: sha256(baselineBuffer),
-    publicControllerSha256: sha256(appBuffer),
-    validationHarnessSha256: sha256(validationHarnessBuffer),
-  },
-  "committed validation evidence matches the current engine, baseline, public policy controller, and harness"
-);
-assert.ok(
-  validation.scenarios.every((scenario) => scenario.metrics.forcedInterzoneWalkers === 0 && scenario.metrics.unservedCommuters === 0),
-  "validated scenarios contain no forced or unserved inter-district trips"
-);
-assert.ok(
-  validation.scenarios.every(
-    (scenario) =>
-      scenario.metrics.savingsPolicy.monthlyEssentialConsumptionAed === 2500 &&
-      scenario.metrics.savingsPolicy.positiveResidualSavingsRate === 0.25 &&
-      scenario.metrics.savingsPolicy.negativeResidualDrawdownRate === 1 &&
-      Number.isFinite(scenario.metrics.averageMonthlySavingOrDrawdownAed)
-  ),
-  "validated household finance uses the disclosed savings-stock policy and remains finite"
-);
 
-console.log("UDES v2 site contract passed");
+section("uncertainty artifact reconciles paired runs, observations and descriptive statistics", () => {
+  const report = json("assets/data/udes-v2/uncertainty-report.json");
+  const near = (actual, expected, label) => {
+    assert.ok(Number.isFinite(actual) && Number.isFinite(expected), label + " must be finite");
+    assert.ok(Math.abs(actual - expected) <= 1e-10 * Math.max(1, Math.abs(expected)), label + " does not reconcile");
+  };
+  assertCurrentPresentationProvenance(
+    report,
+    declaredSourceHashes("scripts/validate-udes-v2-uncertainty.mjs"),
+    controller,
+    sha256(read(VERIFIER_PATH))
+  );
+  for (const [key, value] of Object.entries(report.sourceHashes)) {
+    assert.match(report.executionSourceHashesAtStart[key], /^[a-f0-9]{64}$/);
+    if (key !== "publicControllerSha256") assert.equal(report.executionSourceHashesAtStart[key], value, key + " remained unchanged during execution");
+  }
+  assert.equal(report.controllerCompatibility.status, "identical-simulation-inputs");
+  assert.equal(
+    report.controllerCompatibility.controllerChangedDuringRun,
+    report.executionSourceHashesAtStart.publicControllerSha256 !== report.sourceHashes.publicControllerSha256
+  );
+  assert.equal(report.status, "passed-structural-checks");
+  assert.equal(report.empiricalValidation.status, "not-performed");
+  assert.equal(report.empiricalValidation.predictiveIntervalsAvailable, false);
+  assert.equal(report.empiricalValidation.fittedBehavioralParameters, false);
+  const { seeds, startDate, horizonMonths, simulatedDays, observationDays } = report.design;
+  assert.ok(seeds.length >= 2 && seeds.every((seed) => Number.isSafeInteger(seed) && seed > 0));
+  assert.equal(new Set(seeds).size, seeds.length, "independent replications use distinct seeds");
+  assert.deepEqual(
+    report.seedPairs.map((pair) => pair.seed),
+    seeds
+  );
+  assert.ok(Number.isInteger(horizonMonths) && horizonMonths >= 1 && horizonMonths <= 120);
+  assert.equal(startDate, baseline.calibration.baseDate || "2024-01-01");
+  const start = new Date(startDate + "T00:00:00Z");
+  assert.equal(simulatedDays, controller.horizonEndDayFrom(start, horizonMonths));
+  assert.deepEqual(report.controllerCompatibility.checkedCalendarQueries, [{ startDate, months: horizonMonths, days: simulatedDays }]);
+  const finalDate = controller.addUtcCalendarMonths(start, horizonMonths).toISOString().slice(0, 10);
+  assert.ok(Number.isInteger(observationDays) && observationDays > 0 && observationDays <= simulatedDays);
+  let expectedWorkdays = 0;
+  for (let day = simulatedDays - observationDays + 1; day <= simulatedDays; day += 1) {
+    if (DEFAULT_CONFIG.workdays.includes(new Date(start.valueOf() + day * 86400000).getUTCDay())) expectedWorkdays += 1;
+  }
+  const metricKeys = Object.keys(report.metricUnits);
+  assert.ok(metricKeys.length > 0);
+  assert.deepEqual(Object.keys(report.seedSummary), metricKeys);
+  assert.deepEqual(Object.keys(report.pairedDifferenceUnits), metricKeys);
+  for (const key of metricKeys) {
+    assert.equal(typeof report.metricUnits[key], "string");
+    assert.equal(typeof report.pairedDifferenceUnits[key], "string");
+    if (report.metricUnits[key].startsWith("percent")) assert.ok(report.pairedDifferenceUnits[key].startsWith("percentage points"));
+  }
+  const pairs = [...report.seedPairs, ...report.sensitivityPairs];
+  assert.equal(new Set(pairs.map((pair) => pair.id + ":" + pair.seed)).size, pairs.length, "no duplicated experiment/seed pairs");
+  const runs = pairs.flatMap((pair) => [pair.reference, pair.intervention]);
+  assert.deepEqual(report.checkSummary, { passed: runs.length, failed: 0, total: runs.length });
+  for (const pair of pairs) {
+    assert.equal(pair.reference.seed, pair.seed);
+    assert.equal(pair.intervention.seed, pair.seed);
+    assert.deepEqual(pair.reference.assumptionPatch, pair.assumptionPatch);
+    assert.deepEqual(pair.intervention.assumptionPatch, pair.assumptionPatch);
+    assert.deepEqual(Object.keys(pair.delta), metricKeys);
+    for (const key of metricKeys) near(pair.delta[key], pair.intervention.metrics[key] - pair.reference.metrics[key], pair.id + " paired " + key);
+  }
+  for (const run of runs) {
+    assert.equal(run.status, "passed-structural-checks");
+    assert.deepEqual(run.invariantIssues, []);
+    for (const key of [
+      "invariants",
+      "finiteMetrics",
+      "populationConserved",
+      "laborStocksReconcile",
+      "employmentFeasible",
+      "vehicleAccessStockReconciles",
+      "observedWorkdays",
+    ]) {
+      assert.equal(run.checks[key], true, run.id + " structural " + key);
+    }
+    assert.ok(Object.values(run.checks).every((value) => value === true));
+    assert.equal(run.finalDate, finalDate, run.id + " reaches the declared calendar horizon");
+    assert.deepEqual(Object.keys(run.metrics), metricKeys);
+    assert.ok(Object.values(run.metrics).every(Number.isFinite));
+    assert.equal(run.scope.employmentClosure, "endogenous");
+    assert.equal(
+      run.scope.residentCohorts,
+      validation.sourceScope.citizenAgents,
+      "uncertainty uses the same full resident scale as structural validation"
+    );
+    assert.equal(run.scope.residentWeight, validation.sourceScope.citizenWeightPersons);
+    assert.equal(run.scope.employerCohorts, validation.sourceScope.enterpriseAgents);
+    assert.equal(run.scope.representedPopulation, run.scope.residentCohorts * run.scope.residentWeight);
+    const observed = run.observations;
+    assert.ok(Object.values(observed).every((value) => Number.isFinite(value) && value >= 0));
+    assert.equal(observed.workdays, expectedWorkdays);
+    assert.ok(observed.completed > 0);
+    assert.ok(observed.car + observed.transit <= observed.completed);
+    near(run.metrics.carSharePercent, (100 * observed.car) / observed.completed, "pooled car share");
+    near(run.metrics.transitSharePercent, (100 * observed.transit) / observed.completed, "pooled transit share");
+    near(run.metrics.unservedSharePercent, (100 * observed.unserved) / (observed.completed + observed.unserved), "attempted-trip denominator");
+    near(run.metrics.meanRoundTripMinutes, observed.roundTripMinutes / observed.completed, "pooled commute time");
+    near(run.metrics.meanWorkdayVehicleKm, observed.vehicleKm / observed.workdays, "workday vehicle-km");
+    assert.equal(
+      run.resultDigestSha256,
+      sha256(JSON.stringify({ metrics: run.metrics, observations: run.observations, invariantIssues: run.invariantIssues }))
+    );
+    const basis = run.financialObservationBasis;
+    assert.ok(basis, "each current-cohort snapshot discloses settled and opening account counts");
+    for (const key of [
+      "closedAccountCohorts",
+      "openingEstimateCohorts",
+      "closedAccountRepresentedResidents",
+      "openingEstimateRepresentedResidents",
+    ]) {
+      assert.ok(Number.isInteger(basis[key]) && basis[key] >= 0, key + " is a nonnegative count");
+    }
+    assert.equal(basis.closedAccountCohorts + basis.openingEstimateCohorts, run.scope.residentCohorts);
+    assert.equal(basis.closedAccountRepresentedResidents + basis.openingEstimateRepresentedResidents, run.scope.representedPopulation);
+    assert.equal(basis.closedAccountRepresentedResidents, basis.closedAccountCohorts * run.scope.residentWeight);
+    assert.equal(basis.openingEstimateRepresentedResidents, basis.openingEstimateCohorts * run.scope.residentWeight);
+    assert.ok(basis.classificationRule.includes("lastAccountedDays") && basis.interpretation.includes("opening"));
+  }
+  assert.match(report.design.financialObservation, /opening budget estimates/);
+  assert.match(report.metricUnits.averageMonthlyNetResourcesAed, /opening estimates/);
+  for (const key of metricKeys) {
+    const summary = report.seedSummary[key];
+    const values = report.seedPairs.map((pair) => pair.delta[key]);
+    const mean = values.reduce((total, value) => total + value, 0) / values.length;
+    const standardDeviation = Math.sqrt(values.reduce((total, value) => total + (value - mean) ** 2, 0) / (values.length - 1));
+    assert.equal(summary.count, seeds.length);
+    near(summary.mean, mean, key + " mean");
+    near(summary.minimum, Math.min(...values), key + " minimum");
+    near(summary.maximum, Math.max(...values), key + " maximum");
+    near(summary.sampleStandardDeviation, standardDeviation, key + " sample SD");
+    assert.equal(summary.positiveCount, values.filter((value) => value > 1e-9).length);
+    assert.equal(summary.negativeCount, values.filter((value) => value < -1e-9).length);
+    assert.equal(summary.zeroCount, values.filter((value) => Math.abs(value) <= 1e-9).length);
+    assert.equal(summary.positiveCount + summary.negativeCount + summary.zeroCount, summary.count);
+  }
+  for (const pair of report.sensitivityPairs) {
+    const referencePair = report.seedPairs.find((candidate) => candidate.seed === pair.seed);
+    assert.ok(referencePair, "sensitivity contrasts have a same-seed baseline");
+    assert.ok(Number.isFinite(pair.baseValue) && Number.isFinite(pair.alternativeValue));
+    assert.deepEqual(pair.assumptionPatch, { [pair.parameter]: pair.alternativeValue });
+    for (const key of metricKeys)
+      near(pair.deltaChangeFromSameSeedBaseline[key], pair.delta[key] - referencePair.delta[key], key + " sensitivity contrast");
+    const reversals = metricKeys.filter(
+      (key) =>
+        Math.abs(referencePair.delta[key]) > 1e-9 &&
+        Math.abs(pair.delta[key]) > 1e-9 &&
+        Math.sign(referencePair.delta[key]) !== Math.sign(pair.delta[key])
+    );
+    assert.deepEqual(pair.directionReversals, reversals, "reported reversals are descriptive, never a preferred policy-direction requirement");
+  }
+});
+
+section("validation artifacts preserve execution identity and verify current presentation", () => {
+  assertCurrentPresentationProvenance(validation, declaredSourceHashes("scripts/validate-udes-v2-full.mjs"), controller, sha256(read(VERIFIER_PATH)));
+});
+
+if (failures.length) {
+  process.exitCode = 1;
+  console.error("UDES v2 contract: " + failures.length + " section(s) failed.\n" + failures.join("\n"));
+} else {
+  console.log("UDES v2 contract: interface bindings, provenance, physical topology, runtime accounting and validation evidence passed.");
+}

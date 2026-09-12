@@ -1,0 +1,90 @@
+{
+  "testedCode": "downloaded-deployed-worker-and-public-presets",
+  "employmentTarget": {
+    "employed": 281,
+    "target": 281,
+    "activeJobSeekers": 13,
+    "openVacancySlots": 194,
+    "hireIntoVacancyAccepted": false
+  },
+  "support": [
+    {
+      "rent": 2000,
+      "support": 6000,
+      "residualAfterEssentials": 1500
+    },
+    {
+      "rent": 20000,
+      "support": 24000,
+      "residualAfterEssentials": 1500
+    }
+  ],
+  "ownershipCost": {
+    "configuredFixedMonthlyCost": 700,
+    "ownerBankDelta": 1075,
+    "nonownerBankDelta": 1075
+  },
+  "monthClose": {
+    "lastDaySeparatedSalaryAccounted": 0
+  },
+  "financialGuard": {
+    "cashAfterHousingAndCommute": 2000,
+    "residualAfterEssentials": -500,
+    "financialStatus": "essentials-gap",
+    "behaviorCallsNormal": true
+  },
+  "sameZone": {
+    "predictedRoundTripMinutes": 16,
+    "realizedMeanMinutes": 22.2022,
+    "modes": {
+      "car": 7796,
+      "pt": 847,
+      "walk": 1357
+    }
+  },
+  "committedValidation": {
+    "status": "passed-regression-and-provisional-sanity-checks",
+    "generatedAt": "2026-09-02T06:47:06.283Z",
+    "checks": {
+      "passed": 236,
+      "failed": 0,
+      "total": 236
+    },
+    "scenarios": [
+      {
+        "id": "reference-1y",
+        "employedShare": 67,
+        "unemploymentRate": 4.28
+      },
+      {
+        "id": "transit-1y",
+        "employedShare": 67,
+        "unemploymentRate": 4.28
+      },
+      {
+        "id": "reference-10y",
+        "employedShare": 67,
+        "unemploymentRate": 4.28
+      },
+      {
+        "id": "transit-10y",
+        "employedShare": 67,
+        "unemploymentRate": 4.28
+      },
+      {
+        "id": "housing-10y",
+        "employedShare": 67,
+        "unemploymentRate": 4.28
+      },
+      {
+        "id": "balanced-10y",
+        "employedShare": 67,
+        "unemploymentRate": 4.28
+      }
+    ]
+  },
+  "baseline": {
+    "population": 1517535,
+    "recommendedWeight": 250
+  }
+}

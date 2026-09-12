@@ -1,0 +1,498 @@
+{
+  "checkedAt": "2026-09-11T15:41:34.772Z",
+  "sourceHashes": {
+    "assets/js/udes-v2-worker.js": "b2dd23ffb3bb58e0d0daeac5c87091939cc2de756285f6f37da5204c7a69bac9",
+    "assets/data/udes-v2/baseline.json": "026e717c2ed0491608120ac2b1f9b903ef184fe9f398e353761e0b133e371c20",
+    "assets/js/udes-v2-app.js": "25933888f60d8d3db89d5c61cbeb62929424b31a8019685edc54b5649ad14770",
+    "scripts/validate-udes-v2-full.mjs": "c6d06e9ed1d5b968da07e27f2e3dd07da37a3f7154bc0170ee126a26aa5729f3"
+  },
+  "census": {
+    "endpoint": "https://census.scad.gov.ae/home/IndicatorData",
+    "method": "POST",
+    "request": {
+      "contentsetupid": 6010,
+      "topicid": 6,
+      "itemindex": 0,
+      "year": 2024,
+      "lang": "en"
+    },
+    "districtRows": 72
+  },
+  "selectedPopulation": 1517535,
+  "allNumericMappingsMatch": true,
+  "note": "Checks do not claim empirical validation or independently validate official geography.",
+  "zones": [
+    {
+      "id": "al-bateen",
+      "name": "Al Bateen",
+      "population": 57100,
+      "sourceRecords": [
+        {
+          "name": "Al Qurm-Al Muzoun-Al Bateen",
+          "population": 57100
+        }
+      ],
+      "sourcePopulation": 57100,
+      "numericMappingMatches": true,
+      "note": "Numeric agreement does not establish that census and AD-SDI spatial extents match.",
+      "anchor": [
+        54.345,
+        24.452
+      ],
+      "geometryCentroid": [
+        54.34464,
+        24.452354
+      ],
+      "anchorInsideGeometry": true,
+      "anchorToGeometryCentroidKm": 0.054,
+      "excludedCommunityRecords": 0,
+      "initialOccupancyPercentBeforeAgentRounding": 86.91
+    },
+    {
+      "id": "al-danah",
+      "name": "Al Danah",
+      "population": 259925,
+      "sourceRecords": [
+        {
+          "name": "Al Danah",
+          "population": 259925
+        }
+      ],
+      "sourcePopulation": 259925,
+      "numericMappingMatches": true,
+      "note": "Numeric agreement does not establish that census and AD-SDI spatial extents match.",
+      "anchor": [
+        54.369,
+        24.486
+      ],
+      "geometryCentroid": [
+        54.368485,
+        24.486576
+      ],
+      "anchorInsideGeometry": true,
+      "anchorToGeometryCentroidKm": 0.083,
+      "excludedCommunityRecords": 0,
+      "initialOccupancyPercentBeforeAgentRounding": 86.931
+    },
+    {
+      "id": "al-khalidiyah",
+      "name": "Al Khalidiyah",
+      "population": 29700,
+      "sourceRecords": [
+        {
+          "name": "Al Khalidiyah",
+          "population": 29700
+        }
+      ],
+      "sourcePopulation": 29700,
+      "numericMappingMatches": true,
+      "note": "Numeric agreement does not establish that census and AD-SDI spatial extents match.",
+      "anchor": [
+        54.351,
+        24.467
+      ],
+      "geometryCentroid": [
+        54.350935,
+        24.467013
+      ],
+      "anchorInsideGeometry": true,
+      "anchorToGeometryCentroidKm": 0.007,
+      "excludedCommunityRecords": 0,
+      "initialOccupancyPercentBeforeAgentRounding": 86.842
+    },
+    {
+      "id": "al-manhal-karamah",
+      "name": "Al Manhal / Al Karamah",
+      "population": 42760,
+      "sourceRecords": [
+        {
+          "name": "Al Manhal",
+          "population": 42760
+        }
+      ],
+      "sourcePopulation": 42760,
+      "numericMappingMatches": true,
+      "note": "Numeric agreement does not establish that census and AD-SDI spatial extents match.",
+      "anchor": [
+        54.366,
+        24.462
+      ],
+      "geometryCentroid": [
+        54.366373,
+        24.461849
+      ],
+      "anchorInsideGeometry": true,
+      "anchorToGeometryCentroidKm": 0.041,
+      "excludedCommunityRecords": 0,
+      "initialOccupancyPercentBeforeAgentRounding": 86.911
+    },
+    {
+      "id": "al-mushrif",
+      "name": "Al Mushrif",
+      "population": 33770,
+      "sourceRecords": [
+        {
+          "name": "Al Mushrif",
+          "population": 33770
+        }
+      ],
+      "sourcePopulation": 33770,
+      "numericMappingMatches": true,
+      "note": "Numeric agreement does not establish that census and AD-SDI spatial extents match.",
+      "anchor": [
+        54.389,
+        24.44
+      ],
+      "geometryCentroid": [
+        54.388547,
+        24.439704
+      ],
+      "anchorInsideGeometry": true,
+      "anchorToGeometryCentroidKm": 0.056,
+      "excludedCommunityRecords": 0,
+      "initialOccupancyPercentBeforeAgentRounding": 86.812
+    },
+    {
+      "id": "al-nahyan",
+      "name": "Al Nahyan",
+      "population": 99695,
+      "sourceRecords": [
+        {
+          "name": "Al Nahyan",
+          "population": 99695
+        }
+      ],
+      "sourcePopulation": 99695,
+      "numericMappingMatches": true,
+      "note": "Numeric agreement does not establish that census and AD-SDI spatial extents match.",
+      "anchor": [
+        54.388,
+        24.464
+      ],
+      "geometryCentroid": [
+        54.387576,
+        24.464116
+      ],
+      "anchorInsideGeometry": true,
+      "anchorToGeometryCentroidKm": 0.045,
+      "excludedCommunityRecords": 0,
+      "initialOccupancyPercentBeforeAgentRounding": 86.918
+    },
+    {
+      "id": "muroor-al-saadah",
+      "name": "Muroor / Al Sa'adah",
+      "population": 25970,
+      "sourceRecords": [
+        {
+          "name": "Al Sa'adah",
+          "population": 25970
+        }
+      ],
+      "sourcePopulation": 25970,
+      "numericMappingMatches": true,
+      "note": "Numeric agreement does not establish that census and AD-SDI spatial extents match.",
+      "anchor": [
+        54.429,
+        24.436
+      ],
+      "geometryCentroid": [
+        54.429139,
+        24.43599
+      ],
+      "anchorInsideGeometry": true,
+      "anchorToGeometryCentroidKm": 0.014,
+      "excludedCommunityRecords": 0,
+      "initialOccupancyPercentBeforeAgentRounding": 86.856
+    },
+    {
+      "id": "al-rawdah",
+      "name": "Al Rawdah",
+      "population": 26935,
+      "sourceRecords": [
+        {
+          "name": "Al Rawdah",
+          "population": 26935
+        }
+      ],
+      "sourcePopulation": 26935,
+      "numericMappingMatches": true,
+      "note": "Numeric agreement does not establish that census and AD-SDI spatial extents match.",
+      "anchor": [
+        54.453,
+        24.418
+      ],
+      "geometryCentroid": [
+        54.452753,
+        24.418193
+      ],
+      "anchorInsideGeometry": true,
+      "anchorToGeometryCentroidKm": 0.033,
+      "excludedCommunityRecords": 0,
+      "initialOccupancyPercentBeforeAgentRounding": 86.887
+    },
+    {
+      "id": "al-zahiyah",
+      "name": "Al Zahiyah",
+      "population": 122515,
+      "sourceRecords": [
+        {
+          "name": "Al Zahiyah",
+          "population": 122515
+        }
+      ],
+      "sourcePopulation": 122515,
+      "numericMappingMatches": true,
+      "note": "Numeric agreement does not establish that census and AD-SDI spatial extents match.",
+      "anchor": [
+        54.38,
+        24.499
+      ],
+      "geometryCentroid": [
+        54.379984,
+        24.498731
+      ],
+      "anchorInsideGeometry": true,
+      "anchorToGeometryCentroidKm": 0.03,
+      "excludedCommunityRecords": 0,
+      "initialOccupancyPercentBeforeAgentRounding": 86.952
+    },
+    {
+      "id": "al-reem",
+      "name": "Al Reem Island",
+      "population": 59725,
+      "sourceRecords": [
+        {
+          "name": "Al Reem Island",
+          "population": 59725
+        }
+      ],
+      "sourcePopulation": 59725,
+      "numericMappingMatches": true,
+      "note": "Numeric agreement does not establish that census and AD-SDI spatial extents match.",
+      "anchor": [
+        54.417,
+        24.505
+      ],
+      "geometryCentroid": [
+        54.41367,
+        24.496379
+      ],
+      "anchorInsideGeometry": true,
+      "anchorToGeometryCentroidKm": 1.016,
+      "excludedCommunityRecords": 4,
+      "initialOccupancyPercentBeforeAgentRounding": 86.936
+    },
+    {
+      "id": "al-maryah",
+      "name": "Al Maryah Island",
+      "population": 3375,
+      "sourceRecords": [
+        {
+          "name": "Al Maryah Island",
+          "population": 3375
+        }
+      ],
+      "sourcePopulation": 3375,
+      "numericMappingMatches": true,
+      "note": "Numeric agreement does not establish that census and AD-SDI spatial extents match.",
+      "anchor": [
+        54.39,
+        24.502
+      ],
+      "geometryCentroid": [
+        54.390364,
+        24.502407
+      ],
+      "anchorInsideGeometry": true,
+      "anchorToGeometryCentroidKm": 0.058,
+      "excludedCommunityRecords": 0,
+      "initialOccupancyPercentBeforeAgentRounding": 86.538
+    },
+    {
+      "id": "al-saadiyat",
+      "name": "Al Saadiyat Island",
+      "population": 30555,
+      "sourceRecords": [
+        {
+          "name": "Saadiyat Island",
+          "population": 30555
+        }
+      ],
+      "sourcePopulation": 30555,
+      "numericMappingMatches": true,
+      "note": "Numeric agreement does not establish that census and AD-SDI spatial extents match.",
+      "anchor": [
+        54.44,
+        24.54
+      ],
+      "geometryCentroid": [
+        54.442831,
+        24.534516
+      ],
+      "anchorInsideGeometry": true,
+      "anchorToGeometryCentroidKm": 0.674,
+      "excludedCommunityRecords": 0,
+      "initialOccupancyPercentBeforeAgentRounding": 86.804
+    },
+    {
+      "id": "rabdan-al-maqta",
+      "name": "Rabdan / Al Maqta",
+      "population": 32960,
+      "sourceRecords": [
+        {
+          "name": "Rabdan",
+          "population": 32960
+        }
+      ],
+      "sourcePopulation": 32960,
+      "numericMappingMatches": true,
+      "note": "Numeric agreement does not establish that census and AD-SDI spatial extents match.",
+      "anchor": [
+        54.5,
+        24.397
+      ],
+      "geometryCentroid": [
+        54.500103,
+        24.397483
+      ],
+      "anchorInsideGeometry": true,
+      "anchorToGeometryCentroidKm": 0.055,
+      "excludedCommunityRecords": 0,
+      "initialOccupancyPercentBeforeAgentRounding": 86.737
+    },
+    {
+      "id": "al-raha",
+      "name": "Al Raha",
+      "population": 30200,
+      "sourceRecords": [
+        {
+          "name": "Al Rahah",
+          "population": 30200
+        }
+      ],
+      "sourcePopulation": 30200,
+      "numericMappingMatches": true,
+      "note": "Numeric agreement does not establish that census and AD-SDI spatial extents match.",
+      "anchor": [
+        54.59,
+        24.453
+      ],
+      "geometryCentroid": [
+        54.59259,
+        24.45349
+      ],
+      "anchorInsideGeometry": false,
+      "anchorToGeometryCentroidKm": 0.268,
+      "excludedCommunityRecords": 0,
+      "initialOccupancyPercentBeforeAgentRounding": 86.782
+    },
+    {
+      "id": "yas-island",
+      "name": "Yas Island",
+      "population": 36730,
+      "sourceRecords": [
+        {
+          "name": "Yas Island",
+          "population": 36730
+        }
+      ],
+      "sourcePopulation": 36730,
+      "numericMappingMatches": true,
+      "note": "Numeric agreement does not establish that census and AD-SDI spatial extents match.",
+      "anchor": [
+        54.603,
+        24.492
+      ],
+      "geometryCentroid": [
+        54.603033,
+        24.491771
+      ],
+      "anchorInsideGeometry": true,
+      "anchorToGeometryCentroidKm": 0.026,
+      "excludedCommunityRecords": 0,
+      "initialOccupancyPercentBeforeAgentRounding": 86.832
+    },
+    {
+      "id": "khalifa-city",
+      "name": "Khalifa City",
+      "population": 104930,
+      "sourceRecords": [
+        {
+          "name": "Khalifa City",
+          "population": 104930
+        }
+      ],
+      "sourcePopulation": 104930,
+      "numericMappingMatches": true,
+      "note": "Numeric agreement does not establish that census and AD-SDI spatial extents match.",
+      "anchor": [
+        54.697,
+        24.425
+      ],
+      "geometryCentroid": [
+        54.577913,
+        24.418599
+      ],
+      "anchorInsideGeometry": false,
+      "anchorToGeometryCentroidKm": 12.078,
+      "excludedCommunityRecords": 3,
+      "initialOccupancyPercentBeforeAgentRounding": 86.935
+    },
+    {
+      "id": "mbz-zayed-city",
+      "name": "Mohamed Bin Zayed / Zayed City",
+      "population": 224345,
+      "sourceRecords": [
+        {
+          "name": "Mohamed Bin Zayed City",
+          "population": 209360
+        },
+        {
+          "name": "Zayed City",
+          "population": 14985
+        }
+      ],
+      "sourcePopulation": 224345,
+      "numericMappingMatches": true,
+      "note": "Numeric agreement does not establish that census and AD-SDI spatial extents match.",
+      "anchor": [
+        54.574,
+        24.355
+      ],
+      "geometryCentroid": [
+        54.57444,
+        24.355476
+      ],
+      "anchorInsideGeometry": true,
+      "anchorToGeometryCentroidKm": 0.069,
+      "excludedCommunityRecords": 0,
+      "initialOccupancyPercentBeforeAgentRounding": 86.955
+    },
+    {
+      "id": "musaffah",
+      "name": "Musaffah",
+      "population": 296345,
+      "sourceRecords": [
+        {
+          "name": "Musaffah",
+          "population": 296345
+        }
+      ],
+      "sourcePopulation": 296345,
+      "numericMappingMatches": true,
+      "note": "Numeric agreement does not establish that census and AD-SDI spatial extents match.",
+      "anchor": [
+        54.5,
+        24.35
+      ],
+      "geometryCentroid": [
+        54.488056,
+        24.355431
+      ],
+      "anchorInsideGeometry": true,
+      "anchorToGeometryCentroidKm": 1.352,
+      "excludedCommunityRecords": 19,
+      "initialOccupancyPercentBeforeAgentRounding": 86.956
+    }
+  ]
+}

@@ -11,6 +11,7 @@ const data = {
   links: baseline.roadGraph.edges,
   nodes: baseline.roadGraph.nodes,
   candidateRoutes: baseline.roadGraph.candidateRoutes,
+  turnRestrictions: baseline.roadGraph.turnRestrictions,
   transit: baseline.transit,
 };
 

@@ -1,0 +1,117 @@
+[
+  {
+    "horizontalOverflow": false,
+    "id": "outcomes:commute",
+    "visibleCharts": 1
+  },
+  {
+    "horizontalOverflow": false,
+    "id": "outcomes:transit",
+    "visibleCharts": 1
+  },
+  {
+    "horizontalOverflow": false,
+    "id": "outcomes:occupancy",
+    "visibleCharts": 1
+  },
+  {
+    "horizontalOverflow": false,
+    "id": "outcomes:satisfaction",
+    "visibleCharts": 1
+  },
+  {
+    "horizontalOverflow": false,
+    "id": "outcomes:unemployment",
+    "visibleCharts": 1
+  },
+  {
+    "horizontalOverflow": false,
+    "id": "outcomes:residual",
+    "visibleCharts": 1
+  },
+  {
+    "horizontalOverflow": false,
+    "id": "districts:stocks",
+    "visibleCharts": 1
+  },
+  {
+    "horizontalOverflow": false,
+    "id": "districts:selected",
+    "visibleCharts": 1
+  },
+  {
+    "horizontalOverflow": false,
+    "id": "district-tradeoff",
+    "visibleCharts": 1
+  },
+  {
+    "horizontalOverflow": false,
+    "id": "flows:routes",
+    "visibleCharts": 1
+  },
+  {
+    "horizontalOverflow": false,
+    "id": "flows:district",
+    "visibleCharts": 1
+  },
+  {
+    "horizontalOverflow": false,
+    "id": "mobility:modes",
+    "visibleCharts": 1
+  },
+  {
+    "horizontalOverflow": false,
+    "id": "mobility:links",
+    "visibleCharts": 1
+  },
+  {
+    "horizontalOverflow": false,
+    "id": "citizens:finance",
+    "visibleCharts": 1
+  },
+  {
+    "horizontalOverflow": false,
+    "id": "citizens:states",
+    "visibleCharts": 1
+  },
+  {
+    "horizontalOverflow": false,
+    "id": "resource-distribution",
+    "visibleCharts": 1
+  },
+  {
+    "horizontalOverflow": false,
+    "id": "resident-transitions",
+    "visibleCharts": 1
+  },
+  {
+    "horizontalOverflow": false,
+    "id": "labor-composition",
+    "visibleCharts": 1
+  },
+  {
+    "horizontalOverflow": false,
+    "id": "enterprises:states",
+    "visibleCharts": 1
+  },
+  {
+    "horizontalOverflow": false,
+    "id": "enterprises:viability",
+    "visibleCharts": 1
+  },
+  {
+    "horizontalOverflow": false,
+    "id": "commute-distribution",
+    "visibleCharts": 1
+  },
+  {
+    "horizontalOverflow": false,
+    "id": "vehicle-access",
+    "visibleCharts": 1
+  },
+  {
+    "horizontalOverflow": false,
+    "id": "enterprise-size",
+    "visibleCharts": 1
+  }
+]

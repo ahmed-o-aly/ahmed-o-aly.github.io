@@ -1,0 +1,7967 @@
+{
+  "sourceHashes": {
+    "assets/js/udes-v2-worker.js": "f400be40d69c0eafa42cea741d0f2cd1d1d57f5c21d038f3ff6cd6b72bae376d",
+    "assets/data/udes-v2/baseline.json": "9ec52d0cc9dd5d1206965b00ff6865534b01ce1e72c9066b2f568db2be950123"
+  },
+  "scope": {
+    "residentCohorts": 6070,
+    "citizenWeight": 250,
+    "employerCohorts": 600
+  },
+  "benchmark": {
+    "benchSource": "https://router.project-osrm.org/table/v1/driving/54.3473,24.4501;54.369111,24.485869;54.350897,24.466918;54.365994,24.462006;54.38923,24.44059;54.388048,24.463949;54.429013,24.436074;54.453035,24.417889;54.37947,24.49915;54.41649,24.504694;54.389995,24.502;54.439955,24.539962;54.499972,24.397008;54.600554,24.450268;54.602998,24.491999;54.578289,24.419081;54.573942,24.354974;54.50066,24.35033?annotations=duration,distance",
+    "freeFlowSummary": {
+      "pairs": 306,
+      "over1_25Time": 134,
+      "over1_5Time": 49,
+      "over2Time": 0
+    },
+    "worstFreeFlow": [
+      {
+        "from": "al-maryah",
+        "to": "mbz-zayed-city",
+        "modelKm": 44.635,
+        "modelMin": 51.199999999999996,
+        "osrmKm": 31.6337,
+        "osrmMin": 27.341666666666665,
+        "distanceRatio": 1.4109952360931537,
+        "timeRatio": 1.872599817128924,
+        "via": [
+          "al-zahiyah",
+          "al-nahyan",
+          "muroor-al-saadah"
+        ]
+      },
+      {
+        "from": "mbz-zayed-city",
+        "to": "al-rawdah",
+        "modelKm": 26.136000000000003,
+        "modelMin": 27.299999999999997,
+        "osrmKm": 16.5977,
+        "osrmMin": 14.601666666666667,
+        "distanceRatio": 1.5746760093265937,
+        "timeRatio": 1.8696495833808924,
+        "via": []
+      },
+      {
+        "from": "mbz-zayed-city",
+        "to": "muroor-al-saadah",
+        "modelKm": 29.848000000000003,
+        "modelMin": 29.229999999999997,
+        "osrmKm": 19.8568,
+        "osrmMin": 15.786666666666667,
+        "distanceRatio": 1.5031626445348698,
+        "timeRatio": 1.8515624999999998,
+        "via": []
+      },
+      {
+        "from": "al-maryah",
+        "to": "muroor-al-saadah",
+        "modelKm": 14.634999999999998,
+        "modelMin": 17.949999999999996,
+        "osrmKm": 10.683399999999999,
+        "osrmMin": 9.843333333333334,
+        "distanceRatio": 1.3698822472246663,
+        "timeRatio": 1.8235692516085331,
+        "via": [
+          "al-zahiyah",
+          "al-nahyan"
+        ]
+      },
+      {
+        "from": "al-zahiyah",
+        "to": "mbz-zayed-city",
+        "modelKm": 43.196999999999996,
+        "modelMin": 49.08,
+        "osrmKm": 31.8391,
+        "osrmMin": 27.398333333333333,
+        "distanceRatio": 1.3567280482174433,
+        "timeRatio": 1.7913498387979803,
+        "via": [
+          "al-nahyan",
+          "muroor-al-saadah"
+        ]
+      },
+      {
+        "from": "al-khalidiyah",
+        "to": "mbz-zayed-city",
+        "modelKm": 41.705999999999996,
+        "modelMin": 46.03,
+        "osrmKm": 30.807299999999998,
+        "osrmMin": 25.796666666666667,
+        "distanceRatio": 1.3537700480081019,
+        "timeRatio": 1.7843390618943016,
+        "via": [
+          "al-manhal-karamah",
+          "muroor-al-saadah"
+        ]
+      },
+      {
+        "from": "al-reem",
+        "to": "mbz-zayed-city",
+        "modelKm": 62.16000000000002,
+        "modelMin": 56.74,
+        "osrmKm": 34.486,
+        "osrmMin": 32.03666666666667,
+        "distanceRatio": 1.8024705677666306,
+        "timeRatio": 1.7710956196025387,
+        "via": [
+          "yas-island"
+        ]
+      },
+      {
+        "from": "mbz-zayed-city",
+        "to": "rabdan-al-maqta",
+        "modelKm": 19.799,
+        "modelMin": 21.169999999999998,
+        "osrmKm": 11.1199,
+        "osrmMin": 11.988333333333333,
+        "distanceRatio": 1.7805016232160362,
+        "timeRatio": 1.765883497845127,
+        "via": []
+      },
+      {
+        "from": "muroor-al-saadah",
+        "to": "mbz-zayed-city",
+        "modelKm": 30,
+        "modelMin": 33.250000000000014,
+        "osrmKm": 21.8796,
+        "osrmMin": 19.051666666666666,
+        "distanceRatio": 1.37114024022377,
+        "timeRatio": 1.7452541334966327,
+        "via": []
+      },
+      {
+        "from": "mbz-zayed-city",
+        "to": "al-bateen",
+        "modelKm": 40.087,
+        "modelMin": 38.580000000000005,
+        "osrmKm": 27.8077,
+        "osrmMin": 22.125,
+        "distanceRatio": 1.4415791309601298,
+        "timeRatio": 1.7437288135593223,
+        "via": []
+      },
+      {
+        "from": "al-khalidiyah",
+        "to": "rabdan-al-maqta",
+        "modelKm": 22.284999999999993,
+        "modelMin": 24.73,
+        "osrmKm": 18.6466,
+        "osrmMin": 14.270000000000001,
+        "distanceRatio": 1.1951240440616517,
+        "timeRatio": 1.7330063069376314,
+        "via": [
+          "al-manhal-karamah",
+          "muroor-al-saadah"
+        ]
+      },
+      {
+        "from": "mbz-zayed-city",
+        "to": "al-khalidiyah",
+        "modelKm": 39.857000000000006,
+        "modelMin": 38.44000000000001,
+        "osrmKm": 28.2044,
+        "osrmMin": 22.435,
+        "distanceRatio": 1.4131483031016439,
+        "timeRatio": 1.713394250055717,
+        "via": []
+      },
+      {
+        "from": "al-bateen",
+        "to": "mbz-zayed-city",
+        "modelKm": 39.432999999999986,
+        "modelMin": 42.53000000000001,
+        "osrmKm": 30.0924,
+        "osrmMin": 24.861666666666668,
+        "distanceRatio": 1.3103973096197041,
+        "timeRatio": 1.7106656834484149,
+        "via": [
+          "al-rawdah"
+        ]
+      },
+      {
+        "from": "mbz-zayed-city",
+        "to": "al-mushrif",
+        "modelKm": 34.794000000000004,
+        "modelMin": 34.1,
+        "osrmKm": 24.6116,
+        "osrmMin": 20.033333333333335,
+        "distanceRatio": 1.4137236100050385,
+        "timeRatio": 1.7021630615640597,
+        "via": []
+      },
+      {
+        "from": "al-mushrif",
+        "to": "mbz-zayed-city",
+        "modelKm": 36.04,
+        "modelMin": 39.28000000000001,
+        "osrmKm": 26.4285,
+        "osrmMin": 23.209999999999997,
+        "distanceRatio": 1.363679361295571,
+        "timeRatio": 1.6923739767341668,
+        "via": [
+          "muroor-al-saadah"
+        ]
+      }
+    ],
+    "days": [
+      {
+        "day": 0,
+        "modes": {
+          "car": {
+            "legs": 3458,
+            "over1_25": 525,
+            "over1_5": 155,
+            "over2": 3,
+            "meanDistanceRatio": 1.1004103590909031
+          },
+          "pt": {
+            "legs": 1614,
+            "over1_25": 248,
+            "over1_5": 86,
+            "over2": 8,
+            "meanDistanceRatio": 1.1091335471247739
+          }
+        },
+        "worst": [
+          {
+            "citizenId": "c-01349",
+            "mode": "pt",
+            "from": "mbz-zayed-city",
+            "to": "rabdan-al-maqta",
+            "modelKm": 23.662,
+            "osrmKm": 11.1199,
+            "osrmMin": 11.988333333333333,
+            "ratio": 2.127896833604619,
+            "via": []
+          },
+          {
+            "citizenId": "c-02521",
+            "mode": "pt",
+            "from": "al-danah",
+            "to": "mbz-zayed-city",
+            "modelKm": 64.07300000000001,
+            "osrmKm": 31.2328,
+            "osrmMin": 27.17,
+            "ratio": 2.051465126405574,
+            "via": [
+              "yas-island"
+            ]
+          },
+          {
+            "citizenId": "c-00352",
+            "mode": "car",
+            "from": "al-zahiyah",
+            "to": "mbz-zayed-city",
+            "modelKm": 63.841000000000015,
+            "osrmKm": 31.8391,
+            "osrmMin": 27.398333333333333,
+            "ratio": 2.0051132098583193,
+            "via": [
+              "yas-island"
+            ]
+          },
+          {
+            "citizenId": "c-05711",
+            "mode": "pt",
+            "from": "al-zahiyah",
+            "to": "mbz-zayed-city",
+            "modelKm": 63.841000000000015,
+            "osrmKm": 31.8391,
+            "osrmMin": 27.398333333333333,
+            "ratio": 2.0051132098583193,
+            "via": [
+              "yas-island"
+            ]
+          },
+          {
+            "citizenId": "c-05776",
+            "mode": "pt",
+            "from": "al-maryah",
+            "to": "mbz-zayed-city",
+            "modelKm": 63.00200000000002,
+            "osrmKm": 31.6337,
+            "osrmMin": 27.341666666666665,
+            "ratio": 1.991610213158752,
+            "via": [
+              "yas-island"
+            ]
+          },
+          {
+            "citizenId": "c-00284",
+            "mode": "car",
+            "from": "al-maryah",
+            "to": "mbz-zayed-city",
+            "modelKm": 63.00200000000002,
+            "osrmKm": 31.6337,
+            "osrmMin": 27.341666666666665,
+            "ratio": 1.991610213158752,
+            "via": [
+              "yas-island"
+            ]
+          },
+          {
+            "citizenId": "c-02783",
+            "mode": "pt",
+            "from": "al-manhal-karamah",
+            "to": "al-bateen",
+            "modelKm": 5.631,
+            "osrmKm": 3.0114,
+            "osrmMin": 4.364999999999999,
+            "ratio": 1.8698944012751544,
+            "via": [
+              "al-khalidiyah"
+            ]
+          },
+          {
+            "citizenId": "c-00052",
+            "mode": "car",
+            "from": "al-manhal-karamah",
+            "to": "al-bateen",
+            "modelKm": 5.631,
+            "osrmKm": 3.0114,
+            "osrmMin": 4.364999999999999,
+            "ratio": 1.8698944012751544,
+            "via": [
+              "al-khalidiyah"
+            ]
+          }
+        ]
+      },
+      {
+        "day": 30,
+        "modes": {
+          "car": {
+            "legs": 2848,
+            "over1_25": 466,
+            "over1_5": 170,
+            "over2": 4,
+            "meanDistanceRatio": 1.1089273450389128
+          },
+          "pt": {
+            "legs": 2238,
+            "over1_25": 349,
+            "over1_5": 153,
+            "over2": 9,
+            "meanDistanceRatio": 1.1120624758911228
+          }
+        },
+        "worst": [
+          {
+            "citizenId": "c-04643",
+            "mode": "pt",
+            "from": "mbz-zayed-city",
+            "to": "rabdan-al-maqta",
+            "modelKm": 23.662,
+            "osrmKm": 11.1199,
+            "osrmMin": 11.988333333333333,
+            "ratio": 2.127896833604619,
+            "via": []
+          },
+          {
+            "citizenId": "c-00352",
+            "mode": "car",
+            "from": "al-zahiyah",
+            "to": "mbz-zayed-city",
+            "modelKm": 63.841000000000015,
+            "osrmKm": 31.8391,
+            "osrmMin": 27.398333333333333,
+            "ratio": 2.0051132098583193,
+            "via": [
+              "yas-island"
+            ]
+          },
+          {
+            "citizenId": "c-04652",
+            "mode": "pt",
+            "from": "al-zahiyah",
+            "to": "mbz-zayed-city",
+            "modelKm": 63.841000000000015,
+            "osrmKm": 31.8391,
+            "osrmMin": 27.398333333333333,
+            "ratio": 2.0051132098583193,
+            "via": [
+              "yas-island"
+            ]
+          },
+          {
+            "citizenId": "c-02150",
+            "mode": "car",
+            "from": "al-maryah",
+            "to": "mbz-zayed-city",
+            "modelKm": 63.00200000000002,
+            "osrmKm": 31.6337,
+            "osrmMin": 27.341666666666665,
+            "ratio": 1.991610213158752,
+            "via": [
+              "yas-island"
+            ]
+          },
+          {
+            "citizenId": "c-00092",
+            "mode": "pt",
+            "from": "al-maryah",
+            "to": "mbz-zayed-city",
+            "modelKm": 63.00200000000002,
+            "osrmKm": 31.6337,
+            "osrmMin": 27.341666666666665,
+            "ratio": 1.991610213158752,
+            "via": [
+              "yas-island"
+            ]
+          },
+          {
+            "citizenId": "c-02783",
+            "mode": "pt",
+            "from": "al-manhal-karamah",
+            "to": "al-bateen",
+            "modelKm": 5.631,
+            "osrmKm": 3.0114,
+            "osrmMin": 4.364999999999999,
+            "ratio": 1.8698944012751544,
+            "via": [
+              "al-khalidiyah"
+            ]
+          },
+          {
+            "citizenId": "c-03398",
+            "mode": "car",
+            "from": "al-manhal-karamah",
+            "to": "al-bateen",
+            "modelKm": 5.631,
+            "osrmKm": 3.0114,
+            "osrmMin": 4.364999999999999,
+            "ratio": 1.8698944012751544,
+            "via": [
+              "al-khalidiyah"
+            ]
+          },
+          {
+            "citizenId": "c-01699",
+            "mode": "pt",
+            "from": "mbz-zayed-city",
+            "to": "al-rawdah",
+            "modelKm": 29.999000000000002,
+            "osrmKm": 16.5977,
+            "osrmMin": 14.601666666666667,
+            "ratio": 1.8074191002367799,
+            "via": []
+          }
+        ]
+      }
+    ]
+  },
+  "days": [
+    {
+      "day": 0,
+      "byMode": {
+        "car": {
+          "legCount": 3458,
+          "withUnobservedTurn": 2244,
+          "withIntermediateGateway": 990,
+          "meanFreeFlowDistanceRatio": 1.007570743646242,
+          "maxFreeFlowDistanceRatio": 1.4779035581174624,
+          "serviceChanges": null
+        },
+        "pt": {
+          "legCount": 1614,
+          "withUnobservedTurn": 1101,
+          "withIntermediateGateway": 480,
+          "meanFreeFlowDistanceRatio": 1.0166875735939236,
+          "maxFreeFlowDistanceRatio": 1.584604427562467,
+          "serviceChanges": {
+            "0": 468,
+            "1": 421,
+            "2": 328,
+            "3": 194,
+            "4": 115,
+            "5": 59,
+            "6": 26,
+            "7": 3
+          }
+        }
+      },
+      "unobservedTurns": [
+        {
+          "turn": "-382,381",
+          "carLegs": 583,
+          "ptLegs": 232
+        },
+        {
+          "turn": "370,371",
+          "carLegs": 480,
+          "ptLegs": 194
+        },
+        {
+          "turn": "275,277",
+          "carLegs": 377,
+          "ptLegs": 157
+        },
+        {
+          "turn": "-325,324",
+          "carLegs": 362,
+          "ptLegs": 147
+        },
+        {
+          "turn": "74,82",
+          "carLegs": 236,
+          "ptLegs": 117
+        },
+        {
+          "turn": "-143,-140",
+          "carLegs": 228,
+          "ptLegs": 110
+        },
+        {
+          "turn": "91,-96",
+          "carLegs": 147,
+          "ptLegs": 177
+        },
+        {
+          "turn": "-171,170",
+          "carLegs": 246,
+          "ptLegs": 56
+        },
+        {
+          "turn": "-76,77",
+          "carLegs": 144,
+          "ptLegs": 145
+        },
+        {
+          "turn": "-16,-13",
+          "carLegs": 136,
+          "ptLegs": 85
+        },
+        {
+          "turn": "-383,384",
+          "carLegs": 144,
+          "ptLegs": 43
+        },
+        {
+          "turn": "73,81",
+          "carLegs": 113,
+          "ptLegs": 60
+        },
+        {
+          "turn": "186,191",
+          "carLegs": 166,
+          "ptLegs": 0
+        },
+        {
+          "turn": "-106,-86",
+          "carLegs": 91,
+          "ptLegs": 71
+        },
+        {
+          "turn": "-109,108",
+          "carLegs": 114,
+          "ptLegs": 45
+        },
+        {
+          "turn": "108,145",
+          "carLegs": 100,
+          "ptLegs": 49
+        },
+        {
+          "turn": "85,-106",
+          "carLegs": 88,
+          "ptLegs": 45
+        },
+        {
+          "turn": "-177,176",
+          "carLegs": 73,
+          "ptLegs": 39
+        },
+        {
+          "turn": "529,533",
+          "carLegs": 73,
+          "ptLegs": 33
+        },
+        {
+          "turn": "482,-477",
+          "carLegs": 70,
+          "ptLegs": 28
+        },
+        {
+          "turn": "68,-69",
+          "carLegs": 60,
+          "ptLegs": 38
+        },
+        {
+          "turn": "321,322",
+          "carLegs": 67,
+          "ptLegs": 25
+        },
+        {
+          "turn": "-298,-292",
+          "carLegs": 51,
+          "ptLegs": 31
+        },
+        {
+          "turn": "172,-174",
+          "carLegs": 47,
+          "ptLegs": 26
+        },
+        {
+          "turn": "-491,-486",
+          "carLegs": 45,
+          "ptLegs": 26
+        },
+        {
+          "turn": "-5,4",
+          "carLegs": 39,
+          "ptLegs": 21
+        },
+        {
+          "turn": "-28,27",
+          "carLegs": 34,
+          "ptLegs": 24
+        },
+        {
+          "turn": "-107,-101",
+          "carLegs": 31,
+          "ptLegs": 15
+        },
+        {
+          "turn": "-92,-89",
+          "carLegs": 29,
+          "ptLegs": 15
+        },
+        {
+          "turn": "-174,-171",
+          "carLegs": 38,
+          "ptLegs": 2
+        },
+        {
+          "turn": "45,61",
+          "carLegs": 20,
+          "ptLegs": 14
+        },
+        {
+          "turn": "-510,-508",
+          "carLegs": 29,
+          "ptLegs": 4
+        },
+        {
+          "turn": "142,144",
+          "carLegs": 19,
+          "ptLegs": 9
+        },
+        {
+          "turn": "173,-231",
+          "carLegs": 7,
+          "ptLegs": 18
+        },
+        {
+          "turn": "189,-194",
+          "carLegs": 9,
+          "ptLegs": 10
+        },
+        {
+          "turn": "-513,514",
+          "carLegs": 12,
+          "ptLegs": 4
+        },
+        {
+          "turn": "-175,-166",
+          "carLegs": 0,
+          "ptLegs": 16
+        },
+        {
+          "turn": "12,18",
+          "carLegs": 5,
+          "ptLegs": 10
+        },
+        {
+          "turn": "-216,215",
+          "carLegs": 15,
+          "ptLegs": 0
+        },
+        {
+          "turn": "-322,-321",
+          "carLegs": 0,
+          "ptLegs": 12
+        },
+        {
+          "turn": "-203,-201",
+          "carLegs": 0,
+          "ptLegs": 10
+        },
+        {
+          "turn": "-126,125",
+          "carLegs": 5,
+          "ptLegs": 4
+        },
+        {
+          "turn": "-485,-473",
+          "carLegs": 0,
+          "ptLegs": 7
+        },
+        {
+          "turn": "120,-122",
+          "carLegs": 4,
+          "ptLegs": 0
+        }
+      ],
+      "largestDetours": [
+        {
+          "citizenId": "c-05682",
+          "mode": "pt",
+          "from": "al-zahiyah",
+          "to": "musaffah",
+          "weight": 250,
+          "codes": [
+            -140,
+            -136,
+            -134,
+            -124,
+            123,
+            128,
+            -107,
+            -101,
+            -99,
+            100,
+            115,
+            212,
+            226,
+            239,
+            240,
+            258,
+            276,
+            291,
+            311,
+            -319,
+            -298,
+            -292,
+            -290,
+            -289,
+            -288,
+            -270,
+            -257,
+            -238,
+            -237,
+            -222,
+            -160,
+            -112,
+            -97,
+            98,
+            162,
+            229,
+            256,
+            271,
+            303,
+            336,
+            348,
+            -350,
+            349,
+            353,
+            362,
+            -363,
+            364,
+            370,
+            371,
+            381,
+            386,
+            -399,
+            400,
+            406,
+            412,
+            422,
+            423,
+            428,
+            -411,
+            -409,
+            408,
+            -391,
+            -380,
+            379,
+            -383,
+            -373
+          ],
+          "distanceKm": 53.398,
+          "freeFlowMinutes": 49.17000000000002,
+          "unobservedTurns": [
+            "-107,-101",
+            "-298,-292",
+            "370,371"
+          ],
+          "minimumServiceChanges": 3,
+          "intermediateGateways": [],
+          "freeFlowDistanceRatio": 1.584604427562467
+        },
+        {
+          "citizenId": "c-04191",
+          "mode": "pt",
+          "from": "al-danah",
+          "to": "mbz-zayed-city",
+          "weight": 250,
+          "codes": [
+            81,
+            -74,
+            -71,
+            -69,
+            70,
+            85,
+            -106,
+            -101,
+            -99,
+            100,
+            115,
+            212,
+            226,
+            239,
+            240,
+            258,
+            276,
+            291,
+            312,
+            342,
+            357,
+            375,
+            419,
+            440,
+            453,
+            480,
+            490,
+            502,
+            529,
+            533,
+            -528,
+            -499,
+            -497,
+            496,
+            498,
+            503,
+            537,
+            -542,
+            543,
+            -541,
+            -540,
+            -535,
+            -530,
+            -521,
+            -516,
+            517,
+            524,
+            -534,
+            -504,
+            -492,
+            -491,
+            -486,
+            -473,
+            -468,
+            -466,
+            467,
+            -454,
+            -450,
+            -437,
+            -435,
+            436,
+            438,
+            447,
+            455,
+            463,
+            -458,
+            -456,
+            457,
+            459,
+            475
+          ],
+          "distanceKm": 64.07300000000001,
+          "freeFlowMinutes": 56.57000000000001,
+          "unobservedTurns": [
+            "85,-106",
+            "529,533",
+            "-491,-486"
+          ],
+          "minimumServiceChanges": 4,
+          "intermediateGateways": [
+            "yas-island"
+          ],
+          "freeFlowDistanceRatio": 1.5752815066135621
+        },
+        {
+          "citizenId": "c-05689",
+          "mode": "pt",
+          "from": "al-maryah",
+          "to": "musaffah",
+          "weight": 250,
+          "codes": [
+            -207,
+            -203,
+            204,
+            213,
+            215,
+            218,
+            -211,
+            -159,
+            -155,
+            156,
+            212,
+            226,
+            239,
+            240,
+            258,
+            276,
+            291,
+            311,
+            -319,
+            -298,
+            -292,
+            -290,
+            -289,
+            -288,
+            -270,
+            -257,
+            -238,
+            -237,
+            -222,
+            -160,
+            -112,
+            -97,
+            98,
+            162,
+            229,
+            256,
+            271,
+            303,
+            336,
+            348,
+            -350,
+            349,
+            353,
+            362,
+            -363,
+            364,
+            370,
+            371,
+            381,
+            386,
+            -399,
+            400,
+            406,
+            412,
+            422,
+            423,
+            428,
+            -411,
+            -409,
+            408,
+            -391,
+            -380,
+            379,
+            -383,
+            -373
+          ],
+          "distanceKm": 52.559000000000005,
+          "freeFlowMinutes": 48.28000000000002,
+          "unobservedTurns": [
+            "-298,-292",
+            "370,371"
+          ],
+          "minimumServiceChanges": 2,
+          "intermediateGateways": [],
+          "freeFlowDistanceRatio": 1.495873178506376
+        },
+        {
+          "citizenId": "c-02938",
+          "mode": "car",
+          "from": "al-zahiyah",
+          "to": "mbz-zayed-city",
+          "weight": 250,
+          "codes": [
+            -140,
+            -136,
+            -134,
+            -124,
+            123,
+            128,
+            -107,
+            -101,
+            -99,
+            100,
+            115,
+            212,
+            226,
+            239,
+            240,
+            258,
+            276,
+            291,
+            312,
+            342,
+            357,
+            375,
+            419,
+            440,
+            453,
+            480,
+            490,
+            502,
+            529,
+            533,
+            -528,
+            -499,
+            -497,
+            496,
+            498,
+            503,
+            537,
+            -542,
+            543,
+            -541,
+            -540,
+            -535,
+            -530,
+            -521,
+            -516,
+            517,
+            524,
+            -534,
+            -504,
+            -492,
+            -491,
+            -486,
+            -473,
+            -468,
+            -466,
+            467,
+            -454,
+            -450,
+            -437,
+            -435,
+            436,
+            438,
+            447,
+            455,
+            463,
+            -458,
+            -456,
+            457,
+            459,
+            475
+          ],
+          "distanceKm": 63.841000000000015,
+          "freeFlowMinutes": 56.28000000000001,
+          "unobservedTurns": [
+            "-107,-101",
+            "529,533",
+            "-491,-486"
+          ],
+          "minimumServiceChanges": null,
+          "intermediateGateways": [
+            "yas-island"
+          ],
+          "freeFlowDistanceRatio": 1.4779035581174624
+        },
+        {
+          "citizenId": "c-05711",
+          "mode": "pt",
+          "from": "al-zahiyah",
+          "to": "mbz-zayed-city",
+          "weight": 250,
+          "codes": [
+            -140,
+            -136,
+            -134,
+            -124,
+            123,
+            128,
+            -107,
+            -101,
+            -99,
+            100,
+            115,
+            212,
+            226,
+            239,
+            240,
+            258,
+            276,
+            291,
+            312,
+            342,
+            357,
+            375,
+            419,
+            440,
+            453,
+            480,
+            490,
+            502,
+            529,
+            533,
+            -528,
+            -499,
+            -497,
+            496,
+            498,
+            503,
+            537,
+            -542,
+            543,
+            -541,
+            -540,
+            -535,
+            -530,
+            -521,
+            -516,
+            517,
+            524,
+            -534,
+            -504,
+            -492,
+            -491,
+            -486,
+            -473,
+            -468,
+            -466,
+            467,
+            -454,
+            -450,
+            -437,
+            -435,
+            436,
+            438,
+            447,
+            455,
+            463,
+            -458,
+            -456,
+            457,
+            459,
+            475
+          ],
+          "distanceKm": 63.841000000000015,
+          "freeFlowMinutes": 56.28000000000001,
+          "unobservedTurns": [
+            "-107,-101",
+            "529,533",
+            "-491,-486"
+          ],
+          "minimumServiceChanges": 4,
+          "intermediateGateways": [
+            "yas-island"
+          ],
+          "freeFlowDistanceRatio": 1.4779035581174624
+        },
+        {
+          "citizenId": "c-02653",
+          "mode": "pt",
+          "from": "al-danah",
+          "to": "khalifa-city",
+          "weight": 250,
+          "codes": [
+            81,
+            -74,
+            -71,
+            -69,
+            70,
+            85,
+            -106,
+            -101,
+            -99,
+            100,
+            115,
+            212,
+            226,
+            239,
+            240,
+            258,
+            276,
+            291,
+            312,
+            342,
+            357,
+            375,
+            419,
+            440,
+            453,
+            480,
+            490,
+            502,
+            529,
+            533,
+            -528,
+            -499,
+            -497,
+            496,
+            498,
+            503,
+            537,
+            -542,
+            543,
+            -541,
+            -540,
+            -535,
+            -530,
+            -521,
+            -516,
+            517,
+            524,
+            -534,
+            -504,
+            -492,
+            -491,
+            -489
+          ],
+          "distanceKm": 48.445,
+          "freeFlowMinutes": 40.02,
+          "unobservedTurns": [
+            "85,-106",
+            "529,533"
+          ],
+          "minimumServiceChanges": 3,
+          "intermediateGateways": [
+            "yas-island"
+          ],
+          "freeFlowDistanceRatio": 1.4434909567652936
+        },
+        {
+          "citizenId": "c-05202",
+          "mode": "car",
+          "from": "al-danah",
+          "to": "khalifa-city",
+          "weight": 250,
+          "codes": [
+            81,
+            -74,
+            -71,
+            -69,
+            70,
+            85,
+            -106,
+            -101,
+            -99,
+            100,
+            115,
+            212,
+            226,
+            239,
+            240,
+            258,
+            276,
+            291,
+            312,
+            342,
+            357,
+            375,
+            419,
+            440,
+            453,
+            480,
+            490,
+            502,
+            529,
+            533,
+            -528,
+            -499,
+            -497,
+            496,
+            498,
+            503,
+            537,
+            -542,
+            543,
+            -541,
+            -540,
+            -535,
+            -530,
+            -521,
+            -516,
+            517,
+            524,
+            -534,
+            -504,
+            -492,
+            -491,
+            -489
+          ],
+          "distanceKm": 48.445,
+          "freeFlowMinutes": 40.02,
+          "unobservedTurns": [
+            "85,-106",
+            "529,533"
+          ],
+          "minimumServiceChanges": null,
+          "intermediateGateways": [
+            "yas-island"
+          ],
+          "freeFlowDistanceRatio": 1.4434909567652936
+        },
+        {
+          "citizenId": "c-00026",
+          "mode": "pt",
+          "from": "al-reem",
+          "to": "rabdan-al-maqta",
+          "weight": 250,
+          "codes": [
+            -265,
+            -252,
+            251,
+            -248,
+            -228,
+            227,
+            239,
+            240,
+            258,
+            276,
+            291,
+            311,
+            -319,
+            -298,
+            -292,
+            -290,
+            -289,
+            -288,
+            -270,
+            -257,
+            -238,
+            -237,
+            -222,
+            -160,
+            -112,
+            -97,
+            98,
+            162,
+            229,
+            256,
+            271,
+            303,
+            336,
+            348,
+            -350,
+            349,
+            353,
+            362,
+            -363,
+            364,
+            370,
+            -369
+          ],
+          "distanceKm": 41.79500000000001,
+          "freeFlowMinutes": 40.26000000000001,
+          "unobservedTurns": [
+            "-298,-292"
+          ],
+          "minimumServiceChanges": 1,
+          "intermediateGateways": [],
+          "freeFlowDistanceRatio": 1.4364517459444603
+        },
+        {
+          "citizenId": "c-00856",
+          "mode": "pt",
+          "from": "al-maryah",
+          "to": "mbz-zayed-city",
+          "weight": 250,
+          "codes": [
+            -207,
+            -203,
+            204,
+            213,
+            215,
+            218,
+            -211,
+            -159,
+            -155,
+            156,
+            212,
+            226,
+            239,
+            240,
+            258,
+            276,
+            291,
+            312,
+            342,
+            357,
+            375,
+            419,
+            440,
+            453,
+            480,
+            490,
+            502,
+            529,
+            533,
+            -528,
+            -499,
+            -497,
+            496,
+            498,
+            503,
+            537,
+            -542,
+            543,
+            -541,
+            -540,
+            -535,
+            -530,
+            -521,
+            -516,
+            517,
+            524,
+            -534,
+            -504,
+            -492,
+            -491,
+            -486,
+            -473,
+            -468,
+            -466,
+            467,
+            -454,
+            -450,
+            -437,
+            -435,
+            436,
+            438,
+            447,
+            455,
+            463,
+            -458,
+            -456,
+            457,
+            459,
+            475
+          ],
+          "distanceKm": 63.00200000000002,
+          "freeFlowMinutes": 55.390000000000015,
+          "unobservedTurns": [
+            "529,533",
+            "-491,-486"
+          ],
+          "minimumServiceChanges": 3,
+          "intermediateGateways": [
+            "yas-island"
+          ],
+          "freeFlowDistanceRatio": 1.4114932228072146
+        },
+        {
+          "citizenId": "c-02150",
+          "mode": "car",
+          "from": "al-maryah",
+          "to": "mbz-zayed-city",
+          "weight": 250,
+          "codes": [
+            -207,
+            -203,
+            204,
+            213,
+            215,
+            218,
+            -211,
+            -159,
+            -155,
+            156,
+            212,
+            226,
+            239,
+            240,
+            258,
+            276,
+            291,
+            312,
+            342,
+            357,
+            375,
+            419,
+            440,
+            453,
+            480,
+            490,
+            502,
+            529,
+            533,
+            -528,
+            -499,
+            -497,
+            496,
+            498,
+            503,
+            537,
+            -542,
+            543,
+            -541,
+            -540,
+            -535,
+            -530,
+            -521,
+            -516,
+            517,
+            524,
+            -534,
+            -504,
+            -492,
+            -491,
+            -486,
+            -473,
+            -468,
+            -466,
+            467,
+            -454,
+            -450,
+            -437,
+            -435,
+            436,
+            438,
+            447,
+            455,
+            463,
+            -458,
+            -456,
+            457,
+            459,
+            475
+          ],
+          "distanceKm": 63.00200000000002,
+          "freeFlowMinutes": 55.390000000000015,
+          "unobservedTurns": [
+            "529,533",
+            "-491,-486"
+          ],
+          "minimumServiceChanges": null,
+          "intermediateGateways": [
+            "yas-island"
+          ],
+          "freeFlowDistanceRatio": 1.4114932228072146
+        },
+        {
+          "citizenId": "c-03490",
+          "mode": "pt",
+          "from": "al-nahyan",
+          "to": "al-raha",
+          "weight": 250,
+          "codes": [
+            191,
+            196,
+            -195,
+            -184,
+            -167,
+            -116,
+            -94,
+            -92,
+            -79,
+            78,
+            -72,
+            73,
+            81,
+            -74,
+            -71,
+            -69,
+            70,
+            85,
+            -106,
+            -101,
+            -99,
+            100,
+            115,
+            212,
+            226,
+            239,
+            240,
+            258,
+            276,
+            291,
+            312,
+            342,
+            357,
+            375,
+            419,
+            440,
+            453,
+            480,
+            490,
+            502,
+            529,
+            533,
+            -528,
+            -499,
+            -497,
+            496,
+            498,
+            503,
+            537,
+            -542,
+            543,
+            -541,
+            -540,
+            -535,
+            -530,
+            -519,
+            -513,
+            -510
+          ],
+          "distanceKm": 47.35699999999999,
+          "freeFlowMinutes": 38.56,
+          "unobservedTurns": [
+            "73,81",
+            "85,-106",
+            "529,533"
+          ],
+          "minimumServiceChanges": 4,
+          "intermediateGateways": [
+            "al-danah",
+            "yas-island"
+          ],
+          "freeFlowDistanceRatio": 1.4051271400172092
+        },
+        {
+          "citizenId": "c-05361",
+          "mode": "pt",
+          "from": "al-saadiyat",
+          "to": "al-rawdah",
+          "weight": 250,
+          "codes": [
+            -295,
+            294,
+            297,
+            -292,
+            -290,
+            -289,
+            -288,
+            -270,
+            -257,
+            -238,
+            -237,
+            -222,
+            -160,
+            -112,
+            -97,
+            98,
+            162,
+            229,
+            256,
+            271,
+            303,
+            336,
+            348,
+            -350,
+            349,
+            353,
+            362,
+            -363,
+            364,
+            370,
+            371,
+            381,
+            385,
+            394,
+            -392,
+            -356,
+            -339,
+            -337,
+            338,
+            340,
+            -333,
+            -331,
+            -328,
+            -325,
+            -322
+          ],
+          "distanceKm": 36.92000000000001,
+          "freeFlowMinutes": 34.67000000000001,
+          "unobservedTurns": [
+            "370,371"
+          ],
+          "minimumServiceChanges": 1,
+          "intermediateGateways": [],
+          "freeFlowDistanceRatio": 1.3982729889410699
+        },
+        {
+          "citizenId": "c-00159",
+          "mode": "car",
+          "from": "al-saadiyat",
+          "to": "al-rawdah",
+          "weight": 250,
+          "codes": [
+            -295,
+            294,
+            297,
+            -292,
+            -290,
+            -289,
+            -288,
+            -270,
+            -257,
+            -238,
+            -237,
+            -222,
+            -160,
+            -112,
+            -97,
+            98,
+            162,
+            229,
+            256,
+            271,
+            303,
+            336,
+            348,
+            -350,
+            349,
+            353,
+            362,
+            -363,
+            364,
+            370,
+            371,
+            381,
+            385,
+            394,
+            -392,
+            -356,
+            -339,
+            -337,
+            338,
+            340,
+            -333,
+            -331,
+            -328,
+            -325,
+            -322
+          ],
+          "distanceKm": 36.92000000000001,
+          "freeFlowMinutes": 34.67000000000001,
+          "unobservedTurns": [
+            "370,371"
+          ],
+          "minimumServiceChanges": null,
+          "intermediateGateways": [],
+          "freeFlowDistanceRatio": 1.3982729889410699
+        },
+        {
+          "citizenId": "c-01056",
+          "mode": "pt",
+          "from": "al-reem",
+          "to": "musaffah",
+          "weight": 250,
+          "codes": [
+            -265,
+            -252,
+            251,
+            -248,
+            -228,
+            227,
+            239,
+            240,
+            258,
+            276,
+            291,
+            311,
+            -319,
+            -298,
+            -292,
+            -290,
+            -289,
+            -288,
+            -270,
+            -257,
+            -238,
+            -237,
+            -222,
+            -160,
+            -112,
+            -97,
+            98,
+            162,
+            229,
+            256,
+            271,
+            303,
+            336,
+            348,
+            -350,
+            349,
+            353,
+            362,
+            -363,
+            364,
+            370,
+            371,
+            381,
+            386,
+            -399,
+            400,
+            406,
+            412,
+            422,
+            423,
+            428,
+            -411,
+            -409,
+            408,
+            -391,
+            -380,
+            379,
+            -383,
+            -373
+          ],
+          "distanceKm": 51.717000000000006,
+          "freeFlowMinutes": 49.630000000000024,
+          "unobservedTurns": [
+            "-298,-292",
+            "370,371"
+          ],
+          "minimumServiceChanges": 2,
+          "intermediateGateways": [],
+          "freeFlowDistanceRatio": 1.3254651699215754
+        },
+        {
+          "citizenId": "c-00165",
+          "mode": "car",
+          "from": "al-reem",
+          "to": "musaffah",
+          "weight": 250,
+          "codes": [
+            -265,
+            -252,
+            251,
+            -248,
+            -228,
+            227,
+            239,
+            240,
+            258,
+            276,
+            291,
+            311,
+            -319,
+            -298,
+            -292,
+            -290,
+            -289,
+            -288,
+            -270,
+            -257,
+            -238,
+            -237,
+            -222,
+            -160,
+            -112,
+            -97,
+            98,
+            162,
+            229,
+            256,
+            271,
+            303,
+            336,
+            348,
+            -350,
+            349,
+            353,
+            362,
+            -363,
+            364,
+            370,
+            371,
+            381,
+            386,
+            -399,
+            400,
+            406,
+            412,
+            422,
+            423,
+            428,
+            -411,
+            -409,
+            408,
+            -391,
+            -380,
+            379,
+            -383,
+            -373
+          ],
+          "distanceKm": 51.717000000000006,
+          "freeFlowMinutes": 49.630000000000024,
+          "unobservedTurns": [
+            "-298,-292",
+            "370,371"
+          ],
+          "minimumServiceChanges": null,
+          "intermediateGateways": [],
+          "freeFlowDistanceRatio": 1.3254651699215754
+        },
+        {
+          "citizenId": "c-02374",
+          "mode": "car",
+          "from": "al-bateen",
+          "to": "al-nahyan",
+          "weight": 250,
+          "codes": [
+            4,
+            -6,
+            7,
+            22,
+            24,
+            80,
+            117,
+            125,
+            183,
+            189,
+            -194,
+            -180,
+            -147,
+            -132,
+            131,
+            133,
+            172,
+            176,
+            -200,
+            -195,
+            -169,
+            168,
+            188,
+            192,
+            -187,
+            186
+          ],
+          "distanceKm": 10.336000000000002,
+          "freeFlowMinutes": 11.029999999999998,
+          "unobservedTurns": [
+            "189,-194"
+          ],
+          "minimumServiceChanges": null,
+          "intermediateGateways": [],
+          "freeFlowDistanceRatio": 1.2996353577266442
+        },
+        {
+          "citizenId": "c-01932",
+          "mode": "pt",
+          "from": "al-bateen",
+          "to": "al-nahyan",
+          "weight": 250,
+          "codes": [
+            4,
+            -6,
+            7,
+            22,
+            24,
+            80,
+            117,
+            125,
+            183,
+            189,
+            -194,
+            -180,
+            -147,
+            -132,
+            131,
+            133,
+            172,
+            176,
+            -200,
+            -195,
+            -169,
+            168,
+            188,
+            192,
+            -187,
+            186
+          ],
+          "distanceKm": 10.336000000000002,
+          "freeFlowMinutes": 11.029999999999998,
+          "unobservedTurns": [
+            "189,-194"
+          ],
+          "minimumServiceChanges": 1,
+          "intermediateGateways": [],
+          "freeFlowDistanceRatio": 1.2996353577266442
+        },
+        {
+          "citizenId": "c-00262",
+          "mode": "pt",
+          "from": "al-rawdah",
+          "to": "al-zahiyah",
+          "weight": 250,
+          "codes": [
+            -321,
+            -315,
+            -313,
+            314,
+            -285,
+            -266,
+            -232,
+            -126,
+            -114,
+            -87,
+            -30,
+            -28,
+            27,
+            -15,
+            -11,
+            12,
+            17,
+            -19,
+            -16,
+            -13,
+            -10,
+            9,
+            -3,
+            -1,
+            2,
+            39,
+            68,
+            -69,
+            70,
+            85,
+            108,
+            144,
+            -150,
+            -143
+          ],
+          "distanceKm": 18.867999999999995,
+          "freeFlowMinutes": 20.019999999999992,
+          "unobservedTurns": [
+            "-28,27",
+            "-16,-13",
+            "68,-69"
+          ],
+          "minimumServiceChanges": 3,
+          "intermediateGateways": [
+            "al-khalidiyah"
+          ],
+          "freeFlowDistanceRatio": 1.220597748738517
+        },
+        {
+          "citizenId": "c-00214",
+          "mode": "car",
+          "from": "al-rawdah",
+          "to": "al-zahiyah",
+          "weight": 250,
+          "codes": [
+            -321,
+            -315,
+            -313,
+            314,
+            -285,
+            -266,
+            -232,
+            -126,
+            -114,
+            -87,
+            -30,
+            -28,
+            27,
+            -15,
+            -11,
+            12,
+            17,
+            -19,
+            -16,
+            -13,
+            -10,
+            9,
+            -3,
+            -1,
+            2,
+            39,
+            68,
+            -69,
+            70,
+            85,
+            108,
+            144,
+            -150,
+            -143
+          ],
+          "distanceKm": 18.867999999999995,
+          "freeFlowMinutes": 20.019999999999992,
+          "unobservedTurns": [
+            "-28,27",
+            "-16,-13",
+            "68,-69"
+          ],
+          "minimumServiceChanges": null,
+          "intermediateGateways": [
+            "al-khalidiyah"
+          ],
+          "freeFlowDistanceRatio": 1.220597748738517
+        },
+        {
+          "citizenId": "c-01349",
+          "mode": "pt",
+          "from": "mbz-zayed-city",
+          "to": "rabdan-al-maqta",
+          "weight": 250,
+          "codes": [
+            -476,
+            -474,
+            -464,
+            -451,
+            -445,
+            -441,
+            442,
+            448,
+            462,
+            -471,
+            -469,
+            470,
+            472,
+            -485,
+            -473,
+            -468,
+            -466,
+            467,
+            -454,
+            -450,
+            -437,
+            -434,
+            -415,
+            -407,
+            -405,
+            404,
+            -398,
+            -395,
+            -382,
+            -376,
+            -368,
+            367
+          ],
+          "distanceKm": 23.662,
+          "freeFlowMinutes": 24.71,
+          "unobservedTurns": [
+            "-485,-473"
+          ],
+          "minimumServiceChanges": 1,
+          "intermediateGateways": [],
+          "freeFlowDistanceRatio": 1.1951108641850599
+        },
+        {
+          "citizenId": "c-05400",
+          "mode": "car",
+          "from": "al-rawdah",
+          "to": "al-reem",
+          "weight": 250,
+          "codes": [
+            -321,
+            -315,
+            -313,
+            314,
+            -285,
+            -266,
+            -232,
+            -126,
+            -114,
+            -87,
+            -30,
+            -28,
+            27,
+            -15,
+            -11,
+            12,
+            17,
+            -19,
+            -16,
+            -13,
+            -10,
+            9,
+            -3,
+            -1,
+            2,
+            39,
+            68,
+            -69,
+            70,
+            85,
+            108,
+            145,
+            164,
+            165,
+            182,
+            250,
+            254,
+            -259,
+            260,
+            261,
+            262,
+            267
+          ],
+          "distanceKm": 23.944,
+          "freeFlowMinutes": 27.189999999999998,
+          "unobservedTurns": [
+            "-28,27",
+            "-16,-13",
+            "68,-69",
+            "108,145"
+          ],
+          "minimumServiceChanges": null,
+          "intermediateGateways": [
+            "al-khalidiyah"
+          ],
+          "freeFlowDistanceRatio": 1.1660660368169862
+        },
+        {
+          "citizenId": "c-04960",
+          "mode": "car",
+          "from": "al-danah",
+          "to": "muroor-al-saadah",
+          "weight": 250,
+          "codes": [
+            81,
+            82,
+            -93,
+            -89,
+            -36,
+            -34,
+            35,
+            54,
+            56,
+            -76,
+            77,
+            102,
+            104,
+            153,
+            161,
+            170,
+            173,
+            234,
+            236,
+            263,
+            -274,
+            -272,
+            273,
+            275
+          ],
+          "distanceKm": 12.307999999999998,
+          "freeFlowMinutes": 12.54,
+          "unobservedTurns": [
+            "-76,77"
+          ],
+          "minimumServiceChanges": null,
+          "intermediateGateways": [],
+          "freeFlowDistanceRatio": 1.153082255949035
+        },
+        {
+          "citizenId": "c-05383",
+          "mode": "pt",
+          "from": "al-danah",
+          "to": "muroor-al-saadah",
+          "weight": 250,
+          "codes": [
+            81,
+            82,
+            -93,
+            -89,
+            88,
+            91,
+            -96,
+            -58,
+            -55,
+            54,
+            56,
+            -76,
+            77,
+            102,
+            104,
+            153,
+            161,
+            170,
+            173,
+            234,
+            236,
+            263,
+            -274,
+            -272,
+            273,
+            275
+          ],
+          "distanceKm": 12.271999999999998,
+          "freeFlowMinutes": 12.35,
+          "unobservedTurns": [
+            "91,-96",
+            "-76,77"
+          ],
+          "minimumServiceChanges": 2,
+          "intermediateGateways": [],
+          "freeFlowDistanceRatio": 1.1497095746674162
+        },
+        {
+          "citizenId": "c-03985",
+          "mode": "car",
+          "from": "al-danah",
+          "to": "muroor-al-saadah",
+          "weight": 250,
+          "codes": [
+            81,
+            82,
+            -93,
+            -89,
+            88,
+            91,
+            -96,
+            -58,
+            -55,
+            54,
+            56,
+            -76,
+            77,
+            102,
+            104,
+            153,
+            161,
+            170,
+            173,
+            234,
+            236,
+            263,
+            -274,
+            -272,
+            273,
+            275
+          ],
+          "distanceKm": 12.271999999999998,
+          "freeFlowMinutes": 12.35,
+          "unobservedTurns": [
+            "91,-96",
+            "-76,77"
+          ],
+          "minimumServiceChanges": null,
+          "intermediateGateways": [],
+          "freeFlowDistanceRatio": 1.1497095746674162
+        },
+        {
+          "citizenId": "c-04191",
+          "mode": "pt",
+          "from": "mbz-zayed-city",
+          "to": "al-danah",
+          "weight": 250,
+          "codes": [
+            -476,
+            -474,
+            -464,
+            -451,
+            -445,
+            -441,
+            442,
+            448,
+            462,
+            -471,
+            -469,
+            470,
+            472,
+            -485,
+            -473,
+            -468,
+            -466,
+            467,
+            -454,
+            -450,
+            -437,
+            -434,
+            -415,
+            -407,
+            -405,
+            404,
+            -398,
+            -395,
+            -382,
+            381,
+            385,
+            394,
+            -392,
+            -356,
+            -355,
+            354,
+            -352,
+            -346,
+            -335,
+            -293,
+            -268,
+            -249,
+            -221,
+            -185,
+            -109,
+            -106,
+            -86,
+            -83,
+            84,
+            -75,
+            74,
+            -81
+          ],
+          "distanceKm": 43.59199999999999,
+          "freeFlowMinutes": 41.67000000000001,
+          "unobservedTurns": [
+            "-485,-473",
+            "-382,381",
+            "-106,-86"
+          ],
+          "minimumServiceChanges": 3,
+          "intermediateGateways": [],
+          "freeFlowDistanceRatio": 1.1403756605451782
+        },
+        {
+          "citizenId": "c-00277",
+          "mode": "pt",
+          "from": "mbz-zayed-city",
+          "to": "muroor-al-saadah",
+          "weight": 250,
+          "codes": [
+            -476,
+            -474,
+            -464,
+            -451,
+            -445,
+            -441,
+            442,
+            448,
+            462,
+            -471,
+            -469,
+            470,
+            472,
+            -485,
+            -473,
+            -468,
+            -466,
+            467,
+            -454,
+            -450,
+            -437,
+            -434,
+            -415,
+            -407,
+            -405,
+            404,
+            -398,
+            -395,
+            -382,
+            381,
+            385,
+            394,
+            -392,
+            -356,
+            -339,
+            -337,
+            338,
+            340,
+            -333,
+            -331,
+            332,
+            -309,
+            -307,
+            -283,
+            -279,
+            -278,
+            -274,
+            -272,
+            273,
+            275
+          ],
+          "distanceKm": 33.711,
+          "freeFlowMinutes": 32.76999999999999,
+          "unobservedTurns": [
+            "-485,-473",
+            "-382,381"
+          ],
+          "minimumServiceChanges": 3,
+          "intermediateGateways": [],
+          "freeFlowDistanceRatio": 1.1294224068614311
+        },
+        {
+          "citizenId": "c-04049",
+          "mode": "car",
+          "from": "al-saadiyat",
+          "to": "mbz-zayed-city",
+          "weight": 250,
+          "codes": [
+            -295,
+            294,
+            297,
+            -292,
+            -290,
+            -289,
+            -286,
+            287,
+            291,
+            312,
+            342,
+            357,
+            375,
+            419,
+            440,
+            453,
+            480,
+            490,
+            502,
+            529,
+            533,
+            -528,
+            -499,
+            -497,
+            496,
+            498,
+            503,
+            537,
+            -542,
+            543,
+            -541,
+            -540,
+            -535,
+            -530,
+            -521,
+            -516,
+            517,
+            524,
+            -534,
+            -504,
+            -492,
+            -491,
+            -486,
+            -473,
+            -468,
+            -466,
+            467,
+            -454,
+            -450,
+            -437,
+            -435,
+            436,
+            438,
+            447,
+            455,
+            463,
+            -458,
+            -456,
+            457,
+            459,
+            475
+          ],
+          "distanceKm": 55.50700000000002,
+          "freeFlowMinutes": 51.63000000000002,
+          "unobservedTurns": [
+            "529,533",
+            "-491,-486"
+          ],
+          "minimumServiceChanges": null,
+          "intermediateGateways": [
+            "yas-island"
+          ],
+          "freeFlowDistanceRatio": 1.1282598532430843
+        },
+        {
+          "citizenId": "c-00159",
+          "mode": "car",
+          "from": "al-rawdah",
+          "to": "al-saadiyat",
+          "weight": 250,
+          "codes": [
+            -321,
+            -315,
+            -313,
+            314,
+            -285,
+            -266,
+            -232,
+            -126,
+            -114,
+            -87,
+            -30,
+            -28,
+            27,
+            -15,
+            -11,
+            12,
+            17,
+            -19,
+            -16,
+            -13,
+            -10,
+            9,
+            -3,
+            -1,
+            2,
+            39,
+            68,
+            -69,
+            70,
+            85,
+            -106,
+            -101,
+            -99,
+            100,
+            115,
+            212,
+            226,
+            239,
+            240,
+            258,
+            276,
+            291,
+            311,
+            -319,
+            -298,
+            -297,
+            296
+          ],
+          "distanceKm": 30.753999999999994,
+          "freeFlowMinutes": 30.97,
+          "unobservedTurns": [
+            "-28,27",
+            "-16,-13",
+            "68,-69",
+            "85,-106"
+          ],
+          "minimumServiceChanges": null,
+          "intermediateGateways": [
+            "al-khalidiyah"
+          ],
+          "freeFlowDistanceRatio": 1.1247074312463425
+        },
+        {
+          "citizenId": "c-05984",
+          "mode": "car",
+          "from": "al-zahiyah",
+          "to": "muroor-al-saadah",
+          "weight": 250,
+          "codes": [
+            -140,
+            -136,
+            -134,
+            -124,
+            123,
+            128,
+            -107,
+            -86,
+            -83,
+            84,
+            -75,
+            74,
+            82,
+            -93,
+            -89,
+            -36,
+            -34,
+            35,
+            54,
+            56,
+            -76,
+            77,
+            102,
+            104,
+            153,
+            161,
+            170,
+            173,
+            234,
+            236,
+            263,
+            -274,
+            -272,
+            273,
+            275
+          ],
+          "distanceKm": 14.830999999999996,
+          "freeFlowMinutes": 16.349999999999998,
+          "unobservedTurns": [
+            "74,82",
+            "-76,77"
+          ],
+          "minimumServiceChanges": null,
+          "intermediateGateways": [],
+          "freeFlowDistanceRatio": 1.1238160187921495
+        },
+        {
+          "citizenId": "c-00317",
+          "mode": "car",
+          "from": "al-zahiyah",
+          "to": "muroor-al-saadah",
+          "weight": 250,
+          "codes": [
+            -140,
+            -136,
+            -134,
+            -124,
+            123,
+            128,
+            -107,
+            -86,
+            -83,
+            84,
+            -75,
+            74,
+            82,
+            -93,
+            -89,
+            88,
+            91,
+            -96,
+            -58,
+            -55,
+            54,
+            56,
+            -76,
+            77,
+            102,
+            104,
+            153,
+            161,
+            170,
+            173,
+            234,
+            236,
+            263,
+            -274,
+            -272,
+            273,
+            275
+          ],
+          "distanceKm": 14.794999999999998,
+          "freeFlowMinutes": 16.159999999999997,
+          "unobservedTurns": [
+            "74,82",
+            "91,-96",
+            "-76,77"
+          ],
+          "minimumServiceChanges": null,
+          "intermediateGateways": [],
+          "freeFlowDistanceRatio": 1.1210881260892627
+        }
+      ]
+    },
+    {
+      "day": 30,
+      "byMode": {
+        "car": {
+          "legCount": 2848,
+          "withUnobservedTurn": 1863,
+          "withIntermediateGateway": 838,
+          "meanFreeFlowDistanceRatio": 1.012012694168291,
+          "maxFreeFlowDistanceRatio": 1.4779035581174624,
+          "serviceChanges": null
+        },
+        "pt": {
+          "legCount": 2238,
+          "withUnobservedTurn": 1497,
+          "withIntermediateGateway": 639,
+          "meanFreeFlowDistanceRatio": 1.0202250221620135,
+          "maxFreeFlowDistanceRatio": 1.495873178506376,
+          "serviceChanges": {
+            "0": 683,
+            "1": 548,
+            "2": 469,
+            "3": 288,
+            "4": 144,
+            "5": 66,
+            "6": 40
+          }
+        }
+      },
+      "unobservedTurns": [
+        {
+          "turn": "-382,381",
+          "carLegs": 467,
+          "ptLegs": 344
+        },
+        {
+          "turn": "370,371",
+          "carLegs": 366,
+          "ptLegs": 287
+        },
+        {
+          "turn": "275,277",
+          "carLegs": 281,
+          "ptLegs": 210
+        },
+        {
+          "turn": "-325,324",
+          "carLegs": 253,
+          "ptLegs": 212
+        },
+        {
+          "turn": "91,-96",
+          "carLegs": 135,
+          "ptLegs": 232
+        },
+        {
+          "turn": "74,82",
+          "carLegs": 193,
+          "ptLegs": 137
+        },
+        {
+          "turn": "-143,-140",
+          "carLegs": 205,
+          "ptLegs": 115
+        },
+        {
+          "turn": "-76,77",
+          "carLegs": 126,
+          "ptLegs": 194
+        },
+        {
+          "turn": "-16,-13",
+          "carLegs": 121,
+          "ptLegs": 106
+        },
+        {
+          "turn": "-171,170",
+          "carLegs": 161,
+          "ptLegs": 65
+        },
+        {
+          "turn": "-383,384",
+          "carLegs": 121,
+          "ptLegs": 65
+        },
+        {
+          "turn": "-106,-86",
+          "carLegs": 81,
+          "ptLegs": 97
+        },
+        {
+          "turn": "73,81",
+          "carLegs": 101,
+          "ptLegs": 64
+        },
+        {
+          "turn": "-109,108",
+          "carLegs": 93,
+          "ptLegs": 68
+        },
+        {
+          "turn": "85,-106",
+          "carLegs": 92,
+          "ptLegs": 60
+        },
+        {
+          "turn": "108,145",
+          "carLegs": 83,
+          "ptLegs": 68
+        },
+        {
+          "turn": "529,533",
+          "carLegs": 82,
+          "ptLegs": 51
+        },
+        {
+          "turn": "-177,176",
+          "carLegs": 67,
+          "ptLegs": 44
+        },
+        {
+          "turn": "68,-69",
+          "carLegs": 56,
+          "ptLegs": 51
+        },
+        {
+          "turn": "-298,-292",
+          "carLegs": 56,
+          "ptLegs": 43
+        },
+        {
+          "turn": "482,-477",
+          "carLegs": 53,
+          "ptLegs": 44
+        },
+        {
+          "turn": "321,322",
+          "carLegs": 53,
+          "ptLegs": 43
+        },
+        {
+          "turn": "186,191",
+          "carLegs": 94,
+          "ptLegs": 0
+        },
+        {
+          "turn": "-28,27",
+          "carLegs": 40,
+          "ptLegs": 50
+        },
+        {
+          "turn": "-491,-486",
+          "carLegs": 43,
+          "ptLegs": 37
+        },
+        {
+          "turn": "172,-174",
+          "carLegs": 38,
+          "ptLegs": 35
+        },
+        {
+          "turn": "-5,4",
+          "carLegs": 34,
+          "ptLegs": 29
+        },
+        {
+          "turn": "-107,-101",
+          "carLegs": 25,
+          "ptLegs": 26
+        },
+        {
+          "turn": "-485,-473",
+          "carLegs": 0,
+          "ptLegs": 51
+        },
+        {
+          "turn": "-174,-171",
+          "carLegs": 29,
+          "ptLegs": 16
+        },
+        {
+          "turn": "-322,-321",
+          "carLegs": 0,
+          "ptLegs": 44
+        },
+        {
+          "turn": "-203,-201",
+          "carLegs": 0,
+          "ptLegs": 39
+        },
+        {
+          "turn": "142,144",
+          "carLegs": 13,
+          "ptLegs": 16
+        },
+        {
+          "turn": "45,61",
+          "carLegs": 14,
+          "ptLegs": 13
+        },
+        {
+          "turn": "-510,-508",
+          "carLegs": 18,
+          "ptLegs": 9
+        },
+        {
+          "turn": "189,-194",
+          "carLegs": 9,
+          "ptLegs": 17
+        },
+        {
+          "turn": "173,-231",
+          "carLegs": 0,
+          "ptLegs": 21
+        },
+        {
+          "turn": "-92,-89",
+          "carLegs": 12,
+          "ptLegs": 5
+        },
+        {
+          "turn": "-126,125",
+          "carLegs": 8,
+          "ptLegs": 8
+        },
+        {
+          "turn": "-216,215",
+          "carLegs": 12,
+          "ptLegs": 3
+        },
+        {
+          "turn": "-513,514",
+          "carLegs": 7,
+          "ptLegs": 8
+        },
+        {
+          "turn": "12,18",
+          "carLegs": 4,
+          "ptLegs": 10
+        },
+        {
+          "turn": "120,-122",
+          "carLegs": 3,
+          "ptLegs": 0
+        }
+      ],
+      "largestDetours": [
+        {
+          "citizenId": "c-05926",
+          "mode": "pt",
+          "from": "al-maryah",
+          "to": "musaffah",
+          "weight": 250,
+          "codes": [
+            -207,
+            -203,
+            204,
+            213,
+            215,
+            218,
+            -211,
+            -159,
+            -155,
+            156,
+            212,
+            226,
+            239,
+            240,
+            258,
+            276,
+            291,
+            311,
+            -319,
+            -298,
+            -292,
+            -290,
+            -289,
+            -288,
+            -270,
+            -257,
+            -238,
+            -237,
+            -222,
+            -160,
+            -112,
+            -97,
+            98,
+            162,
+            229,
+            256,
+            271,
+            303,
+            336,
+            348,
+            -350,
+            349,
+            353,
+            362,
+            -363,
+            364,
+            370,
+            371,
+            381,
+            386,
+            -399,
+            400,
+            406,
+            412,
+            422,
+            423,
+            428,
+            -411,
+            -409,
+            408,
+            -391,
+            -380,
+            379,
+            -383,
+            -373
+          ],
+          "distanceKm": 52.559000000000005,
+          "freeFlowMinutes": 48.28000000000002,
+          "unobservedTurns": [
+            "-298,-292",
+            "370,371"
+          ],
+          "minimumServiceChanges": 2,
+          "intermediateGateways": [],
+          "freeFlowDistanceRatio": 1.495873178506376
+        },
+        {
+          "citizenId": "c-00289",
+          "mode": "car",
+          "from": "al-zahiyah",
+          "to": "mbz-zayed-city",
+          "weight": 250,
+          "codes": [
+            -140,
+            -136,
+            -134,
+            -124,
+            123,
+            128,
+            -107,
+            -101,
+            -99,
+            100,
+            115,
+            212,
+            226,
+            239,
+            240,
+            258,
+            276,
+            291,
+            312,
+            342,
+            357,
+            375,
+            419,
+            440,
+            453,
+            480,
+            490,
+            502,
+            529,
+            533,
+            -528,
+            -499,
+            -497,
+            496,
+            498,
+            503,
+            537,
+            -542,
+            543,
+            -541,
+            -540,
+            -535,
+            -530,
+            -521,
+            -516,
+            517,
+            524,
+            -534,
+            -504,
+            -492,
+            -491,
+            -486,
+            -473,
+            -468,
+            -466,
+            467,
+            -454,
+            -450,
+            -437,
+            -435,
+            436,
+            438,
+            447,
+            455,
+            463,
+            -458,
+            -456,
+            457,
+            459,
+            475
+          ],
+          "distanceKm": 63.841000000000015,
+          "freeFlowMinutes": 56.28000000000001,
+          "unobservedTurns": [
+            "-107,-101",
+            "529,533",
+            "-491,-486"
+          ],
+          "minimumServiceChanges": null,
+          "intermediateGateways": [
+            "yas-island"
+          ],
+          "freeFlowDistanceRatio": 1.4779035581174624
+        },
+        {
+          "citizenId": "c-03485",
+          "mode": "pt",
+          "from": "al-zahiyah",
+          "to": "mbz-zayed-city",
+          "weight": 250,
+          "codes": [
+            -140,
+            -136,
+            -134,
+            -124,
+            123,
+            128,
+            -107,
+            -101,
+            -99,
+            100,
+            115,
+            212,
+            226,
+            239,
+            240,
+            258,
+            276,
+            291,
+            312,
+            342,
+            357,
+            375,
+            419,
+            440,
+            453,
+            480,
+            490,
+            502,
+            529,
+            533,
+            -528,
+            -499,
+            -497,
+            496,
+            498,
+            503,
+            537,
+            -542,
+            543,
+            -541,
+            -540,
+            -535,
+            -530,
+            -521,
+            -516,
+            517,
+            524,
+            -534,
+            -504,
+            -492,
+            -491,
+            -486,
+            -473,
+            -468,
+            -466,
+            467,
+            -454,
+            -450,
+            -437,
+            -435,
+            436,
+            438,
+            447,
+            455,
+            463,
+            -458,
+            -456,
+            457,
+            459,
+            475
+          ],
+          "distanceKm": 63.841000000000015,
+          "freeFlowMinutes": 56.28000000000001,
+          "unobservedTurns": [
+            "-107,-101",
+            "529,533",
+            "-491,-486"
+          ],
+          "minimumServiceChanges": 4,
+          "intermediateGateways": [
+            "yas-island"
+          ],
+          "freeFlowDistanceRatio": 1.4779035581174624
+        },
+        {
+          "citizenId": "c-04843",
+          "mode": "car",
+          "from": "al-danah",
+          "to": "khalifa-city",
+          "weight": 250,
+          "codes": [
+            81,
+            -74,
+            -71,
+            -69,
+            70,
+            85,
+            -106,
+            -101,
+            -99,
+            100,
+            115,
+            212,
+            226,
+            239,
+            240,
+            258,
+            276,
+            291,
+            312,
+            342,
+            357,
+            375,
+            419,
+            440,
+            453,
+            480,
+            490,
+            502,
+            529,
+            533,
+            -528,
+            -499,
+            -497,
+            496,
+            498,
+            503,
+            537,
+            -542,
+            543,
+            -541,
+            -540,
+            -535,
+            -530,
+            -521,
+            -516,
+            517,
+            524,
+            -534,
+            -504,
+            -492,
+            -491,
+            -489
+          ],
+          "distanceKm": 48.445,
+          "freeFlowMinutes": 40.02,
+          "unobservedTurns": [
+            "85,-106",
+            "529,533"
+          ],
+          "minimumServiceChanges": null,
+          "intermediateGateways": [
+            "yas-island"
+          ],
+          "freeFlowDistanceRatio": 1.4434909567652936
+        },
+        {
+          "citizenId": "c-03372",
+          "mode": "pt",
+          "from": "al-danah",
+          "to": "khalifa-city",
+          "weight": 250,
+          "codes": [
+            81,
+            -74,
+            -71,
+            -69,
+            70,
+            85,
+            -106,
+            -101,
+            -99,
+            100,
+            115,
+            212,
+            226,
+            239,
+            240,
+            258,
+            276,
+            291,
+            312,
+            342,
+            357,
+            375,
+            419,
+            440,
+            453,
+            480,
+            490,
+            502,
+            529,
+            533,
+            -528,
+            -499,
+            -497,
+            496,
+            498,
+            503,
+            537,
+            -542,
+            543,
+            -541,
+            -540,
+            -535,
+            -530,
+            -521,
+            -516,
+            517,
+            524,
+            -534,
+            -504,
+            -492,
+            -491,
+            -489
+          ],
+          "distanceKm": 48.445,
+          "freeFlowMinutes": 40.02,
+          "unobservedTurns": [
+            "85,-106",
+            "529,533"
+          ],
+          "minimumServiceChanges": 3,
+          "intermediateGateways": [
+            "yas-island"
+          ],
+          "freeFlowDistanceRatio": 1.4434909567652936
+        },
+        {
+          "citizenId": "c-00026",
+          "mode": "pt",
+          "from": "al-reem",
+          "to": "rabdan-al-maqta",
+          "weight": 250,
+          "codes": [
+            -265,
+            -252,
+            251,
+            -248,
+            -228,
+            227,
+            239,
+            240,
+            258,
+            276,
+            291,
+            311,
+            -319,
+            -298,
+            -292,
+            -290,
+            -289,
+            -288,
+            -270,
+            -257,
+            -238,
+            -237,
+            -222,
+            -160,
+            -112,
+            -97,
+            98,
+            162,
+            229,
+            256,
+            271,
+            303,
+            336,
+            348,
+            -350,
+            349,
+            353,
+            362,
+            -363,
+            364,
+            370,
+            -369
+          ],
+          "distanceKm": 41.79500000000001,
+          "freeFlowMinutes": 40.26000000000001,
+          "unobservedTurns": [
+            "-298,-292"
+          ],
+          "minimumServiceChanges": 1,
+          "intermediateGateways": [],
+          "freeFlowDistanceRatio": 1.4364517459444603
+        },
+        {
+          "citizenId": "c-05391",
+          "mode": "car",
+          "from": "al-maryah",
+          "to": "mbz-zayed-city",
+          "weight": 250,
+          "codes": [
+            -207,
+            -203,
+            204,
+            213,
+            215,
+            218,
+            -211,
+            -159,
+            -155,
+            156,
+            212,
+            226,
+            239,
+            240,
+            258,
+            276,
+            291,
+            312,
+            342,
+            357,
+            375,
+            419,
+            440,
+            453,
+            480,
+            490,
+            502,
+            529,
+            533,
+            -528,
+            -499,
+            -497,
+            496,
+            498,
+            503,
+            537,
+            -542,
+            543,
+            -541,
+            -540,
+            -535,
+            -530,
+            -521,
+            -516,
+            517,
+            524,
+            -534,
+            -504,
+            -492,
+            -491,
+            -486,
+            -473,
+            -468,
+            -466,
+            467,
+            -454,
+            -450,
+            -437,
+            -435,
+            436,
+            438,
+            447,
+            455,
+            463,
+            -458,
+            -456,
+            457,
+            459,
+            475
+          ],
+          "distanceKm": 63.00200000000002,
+          "freeFlowMinutes": 55.390000000000015,
+          "unobservedTurns": [
+            "529,533",
+            "-491,-486"
+          ],
+          "minimumServiceChanges": null,
+          "intermediateGateways": [
+            "yas-island"
+          ],
+          "freeFlowDistanceRatio": 1.4114932228072146
+        },
+        {
+          "citizenId": "c-05776",
+          "mode": "pt",
+          "from": "al-maryah",
+          "to": "mbz-zayed-city",
+          "weight": 250,
+          "codes": [
+            -207,
+            -203,
+            204,
+            213,
+            215,
+            218,
+            -211,
+            -159,
+            -155,
+            156,
+            212,
+            226,
+            239,
+            240,
+            258,
+            276,
+            291,
+            312,
+            342,
+            357,
+            375,
+            419,
+            440,
+            453,
+            480,
+            490,
+            502,
+            529,
+            533,
+            -528,
+            -499,
+            -497,
+            496,
+            498,
+            503,
+            537,
+            -542,
+            543,
+            -541,
+            -540,
+            -535,
+            -530,
+            -521,
+            -516,
+            517,
+            524,
+            -534,
+            -504,
+            -492,
+            -491,
+            -486,
+            -473,
+            -468,
+            -466,
+            467,
+            -454,
+            -450,
+            -437,
+            -435,
+            436,
+            438,
+            447,
+            455,
+            463,
+            -458,
+            -456,
+            457,
+            459,
+            475
+          ],
+          "distanceKm": 63.00200000000002,
+          "freeFlowMinutes": 55.390000000000015,
+          "unobservedTurns": [
+            "529,533",
+            "-491,-486"
+          ],
+          "minimumServiceChanges": 3,
+          "intermediateGateways": [
+            "yas-island"
+          ],
+          "freeFlowDistanceRatio": 1.4114932228072146
+        },
+        {
+          "citizenId": "c-00159",
+          "mode": "pt",
+          "from": "al-saadiyat",
+          "to": "al-rawdah",
+          "weight": 250,
+          "codes": [
+            -295,
+            294,
+            297,
+            -292,
+            -290,
+            -289,
+            -288,
+            -270,
+            -257,
+            -238,
+            -237,
+            -222,
+            -160,
+            -112,
+            -97,
+            98,
+            162,
+            229,
+            256,
+            271,
+            303,
+            336,
+            348,
+            -350,
+            349,
+            353,
+            362,
+            -363,
+            364,
+            370,
+            371,
+            381,
+            385,
+            394,
+            -392,
+            -356,
+            -339,
+            -337,
+            338,
+            340,
+            -333,
+            -331,
+            -328,
+            -325,
+            -322
+          ],
+          "distanceKm": 36.92000000000001,
+          "freeFlowMinutes": 34.67000000000001,
+          "unobservedTurns": [
+            "370,371"
+          ],
+          "minimumServiceChanges": 1,
+          "intermediateGateways": [],
+          "freeFlowDistanceRatio": 1.3982729889410699
+        },
+        {
+          "citizenId": "c-04950",
+          "mode": "car",
+          "from": "al-reem",
+          "to": "musaffah",
+          "weight": 250,
+          "codes": [
+            -265,
+            -252,
+            251,
+            -248,
+            -228,
+            227,
+            239,
+            240,
+            258,
+            276,
+            291,
+            311,
+            -319,
+            -298,
+            -292,
+            -290,
+            -289,
+            -288,
+            -270,
+            -257,
+            -238,
+            -237,
+            -222,
+            -160,
+            -112,
+            -97,
+            98,
+            162,
+            229,
+            256,
+            271,
+            303,
+            336,
+            348,
+            -350,
+            349,
+            353,
+            362,
+            -363,
+            364,
+            370,
+            371,
+            381,
+            386,
+            -399,
+            400,
+            406,
+            412,
+            422,
+            423,
+            428,
+            -411,
+            -409,
+            408,
+            -391,
+            -380,
+            379,
+            -383,
+            -373
+          ],
+          "distanceKm": 51.717000000000006,
+          "freeFlowMinutes": 49.630000000000024,
+          "unobservedTurns": [
+            "-298,-292",
+            "370,371"
+          ],
+          "minimumServiceChanges": null,
+          "intermediateGateways": [],
+          "freeFlowDistanceRatio": 1.3254651699215754
+        },
+        {
+          "citizenId": "c-05205",
+          "mode": "pt",
+          "from": "al-reem",
+          "to": "musaffah",
+          "weight": 250,
+          "codes": [
+            -265,
+            -252,
+            251,
+            -248,
+            -228,
+            227,
+            239,
+            240,
+            258,
+            276,
+            291,
+            311,
+            -319,
+            -298,
+            -292,
+            -290,
+            -289,
+            -288,
+            -270,
+            -257,
+            -238,
+            -237,
+            -222,
+            -160,
+            -112,
+            -97,
+            98,
+            162,
+            229,
+            256,
+            271,
+            303,
+            336,
+            348,
+            -350,
+            349,
+            353,
+            362,
+            -363,
+            364,
+            370,
+            371,
+            381,
+            386,
+            -399,
+            400,
+            406,
+            412,
+            422,
+            423,
+            428,
+            -411,
+            -409,
+            408,
+            -391,
+            -380,
+            379,
+            -383,
+            -373
+          ],
+          "distanceKm": 51.717000000000006,
+          "freeFlowMinutes": 49.630000000000024,
+          "unobservedTurns": [
+            "-298,-292",
+            "370,371"
+          ],
+          "minimumServiceChanges": 2,
+          "intermediateGateways": [],
+          "freeFlowDistanceRatio": 1.3254651699215754
+        },
+        {
+          "citizenId": "c-00873",
+          "mode": "pt",
+          "from": "al-bateen",
+          "to": "al-nahyan",
+          "weight": 250,
+          "codes": [
+            4,
+            -6,
+            7,
+            22,
+            24,
+            80,
+            117,
+            125,
+            183,
+            189,
+            -194,
+            -180,
+            -147,
+            -132,
+            131,
+            133,
+            172,
+            176,
+            -200,
+            -195,
+            -169,
+            168,
+            188,
+            192,
+            -187,
+            186
+          ],
+          "distanceKm": 10.336000000000002,
+          "freeFlowMinutes": 11.029999999999998,
+          "unobservedTurns": [
+            "189,-194"
+          ],
+          "minimumServiceChanges": 1,
+          "intermediateGateways": [],
+          "freeFlowDistanceRatio": 1.2996353577266442
+        },
+        {
+          "citizenId": "c-02951",
+          "mode": "car",
+          "from": "al-bateen",
+          "to": "al-nahyan",
+          "weight": 250,
+          "codes": [
+            4,
+            -6,
+            7,
+            22,
+            24,
+            80,
+            117,
+            125,
+            183,
+            189,
+            -194,
+            -180,
+            -147,
+            -132,
+            131,
+            133,
+            172,
+            176,
+            -200,
+            -195,
+            -169,
+            168,
+            188,
+            192,
+            -187,
+            186
+          ],
+          "distanceKm": 10.336000000000002,
+          "freeFlowMinutes": 11.029999999999998,
+          "unobservedTurns": [
+            "189,-194"
+          ],
+          "minimumServiceChanges": null,
+          "intermediateGateways": [],
+          "freeFlowDistanceRatio": 1.2996353577266442
+        },
+        {
+          "citizenId": "c-04977",
+          "mode": "pt",
+          "from": "al-rawdah",
+          "to": "al-zahiyah",
+          "weight": 250,
+          "codes": [
+            -321,
+            -315,
+            -313,
+            314,
+            -285,
+            -266,
+            -232,
+            -126,
+            -114,
+            -87,
+            -30,
+            -28,
+            27,
+            -15,
+            -11,
+            12,
+            17,
+            -19,
+            -16,
+            -13,
+            -10,
+            9,
+            -3,
+            -1,
+            2,
+            39,
+            68,
+            -69,
+            70,
+            85,
+            108,
+            144,
+            -150,
+            -143
+          ],
+          "distanceKm": 18.867999999999995,
+          "freeFlowMinutes": 20.019999999999992,
+          "unobservedTurns": [
+            "-28,27",
+            "-16,-13",
+            "68,-69"
+          ],
+          "minimumServiceChanges": 3,
+          "intermediateGateways": [
+            "al-khalidiyah"
+          ],
+          "freeFlowDistanceRatio": 1.220597748738517
+        },
+        {
+          "citizenId": "c-02189",
+          "mode": "car",
+          "from": "al-rawdah",
+          "to": "al-zahiyah",
+          "weight": 250,
+          "codes": [
+            -321,
+            -315,
+            -313,
+            314,
+            -285,
+            -266,
+            -232,
+            -126,
+            -114,
+            -87,
+            -30,
+            -28,
+            27,
+            -15,
+            -11,
+            12,
+            17,
+            -19,
+            -16,
+            -13,
+            -10,
+            9,
+            -3,
+            -1,
+            2,
+            39,
+            68,
+            -69,
+            70,
+            85,
+            108,
+            144,
+            -150,
+            -143
+          ],
+          "distanceKm": 18.867999999999995,
+          "freeFlowMinutes": 20.019999999999992,
+          "unobservedTurns": [
+            "-28,27",
+            "-16,-13",
+            "68,-69"
+          ],
+          "minimumServiceChanges": null,
+          "intermediateGateways": [
+            "al-khalidiyah"
+          ],
+          "freeFlowDistanceRatio": 1.220597748738517
+        },
+        {
+          "citizenId": "c-04018",
+          "mode": "pt",
+          "from": "al-rawdah",
+          "to": "al-maryah",
+          "weight": 250,
+          "codes": [
+            -321,
+            -315,
+            -313,
+            314,
+            -285,
+            -266,
+            -232,
+            -126,
+            -114,
+            -87,
+            -30,
+            -28,
+            27,
+            -15,
+            -11,
+            12,
+            17,
+            -19,
+            -16,
+            -13,
+            -10,
+            9,
+            -3,
+            -1,
+            2,
+            39,
+            68,
+            -69,
+            70,
+            85,
+            108,
+            144,
+            -150,
+            -143,
+            -140,
+            139,
+            138,
+            141,
+            146,
+            208,
+            -209
+          ],
+          "distanceKm": 20.431999999999995,
+          "freeFlowMinutes": 21.85999999999999,
+          "unobservedTurns": [
+            "-28,27",
+            "-16,-13",
+            "68,-69",
+            "-143,-140"
+          ],
+          "minimumServiceChanges": 4,
+          "intermediateGateways": [
+            "al-khalidiyah",
+            "al-zahiyah"
+          ],
+          "freeFlowDistanceRatio": 1.200328986018094
+        },
+        {
+          "citizenId": "c-05520",
+          "mode": "pt",
+          "from": "mbz-zayed-city",
+          "to": "rabdan-al-maqta",
+          "weight": 250,
+          "codes": [
+            -476,
+            -474,
+            -464,
+            -451,
+            -445,
+            -441,
+            442,
+            448,
+            462,
+            -471,
+            -469,
+            470,
+            472,
+            -485,
+            -473,
+            -468,
+            -466,
+            467,
+            -454,
+            -450,
+            -437,
+            -434,
+            -415,
+            -407,
+            -405,
+            404,
+            -398,
+            -395,
+            -382,
+            -376,
+            -368,
+            367
+          ],
+          "distanceKm": 23.662,
+          "freeFlowMinutes": 24.71,
+          "unobservedTurns": [
+            "-485,-473"
+          ],
+          "minimumServiceChanges": 1,
+          "intermediateGateways": [],
+          "freeFlowDistanceRatio": 1.1951108641850599
+        },
+        {
+          "citizenId": "c-01549",
+          "mode": "pt",
+          "from": "al-rawdah",
+          "to": "al-reem",
+          "weight": 250,
+          "codes": [
+            -321,
+            -315,
+            -313,
+            314,
+            -285,
+            -266,
+            -232,
+            -126,
+            -114,
+            -87,
+            -30,
+            -28,
+            27,
+            -15,
+            -11,
+            12,
+            17,
+            -19,
+            -16,
+            -13,
+            -10,
+            9,
+            -3,
+            -1,
+            2,
+            39,
+            68,
+            -69,
+            70,
+            85,
+            108,
+            145,
+            164,
+            165,
+            182,
+            250,
+            254,
+            -259,
+            260,
+            261,
+            262,
+            267
+          ],
+          "distanceKm": 23.944,
+          "freeFlowMinutes": 27.189999999999998,
+          "unobservedTurns": [
+            "-28,27",
+            "-16,-13",
+            "68,-69",
+            "108,145"
+          ],
+          "minimumServiceChanges": 4,
+          "intermediateGateways": [
+            "al-khalidiyah"
+          ],
+          "freeFlowDistanceRatio": 1.1660660368169862
+        },
+        {
+          "citizenId": "c-05268",
+          "mode": "car",
+          "from": "al-rawdah",
+          "to": "al-reem",
+          "weight": 250,
+          "codes": [
+            -321,
+            -315,
+            -313,
+            314,
+            -285,
+            -266,
+            -232,
+            -126,
+            -114,
+            -87,
+            -30,
+            -28,
+            27,
+            -15,
+            -11,
+            12,
+            17,
+            -19,
+            -16,
+            -13,
+            -10,
+            9,
+            -3,
+            -1,
+            2,
+            39,
+            68,
+            -69,
+            70,
+            85,
+            108,
+            145,
+            164,
+            165,
+            182,
+            250,
+            254,
+            -259,
+            260,
+            261,
+            262,
+            267
+          ],
+          "distanceKm": 23.944,
+          "freeFlowMinutes": 27.189999999999998,
+          "unobservedTurns": [
+            "-28,27",
+            "-16,-13",
+            "68,-69",
+            "108,145"
+          ],
+          "minimumServiceChanges": null,
+          "intermediateGateways": [
+            "al-khalidiyah"
+          ],
+          "freeFlowDistanceRatio": 1.1660660368169862
+        },
+        {
+          "citizenId": "c-06031",
+          "mode": "car",
+          "from": "al-danah",
+          "to": "muroor-al-saadah",
+          "weight": 250,
+          "codes": [
+            81,
+            82,
+            -93,
+            -89,
+            -36,
+            -34,
+            35,
+            54,
+            56,
+            -76,
+            77,
+            102,
+            104,
+            153,
+            161,
+            170,
+            173,
+            234,
+            236,
+            263,
+            -274,
+            -272,
+            273,
+            275
+          ],
+          "distanceKm": 12.307999999999998,
+          "freeFlowMinutes": 12.54,
+          "unobservedTurns": [
+            "-76,77"
+          ],
+          "minimumServiceChanges": null,
+          "intermediateGateways": [],
+          "freeFlowDistanceRatio": 1.153082255949035
+        },
+        {
+          "citizenId": "c-05363",
+          "mode": "pt",
+          "from": "al-danah",
+          "to": "muroor-al-saadah",
+          "weight": 250,
+          "codes": [
+            81,
+            82,
+            -93,
+            -89,
+            88,
+            91,
+            -96,
+            -58,
+            -55,
+            54,
+            56,
+            -76,
+            77,
+            102,
+            104,
+            153,
+            161,
+            170,
+            173,
+            234,
+            236,
+            263,
+            -274,
+            -272,
+            273,
+            275
+          ],
+          "distanceKm": 12.271999999999998,
+          "freeFlowMinutes": 12.35,
+          "unobservedTurns": [
+            "91,-96",
+            "-76,77"
+          ],
+          "minimumServiceChanges": 2,
+          "intermediateGateways": [],
+          "freeFlowDistanceRatio": 1.1497095746674162
+        },
+        {
+          "citizenId": "c-01067",
+          "mode": "car",
+          "from": "al-danah",
+          "to": "muroor-al-saadah",
+          "weight": 250,
+          "codes": [
+            81,
+            82,
+            -93,
+            -89,
+            88,
+            91,
+            -96,
+            -58,
+            -55,
+            54,
+            56,
+            -76,
+            77,
+            102,
+            104,
+            153,
+            161,
+            170,
+            173,
+            234,
+            236,
+            263,
+            -274,
+            -272,
+            273,
+            275
+          ],
+          "distanceKm": 12.271999999999998,
+          "freeFlowMinutes": 12.35,
+          "unobservedTurns": [
+            "91,-96",
+            "-76,77"
+          ],
+          "minimumServiceChanges": null,
+          "intermediateGateways": [],
+          "freeFlowDistanceRatio": 1.1497095746674162
+        },
+        {
+          "citizenId": "c-04839",
+          "mode": "pt",
+          "from": "mbz-zayed-city",
+          "to": "al-rawdah",
+          "weight": 250,
+          "codes": [
+            -476,
+            -474,
+            -464,
+            -451,
+            -445,
+            -441,
+            442,
+            448,
+            462,
+            -471,
+            -469,
+            470,
+            472,
+            -485,
+            -473,
+            -468,
+            -466,
+            467,
+            -454,
+            -450,
+            -437,
+            -434,
+            -415,
+            -407,
+            -405,
+            404,
+            -398,
+            -395,
+            -382,
+            381,
+            385,
+            394,
+            -392,
+            -356,
+            -339,
+            -337,
+            338,
+            340,
+            -333,
+            -331,
+            -328,
+            -325,
+            -322
+          ],
+          "distanceKm": 29.999000000000002,
+          "freeFlowMinutes": 30.840000000000003,
+          "unobservedTurns": [
+            "-485,-473",
+            "-382,381"
+          ],
+          "minimumServiceChanges": 2,
+          "intermediateGateways": [],
+          "freeFlowDistanceRatio": 1.1478037955310683
+        },
+        {
+          "citizenId": "c-05806",
+          "mode": "pt",
+          "from": "mbz-zayed-city",
+          "to": "al-danah",
+          "weight": 250,
+          "codes": [
+            -476,
+            -474,
+            -464,
+            -451,
+            -445,
+            -441,
+            442,
+            448,
+            462,
+            -471,
+            -469,
+            470,
+            472,
+            -485,
+            -473,
+            -468,
+            -466,
+            467,
+            -454,
+            -450,
+            -437,
+            -434,
+            -415,
+            -407,
+            -405,
+            404,
+            -398,
+            -395,
+            -382,
+            381,
+            385,
+            394,
+            -392,
+            -356,
+            -355,
+            354,
+            -352,
+            -346,
+            -335,
+            -293,
+            -268,
+            -249,
+            -221,
+            -185,
+            -109,
+            -106,
+            -86,
+            -83,
+            84,
+            -75,
+            74,
+            -81
+          ],
+          "distanceKm": 43.59199999999999,
+          "freeFlowMinutes": 41.67000000000001,
+          "unobservedTurns": [
+            "-485,-473",
+            "-382,381",
+            "-106,-86"
+          ],
+          "minimumServiceChanges": 3,
+          "intermediateGateways": [],
+          "freeFlowDistanceRatio": 1.1403756605451782
+        },
+        {
+          "citizenId": "c-05905",
+          "mode": "pt",
+          "from": "mbz-zayed-city",
+          "to": "muroor-al-saadah",
+          "weight": 250,
+          "codes": [
+            -476,
+            -474,
+            -464,
+            -451,
+            -445,
+            -441,
+            442,
+            448,
+            462,
+            -471,
+            -469,
+            470,
+            472,
+            -485,
+            -473,
+            -468,
+            -466,
+            467,
+            -454,
+            -450,
+            -437,
+            -434,
+            -415,
+            -407,
+            -405,
+            404,
+            -398,
+            -395,
+            -382,
+            381,
+            385,
+            394,
+            -392,
+            -356,
+            -339,
+            -337,
+            338,
+            340,
+            -333,
+            -331,
+            332,
+            -309,
+            -307,
+            -283,
+            -279,
+            -278,
+            -274,
+            -272,
+            273,
+            275
+          ],
+          "distanceKm": 33.711,
+          "freeFlowMinutes": 32.76999999999999,
+          "unobservedTurns": [
+            "-485,-473",
+            "-382,381"
+          ],
+          "minimumServiceChanges": 3,
+          "intermediateGateways": [],
+          "freeFlowDistanceRatio": 1.1294224068614311
+        },
+        {
+          "citizenId": "c-00159",
+          "mode": "pt",
+          "from": "al-rawdah",
+          "to": "al-saadiyat",
+          "weight": 250,
+          "codes": [
+            -321,
+            -315,
+            -313,
+            314,
+            -285,
+            -266,
+            -232,
+            -126,
+            -114,
+            -87,
+            -30,
+            -28,
+            27,
+            -15,
+            -11,
+            12,
+            17,
+            -19,
+            -16,
+            -13,
+            -10,
+            9,
+            -3,
+            -1,
+            2,
+            39,
+            68,
+            -69,
+            70,
+            85,
+            -106,
+            -101,
+            -99,
+            100,
+            115,
+            212,
+            226,
+            239,
+            240,
+            258,
+            276,
+            291,
+            311,
+            -319,
+            -298,
+            -297,
+            296
+          ],
+          "distanceKm": 30.753999999999994,
+          "freeFlowMinutes": 30.97,
+          "unobservedTurns": [
+            "-28,27",
+            "-16,-13",
+            "68,-69",
+            "85,-106"
+          ],
+          "minimumServiceChanges": 4,
+          "intermediateGateways": [
+            "al-khalidiyah"
+          ],
+          "freeFlowDistanceRatio": 1.1247074312463425
+        },
+        {
+          "citizenId": "c-05533",
+          "mode": "pt",
+          "from": "al-zahiyah",
+          "to": "muroor-al-saadah",
+          "weight": 250,
+          "codes": [
+            -140,
+            -136,
+            -134,
+            -124,
+            123,
+            128,
+            -107,
+            -86,
+            -83,
+            84,
+            -75,
+            74,
+            82,
+            -93,
+            -89,
+            88,
+            91,
+            -96,
+            -58,
+            -55,
+            54,
+            56,
+            -76,
+            77,
+            102,
+            104,
+            153,
+            161,
+            170,
+            173,
+            234,
+            236,
+            263,
+            -274,
+            -272,
+            273,
+            275
+          ],
+          "distanceKm": 14.794999999999998,
+          "freeFlowMinutes": 16.159999999999997,
+          "unobservedTurns": [
+            "74,82",
+            "91,-96",
+            "-76,77"
+          ],
+          "minimumServiceChanges": 3,
+          "intermediateGateways": [],
+          "freeFlowDistanceRatio": 1.1210881260892627
+        },
+        {
+          "citizenId": "c-03706",
+          "mode": "car",
+          "from": "al-zahiyah",
+          "to": "muroor-al-saadah",
+          "weight": 250,
+          "codes": [
+            -140,
+            -136,
+            -134,
+            -124,
+            123,
+            128,
+            -107,
+            -86,
+            -83,
+            84,
+            -75,
+            74,
+            82,
+            -93,
+            -89,
+            88,
+            91,
+            -96,
+            -58,
+            -55,
+            54,
+            56,
+            -76,
+            77,
+            102,
+            104,
+            153,
+            161,
+            170,
+            173,
+            234,
+            236,
+            263,
+            -274,
+            -272,
+            273,
+            275
+          ],
+          "distanceKm": 14.794999999999998,
+          "freeFlowMinutes": 16.159999999999997,
+          "unobservedTurns": [
+            "74,82",
+            "91,-96",
+            "-76,77"
+          ],
+          "minimumServiceChanges": null,
+          "intermediateGateways": [],
+          "freeFlowDistanceRatio": 1.1210881260892627
+        },
+        {
+          "citizenId": "c-04905",
+          "mode": "pt",
+          "from": "mbz-zayed-city",
+          "to": "al-mushrif",
+          "weight": 250,
+          "codes": [
+            -476,
+            -474,
+            -464,
+            -451,
+            -445,
+            -441,
+            442,
+            448,
+            462,
+            -471,
+            -469,
+            470,
+            472,
+            -485,
+            -473,
+            -468,
+            -466,
+            467,
+            -454,
+            -450,
+            -437,
+            -434,
+            -415,
+            -407,
+            -405,
+            404,
+            -398,
+            -395,
+            -382,
+            381,
+            385,
+            394,
+            -392,
+            -356,
+            -339,
+            -337,
+            338,
+            340,
+            -333,
+            -331,
+            332,
+            -309,
+            -307,
+            -283,
+            -279,
+            -278,
+            -274,
+            -264,
+            -243,
+            -235,
+            -231,
+            -181,
+            -178,
+            179,
+            189,
+            197,
+            -198
+          ],
+          "distanceKm": 38.657000000000004,
+          "freeFlowMinutes": 37.64,
+          "unobservedTurns": [
+            "-485,-473",
+            "-382,381"
+          ],
+          "minimumServiceChanges": 4,
+          "intermediateGateways": [],
+          "freeFlowDistanceRatio": 1.1110248893487382
+        },
+        {
+          "citizenId": "c-06045",
+          "mode": "pt",
+          "from": "al-maryah",
+          "to": "muroor-al-saadah",
+          "weight": 250,
+          "codes": [
+            -207,
+            -203,
+            -201,
+            -154,
+            -151,
+            -143,
+            -140,
+            -136,
+            -134,
+            -124,
+            123,
+            128,
+            -107,
+            -86,
+            -83,
+            84,
+            -75,
+            74,
+            82,
+            -93,
+            -89,
+            88,
+            91,
+            -96,
+            -58,
+            -55,
+            54,
+            56,
+            -76,
+            77,
+            102,
+            104,
+            153,
+            161,
+            170,
+            173,
+            234,
+            236,
+            263,
+            -274,
+            -272,
+            273,
+            275
+          ],
+          "distanceKm": 16.25,
+          "freeFlowMinutes": 18.309999999999995,
+          "unobservedTurns": [
+            "-203,-201",
+            "-143,-140",
+            "74,82",
+            "91,-96",
+            "-76,77"
+          ],
+          "minimumServiceChanges": 5,
+          "intermediateGateways": [
+            "al-zahiyah"
+          ],
+          "freeFlowDistanceRatio": 1.1103518961393921
+        }
+      ]
+    }
+  ],
+  "allFreeFlow": [
+    {
+      "from": "yas-island",
+      "to": "al-raha",
+      "distanceKm": 13.639,
+      "freeFlowMinutes": 11.169999999999998,
+      "straightKm": 4.621003161116925,
+      "intermediateGateways": [],
+      "circuity": 2.9515236247324634
+    },
+    {
+      "from": "al-reem",
+      "to": "mbz-zayed-city",
+      "distanceKm": 62.16000000000002,
+      "freeFlowMinutes": 56.74,
+      "straightKm": 22.99433759862109,
+      "intermediateGateways": [
+        "yas-island"
+      ],
+      "circuity": 2.7032742184200855
+    },
+    {
+      "from": "al-reem",
+      "to": "al-saadiyat",
+      "distanceKm": 12.283999999999999,
+      "freeFlowMinutes": 14.279999999999998,
+      "straightKm": 4.566797767739925,
+      "intermediateGateways": [],
+      "circuity": 2.689849786380898
+    },
+    {
+      "from": "al-reem",
+      "to": "khalifa-city",
+      "distanceKm": 46.532000000000004,
+      "freeFlowMinutes": 40.19,
+      "straightKm": 18.93151273943169,
+      "intermediateGateways": [
+        "yas-island"
+      ],
+      "circuity": 2.4579124045951364
+    },
+    {
+      "from": "al-manhal-karamah",
+      "to": "al-bateen",
+      "distanceKm": 5.631,
+      "freeFlowMinutes": 7.229999999999999,
+      "straightKm": 2.3068483989337523,
+      "intermediateGateways": [
+        "al-khalidiyah"
+      ],
+      "circuity": 2.4409926558688047
+    },
+    {
+      "from": "al-reem",
+      "to": "muroor-al-saadah",
+      "distanceKm": 18.516999999999996,
+      "freeFlowMinutes": 23.960000000000004,
+      "straightKm": 7.692947662622785,
+      "intermediateGateways": [
+        "al-zahiyah",
+        "al-nahyan"
+      ],
+      "circuity": 2.4070097460778674
+    },
+    {
+      "from": "al-saadiyat",
+      "to": "al-reem",
+      "distanceKm": 10.654,
+      "freeFlowMinutes": 14.979999999999999,
+      "straightKm": 4.566797767739925,
+      "intermediateGateways": [],
+      "circuity": 2.332925726481772
+    },
+    {
+      "from": "musaffah",
+      "to": "rabdan-al-maqta",
+      "distanceKm": 11.954000000000002,
+      "freeFlowMinutes": 12.43,
+      "straightKm": 5.161844609617325,
+      "intermediateGateways": [],
+      "circuity": 2.3158387948617882
+    },
+    {
+      "from": "khalifa-city",
+      "to": "mbz-zayed-city",
+      "distanceKm": 16.076,
+      "freeFlowMinutes": 17.39,
+      "straightKm": 7.102255492697573,
+      "intermediateGateways": [],
+      "circuity": 2.2635062926881595
+    },
+    {
+      "from": "mbz-zayed-city",
+      "to": "rabdan-al-maqta",
+      "distanceKm": 19.799,
+      "freeFlowMinutes": 21.169999999999998,
+      "straightKm": 8.823674559081613,
+      "intermediateGateways": [],
+      "circuity": 2.243849755272561
+    },
+    {
+      "from": "al-maryah",
+      "to": "khalifa-city",
+      "distanceKm": 47.374,
+      "freeFlowMinutes": 38.84000000000001,
+      "straightKm": 21.168256880205785,
+      "intermediateGateways": [
+        "yas-island"
+      ],
+      "circuity": 2.2379735973583603
+    },
+    {
+      "from": "al-reem",
+      "to": "al-rawdah",
+      "distanceKm": 23.000999999999998,
+      "freeFlowMinutes": 29.36,
+      "straightKm": 10.287919217235672,
+      "intermediateGateways": [
+        "al-zahiyah",
+        "al-nahyan",
+        "muroor-al-saadah"
+      ],
+      "circuity": 2.235729063799967
+    },
+    {
+      "from": "al-reem",
+      "to": "al-nahyan",
+      "distanceKm": 11.932999999999998,
+      "freeFlowMinutes": 17.790000000000003,
+      "straightKm": 5.347971026870139,
+      "intermediateGateways": [
+        "al-zahiyah"
+      ],
+      "circuity": 2.231313509374732
+    },
+    {
+      "from": "yas-island",
+      "to": "mbz-zayed-city",
+      "distanceKm": 34.385000000000005,
+      "freeFlowMinutes": 34.28,
+      "straightKm": 15.434974453562392,
+      "intermediateGateways": [],
+      "circuity": 2.227732874029082
+    },
+    {
+      "from": "yas-island",
+      "to": "khalifa-city",
+      "distanceKm": 18.757,
+      "freeFlowMinutes": 17.729999999999997,
+      "straightKm": 8.442657623423509,
+      "intermediateGateways": [],
+      "circuity": 2.221693788453548
+    },
+    {
+      "from": "rabdan-al-maqta",
+      "to": "mbz-zayed-city",
+      "distanceKm": 19.522999999999996,
+      "freeFlowMinutes": 21.5,
+      "straightKm": 8.823674559081613,
+      "intermediateGateways": [],
+      "circuity": 2.2125702698210112
+    },
+    {
+      "from": "al-zahiyah",
+      "to": "khalifa-city",
+      "distanceKm": 48.213,
+      "freeFlowMinutes": 39.730000000000004,
+      "straightKm": 22.005870858678012,
+      "intermediateGateways": [
+        "yas-island"
+      ],
+      "circuity": 2.1909153384396607
+    },
+    {
+      "from": "muroor-al-saadah",
+      "to": "al-reem",
+      "distanceKm": 16.747,
+      "freeFlowMinutes": 19.690000000000005,
+      "straightKm": 7.692947662622785,
+      "intermediateGateways": [
+        "al-danah"
+      ],
+      "circuity": 2.1769288879173763
+    },
+    {
+      "from": "al-nahyan",
+      "to": "al-reem",
+      "distanceKm": 11.417,
+      "freeFlowMinutes": 15.429999999999998,
+      "straightKm": 5.347971026870139,
+      "intermediateGateways": [
+        "al-danah"
+      ],
+      "circuity": 2.134828319494789
+    },
+    {
+      "from": "al-reem",
+      "to": "al-raha",
+      "distanceKm": 41.413999999999994,
+      "freeFlowMinutes": 33.629999999999995,
+      "straightKm": 19.595463052961524,
+      "intermediateGateways": [
+        "yas-island"
+      ],
+      "circuity": 2.113448398135249
+    },
+    {
+      "from": "muroor-al-saadah",
+      "to": "yas-island",
+      "distanceKm": 39.048,
+      "freeFlowMinutes": 31.650000000000002,
+      "straightKm": 18.682288349668532,
+      "intermediateGateways": [
+        "al-danah"
+      ],
+      "circuity": 2.090107981910728
+    },
+    {
+      "from": "mbz-zayed-city",
+      "to": "al-saadiyat",
+      "distanceKm": 51.080999999999996,
+      "freeFlowMinutes": 47.9,
+      "straightKm": 24.551315280823655,
+      "intermediateGateways": [],
+      "circuity": 2.0805809959964927
+    },
+    {
+      "from": "al-nahyan",
+      "to": "al-bateen",
+      "distanceKm": 9.116,
+      "freeFlowMinutes": 8.889999999999999,
+      "straightKm": 4.40387312638524,
+      "intermediateGateways": [],
+      "circuity": 2.0699960553774033
+    },
+    {
+      "from": "al-saadiyat",
+      "to": "khalifa-city",
+      "distanceKm": 39.879000000000005,
+      "freeFlowMinutes": 35.08000000000001,
+      "straightKm": 19.36699456586213,
+      "intermediateGateways": [
+        "yas-island"
+      ],
+      "circuity": 2.059121763285566
+    },
+    {
+      "from": "musaffah",
+      "to": "al-rawdah",
+      "distanceKm": 18.291,
+      "freeFlowMinutes": 18.559999999999995,
+      "straightKm": 8.895013994826598,
+      "intermediateGateways": [],
+      "circuity": 2.0563205421192334
+    },
+    {
+      "from": "al-reem",
+      "to": "musaffah",
+      "distanceKm": 39.01799999999999,
+      "freeFlowMinutes": 45.280000000000015,
+      "straightKm": 19.081870036660693,
+      "intermediateGateways": [
+        "al-zahiyah",
+        "al-nahyan",
+        "muroor-al-saadah"
+      ],
+      "circuity": 2.0447681451051376
+    },
+    {
+      "from": "yas-island",
+      "to": "muroor-al-saadah",
+      "distanceKm": 38.138,
+      "freeFlowMinutes": 32.98999999999999,
+      "straightKm": 18.682288349668532,
+      "intermediateGateways": [
+        "al-raha"
+      ],
+      "circuity": 2.041398745495578
+    },
+    {
+      "from": "muroor-al-saadah",
+      "to": "al-saadiyat",
+      "distanceKm": 23.557000000000006,
+      "freeFlowMinutes": 23.470000000000006,
+      "straightKm": 11.540671302735168,
+      "intermediateGateways": [
+        "al-danah"
+      ],
+      "circuity": 2.041215747511753
+    },
+    {
+      "from": "al-rawdah",
+      "to": "al-saadiyat",
+      "distanceKm": 27.344000000000005,
+      "freeFlowMinutes": 28.010000000000005,
+      "straightKm": 13.562994399219452,
+      "intermediateGateways": [
+        "al-danah"
+      ],
+      "circuity": 2.016073972689515
+    },
+    {
+      "from": "al-saadiyat",
+      "to": "mbz-zayed-city",
+      "distanceKm": 49.196999999999996,
+      "freeFlowMinutes": 48.43,
+      "straightKm": 24.551315280823655,
+      "intermediateGateways": [],
+      "circuity": 2.0038437630437826
+    },
+    {
+      "from": "al-maryah",
+      "to": "al-saadiyat",
+      "distanceKm": 13.126,
+      "freeFlowMinutes": 12.93,
+      "straightKm": 6.574420254808929,
+      "intermediateGateways": [],
+      "circuity": 1.996525851902888
+    },
+    {
+      "from": "al-rawdah",
+      "to": "al-reem",
+      "distanceKm": 20.534000000000006,
+      "freeFlowMinutes": 24.230000000000004,
+      "straightKm": 10.287919217235672,
+      "intermediateGateways": [
+        "al-danah"
+      ],
+      "circuity": 1.9959332462096666
+    },
+    {
+      "from": "yas-island",
+      "to": "al-rawdah",
+      "distanceKm": 34.42600000000001,
+      "freeFlowMinutes": 31.060000000000002,
+      "straightKm": 17.264916792038917,
+      "intermediateGateways": [
+        "al-raha"
+      ],
+      "circuity": 1.9939858624673068
+    },
+    {
+      "from": "al-raha",
+      "to": "mbz-zayed-city",
+      "distanceKm": 21.681,
+      "freeFlowMinutes": 24.610000000000007,
+      "straightKm": 10.876915630528384,
+      "intermediateGateways": [],
+      "circuity": 1.9933040520372936
+    },
+    {
+      "from": "al-reem",
+      "to": "rabdan-al-maqta",
+      "distanceKm": 29.095999999999993,
+      "freeFlowMinutes": 35.910000000000004,
+      "straightKm": 14.606533564426213,
+      "intermediateGateways": [
+        "al-zahiyah",
+        "al-nahyan",
+        "muroor-al-saadah"
+      ],
+      "circuity": 1.9919852901212958
+    },
+    {
+      "from": "al-raha",
+      "to": "al-reem",
+      "distanceKm": 38.92199999999999,
+      "freeFlowMinutes": 36.709999999999994,
+      "straightKm": 19.595463052961524,
+      "intermediateGateways": [],
+      "circuity": 1.986276103545182
+    },
+    {
+      "from": "al-bateen",
+      "to": "al-manhal-karamah",
+      "distanceKm": 4.578,
+      "freeFlowMinutes": 5.9399999999999995,
+      "straightKm": 2.3068483989337523,
+      "intermediateGateways": [],
+      "circuity": 1.9845257287457625
+    },
+    {
+      "from": "yas-island",
+      "to": "musaffah",
+      "distanceKm": 37.204,
+      "freeFlowMinutes": 32.89000000000001,
+      "straightKm": 18.78799379533362,
+      "intermediateGateways": [
+        "al-raha"
+      ],
+      "circuity": 1.9802007816949765
+    },
+    {
+      "from": "musaffah",
+      "to": "al-saadiyat",
+      "distanceKm": 43.236,
+      "freeFlowMinutes": 39.16,
+      "straightKm": 21.85219571770256,
+      "intermediateGateways": [],
+      "circuity": 1.9785654750004973
+    },
+    {
+      "from": "al-reem",
+      "to": "al-mushrif",
+      "distanceKm": 14.824,
+      "freeFlowMinutes": 20.259999999999998,
+      "straightKm": 7.607330267671194,
+      "intermediateGateways": [
+        "al-zahiyah"
+      ],
+      "circuity": 1.9486468285723608
+    },
+    {
+      "from": "al-saadiyat",
+      "to": "al-rawdah",
+      "distanceKm": 26.404,
+      "freeFlowMinutes": 31.060000000000002,
+      "straightKm": 13.562994399219452,
+      "intermediateGateways": [
+        "al-nahyan",
+        "muroor-al-saadah"
+      ],
+      "circuity": 1.9467677433767536
+    },
+    {
+      "from": "rabdan-al-maqta",
+      "to": "musaffah",
+      "distanceKm": 10.024,
+      "freeFlowMinutes": 9.569999999999999,
+      "straightKm": 5.161844609617325,
+      "intermediateGateways": [],
+      "circuity": 1.94194144886185
+    },
+    {
+      "from": "mbz-zayed-city",
+      "to": "al-reem",
+      "distanceKm": 44.270999999999994,
+      "freeFlowMinutes": 44.11999999999999,
+      "straightKm": 22.99433759862109,
+      "intermediateGateways": [],
+      "circuity": 1.92530007920971
+    },
+    {
+      "from": "yas-island",
+      "to": "al-mushrif",
+      "distanceKm": 43.084,
+      "freeFlowMinutes": 37.86,
+      "straightKm": 22.39334655338075,
+      "intermediateGateways": [
+        "al-raha"
+      ],
+      "circuity": 1.9239643300878386
+    },
+    {
+      "from": "al-maryah",
+      "to": "al-raha",
+      "distanceKm": 42.25599999999999,
+      "freeFlowMinutes": 32.28000000000001,
+      "straightKm": 22.086614309468427,
+      "intermediateGateways": [
+        "yas-island"
+      ],
+      "circuity": 1.913194997111216
+    },
+    {
+      "from": "al-maryah",
+      "to": "al-nahyan",
+      "distanceKm": 8.051,
+      "freeFlowMinutes": 11.779999999999996,
+      "straightKm": 4.21207246764257,
+      "intermediateGateways": [
+        "al-zahiyah"
+      ],
+      "circuity": 1.911410608874452
+    },
+    {
+      "from": "musaffah",
+      "to": "al-reem",
+      "distanceKm": 36.42599999999999,
+      "freeFlowMinutes": 35.38,
+      "straightKm": 19.081870036660693,
+      "intermediateGateways": [],
+      "circuity": 1.9089324018042888
+    },
+    {
+      "from": "rabdan-al-maqta",
+      "to": "al-saadiyat",
+      "distanceKm": 32.191,
+      "freeFlowMinutes": 28.340000000000003,
+      "straightKm": 16.936362683327026,
+      "intermediateGateways": [],
+      "circuity": 1.9007032738907026
+    },
+    {
+      "from": "khalifa-city",
+      "to": "al-reem",
+      "distanceKm": 35.967,
+      "freeFlowMinutes": 34.910000000000004,
+      "straightKm": 18.93151273943169,
+      "intermediateGateways": [],
+      "circuity": 1.8998481788032595
+    },
+    {
+      "from": "al-saadiyat",
+      "to": "muroor-al-saadah",
+      "distanceKm": 21.919999999999998,
+      "freeFlowMinutes": 25.660000000000007,
+      "straightKm": 11.540671302735168,
+      "intermediateGateways": [
+        "al-nahyan"
+      ],
+      "circuity": 1.8993695795499264
+    },
+    {
+      "from": "yas-island",
+      "to": "rabdan-al-maqta",
+      "distanceKm": 28.089,
+      "freeFlowMinutes": 24.93,
+      "straightKm": 14.80995823945365,
+      "intermediateGateways": [
+        "al-raha"
+      ],
+      "circuity": 1.8966292507949856
+    },
+    {
+      "from": "mbz-zayed-city",
+      "to": "khalifa-city",
+      "distanceKm": 13.427999999999995,
+      "freeFlowMinutes": 14.999999999999998,
+      "straightKm": 7.102255492697573,
+      "intermediateGateways": [],
+      "circuity": 1.8906669879457947
+    },
+    {
+      "from": "al-nahyan",
+      "to": "al-manhal-karamah",
+      "distanceKm": 4.223,
+      "freeFlowMinutes": 5.2299999999999995,
+      "straightKm": 2.244963076912294,
+      "intermediateGateways": [],
+      "circuity": 1.8810999804096036
+    },
+    {
+      "from": "al-nahyan",
+      "to": "al-maryah",
+      "distanceKm": 7.905000000000001,
+      "freeFlowMinutes": 10.099999999999998,
+      "straightKm": 4.21207246764257,
+      "intermediateGateways": [
+        "al-danah",
+        "al-zahiyah"
+      ],
+      "circuity": 1.8767483372441367
+    },
+    {
+      "from": "al-zahiyah",
+      "to": "al-raha",
+      "distanceKm": 43.09499999999999,
+      "freeFlowMinutes": 33.17,
+      "straightKm": 23.042526686926738,
+      "intermediateGateways": [
+        "yas-island"
+      ],
+      "circuity": 1.8702376082936294
+    },
+    {
+      "from": "al-mushrif",
+      "to": "al-reem",
+      "distanceKm": 14.212999999999997,
+      "freeFlowMinutes": 18.43,
+      "straightKm": 7.607330267671194,
+      "intermediateGateways": [
+        "al-danah"
+      ],
+      "circuity": 1.868329558452439
+    },
+    {
+      "from": "mbz-zayed-city",
+      "to": "al-rawdah",
+      "distanceKm": 26.136000000000003,
+      "freeFlowMinutes": 27.299999999999997,
+      "straightKm": 14.094978233742859,
+      "intermediateGateways": [],
+      "circuity": 1.8542774289236843
+    },
+    {
+      "from": "musaffah",
+      "to": "muroor-al-saadah",
+      "distanceKm": 22.003,
+      "freeFlowMinutes": 20.489999999999995,
+      "straightKm": 11.943735050678345,
+      "intermediateGateways": [],
+      "circuity": 1.8422210394520044
+    },
+    {
+      "from": "al-nahyan",
+      "to": "al-saadiyat",
+      "distanceKm": 18.227,
+      "freeFlowMinutes": 19.21,
+      "straightKm": 9.914179099208637,
+      "intermediateGateways": [
+        "al-danah"
+      ],
+      "circuity": 1.8384779836643161
+    },
+    {
+      "from": "al-rawdah",
+      "to": "musaffah",
+      "distanceKm": 16.342999999999996,
+      "freeFlowMinutes": 17.279999999999998,
+      "straightKm": 8.895013994826598,
+      "intermediateGateways": [],
+      "circuity": 1.8373214487920084
+    },
+    {
+      "from": "al-zahiyah",
+      "to": "al-saadiyat",
+      "distanceKm": 13.965,
+      "freeFlowMinutes": 13.819999999999999,
+      "straightKm": 7.608719839414113,
+      "intermediateGateways": [],
+      "circuity": 1.8353941654757173
+    },
+    {
+      "from": "al-khalidiyah",
+      "to": "al-raha",
+      "distanceKm": 46.527999999999984,
+      "freeFlowMinutes": 36.97,
+      "straightKm": 25.36470312422763,
+      "intermediateGateways": [
+        "yas-island"
+      ],
+      "circuity": 1.834360125254444
+    },
+    {
+      "from": "al-rawdah",
+      "to": "mbz-zayed-city",
+      "distanceKm": 25.841999999999995,
+      "freeFlowMinutes": 29.210000000000004,
+      "straightKm": 14.094978233742859,
+      "intermediateGateways": [],
+      "circuity": 1.8334189362659106
+    },
+    {
+      "from": "al-saadiyat",
+      "to": "al-raha",
+      "distanceKm": 34.760999999999996,
+      "freeFlowMinutes": 28.52000000000001,
+      "straightKm": 19.05354175435892,
+      "intermediateGateways": [
+        "yas-island"
+      ],
+      "circuity": 1.824385221820906
+    },
+    {
+      "from": "al-reem",
+      "to": "al-maryah",
+      "distanceKm": 4.922,
+      "freeFlowMinutes": 7.3,
+      "straightKm": 2.7002709050785914,
+      "intermediateGateways": [],
+      "circuity": 1.8227800739336355
+    },
+    {
+      "from": "al-danah",
+      "to": "al-raha",
+      "distanceKm": 43.32699999999999,
+      "freeFlowMinutes": 33.46,
+      "straightKm": 23.778518797776318,
+      "intermediateGateways": [
+        "yas-island"
+      ],
+      "circuity": 1.8221067665514883
+    },
+    {
+      "from": "al-raha",
+      "to": "yas-island",
+      "distanceKm": 8.4,
+      "freeFlowMinutes": 11.58,
+      "straightKm": 4.621003161116925,
+      "intermediateGateways": [],
+      "circuity": 1.8177871139931592
+    },
+    {
+      "from": "al-saadiyat",
+      "to": "musaffah",
+      "distanceKm": 39.69799999999999,
+      "freeFlowMinutes": 36.50000000000001,
+      "straightKm": 21.85219571770256,
+      "intermediateGateways": [],
+      "circuity": 1.8166595482137509
+    },
+    {
+      "from": "al-bateen",
+      "to": "al-nahyan",
+      "distanceKm": 7.953,
+      "freeFlowMinutes": 10.949999999999998,
+      "straightKm": 4.40387312638524,
+      "intermediateGateways": [
+        "al-manhal-karamah"
+      ],
+      "circuity": 1.8059103365968068
+    },
+    {
+      "from": "al-maryah",
+      "to": "mbz-zayed-city",
+      "distanceKm": 44.635,
+      "freeFlowMinutes": 51.199999999999996,
+      "straightKm": 24.736433766933605,
+      "intermediateGateways": [
+        "al-zahiyah",
+        "al-nahyan",
+        "muroor-al-saadah"
+      ],
+      "circuity": 1.8044234031692061
+    },
+    {
+      "from": "al-rawdah",
+      "to": "yas-island",
+      "distanceKm": 30.872999999999998,
+      "freeFlowMinutes": 35.10000000000001,
+      "straightKm": 17.264916792038917,
+      "intermediateGateways": [],
+      "circuity": 1.7881928057849632
+    },
+    {
+      "from": "musaffah",
+      "to": "al-mushrif",
+      "distanceKm": 26.948999999999998,
+      "freeFlowMinutes": 25.359999999999996,
+      "straightKm": 15.074085256129662,
+      "intermediateGateways": [],
+      "circuity": 1.7877701725908424
+    },
+    {
+      "from": "al-maryah",
+      "to": "muroor-al-saadah",
+      "distanceKm": 14.634999999999998,
+      "freeFlowMinutes": 17.949999999999996,
+      "straightKm": 8.292702859402413,
+      "intermediateGateways": [
+        "al-zahiyah",
+        "al-nahyan"
+      ],
+      "circuity": 1.764804581585433
+    },
+    {
+      "from": "al-mushrif",
+      "to": "musaffah",
+      "distanceKm": 26.541,
+      "freeFlowMinutes": 27.35000000000001,
+      "straightKm": 15.074085256129662,
+      "intermediateGateways": [
+        "muroor-al-saadah"
+      ],
+      "circuity": 1.760703853602492
+    },
+    {
+      "from": "al-saadiyat",
+      "to": "rabdan-al-maqta",
+      "distanceKm": 29.775999999999996,
+      "freeFlowMinutes": 27.130000000000003,
+      "straightKm": 16.936362683327026,
+      "intermediateGateways": [],
+      "circuity": 1.7581106732741931
+    },
+    {
+      "from": "muroor-al-saadah",
+      "to": "mbz-zayed-city",
+      "distanceKm": 30,
+      "freeFlowMinutes": 33.250000000000014,
+      "straightKm": 17.21342991820718,
+      "intermediateGateways": [],
+      "circuity": 1.7428252325393947
+    },
+    {
+      "from": "al-maryah",
+      "to": "musaffah",
+      "distanceKm": 35.13599999999999,
+      "freeFlowMinutes": 39.27,
+      "straightKm": 20.17598400162346,
+      "intermediateGateways": [
+        "al-zahiyah",
+        "al-nahyan",
+        "muroor-al-saadah"
+      ],
+      "circuity": 1.7414764007134806
+    },
+    {
+      "from": "mbz-zayed-city",
+      "to": "yas-island",
+      "distanceKm": 26.87399999999999,
+      "freeFlowMinutes": 31.249999999999993,
+      "straightKm": 15.434974453562392,
+      "intermediateGateways": [],
+      "circuity": 1.7411107534290393
+    },
+    {
+      "from": "rabdan-al-maqta",
+      "to": "al-reem",
+      "distanceKm": 25.381000000000004,
+      "freeFlowMinutes": 24.560000000000002,
+      "straightKm": 14.606533564426213,
+      "intermediateGateways": [],
+      "circuity": 1.7376470528103047
+    },
+    {
+      "from": "mbz-zayed-city",
+      "to": "muroor-al-saadah",
+      "distanceKm": 29.848000000000003,
+      "freeFlowMinutes": 29.229999999999997,
+      "straightKm": 17.21342991820718,
+      "intermediateGateways": [],
+      "circuity": 1.7339949180278618
+    },
+    {
+      "from": "al-mushrif",
+      "to": "al-saadiyat",
+      "distanceKm": 21.023000000000007,
+      "freeFlowMinutes": 22.21,
+      "straightKm": 12.130181675630041,
+      "intermediateGateways": [
+        "al-danah"
+      ],
+      "circuity": 1.7331150152710366
+    },
+    {
+      "from": "khalifa-city",
+      "to": "al-saadiyat",
+      "distanceKm": 33.535000000000004,
+      "freeFlowMinutes": 34.480000000000004,
+      "straightKm": 19.36699456586213,
+      "intermediateGateways": [],
+      "circuity": 1.7315541596274096
+    },
+    {
+      "from": "mbz-zayed-city",
+      "to": "al-raha",
+      "distanceKm": 18.75,
+      "freeFlowMinutes": 21.7,
+      "straightKm": 10.876915630528384,
+      "intermediateGateways": [],
+      "circuity": 1.7238342777408446
+    },
+    {
+      "from": "al-maryah",
+      "to": "al-reem",
+      "distanceKm": 4.649,
+      "freeFlowMinutes": 7.789999999999999,
+      "straightKm": 2.7002709050785914,
+      "intermediateGateways": [],
+      "circuity": 1.7216791068097261
+    },
+    {
+      "from": "al-mushrif",
+      "to": "mbz-zayed-city",
+      "distanceKm": 36.04,
+      "freeFlowMinutes": 39.28000000000001,
+      "straightKm": 20.982918112521386,
+      "intermediateGateways": [
+        "muroor-al-saadah"
+      ],
+      "circuity": 1.717587601816614
+    },
+    {
+      "from": "muroor-al-saadah",
+      "to": "musaffah",
+      "distanceKm": 20.501,
+      "freeFlowMinutes": 21.320000000000007,
+      "straightKm": 11.943735050678345,
+      "intermediateGateways": [],
+      "circuity": 1.7164647334366017
+    },
+    {
+      "from": "al-zahiyah",
+      "to": "mbz-zayed-city",
+      "distanceKm": 43.196999999999996,
+      "freeFlowMinutes": 49.08,
+      "straightKm": 25.350888773801938,
+      "intermediateGateways": [
+        "al-nahyan",
+        "muroor-al-saadah"
+      ],
+      "circuity": 1.7039639274754166
+    },
+    {
+      "from": "al-maryah",
+      "to": "al-rawdah",
+      "distanceKm": 19.119,
+      "freeFlowMinutes": 23.349999999999994,
+      "straightKm": 11.282861099146938,
+      "intermediateGateways": [
+        "al-zahiyah",
+        "al-nahyan",
+        "muroor-al-saadah"
+      ],
+      "circuity": 1.6945170052164806
+    },
+    {
+      "from": "musaffah",
+      "to": "al-bateen",
+      "distanceKm": 32.242,
+      "freeFlowMinutes": 29.839999999999996,
+      "straightKm": 19.06356875270767,
+      "intermediateGateways": [],
+      "circuity": 1.6912887832410992
+    },
+    {
+      "from": "khalifa-city",
+      "to": "yas-island",
+      "distanceKm": 14.205999999999998,
+      "freeFlowMinutes": 17.750000000000004,
+      "straightKm": 8.442657623423509,
+      "intermediateGateways": [],
+      "circuity": 1.682645516808183
+    },
+    {
+      "from": "al-reem",
+      "to": "al-manhal-karamah",
+      "distanceKm": 11.686999999999998,
+      "freeFlowMinutes": 17.080000000000002,
+      "straightKm": 6.9606879710601195,
+      "intermediateGateways": [
+        "al-zahiyah"
+      ],
+      "circuity": 1.6790007034635193
+    },
+    {
+      "from": "al-mushrif",
+      "to": "al-nahyan",
+      "distanceKm": 4.328,
+      "freeFlowMinutes": 5.6899999999999995,
+      "straightKm": 2.5856738520783207,
+      "intermediateGateways": [],
+      "circuity": 1.6738383290379903
+    },
+    {
+      "from": "musaffah",
+      "to": "al-manhal-karamah",
+      "distanceKm": 30.544000000000004,
+      "freeFlowMinutes": 28.709999999999997,
+      "straightKm": 18.4077563406583,
+      "intermediateGateways": [],
+      "circuity": 1.659300538031116
+    },
+    {
+      "from": "mbz-zayed-city",
+      "to": "al-mushrif",
+      "distanceKm": 34.794000000000004,
+      "freeFlowMinutes": 34.1,
+      "straightKm": 20.982918112521386,
+      "intermediateGateways": [],
+      "circuity": 1.6582059660823327
+    },
+    {
+      "from": "al-zahiyah",
+      "to": "al-nahyan",
+      "distanceKm": 6.6129999999999995,
+      "freeFlowMinutes": 9.659999999999998,
+      "straightKm": 3.9881537920802757,
+      "intermediateGateways": [],
+      "circuity": 1.6581607291905782
+    },
+    {
+      "from": "rabdan-al-maqta",
+      "to": "yas-island",
+      "distanceKm": 24.553999999999995,
+      "freeFlowMinutes": 27.39,
+      "straightKm": 14.80995823945365,
+      "intermediateGateways": [],
+      "circuity": 1.6579385034718241
+    },
+    {
+      "from": "mbz-zayed-city",
+      "to": "al-maryah",
+      "distanceKm": 40.759,
+      "freeFlowMinutes": 38.790000000000006,
+      "straightKm": 24.736433766933605,
+      "intermediateGateways": [
+        "al-zahiyah"
+      ],
+      "circuity": 1.647731454906994
+    },
+    {
+      "from": "musaffah",
+      "to": "al-nahyan",
+      "distanceKm": 27.883000000000006,
+      "freeFlowMinutes": 26.169999999999995,
+      "straightKm": 16.97509603463828,
+      "intermediateGateways": [],
+      "circuity": 1.6425827543540115
+    },
+    {
+      "from": "al-zahiyah",
+      "to": "musaffah",
+      "distanceKm": 33.69799999999999,
+      "freeFlowMinutes": 37.150000000000006,
+      "straightKm": 20.534655752372327,
+      "intermediateGateways": [
+        "al-nahyan",
+        "muroor-al-saadah"
+      ],
+      "circuity": 1.6410306754768427
+    },
+    {
+      "from": "al-nahyan",
+      "to": "mbz-zayed-city",
+      "distanceKm": 36.583999999999996,
+      "freeFlowMinutes": 39.42000000000001,
+      "straightKm": 22.36727163900591,
+      "intermediateGateways": [
+        "muroor-al-saadah"
+      ],
+      "circuity": 1.635604046414037
+    },
+    {
+      "from": "musaffah",
+      "to": "al-maryah",
+      "distanceKm": 32.913999999999994,
+      "freeFlowMinutes": 30.049999999999997,
+      "straightKm": 20.17598400162346,
+      "intermediateGateways": [
+        "al-zahiyah"
+      ],
+      "circuity": 1.631345464853242
+    },
+    {
+      "from": "al-khalidiyah",
+      "to": "al-manhal-karamah",
+      "distanceKm": 2.648,
+      "freeFlowMinutes": 3.95,
+      "straightKm": 1.623273416262799,
+      "intermediateGateways": [],
+      "circuity": 1.6312717090484918
+    },
+    {
+      "from": "al-mushrif",
+      "to": "yas-island",
+      "distanceKm": 36.514,
+      "freeFlowMinutes": 30.389999999999997,
+      "straightKm": 22.39334655338075,
+      "intermediateGateways": [
+        "al-danah"
+      ],
+      "circuity": 1.6305736131470463
+    },
+    {
+      "from": "musaffah",
+      "to": "yas-island",
+      "distanceKm": 30.565999999999992,
+      "freeFlowMinutes": 33.699999999999996,
+      "straightKm": 18.78799379533362,
+      "intermediateGateways": [],
+      "circuity": 1.626890041213005
+    },
+    {
+      "from": "al-khalidiyah",
+      "to": "mbz-zayed-city",
+      "distanceKm": 41.705999999999996,
+      "freeFlowMinutes": 46.03,
+      "straightKm": 25.776300109299953,
+      "intermediateGateways": [
+        "al-manhal-karamah",
+        "muroor-al-saadah"
+      ],
+      "circuity": 1.6179979214686708
+    },
+    {
+      "from": "al-khalidiyah",
+      "to": "musaffah",
+      "distanceKm": 32.206999999999994,
+      "freeFlowMinutes": 34.10000000000001,
+      "straightKm": 19.91663425280617,
+      "intermediateGateways": [
+        "al-manhal-karamah",
+        "muroor-al-saadah"
+      ],
+      "circuity": 1.6170904978817977
+    },
+    {
+      "from": "al-manhal-karamah",
+      "to": "mbz-zayed-city",
+      "distanceKm": 39.05799999999999,
+      "freeFlowMinutes": 42.08,
+      "straightKm": 24.174858099751958,
+      "intermediateGateways": [
+        "muroor-al-saadah"
+      ],
+      "circuity": 1.6156454709614507
+    },
+    {
+      "from": "al-maryah",
+      "to": "al-mushrif",
+      "distanceKm": 10.942000000000002,
+      "freeFlowMinutes": 14.249999999999995,
+      "straightKm": 6.790791701177643,
+      "intermediateGateways": [
+        "al-zahiyah"
+      ],
+      "circuity": 1.6112996070991938
+    },
+    {
+      "from": "al-saadiyat",
+      "to": "al-maryah",
+      "distanceKm": 10.591000000000001,
+      "freeFlowMinutes": 12.34,
+      "straightKm": 6.574420254808929,
+      "intermediateGateways": [],
+      "circuity": 1.6109405224366515
+    },
+    {
+      "from": "al-zahiyah",
+      "to": "al-reem",
+      "distanceKm": 6.115,
+      "freeFlowMinutes": 8.89,
+      "straightKm": 3.7997299183624405,
+      "intermediateGateways": [],
+      "circuity": 1.609324907659586
+    },
+    {
+      "from": "al-khalidiyah",
+      "to": "al-bateen",
+      "distanceKm": 3.0470000000000006,
+      "freeFlowMinutes": 3.5600000000000005,
+      "straightKm": 1.8950161560870233,
+      "intermediateGateways": [],
+      "circuity": 1.607901858890577
+    },
+    {
+      "from": "musaffah",
+      "to": "al-khalidiyah",
+      "distanceKm": 32.012,
+      "freeFlowMinutes": 29.699999999999996,
+      "straightKm": 19.91663425280617,
+      "intermediateGateways": [],
+      "circuity": 1.6072996869684266
+    },
+    {
+      "from": "al-danah",
+      "to": "mbz-zayed-city",
+      "distanceKm": 40.673999999999985,
+      "freeFlowMinutes": 45.27,
+      "straightKm": 25.308877816051922,
+      "intermediateGateways": [
+        "al-nahyan",
+        "muroor-al-saadah"
+      ],
+      "circuity": 1.6071040484538148
+    },
+    {
+      "from": "al-manhal-karamah",
+      "to": "musaffah",
+      "distanceKm": 29.558999999999994,
+      "freeFlowMinutes": 30.150000000000002,
+      "straightKm": 18.4077563406583,
+      "intermediateGateways": [
+        "muroor-al-saadah"
+      ],
+      "circuity": 1.6057904859763537
+    },
+    {
+      "from": "al-raha",
+      "to": "al-maryah",
+      "distanceKm": 35.41,
+      "freeFlowMinutes": 31.379999999999995,
+      "straightKm": 22.086614309468427,
+      "intermediateGateways": [
+        "al-zahiyah"
+      ],
+      "circuity": 1.6032335016969939
+    },
+    {
+      "from": "yas-island",
+      "to": "al-reem",
+      "distanceKm": 30.333,
+      "freeFlowMinutes": 31.42,
+      "straightKm": 18.945005347568326,
+      "intermediateGateways": [],
+      "circuity": 1.601108019950671
+    },
+    {
+      "from": "mbz-zayed-city",
+      "to": "al-nahyan",
+      "distanceKm": 35.728,
+      "freeFlowMinutes": 34.91,
+      "straightKm": 22.36727163900591,
+      "intermediateGateways": [],
+      "circuity": 1.5973338445845375
+    },
+    {
+      "from": "muroor-al-saadah",
+      "to": "al-maryah",
+      "distanceKm": 13.235000000000001,
+      "freeFlowMinutes": 14.359999999999998,
+      "straightKm": 8.292702859402413,
+      "intermediateGateways": [
+        "al-danah",
+        "al-zahiyah"
+      ],
+      "circuity": 1.5959814579626381
+    },
+    {
+      "from": "al-nahyan",
+      "to": "musaffah",
+      "distanceKm": 27.084999999999997,
+      "freeFlowMinutes": 27.49000000000001,
+      "straightKm": 16.97509603463828,
+      "intermediateGateways": [
+        "muroor-al-saadah"
+      ],
+      "circuity": 1.5955727110310365
+    },
+    {
+      "from": "al-khalidiyah",
+      "to": "al-nahyan",
+      "distanceKm": 6.023000000000001,
+      "freeFlowMinutes": 8.96,
+      "straightKm": 3.778603213640377,
+      "intermediateGateways": [
+        "al-manhal-karamah"
+      ],
+      "circuity": 1.5939752494407398
+    },
+    {
+      "from": "al-manhal-karamah",
+      "to": "al-khalidiyah",
+      "distanceKm": 2.584,
+      "freeFlowMinutes": 3.67,
+      "straightKm": 1.623273416262799,
+      "intermediateGateways": [],
+      "circuity": 1.5918452024853862
+    },
+    {
+      "from": "yas-island",
+      "to": "al-nahyan",
+      "distanceKm": 35.01500000000001,
+      "freeFlowMinutes": 35.93,
+      "straightKm": 21.997338107778113,
+      "intermediateGateways": [],
+      "circuity": 1.5917835070971127
+    },
+    {
+      "from": "al-nahyan",
+      "to": "al-zahiyah",
+      "distanceKm": 6.341,
+      "freeFlowMinutes": 8.26,
+      "straightKm": 3.9881537920802757,
+      "intermediateGateways": [
+        "al-danah"
+      ],
+      "circuity": 1.5899587454706574
+    },
+    {
+      "from": "mbz-zayed-city",
+      "to": "al-manhal-karamah",
+      "distanceKm": 38.38900000000001,
+      "freeFlowMinutes": 37.45,
+      "straightKm": 24.174858099751958,
+      "intermediateGateways": [],
+      "circuity": 1.5879720923943663
+    },
+    {
+      "from": "mbz-zayed-city",
+      "to": "al-bateen",
+      "distanceKm": 40.087,
+      "freeFlowMinutes": 38.580000000000005,
+      "straightKm": 25.269145996130163,
+      "intermediateGateways": [],
+      "circuity": 1.5864010602550287
+    },
+    {
+      "from": "al-manhal-karamah",
+      "to": "al-reem",
+      "distanceKm": 11.023,
+      "freeFlowMinutes": 15.439999999999998,
+      "straightKm": 6.9606879710601195,
+      "intermediateGateways": [
+        "al-danah"
+      ],
+      "circuity": 1.5836078338562827
+    },
+    {
+      "from": "al-mushrif",
+      "to": "al-maryah",
+      "distanceKm": 10.700999999999999,
+      "freeFlowMinutes": 13.099999999999994,
+      "straightKm": 6.790791701177643,
+      "intermediateGateways": [
+        "al-danah",
+        "al-zahiyah"
+      ],
+      "circuity": 1.575810372470158
+    },
+    {
+      "from": "al-reem",
+      "to": "al-bateen",
+      "distanceKm": 14.57,
+      "freeFlowMinutes": 20.069999999999993,
+      "straightKm": 9.25102403568936,
+      "intermediateGateways": [
+        "al-zahiyah",
+        "al-khalidiyah"
+      ],
+      "circuity": 1.5749607766438243
+    },
+    {
+      "from": "al-raha",
+      "to": "musaffah",
+      "distanceKm": 23.565,
+      "freeFlowMinutes": 21.72,
+      "straightKm": 14.988991349496684,
+      "intermediateGateways": [],
+      "circuity": 1.5721538194623943
+    },
+    {
+      "from": "al-bateen",
+      "to": "musaffah",
+      "distanceKm": 29.933999999999994,
+      "freeFlowMinutes": 30.60000000000001,
+      "straightKm": 19.06356875270767,
+      "intermediateGateways": [
+        "al-rawdah"
+      ],
+      "circuity": 1.5702201612039905
+    },
+    {
+      "from": "al-maryah",
+      "to": "rabdan-al-maqta",
+      "distanceKm": 25.213999999999995,
+      "freeFlowMinutes": 29.899999999999995,
+      "straightKm": 16.09299078296347,
+      "intermediateGateways": [
+        "al-zahiyah",
+        "al-nahyan",
+        "muroor-al-saadah"
+      ],
+      "circuity": 1.5667690574142568
+    },
+    {
+      "from": "musaffah",
+      "to": "khalifa-city",
+      "distanceKm": 17.12,
+      "freeFlowMinutes": 17.45,
+      "straightKm": 10.942602927882698,
+      "intermediateGateways": [],
+      "circuity": 1.5645272073591159
+    },
+    {
+      "from": "al-manhal-karamah",
+      "to": "al-saadiyat",
+      "distanceKm": 17.833000000000002,
+      "freeFlowMinutes": 19.22,
+      "straightKm": 11.42069459697448,
+      "intermediateGateways": [
+        "al-danah"
+      ],
+      "circuity": 1.5614636963258122
+    },
+    {
+      "from": "al-nahyan",
+      "to": "al-raha",
+      "distanceKm": 33.702999999999996,
+      "freeFlowMinutes": 34.589999999999996,
+      "straightKm": 21.58660590158314,
+      "intermediateGateways": [
+        "muroor-al-saadah"
+      ],
+      "circuity": 1.5612922269326392
+    },
+    {
+      "from": "al-bateen",
+      "to": "mbz-zayed-city",
+      "distanceKm": 39.432999999999986,
+      "freeFlowMinutes": 42.53000000000001,
+      "straightKm": 25.269145996130163,
+      "intermediateGateways": [
+        "al-rawdah"
+      ],
+      "circuity": 1.5605196948895281
+    },
+    {
+      "from": "al-danah",
+      "to": "musaffah",
+      "distanceKm": 31.174999999999994,
+      "freeFlowMinutes": 33.34000000000001,
+      "straightKm": 20.060233696594207,
+      "intermediateGateways": [
+        "al-nahyan",
+        "muroor-al-saadah"
+      ],
+      "circuity": 1.5540696320647966
+    },
+    {
+      "from": "muroor-al-saadah",
+      "to": "al-raha",
+      "distanceKm": 27.119000000000007,
+      "freeFlowMinutes": 28.420000000000005,
+      "straightKm": 17.455119363692724,
+      "intermediateGateways": [],
+      "circuity": 1.5536416242680358
+    },
+    {
+      "from": "al-saadiyat",
+      "to": "al-nahyan",
+      "distanceKm": 15.336,
+      "freeFlowMinutes": 19.490000000000002,
+      "straightKm": 9.914179099208637,
+      "intermediateGateways": [],
+      "circuity": 1.546875424231961
+    },
+    {
+      "from": "al-maryah",
+      "to": "al-manhal-karamah",
+      "distanceKm": 7.805000000000001,
+      "freeFlowMinutes": 11.069999999999995,
+      "straightKm": 5.04670798751479,
+      "intermediateGateways": [
+        "al-zahiyah"
+      ],
+      "circuity": 1.5465527269081223
+    },
+    {
+      "from": "al-mushrif",
+      "to": "al-raha",
+      "distanceKm": 33.159,
+      "freeFlowMinutes": 34.449999999999996,
+      "straightKm": 21.442465960317538,
+      "intermediateGateways": [
+        "muroor-al-saadah"
+      ],
+      "circuity": 1.5464172852770592
+    },
+    {
+      "from": "mbz-zayed-city",
+      "to": "al-khalidiyah",
+      "distanceKm": 39.857000000000006,
+      "freeFlowMinutes": 38.44000000000001,
+      "straightKm": 25.776300109299953,
+      "intermediateGateways": [],
+      "circuity": 1.546265361242431
+    },
+    {
+      "from": "mbz-zayed-city",
+      "to": "al-zahiyah",
+      "distanceKm": 39.195,
+      "freeFlowMinutes": 36.949999999999996,
+      "straightKm": 25.350888773801938,
+      "intermediateGateways": [],
+      "circuity": 1.5460996397295867
+    },
+    {
+      "from": "al-zahiyah",
+      "to": "muroor-al-saadah",
+      "distanceKm": 13.197,
+      "freeFlowMinutes": 15.829999999999998,
+      "straightKm": 8.593218101033813,
+      "intermediateGateways": [
+        "al-nahyan"
+      ],
+      "circuity": 1.5357459620875125
+    },
+    {
+      "from": "khalifa-city",
+      "to": "al-maryah",
+      "distanceKm": 32.455,
+      "freeFlowMinutes": 29.579999999999995,
+      "straightKm": 21.168256880205785,
+      "intermediateGateways": [
+        "al-zahiyah"
+      ],
+      "circuity": 1.5331919006684167
+    },
+    {
+      "from": "al-nahyan",
+      "to": "yas-island",
+      "distanceKm": 33.717999999999996,
+      "freeFlowMinutes": 27.389999999999997,
+      "straightKm": 21.997338107778113,
+      "intermediateGateways": [
+        "al-danah"
+      ],
+      "circuity": 1.5328218275681973
+    },
+    {
+      "from": "musaffah",
+      "to": "al-zahiyah",
+      "distanceKm": 31.349999999999994,
+      "freeFlowMinutes": 28.21,
+      "straightKm": 20.534655752372327,
+      "intermediateGateways": [],
+      "circuity": 1.5266873902367801
+    },
+    {
+      "from": "al-manhal-karamah",
+      "to": "al-raha",
+      "distanceKm": 36.17699999999999,
+      "freeFlowMinutes": 37.24999999999999,
+      "straightKm": 23.80389187380613,
+      "intermediateGateways": [
+        "muroor-al-saadah"
+      ],
+      "circuity": 1.5197934939290019
+    },
+    {
+      "from": "al-danah",
+      "to": "al-saadiyat",
+      "distanceKm": 14.197000000000001,
+      "freeFlowMinutes": 14.109999999999998,
+      "straightKm": 9.34152388812843,
+      "intermediateGateways": [],
+      "circuity": 1.5197734513147365
+    },
+    {
+      "from": "al-mushrif",
+      "to": "al-rawdah",
+      "distanceKm": 10.524000000000001,
+      "freeFlowMinutes": 11.43,
+      "straightKm": 6.936955452551118,
+      "intermediateGateways": [
+        "muroor-al-saadah"
+      ],
+      "circuity": 1.5170920545741318
+    },
+    {
+      "from": "al-reem",
+      "to": "al-danah",
+      "distanceKm": 7.933,
+      "freeFlowMinutes": 12.18,
+      "straightKm": 5.231473742631477,
+      "intermediateGateways": [
+        "al-zahiyah"
+      ],
+      "circuity": 1.5163987033622446
+    },
+    {
+      "from": "musaffah",
+      "to": "al-danah",
+      "distanceKm": 30.381000000000004,
+      "freeFlowMinutes": 28.58,
+      "straightKm": 20.060233696594207,
+      "intermediateGateways": [],
+      "circuity": 1.5144888369450074
+    },
+    {
+      "from": "al-zahiyah",
+      "to": "al-rawdah",
+      "distanceKm": 17.681,
+      "freeFlowMinutes": 21.229999999999997,
+      "straightKm": 11.674934702583652,
+      "intermediateGateways": [
+        "al-nahyan",
+        "muroor-al-saadah"
+      ],
+      "circuity": 1.5144410183371058
+    },
+    {
+      "from": "mbz-zayed-city",
+      "to": "al-danah",
+      "distanceKm": 38.226000000000006,
+      "freeFlowMinutes": 37.31999999999999,
+      "straightKm": 25.308877816051922,
+      "intermediateGateways": [],
+      "circuity": 1.5103790961350139
+    },
+    {
+      "from": "al-rawdah",
+      "to": "muroor-al-saadah",
+      "distanceKm": 4.769,
+      "freeFlowMinutes": 5.8100000000000005,
+      "straightKm": 3.157744512923244,
+      "intermediateGateways": [],
+      "circuity": 1.5102551775428963
+    },
+    {
+      "from": "al-rawdah",
+      "to": "al-maryah",
+      "distanceKm": 17.022000000000002,
+      "freeFlowMinutes": 18.899999999999995,
+      "straightKm": 11.282861099146938,
+      "intermediateGateways": [
+        "al-danah",
+        "al-zahiyah"
+      ],
+      "circuity": 1.5086598913538856
+    },
+    {
+      "from": "al-manhal-karamah",
+      "to": "al-nahyan",
+      "distanceKm": 3.3750000000000004,
+      "freeFlowMinutes": 5.010000000000001,
+      "straightKm": 2.244963076912294,
+      "intermediateGateways": [],
+      "circuity": 1.5033654828042655
+    },
+    {
+      "from": "al-saadiyat",
+      "to": "al-mushrif",
+      "distanceKm": 18.227,
+      "freeFlowMinutes": 21.959999999999997,
+      "straightKm": 12.130181675630041,
+      "intermediateGateways": [],
+      "circuity": 1.502615582140759
+    },
+    {
+      "from": "al-bateen",
+      "to": "al-danah",
+      "distanceKm": 6.802,
+      "freeFlowMinutes": 8.29,
+      "straightKm": 4.530657639260392,
+      "intermediateGateways": [
+        "al-khalidiyah"
+      ],
+      "circuity": 1.5013272998289038
+    },
+    {
+      "from": "muroor-al-saadah",
+      "to": "khalifa-city",
+      "distanceKm": 22.887000000000004,
+      "freeFlowMinutes": 23.98,
+      "straightKm": 15.246121960542306,
+      "intermediateGateways": [],
+      "circuity": 1.5011686289295505
+    },
+    {
+      "from": "al-nahyan",
+      "to": "al-khalidiyah",
+      "distanceKm": 5.661000000000001,
+      "freeFlowMinutes": 6.22,
+      "straightKm": 3.778603213640377,
+      "intermediateGateways": [],
+      "circuity": 1.4981726526787364
+    },
+    {
+      "from": "al-mushrif",
+      "to": "khalifa-city",
+      "distanceKm": 28.927,
+      "freeFlowMinutes": 30.01,
+      "straightKm": 19.308796086388913,
+      "intermediateGateways": [
+        "muroor-al-saadah"
+      ],
+      "circuity": 1.4981255108075389
+    },
+    {
+      "from": "musaffah",
+      "to": "al-raha",
+      "distanceKm": 22.442,
+      "freeFlowMinutes": 24.150000000000002,
+      "straightKm": 14.988991349496684,
+      "intermediateGateways": [],
+      "circuity": 1.4972321670432869
+    },
+    {
+      "from": "al-danah",
+      "to": "khalifa-city",
+      "distanceKm": 33.560999999999986,
+      "freeFlowMinutes": 36.00000000000001,
+      "straightKm": 22.44671006411456,
+      "intermediateGateways": [
+        "al-nahyan",
+        "muroor-al-saadah"
+      ],
+      "circuity": 1.4951411545005782
+    },
+    {
+      "from": "rabdan-al-maqta",
+      "to": "khalifa-city",
+      "distanceKm": 12.409999999999998,
+      "freeFlowMinutes": 12.229999999999999,
+      "straightKm": 8.305763068888565,
+      "intermediateGateways": [],
+      "circuity": 1.4941432710120206
+    },
+    {
+      "from": "al-rawdah",
+      "to": "al-raha",
+      "distanceKm": 22.961000000000006,
+      "freeFlowMinutes": 24.380000000000006,
+      "straightKm": 15.373743920783225,
+      "intermediateGateways": [],
+      "circuity": 1.493520388937911
+    },
+    {
+      "from": "al-manhal-karamah",
+      "to": "al-maryah",
+      "distanceKm": 7.511000000000001,
+      "freeFlowMinutes": 10.109999999999998,
+      "straightKm": 5.04670798751479,
+      "intermediateGateways": [
+        "al-danah",
+        "al-zahiyah"
+      ],
+      "circuity": 1.4882969291232424
+    },
+    {
+      "from": "al-maryah",
+      "to": "al-bateen",
+      "distanceKm": 10.688000000000002,
+      "freeFlowMinutes": 14.059999999999997,
+      "straightKm": 7.186469751394285,
+      "intermediateGateways": [
+        "al-zahiyah",
+        "al-khalidiyah"
+      ],
+      "circuity": 1.487239266251189
+    },
+    {
+      "from": "al-mushrif",
+      "to": "muroor-al-saadah",
+      "distanceKm": 6.04,
+      "freeFlowMinutes": 6.03,
+      "straightKm": 4.062673490440483,
+      "intermediateGateways": [],
+      "circuity": 1.4867057404962984
+    },
+    {
+      "from": "al-danah",
+      "to": "al-bateen",
+      "distanceKm": 6.727,
+      "freeFlowMinutes": 8.129999999999999,
+      "straightKm": 4.530657639260392,
+      "intermediateGateways": [
+        "al-khalidiyah"
+      ],
+      "circuity": 1.4847734116361417
+    },
+    {
+      "from": "al-bateen",
+      "to": "al-khalidiyah",
+      "distanceKm": 2.813,
+      "freeFlowMinutes": 3.16,
+      "straightKm": 1.8950161560870233,
+      "intermediateGateways": [],
+      "circuity": 1.4844200620476509
+    },
+    {
+      "from": "al-nahyan",
+      "to": "khalifa-city",
+      "distanceKm": 29.470999999999997,
+      "freeFlowMinutes": 30.150000000000002,
+      "straightKm": 19.90787789441569,
+      "intermediateGateways": [
+        "muroor-al-saadah"
+      ],
+      "circuity": 1.4803687342419773
+    },
+    {
+      "from": "al-bateen",
+      "to": "al-saadiyat",
+      "distanceKm": 20.211000000000002,
+      "freeFlowMinutes": 20.78,
+      "straightKm": 13.668566033030487,
+      "intermediateGateways": [
+        "al-khalidiyah"
+      ],
+      "circuity": 1.4786481589333902
+    },
+    {
+      "from": "al-nahyan",
+      "to": "al-mushrif",
+      "distanceKm": 3.823,
+      "freeFlowMinutes": 4.41,
+      "straightKm": 2.5856738520783207,
+      "intermediateGateways": [],
+      "circuity": 1.4785314075582803
+    },
+    {
+      "from": "khalifa-city",
+      "to": "al-raha",
+      "distanceKm": 6.082,
+      "freeFlowMinutes": 8.2,
+      "straightKm": 4.121159156471842,
+      "intermediateGateways": [],
+      "circuity": 1.4757983783394693
+    },
+    {
+      "from": "al-rawdah",
+      "to": "khalifa-city",
+      "distanceKm": 18.729,
+      "freeFlowMinutes": 19.939999999999998,
+      "straightKm": 12.696738135538885,
+      "intermediateGateways": [],
+      "circuity": 1.4751032745628165
+    },
+    {
+      "from": "al-zahiyah",
+      "to": "al-manhal-karamah",
+      "distanceKm": 6.367,
+      "freeFlowMinutes": 8.949999999999998,
+      "straightKm": 4.328138061718695,
+      "intermediateGateways": [],
+      "circuity": 1.47107137277217
+    },
+    {
+      "from": "al-raha",
+      "to": "al-zahiyah",
+      "distanceKm": 33.846,
+      "freeFlowMinutes": 29.54,
+      "straightKm": 23.042526686926738,
+      "intermediateGateways": [],
+      "circuity": 1.4688493349647567
+    },
+    {
+      "from": "al-raha",
+      "to": "khalifa-city",
+      "distanceKm": 6.053,
+      "freeFlowMinutes": 8.06,
+      "straightKm": 4.121159156471842,
+      "intermediateGateways": [],
+      "circuity": 1.468761523197765
+    },
+    {
+      "from": "al-reem",
+      "to": "al-khalidiyah",
+      "distanceKm": 11.522999999999998,
+      "freeFlowMinutes": 16.509999999999998,
+      "straightKm": 7.84890236878458,
+      "intermediateGateways": [
+        "al-zahiyah"
+      ],
+      "circuity": 1.4681033676539872
+    },
+    {
+      "from": "al-reem",
+      "to": "yas-island",
+      "distanceKm": 27.775,
+      "freeFlowMinutes": 22.459999999999997,
+      "straightKm": 18.945005347568326,
+      "intermediateGateways": [],
+      "circuity": 1.4660856247034546
+    },
+    {
+      "from": "al-maryah",
+      "to": "al-danah",
+      "distanceKm": 4.051,
+      "freeFlowMinutes": 6.169999999999999,
+      "straightKm": 2.767161192776591,
+      "intermediateGateways": [
+        "al-zahiyah"
+      ],
+      "circuity": 1.4639551937107051
+    },
+    {
+      "from": "al-khalidiyah",
+      "to": "khalifa-city",
+      "distanceKm": 34.59299999999999,
+      "freeFlowMinutes": 36.760000000000005,
+      "straightKm": 23.64380789367668,
+      "intermediateGateways": [
+        "al-manhal-karamah",
+        "muroor-al-saadah"
+      ],
+      "circuity": 1.463089201010281
+    },
+    {
+      "from": "al-zahiyah",
+      "to": "al-bateen",
+      "distanceKm": 9.250000000000004,
+      "freeFlowMinutes": 11.939999999999996,
+      "straightKm": 6.327683399392753,
+      "intermediateGateways": [
+        "al-khalidiyah"
+      ],
+      "circuity": 1.4618304071420032
+    },
+    {
+      "from": "muroor-al-saadah",
+      "to": "al-mushrif",
+      "distanceKm": 5.928,
+      "freeFlowMinutes": 6.140000000000001,
+      "straightKm": 4.062673490440483,
+      "intermediateGateways": [],
+      "circuity": 1.459137687030142
+    },
+    {
+      "from": "al-raha",
+      "to": "al-saadiyat",
+      "distanceKm": 27.729000000000003,
+      "freeFlowMinutes": 28.310000000000002,
+      "straightKm": 19.05354175435892,
+      "intermediateGateways": [],
+      "circuity": 1.4553199797437333
+    },
+    {
+      "from": "al-zahiyah",
+      "to": "al-mushrif",
+      "distanceKm": 9.504,
+      "freeFlowMinutes": 12.129999999999997,
+      "straightKm": 6.550290168208859,
+      "intermediateGateways": [],
+      "circuity": 1.4509280895870322
+    },
+    {
+      "from": "al-manhal-karamah",
+      "to": "khalifa-city",
+      "distanceKm": 31.944999999999993,
+      "freeFlowMinutes": 32.81,
+      "straightKm": 22.032308739071848,
+      "intermediateGateways": [
+        "muroor-al-saadah"
+      ],
+      "circuity": 1.4499161380826646
+    },
+    {
+      "from": "al-bateen",
+      "to": "al-reem",
+      "distanceKm": 13.400999999999998,
+      "freeFlowMinutes": 17,
+      "straightKm": 9.25102403568936,
+      "intermediateGateways": [
+        "al-khalidiyah"
+      ],
+      "circuity": 1.4485963876323875
+    },
+    {
+      "from": "al-zahiyah",
+      "to": "al-danah",
+      "distanceKm": 2.613,
+      "freeFlowMinutes": 4.05,
+      "straightKm": 1.8049443357187755,
+      "intermediateGateways": [],
+      "circuity": 1.447690074585838
+    },
+    {
+      "from": "al-danah",
+      "to": "al-manhal-karamah",
+      "distanceKm": 3.844,
+      "freeFlowMinutes": 5.140000000000001,
+      "straightKm": 2.6574591128031284,
+      "intermediateGateways": [],
+      "circuity": 1.4464945035204286
+    },
+    {
+      "from": "khalifa-city",
+      "to": "musaffah",
+      "distanceKm": 15.797000000000002,
+      "freeFlowMinutes": 16.41,
+      "straightKm": 10.942602927882698,
+      "intermediateGateways": [],
+      "circuity": 1.4436236153418198
+    },
+    {
+      "from": "al-bateen",
+      "to": "al-mushrif",
+      "distanceKm": 6.293,
+      "freeFlowMinutes": 6.19,
+      "straightKm": 4.377404733601084,
+      "intermediateGateways": [],
+      "circuity": 1.4376098128863324
+    },
+    {
+      "from": "al-khalidiyah",
+      "to": "al-saadiyat",
+      "distanceKm": 17.398,
+      "freeFlowMinutes": 17.619999999999997,
+      "straightKm": 12.108407770396129,
+      "intermediateGateways": [],
+      "circuity": 1.4368528323382375
+    },
+    {
+      "from": "yas-island",
+      "to": "al-manhal-karamah",
+      "distanceKm": 34.76900000000001,
+      "freeFlowMinutes": 35.21999999999999,
+      "straightKm": 24.2401014010634,
+      "intermediateGateways": [],
+      "circuity": 1.4343586862419113
+    },
+    {
+      "from": "yas-island",
+      "to": "al-bateen",
+      "distanceKm": 37.652,
+      "freeFlowMinutes": 38.210000000000015,
+      "straightKm": 26.318360538684434,
+      "intermediateGateways": [
+        "al-khalidiyah"
+      ],
+      "circuity": 1.4306362261682921
+    },
+    {
+      "from": "al-bateen",
+      "to": "muroor-al-saadah",
+      "distanceKm": 12.047999999999998,
+      "freeFlowMinutes": 11.37,
+      "straightKm": 8.424995146975279,
+      "intermediateGateways": [],
+      "circuity": 1.4300304973262141
+    },
+    {
+      "from": "al-zahiyah",
+      "to": "rabdan-al-maqta",
+      "distanceKm": 23.775999999999996,
+      "freeFlowMinutes": 27.779999999999998,
+      "straightKm": 16.63373492165522,
+      "intermediateGateways": [
+        "al-nahyan",
+        "muroor-al-saadah"
+      ],
+      "circuity": 1.4293843272112245
+    },
+    {
+      "from": "al-khalidiyah",
+      "to": "al-danah",
+      "distanceKm": 3.989,
+      "freeFlowMinutes": 5.13,
+      "straightKm": 2.792212699268639,
+      "intermediateGateways": [],
+      "circuity": 1.4286160939833967
+    },
+    {
+      "from": "al-bateen",
+      "to": "al-raha",
+      "distanceKm": 36.55199999999999,
+      "freeFlowMinutes": 37.699999999999996,
+      "straightKm": 25.664004159735008,
+      "intermediateGateways": [
+        "al-rawdah"
+      ],
+      "circuity": 1.4242516394751632
+    },
+    {
+      "from": "al-khalidiyah",
+      "to": "al-rawdah",
+      "distanceKm": 16.638,
+      "freeFlowMinutes": 16.88,
+      "straightKm": 11.684775134194588,
+      "intermediateGateways": [
+        "al-bateen"
+      ],
+      "circuity": 1.4239041666544514
+    },
+    {
+      "from": "muroor-al-saadah",
+      "to": "al-rawdah",
+      "distanceKm": 4.484000000000001,
+      "freeFlowMinutes": 5.3999999999999995,
+      "straightKm": 3.157744512923244,
+      "intermediateGateways": [],
+      "circuity": 1.4200008840642373
+    },
+    {
+      "from": "rabdan-al-maqta",
+      "to": "al-raha",
+      "distanceKm": 16.642000000000003,
+      "freeFlowMinutes": 16.67,
+      "straightKm": 11.773561613154873,
+      "intermediateGateways": [],
+      "circuity": 1.4135060015658738
+    },
+    {
+      "from": "khalifa-city",
+      "to": "muroor-al-saadah",
+      "distanceKm": 21.543999999999997,
+      "freeFlowMinutes": 20.019999999999996,
+      "straightKm": 15.246121960542306,
+      "intermediateGateways": [],
+      "circuity": 1.4130806545924859
+    },
+    {
+      "from": "al-danah",
+      "to": "al-reem",
+      "distanceKm": 7.3870000000000005,
+      "freeFlowMinutes": 10.33,
+      "straightKm": 5.231473742631477,
+      "intermediateGateways": [],
+      "circuity": 1.4120304073789112
+    },
+    {
+      "from": "al-mushrif",
+      "to": "al-bateen",
+      "distanceKm": 6.176,
+      "freeFlowMinutes": 6.17,
+      "straightKm": 4.377404733601084,
+      "intermediateGateways": [],
+      "circuity": 1.4108816469706005
+    },
+    {
+      "from": "al-raha",
+      "to": "al-nahyan",
+      "distanceKm": 30.37900000000001,
+      "freeFlowMinutes": 27.5,
+      "straightKm": 21.58660590158314,
+      "intermediateGateways": [],
+      "circuity": 1.4073078527723546
+    },
+    {
+      "from": "al-zahiyah",
+      "to": "al-maryah",
+      "distanceKm": 1.564,
+      "freeFlowMinutes": 1.84,
+      "straightKm": 1.1117443656900177,
+      "intermediateGateways": [],
+      "circuity": 1.4067982247243362
+    },
+    {
+      "from": "khalifa-city",
+      "to": "al-rawdah",
+      "distanceKm": 17.831999999999997,
+      "freeFlowMinutes": 18.089999999999996,
+      "straightKm": 12.696738135538885,
+      "intermediateGateways": [],
+      "circuity": 1.4044552080732629
+    },
+    {
+      "from": "khalifa-city",
+      "to": "al-zahiyah",
+      "distanceKm": 30.891,
+      "freeFlowMinutes": 27.74,
+      "straightKm": 22.005870858678012,
+      "intermediateGateways": [],
+      "circuity": 1.4037617596859675
+    },
+    {
+      "from": "al-raha",
+      "to": "muroor-al-saadah",
+      "distanceKm": 24.499000000000002,
+      "freeFlowMinutes": 21.82,
+      "straightKm": 17.455119363692724,
+      "intermediateGateways": [],
+      "circuity": 1.4035423928958517
+    },
+    {
+      "from": "yas-island",
+      "to": "al-maryah",
+      "distanceKm": 30.270000000000003,
+      "freeFlowMinutes": 28.779999999999998,
+      "straightKm": 21.605375603233394,
+      "intermediateGateways": [],
+      "circuity": 1.4010402112828757
+    },
+    {
+      "from": "al-rawdah",
+      "to": "al-mushrif",
+      "distanceKm": 9.715000000000002,
+      "freeFlowMinutes": 10.679999999999998,
+      "straightKm": 6.936955452551118,
+      "intermediateGateways": [],
+      "circuity": 1.4004702879311755
+    },
+    {
+      "from": "al-danah",
+      "to": "al-maryah",
+      "distanceKm": 3.8749999999999996,
+      "freeFlowMinutes": 5,
+      "straightKm": 2.767161192776591,
+      "intermediateGateways": [
+        "al-zahiyah"
+      ],
+      "circuity": 1.4003521045739278
+    },
+    {
+      "from": "al-reem",
+      "to": "al-zahiyah",
+      "distanceKm": 5.32,
+      "freeFlowMinutes": 8.129999999999999,
+      "straightKm": 3.7997299183624405,
+      "intermediateGateways": [],
+      "circuity": 1.4000995108338508
+    },
+    {
+      "from": "al-mushrif",
+      "to": "al-zahiyah",
+      "distanceKm": 9.137,
+      "freeFlowMinutes": 11.259999999999996,
+      "straightKm": 6.550290168208859,
+      "intermediateGateways": [
+        "al-danah"
+      ],
+      "circuity": 1.3949000373060516
+    },
+    {
+      "from": "al-raha",
+      "to": "al-manhal-karamah",
+      "distanceKm": 33.04000000000001,
+      "freeFlowMinutes": 30.040000000000003,
+      "straightKm": 23.80389187380613,
+      "intermediateGateways": [],
+      "circuity": 1.388008321292928
+    },
+    {
+      "from": "khalifa-city",
+      "to": "rabdan-al-maqta",
+      "distanceKm": 11.495000000000001,
+      "freeFlowMinutes": 11.959999999999999,
+      "straightKm": 8.305763068888565,
+      "intermediateGateways": [],
+      "circuity": 1.3839787993781774
+    },
+    {
+      "from": "al-raha",
+      "to": "al-danah",
+      "distanceKm": 32.87700000000001,
+      "freeFlowMinutes": 29.910000000000004,
+      "straightKm": 23.778518797776318,
+      "intermediateGateways": [],
+      "circuity": 1.382634481129857
+    },
+    {
+      "from": "al-maryah",
+      "to": "al-khalidiyah",
+      "distanceKm": 7.641,
+      "freeFlowMinutes": 10.499999999999998,
+      "straightKm": 5.544126831352862,
+      "intermediateGateways": [
+        "al-zahiyah"
+      ],
+      "circuity": 1.3782152235026457
+    },
+    {
+      "from": "khalifa-city",
+      "to": "al-nahyan",
+      "distanceKm": 27.424000000000003,
+      "freeFlowMinutes": 25.699999999999996,
+      "straightKm": 19.90787789441569,
+      "intermediateGateways": [],
+      "circuity": 1.3775451178396387
+    },
+    {
+      "from": "al-bateen",
+      "to": "al-maryah",
+      "distanceKm": 9.889,
+      "freeFlowMinutes": 11.669999999999998,
+      "straightKm": 7.186469751394285,
+      "intermediateGateways": [
+        "al-khalidiyah",
+        "al-zahiyah"
+      ],
+      "circuity": 1.3760581122715199
+    },
+    {
+      "from": "al-manhal-karamah",
+      "to": "yas-island",
+      "distanceKm": 33.324,
+      "freeFlowMinutes": 27.4,
+      "straightKm": 24.2401014010634,
+      "intermediateGateways": [
+        "al-danah"
+      ],
+      "circuity": 1.374746724390274
+    },
+    {
+      "from": "al-manhal-karamah",
+      "to": "al-zahiyah",
+      "distanceKm": 5.947,
+      "freeFlowMinutes": 8.27,
+      "straightKm": 4.328138061718695,
+      "intermediateGateways": [
+        "al-danah"
+      ],
+      "circuity": 1.374031954433186
+    },
+    {
+      "from": "al-raha",
+      "to": "al-mushrif",
+      "distanceKm": 29.445,
+      "freeFlowMinutes": 26.69,
+      "straightKm": 21.442465960317538,
+      "intermediateGateways": [],
+      "circuity": 1.373209595132031
+    },
+    {
+      "from": "khalifa-city",
+      "to": "al-mushrif",
+      "distanceKm": 26.489999999999995,
+      "freeFlowMinutes": 24.889999999999997,
+      "straightKm": 19.308796086388913,
+      "intermediateGateways": [],
+      "circuity": 1.3719136025613337
+    },
+    {
+      "from": "rabdan-al-maqta",
+      "to": "al-rawdah",
+      "distanceKm": 7.246000000000001,
+      "freeFlowMinutes": 7.74,
+      "straightKm": 5.288685156065328,
+      "intermediateGateways": [],
+      "circuity": 1.3700947941077428
+    },
+    {
+      "from": "al-manhal-karamah",
+      "to": "al-danah",
+      "distanceKm": 3.6360000000000006,
+      "freeFlowMinutes": 5.109999999999999,
+      "straightKm": 2.6574591128031284,
+      "intermediateGateways": [],
+      "circuity": 1.3682242494277521
+    },
+    {
+      "from": "al-bateen",
+      "to": "khalifa-city",
+      "distanceKm": 32.319999999999986,
+      "freeFlowMinutes": 33.260000000000005,
+      "straightKm": 23.660548321615405,
+      "intermediateGateways": [
+        "al-rawdah"
+      ],
+      "circuity": 1.3659869399760962
+    },
+    {
+      "from": "khalifa-city",
+      "to": "al-manhal-karamah",
+      "distanceKm": 30.085,
+      "freeFlowMinutes": 28.24,
+      "straightKm": 22.032308739071848,
+      "intermediateGateways": [],
+      "circuity": 1.3654946631465636
+    },
+    {
+      "from": "al-raha",
+      "to": "al-khalidiyah",
+      "distanceKm": 34.508,
+      "freeFlowMinutes": 31.03,
+      "straightKm": 25.36470312422763,
+      "intermediateGateways": [],
+      "circuity": 1.3604732462663425
+    },
+    {
+      "from": "al-mushrif",
+      "to": "rabdan-al-maqta",
+      "distanceKm": 16.619,
+      "freeFlowMinutes": 17.98,
+      "straightKm": 12.21576627778585,
+      "intermediateGateways": [
+        "muroor-al-saadah"
+      ],
+      "circuity": 1.3604549745046572
+    },
+    {
+      "from": "muroor-al-saadah",
+      "to": "al-manhal-karamah",
+      "distanceKm": 9.523,
+      "freeFlowMinutes": 9.49,
+      "straightKm": 7.000409650621163,
+      "intermediateGateways": [],
+      "circuity": 1.3603489617432605
+    },
+    {
+      "from": "al-mushrif",
+      "to": "al-khalidiyah",
+      "distanceKm": 6.603000000000001,
+      "freeFlowMinutes": 6.550000000000001,
+      "straightKm": 4.854268212761796,
+      "intermediateGateways": [],
+      "circuity": 1.3602462226213243
+    },
+    {
+      "from": "rabdan-al-maqta",
+      "to": "al-maryah",
+      "distanceKm": 21.869,
+      "freeFlowMinutes": 19.229999999999993,
+      "straightKm": 16.09299078296347,
+      "intermediateGateways": [
+        "al-zahiyah"
+      ],
+      "circuity": 1.3589145917582448
+    },
+    {
+      "from": "muroor-al-saadah",
+      "to": "al-zahiyah",
+      "distanceKm": 11.671000000000003,
+      "freeFlowMinutes": 12.52,
+      "straightKm": 8.593218101033813,
+      "intermediateGateways": [
+        "al-danah"
+      ],
+      "circuity": 1.3581640617961175
+    },
+    {
+      "from": "al-khalidiyah",
+      "to": "muroor-al-saadah",
+      "distanceKm": 11.706,
+      "freeFlowMinutes": 12.780000000000001,
+      "straightKm": 8.619408317546458,
+      "intermediateGateways": [
+        "al-manhal-karamah"
+      ],
+      "circuity": 1.358097861099142
+    },
+    {
+      "from": "al-bateen",
+      "to": "yas-island",
+      "distanceKm": 35.702,
+      "freeFlowMinutes": 28.959999999999997,
+      "straightKm": 26.318360538684434,
+      "intermediateGateways": [
+        "al-khalidiyah"
+      ],
+      "circuity": 1.356543465065876
+    },
+    {
+      "from": "al-raha",
+      "to": "al-bateen",
+      "distanceKm": 34.738,
+      "freeFlowMinutes": 31.17,
+      "straightKm": 25.664004159735008,
+      "intermediateGateways": [],
+      "circuity": 1.353568982602545
+    },
+    {
+      "from": "al-raha",
+      "to": "al-rawdah",
+      "distanceKm": 20.787000000000003,
+      "freeFlowMinutes": 19.89,
+      "straightKm": 15.373743920783225,
+      "intermediateGateways": [],
+      "circuity": 1.3521104622992182
+    },
+    {
+      "from": "al-zahiyah",
+      "to": "al-khalidiyah",
+      "distanceKm": 6.203000000000001,
+      "freeFlowMinutes": 8.379999999999997,
+      "straightKm": 4.5914925600381,
+      "intermediateGateways": [],
+      "circuity": 1.3509768161202311
+    },
+    {
+      "from": "al-khalidiyah",
+      "to": "al-reem",
+      "distanceKm": 10.588,
+      "freeFlowMinutes": 13.840000000000002,
+      "straightKm": 7.84890236878458,
+      "intermediateGateways": [],
+      "circuity": 1.3489784306795467
+    },
+    {
+      "from": "yas-island",
+      "to": "al-khalidiyah",
+      "distanceKm": 34.605000000000004,
+      "freeFlowMinutes": 34.650000000000006,
+      "straightKm": 25.69134152168919,
+      "intermediateGateways": [],
+      "circuity": 1.3469518503261384
+    },
+    {
+      "from": "al-manhal-karamah",
+      "to": "al-rawdah",
+      "distanceKm": 13.541999999999998,
+      "freeFlowMinutes": 14.229999999999995,
+      "straightKm": 10.080185794494229,
+      "intermediateGateways": [
+        "muroor-al-saadah"
+      ],
+      "circuity": 1.343427618903275
+    },
+    {
+      "from": "khalifa-city",
+      "to": "al-bateen",
+      "distanceKm": 31.782999999999998,
+      "freeFlowMinutes": 29.369999999999997,
+      "straightKm": 23.660548321615405,
+      "intermediateGateways": [],
+      "circuity": 1.3432909317221622
+    },
+    {
+      "from": "al-mushrif",
+      "to": "al-manhal-karamah",
+      "distanceKm": 4.469,
+      "freeFlowMinutes": 5.7299999999999995,
+      "straightKm": 3.3394653865920563,
+      "intermediateGateways": [],
+      "circuity": 1.3382381557069052
+    },
+    {
+      "from": "al-danah",
+      "to": "al-rawdah",
+      "distanceKm": 15.157999999999998,
+      "freeFlowMinutes": 17.42,
+      "straightKm": 11.350284442282799,
+      "intermediateGateways": [
+        "al-nahyan",
+        "muroor-al-saadah"
+      ],
+      "circuity": 1.3354731396450696
+    },
+    {
+      "from": "khalifa-city",
+      "to": "al-khalidiyah",
+      "distanceKm": 31.553,
+      "freeFlowMinutes": 29.229999999999997,
+      "straightKm": 23.64380789367668,
+      "intermediateGateways": [],
+      "circuity": 1.3345143109726654
+    },
+    {
+      "from": "khalifa-city",
+      "to": "al-danah",
+      "distanceKm": 29.922,
+      "freeFlowMinutes": 28.11,
+      "straightKm": 22.44671006411456,
+      "intermediateGateways": [],
+      "circuity": 1.3330238558137815
+    },
+    {
+      "from": "muroor-al-saadah",
+      "to": "al-bateen",
+      "distanceKm": 11.221,
+      "freeFlowMinutes": 10.62,
+      "straightKm": 8.424995146975279,
+      "intermediateGateways": [],
+      "circuity": 1.3318702033945427
+    },
+    {
+      "from": "al-nahyan",
+      "to": "al-rawdah",
+      "distanceKm": 11.068000000000001,
+      "freeFlowMinutes": 11.569999999999999,
+      "straightKm": 8.325585304648577,
+      "intermediateGateways": [
+        "muroor-al-saadah"
+      ],
+      "circuity": 1.3293960238231182
+    },
+    {
+      "from": "muroor-al-saadah",
+      "to": "al-nahyan",
+      "distanceKm": 6.862,
+      "freeFlowMinutes": 6.950000000000001,
+      "straightKm": 5.170430722203721,
+      "intermediateGateways": [],
+      "circuity": 1.327162158953617
+    },
+    {
+      "from": "al-maryah",
+      "to": "yas-island",
+      "distanceKm": 28.616999999999997,
+      "freeFlowMinutes": 21.110000000000003,
+      "straightKm": 21.605375603233394,
+      "intermediateGateways": [],
+      "circuity": 1.3245314742742664
+    },
+    {
+      "from": "al-rawdah",
+      "to": "al-zahiyah",
+      "distanceKm": 15.458000000000002,
+      "freeFlowMinutes": 17.06,
+      "straightKm": 11.674934702583652,
+      "intermediateGateways": [
+        "al-danah"
+      ],
+      "circuity": 1.3240331011512347
+    },
+    {
+      "from": "al-danah",
+      "to": "al-nahyan",
+      "distanceKm": 4.09,
+      "freeFlowMinutes": 5.8500000000000005,
+      "straightKm": 3.091262854166378,
+      "intermediateGateways": [],
+      "circuity": 1.3230838634403193
+    },
+    {
+      "from": "al-khalidiyah",
+      "to": "al-mushrif",
+      "distanceKm": 6.414999999999999,
+      "freeFlowMinutes": 8.749999999999998,
+      "straightKm": 4.854268212761796,
+      "intermediateGateways": [
+        "al-manhal-karamah"
+      ],
+      "circuity": 1.3215174190694827
+    },
+    {
+      "from": "al-saadiyat",
+      "to": "al-manhal-karamah",
+      "distanceKm": 15.09,
+      "freeFlowMinutes": 18.78,
+      "straightKm": 11.42069459697448,
+      "intermediateGateways": [],
+      "circuity": 1.3212856601556946
+    },
+    {
+      "from": "al-rawdah",
+      "to": "al-manhal-karamah",
+      "distanceKm": 13.309999999999999,
+      "freeFlowMinutes": 14.03,
+      "straightKm": 10.080185794494229,
+      "intermediateGateways": [],
+      "circuity": 1.320412170108004
+    },
+    {
+      "from": "al-danah",
+      "to": "al-khalidiyah",
+      "distanceKm": 3.68,
+      "freeFlowMinutes": 4.57,
+      "straightKm": 2.792212699268639,
+      "intermediateGateways": [],
+      "circuity": 1.3179511721882426
+    },
+    {
+      "from": "al-bateen",
+      "to": "al-zahiyah",
+      "distanceKm": 8.325000000000001,
+      "freeFlowMinutes": 9.83,
+      "straightKm": 6.327683399392753,
+      "intermediateGateways": [
+        "al-khalidiyah"
+      ],
+      "circuity": 1.3156473664278026
+    },
+    {
+      "from": "al-saadiyat",
+      "to": "al-bateen",
+      "distanceKm": 17.973000000000003,
+      "freeFlowMinutes": 21.769999999999992,
+      "straightKm": 13.668566033030487,
+      "intermediateGateways": [
+        "al-khalidiyah"
+      ],
+      "circuity": 1.314914816709209
+    },
+    {
+      "from": "al-khalidiyah",
+      "to": "rabdan-al-maqta",
+      "distanceKm": 22.284999999999993,
+      "freeFlowMinutes": 24.73,
+      "straightKm": 16.971687026602247,
+      "intermediateGateways": [
+        "al-manhal-karamah",
+        "muroor-al-saadah"
+      ],
+      "circuity": 1.3130692290677646
+    },
+    {
+      "from": "musaffah",
+      "to": "mbz-zayed-city",
+      "distanceKm": 9.767,
+      "freeFlowMinutes": 12.33,
+      "straightKm": 7.449633164645581,
+      "intermediateGateways": [],
+      "circuity": 1.3110712680930603
+    },
+    {
+      "from": "yas-island",
+      "to": "al-danah",
+      "distanceKm": 31.015000000000004,
+      "freeFlowMinutes": 30.32,
+      "straightKm": 23.703803500065447,
+      "intermediateGateways": [],
+      "circuity": 1.30843980376037
+    },
+    {
+      "from": "rabdan-al-maqta",
+      "to": "muroor-al-saadah",
+      "distanceKm": 10.958,
+      "freeFlowMinutes": 9.669999999999998,
+      "straightKm": 8.390140396678257,
+      "intermediateGateways": [],
+      "circuity": 1.3060568097690457
+    },
+    {
+      "from": "al-nahyan",
+      "to": "al-danah",
+      "distanceKm": 4.03,
+      "freeFlowMinutes": 5.1,
+      "straightKm": 3.091262854166378,
+      "intermediateGateways": [],
+      "circuity": 1.303674320211366
+    },
+    {
+      "from": "al-danah",
+      "to": "muroor-al-saadah",
+      "distanceKm": 10.673999999999998,
+      "freeFlowMinutes": 12.020000000000003,
+      "straightKm": 8.19502783971139,
+      "intermediateGateways": [
+        "al-nahyan"
+      ],
+      "circuity": 1.3024971005316208
+    },
+    {
+      "from": "rabdan-al-maqta",
+      "to": "al-mushrif",
+      "distanceKm": 15.904000000000002,
+      "freeFlowMinutes": 14.539999999999996,
+      "straightKm": 12.21576627778585,
+      "intermediateGateways": [],
+      "circuity": 1.3019240576762785
+    },
+    {
+      "from": "al-zahiyah",
+      "to": "yas-island",
+      "distanceKm": 29.455999999999996,
+      "freeFlowMinutes": 22,
+      "straightKm": 22.657289631858315,
+      "intermediateGateways": [],
+      "circuity": 1.300067240107221
+    },
+    {
+      "from": "yas-island",
+      "to": "al-zahiyah",
+      "distanceKm": 29.441000000000003,
+      "freeFlowMinutes": 27.990000000000002,
+      "straightKm": 22.657289631858315,
+      "intermediateGateways": [],
+      "circuity": 1.2994052015208006
+    },
+    {
+      "from": "al-manhal-karamah",
+      "to": "muroor-al-saadah",
+      "distanceKm": 9.057999999999998,
+      "freeFlowMinutes": 8.829999999999998,
+      "straightKm": 7.000409650621163,
+      "intermediateGateways": [],
+      "circuity": 1.2939242775879924
+    },
+    {
+      "from": "al-maryah",
+      "to": "al-zahiyah",
+      "distanceKm": 1.438,
+      "freeFlowMinutes": 2.12,
+      "straightKm": 1.1117443656900177,
+      "intermediateGateways": [],
+      "circuity": 1.2934628178731427
+    },
+    {
+      "from": "al-danah",
+      "to": "al-mushrif",
+      "distanceKm": 6.980999999999999,
+      "freeFlowMinutes": 8.319999999999999,
+      "straightKm": 5.405801146525889,
+      "intermediateGateways": [],
+      "circuity": 1.2913904545834864
+    },
+    {
+      "from": "al-danah",
+      "to": "rabdan-al-maqta",
+      "distanceKm": 21.252999999999993,
+      "freeFlowMinutes": 23.970000000000002,
+      "straightKm": 16.5052962595327,
+      "intermediateGateways": [
+        "al-nahyan",
+        "muroor-al-saadah"
+      ],
+      "circuity": 1.2876472900463838
+    },
+    {
+      "from": "al-saadiyat",
+      "to": "al-zahiyah",
+      "distanceKm": 9.762000000000002,
+      "freeFlowMinutes": 11.549999999999999,
+      "straightKm": 7.608719839414113,
+      "intermediateGateways": [],
+      "circuity": 1.2830016357589658
+    },
+    {
+      "from": "rabdan-al-maqta",
+      "to": "al-bateen",
+      "distanceKm": 21.197,
+      "freeFlowMinutes": 19.019999999999996,
+      "straightKm": 16.55073317106879,
+      "intermediateGateways": [],
+      "circuity": 1.2807287617356453
+    },
+    {
+      "from": "al-danah",
+      "to": "al-zahiyah",
+      "distanceKm": 2.311,
+      "freeFlowMinutes": 3.1599999999999997,
+      "straightKm": 1.8049443357187755,
+      "intermediateGateways": [],
+      "circuity": 1.2803718952804712
+    },
+    {
+      "from": "al-khalidiyah",
+      "to": "yas-island",
+      "distanceKm": 32.888999999999996,
+      "freeFlowMinutes": 25.799999999999997,
+      "straightKm": 25.69134152168919,
+      "intermediateGateways": [],
+      "circuity": 1.2801589193866887
+    },
+    {
+      "from": "al-rawdah",
+      "to": "al-nahyan",
+      "distanceKm": 10.649,
+      "freeFlowMinutes": 11.489999999999998,
+      "straightKm": 8.325585304648577,
+      "intermediateGateways": [],
+      "circuity": 1.2790692318117438
+    },
+    {
+      "from": "al-manhal-karamah",
+      "to": "rabdan-al-maqta",
+      "distanceKm": 19.636999999999993,
+      "freeFlowMinutes": 20.779999999999994,
+      "straightKm": 15.363842744869668,
+      "intermediateGateways": [
+        "muroor-al-saadah"
+      ],
+      "circuity": 1.2781307597382972
+    },
+    {
+      "from": "al-khalidiyah",
+      "to": "al-maryah",
+      "distanceKm": 7.0760000000000005,
+      "freeFlowMinutes": 8.510000000000002,
+      "straightKm": 5.544126831352862,
+      "intermediateGateways": [
+        "al-zahiyah"
+      ],
+      "circuity": 1.2763055780008796
+    },
+    {
+      "from": "muroor-al-saadah",
+      "to": "al-khalidiyah",
+      "distanceKm": 10.991000000000001,
+      "freeFlowMinutes": 10.479999999999999,
+      "straightKm": 8.619408317546458,
+      "intermediateGateways": [],
+      "circuity": 1.2751455314659723
+    },
+    {
+      "from": "al-nahyan",
+      "to": "muroor-al-saadah",
+      "distanceKm": 6.5840000000000005,
+      "freeFlowMinutes": 6.17,
+      "straightKm": 5.170430722203721,
+      "intermediateGateways": [],
+      "circuity": 1.273394878249871
+    },
+    {
+      "from": "rabdan-al-maqta",
+      "to": "al-manhal-karamah",
+      "distanceKm": 19.499,
+      "freeFlowMinutes": 17.889999999999993,
+      "straightKm": 15.363842744869668,
+      "intermediateGateways": [],
+      "circuity": 1.2691486318753915
+    },
+    {
+      "from": "al-nahyan",
+      "to": "rabdan-al-maqta",
+      "distanceKm": 17.162999999999997,
+      "freeFlowMinutes": 18.12,
+      "straightKm": 13.545137262298528,
+      "intermediateGateways": [
+        "muroor-al-saadah"
+      ],
+      "circuity": 1.2670967940481055
+    },
+    {
+      "from": "al-mushrif",
+      "to": "al-danah",
+      "distanceKm": 6.826,
+      "freeFlowMinutes": 8.099999999999998,
+      "straightKm": 5.405801146525889,
+      "intermediateGateways": [],
+      "circuity": 1.262717553786976
+    },
+    {
+      "from": "muroor-al-saadah",
+      "to": "rabdan-al-maqta",
+      "distanceKm": 10.579,
+      "freeFlowMinutes": 11.950000000000001,
+      "straightKm": 8.390140396678257,
+      "intermediateGateways": [],
+      "circuity": 1.260884740878512
+    },
+    {
+      "from": "al-danah",
+      "to": "yas-island",
+      "distanceKm": 29.688000000000002,
+      "freeFlowMinutes": 22.289999999999996,
+      "straightKm": 23.703803500065447,
+      "intermediateGateways": [],
+      "circuity": 1.25245722695592
+    },
+    {
+      "from": "rabdan-al-maqta",
+      "to": "al-nahyan",
+      "distanceKm": 16.838,
+      "freeFlowMinutes": 15.349999999999996,
+      "straightKm": 13.545137262298528,
+      "intermediateGateways": [],
+      "circuity": 1.2431029434354137
+    },
+    {
+      "from": "rabdan-al-maqta",
+      "to": "al-khalidiyah",
+      "distanceKm": 20.966999999999995,
+      "freeFlowMinutes": 18.879999999999995,
+      "straightKm": 16.971687026602247,
+      "intermediateGateways": [],
+      "circuity": 1.235410479060526
+    },
+    {
+      "from": "al-saadiyat",
+      "to": "al-khalidiyah",
+      "distanceKm": 14.926,
+      "freeFlowMinutes": 18.209999999999997,
+      "straightKm": 12.108407770396129,
+      "intermediateGateways": [],
+      "circuity": 1.232697170679419
+    },
+    {
+      "from": "al-raha",
+      "to": "rabdan-al-maqta",
+      "distanceKm": 14.450000000000003,
+      "freeFlowMinutes": 13.76,
+      "straightKm": 11.773561613154873,
+      "intermediateGateways": [],
+      "circuity": 1.227326146053772
+    },
+    {
+      "from": "mbz-zayed-city",
+      "to": "musaffah",
+      "distanceKm": 9.113999999999999,
+      "freeFlowMinutes": 11.13,
+      "straightKm": 7.449633164645581,
+      "intermediateGateways": [],
+      "circuity": 1.2234159452646822
+    },
+    {
+      "from": "rabdan-al-maqta",
+      "to": "al-zahiyah",
+      "distanceKm": 20.305,
+      "freeFlowMinutes": 17.389999999999997,
+      "straightKm": 16.63373492165522,
+      "intermediateGateways": [],
+      "circuity": 1.2207120105999294
+    },
+    {
+      "from": "al-saadiyat",
+      "to": "yas-island",
+      "distanceKm": 21.122,
+      "freeFlowMinutes": 17.35,
+      "straightKm": 17.344373422431293,
+      "intermediateGateways": [],
+      "circuity": 1.2178012710844397
+    },
+    {
+      "from": "al-rawdah",
+      "to": "rabdan-al-maqta",
+      "distanceKm": 6.420999999999999,
+      "freeFlowMinutes": 7.909999999999998,
+      "straightKm": 5.288685156065328,
+      "intermediateGateways": [],
+      "circuity": 1.2141013901415698
+    },
+    {
+      "from": "al-saadiyat",
+      "to": "al-danah",
+      "distanceKm": 11.336,
+      "freeFlowMinutes": 13.879999999999999,
+      "straightKm": 9.34152388812843,
+      "intermediateGateways": [],
+      "circuity": 1.213506504480091
+    },
+    {
+      "from": "al-bateen",
+      "to": "rabdan-al-maqta",
+      "distanceKm": 20.011999999999997,
+      "freeFlowMinutes": 21.23,
+      "straightKm": 16.55073317106879,
+      "intermediateGateways": [
+        "al-rawdah"
+      ],
+      "circuity": 1.2091307250957084
+    },
+    {
+      "from": "al-bateen",
+      "to": "al-rawdah",
+      "distanceKm": 13.591000000000003,
+      "freeFlowMinutes": 13.319999999999999,
+      "straightKm": 11.292632748787927,
+      "intermediateGateways": [],
+      "circuity": 1.2035280259564596
+    },
+    {
+      "from": "al-khalidiyah",
+      "to": "al-zahiyah",
+      "distanceKm": 5.512,
+      "freeFlowMinutes": 6.670000000000001,
+      "straightKm": 4.5914925600381,
+      "intermediateGateways": [],
+      "circuity": 1.2004810914806887
+    },
+    {
+      "from": "rabdan-al-maqta",
+      "to": "al-danah",
+      "distanceKm": 19.335999999999995,
+      "freeFlowMinutes": 17.759999999999998,
+      "straightKm": 16.5052962595327,
+      "intermediateGateways": [],
+      "circuity": 1.1715027525684316
+    },
+    {
+      "from": "al-rawdah",
+      "to": "al-danah",
+      "distanceKm": 13.147000000000002,
+      "freeFlowMinutes": 13.9,
+      "straightKm": 11.350284442282799,
+      "intermediateGateways": [],
+      "circuity": 1.1582969631160929
+    },
+    {
+      "from": "yas-island",
+      "to": "al-saadiyat",
+      "distanceKm": 19.944000000000006,
+      "freeFlowMinutes": 17.589999999999996,
+      "straightKm": 17.344373422431293,
+      "intermediateGateways": [],
+      "circuity": 1.1498829916915099
+    },
+    {
+      "from": "al-rawdah",
+      "to": "al-bateen",
+      "distanceKm": 12.929000000000002,
+      "freeFlowMinutes": 12.969999999999997,
+      "straightKm": 11.292632748787927,
+      "intermediateGateways": [],
+      "circuity": 1.1449057352358962
+    },
+    {
+      "from": "al-rawdah",
+      "to": "al-khalidiyah",
+      "distanceKm": 13.356,
+      "freeFlowMinutes": 13.349999999999994,
+      "straightKm": 11.684775134194588,
+      "intermediateGateways": [],
+      "circuity": 1.1430258474478214
+    },
+    {
+      "from": "muroor-al-saadah",
+      "to": "al-danah",
+      "distanceKm": 9.360000000000003,
+      "freeFlowMinutes": 9.360000000000001,
+      "straightKm": 8.19502783971139,
+      "intermediateGateways": [],
+      "circuity": 1.142155973484727
+    },
+    {
+      "from": "al-manhal-karamah",
+      "to": "al-mushrif",
+      "distanceKm": 3.7670000000000003,
+      "freeFlowMinutes": 4.8,
+      "straightKm": 3.3394653865920563,
+      "intermediateGateways": [],
+      "circuity": 1.1280248674307254
+    }
+  ]
+}

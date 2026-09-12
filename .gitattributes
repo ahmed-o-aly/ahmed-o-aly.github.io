@@ -1,2 +1,12 @@
 # Force LF line endings, needed for Docker to work on Windows
 *.sh text eol=lf
+
+# Simulation evidence hashes must survive checkouts on Windows and Linux.
+assets/js/udes-v2-*.js text eol=lf
+assets/data/udes-v2/*.json text eol=lf
+assets/data/udes-v2/*.geojson text eol=lf
+scripts/*udes-v2*.mjs text eol=lf
+scripts/lib/udes-v2*.mjs text eol=lf
+scripts/data/udes-v2-sources/*.json text eol=lf
+scripts/data/udes-v2-sources/*.gz binary
+scripts/data/udes-v2-transit-services.json text eol=lf

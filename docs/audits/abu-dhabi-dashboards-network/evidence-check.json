@@ -1,0 +1,76 @@
+{
+  "checkedAt": "2026-09-12T11:03:26.766Z",
+  "status": "all-listed-verification-complete",
+  "engineSha256": "69c73ac3dbf6c904bbab49d9fce4fb7786b14b46782d1c8bfb53554f6511c661",
+  "baselineSha256": "02970f782667a391da60198f3e006cdb282710ddd0d91c7ae36195a7e70461da",
+  "controller": {
+    "preflightSha256": "55edb49835117a09f3bfb43afcaa0df871bb0a970be1916b716a8e14f686d4b1",
+    "executionStartSha256": "a4a2930d4663e6adf8d899c9d1a4054af2292a64257bc70ea0e31856e58fd76d",
+    "completionSha256": "f4ec3ff8fe37766fedc9f43c42349f97e91badffa4a57f1dc14095fdcd67bd57",
+    "launchRecovery": "Exact pre-inspector controller reconstructed from the known presentation patch; SHA-256 matches both runners execution-start hashes. Live controller unchanged."
+  },
+  "reportSha256": {
+    "validation": "de62caec89bfb64741d878d6981da72a573f729079db52b3c1a3ad871123af7c",
+    "uncertainty": "812a1af3b61e72d2a278b2249293c56f1f3fc5af2ec43f12aa19caf7134d7402"
+  },
+  "full": {
+    "passed": 149,
+    "failed": 0,
+    "total": 149
+  },
+  "diagnostics": {
+    "reviewNeeded": 0,
+    "total": 105,
+    "interpretation": "Review prompts remain visible even when all structural checks pass. They are not calibrated acceptance limits."
+  },
+  "uncertainty": {
+    "passed": 14,
+    "failed": 0,
+    "total": 14
+  },
+  "digestsRecomputed": 20,
+  "fullTiming": {
+    "command": "node scripts/validate-udes-v2-full.mjs",
+    "startedAt": "2026-09-12T10:37:09.562Z",
+    "completedAt": "2026-09-12T10:55:44.220Z",
+    "elapsedSeconds": 1114.658,
+    "exitCode": 0,
+    "completionControllerSha256": "f4ec3ff8fe37766fedc9f43c42349f97e91badffa4a57f1dc14095fdcd67bd57",
+    "controllerMatchesReport": true
+  },
+  "uncertaintyTiming": {
+    "command": "node scripts/validate-udes-v2-uncertainty.mjs --months=12 --seeds=240124,70117,90421",
+    "startedAt": "2026-09-12T10:37:10.025Z",
+    "completedAt": "2026-09-12T10:58:09.349Z",
+    "elapsedSeconds": 1259.324,
+    "exitCode": 0,
+    "completionControllerSha256": "f4ec3ff8fe37766fedc9f43c42349f97e91badffa4a57f1dc14095fdcd67bd57",
+    "controllerMatchesReport": true
+  },
+  "scenarioRegression": {
+    "status": "passed",
+    "command": "node tests/udes-v2-scenarios.mjs",
+    "startedAt": "2026-09-12T10:37:11.309Z",
+    "completedAt": "2026-09-12T11:03:16.189Z",
+    "elapsedSeconds": 1564.88,
+    "exitCode": 0
+  },
+  "focusedChecks": [
+    "engine and 30-day deterministic replay",
+    "daily financial/labor/mode mechanics",
+    "job capacity and warm routes",
+    "daily history export",
+    "approach-dependent turn routing",
+    "evidence statistics and immutable-source provenance",
+    "presentation provenance and rollback",
+    "serial/parallel equality and injected accounting/turn failure controls"
+  ],
+  "roadAssignment": {
+    "physicalEdges": 1115,
+    "declaredTurnProhibitions": 159,
+    "prohibitedTurnsInEachFinalWorkdayAssignment": 0,
+    "maximumRawDirectionalLoadDifference": 0
+  },
+  "routingBenchmark": "route-choice-after.json",
+  "empiricalValidation": "not-performed"
+}

@@ -137,6 +137,16 @@ jobs:
           test -f _site/index.html
           node tests/udes-v2-engine.mjs
           node tests/udes-v2-job-capacity.mjs
+          node tests/udes-v2-mechanics.mjs
+          node tests/udes-v2-network.mjs
+          node tests/udes-v2-turns.mjs
+          node tests/udes-v2-road-flow.mjs
+          node tests/udes-v2-analysis.mjs
+          node tests/udes-v2-comparison.mjs
+          node tests/udes-v2-history.mjs
+          node tests/udes-v2-evidence.mjs
+          node tests/udes-v2-presentation-provenance.mjs
+          node scripts/validate-udes-v2-full.mjs --verify-concurrency
           node tests/udes-v2-contract.mjs
           node tests/site-contract.mjs
 

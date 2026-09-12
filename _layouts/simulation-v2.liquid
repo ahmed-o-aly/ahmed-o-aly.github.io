@@ -8,6 +8,8 @@ layout: garden
   data-udes-v2-root
   data-udes-v2-state="ready"
   data-udes-v2-view="overview"
+  data-udes-v2-inspection="closed"
+    data-udes-v2-analysis="closed"
   data-model-url="{{ page.model_url | relative_url }}"
   data-worker-url="{{ page.worker_url | relative_url }}"
 >
@@ -17,11 +19,14 @@ layout: garden
         <span aria-hidden="true">&#8592;</span>
       </a>
       <div class="udes-v2-commandbar__title">
-        <span>Illustrative scenario · not a forecast</span>
+        <span>Abu Dhabi · scenario model</span>
         <h1>{{ page.title }}</h1>
       </div>
     </div>
 
+    <div class="udes-v2-experiment-title">
+      <strong data-udes-v2-active-scenario>Reference</strong><span data-udes-v2-active-context>All districts · 2024 baseline</span>
+    </div>
     <div class="udes-v2-commandbar__run">
       <div class="udes-v2-clock" aria-label="Model time">
         <span class="udes-v2-status-dot" aria-hidden="true"></span>
@@ -51,13 +56,9 @@ layout: garden
     </div>
 
     <div class="udes-v2-commandbar__context">
-      <button class="udes-v2-compare" type="button" data-udes-v2-compare aria-pressed="true">Compare</button>
-      <fieldset class="udes-v2-speed">
-        <legend>Automatic run step</legend>
-        <button type="button" data-udes-v2-speed="1" aria-pressed="true" title="Run one model day per update">1d</button>
-        <button type="button" data-udes-v2-speed="7" aria-pressed="false" title="Run seven model days per update">7d</button>
-        <button type="button" data-udes-v2-speed="30" aria-pressed="false" title="Run thirty model days per update">30d</button>
-      </fieldset>
+      <button class="udes-v2-compare" type="button" data-udes-v2-compare aria-pressed="true">Reference</button>
+      <button type="button" class="udes-v2-text-button" data-udes-v2-action="methods">Methods &amp; data</button>
+
       <span class="udes-v2-runtime-state" data-udes-v2-runtime-state>
         <span aria-hidden="true"></span>
         Ready

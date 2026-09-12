@@ -1,0 +1,2601 @@
+{
+  "generatedAt": "2026-09-12T10:19:06.390Z",
+  "baselineSha256": "9ec52d0cc9dd5d1206965b00ff6865534b01ce1e72c9066b2f568db2be950123",
+  "method": "Compare all 62 frozen routes after original gateway trimming and 5-decimal quantization; check every retained directed geometry step against raw OSRM routes. Compare graph turns against cached intersection restrictions using incoming and outgoing bearings within 15 degrees, unique outgoing match margin >=10 degrees, and >=5m geometry direction spans. Forbidden classifications require all matched same-incoming observations to agree; unmatched turns remain unknown.",
+  "osrmIntersectionDocumentation": "https://project-osrm.org/docs/v5.24.0/api/#intersection-object",
+  "counts": {
+    "zones": 18,
+    "nodes": 452,
+    "edges": 543,
+    "frozenRoutes": 62,
+    "geometryMismatches": 0,
+    "directionalGeometryViolations": 0,
+    "unambiguousProhibitedTurns": 28,
+    "ambiguousTurns": 0
+  },
+  "cachedCandidateComparisons": [
+    {
+      "id": "al-zahiyah--al-danah",
+      "sourceFile": "64d7bc77776eea71757967266375835c4dbb791897c8f78c54c9d66ab8f4d16f.json.gz",
+      "exactQuantizedGeometryMatchAfterGatewayTrim": true,
+      "frozenOriginalDistanceKm": 2.6887,
+      "frozenOriginalDurationMinutes": 4.3983333333333325,
+      "candidateDistanceKm": 2.613,
+      "candidateDurationMinutes": 4.05,
+      "quantizedGeometryDistanceKm": 2.6127245402906647,
+      "durationDifferenceMinutes": -0.3483333333333327,
+      "removedSourcePoints": 6,
+      "repeatedNodes": []
+    },
+    {
+      "id": "al-danah--al-zahiyah",
+      "sourceFile": "fd7e5bc635cd7b78a0021bf82e499b6750e9b4fb656478447eedbd33640df741.json.gz",
+      "exactQuantizedGeometryMatchAfterGatewayTrim": true,
+      "frozenOriginalDistanceKm": 2.3884000000000003,
+      "frozenOriginalDurationMinutes": 3.645,
+      "candidateDistanceKm": 2.311,
+      "candidateDurationMinutes": 3.16,
+      "quantizedGeometryDistanceKm": 2.311423018365087,
+      "durationDifferenceMinutes": -0.4849999999999999,
+      "removedSourcePoints": 6,
+      "repeatedNodes": []
+    },
+    {
+      "id": "al-danah--al-nahyan",
+      "sourceFile": "07f18f77490a2c19cb947a7d945ef3412fabdf75f53ad8fa6d6654141915f718.json.gz",
+      "exactQuantizedGeometryMatchAfterGatewayTrim": true,
+      "frozenOriginalDistanceKm": 4.0835,
+      "frozenOriginalDurationMinutes": 5.965,
+      "candidateDistanceKm": 4.09,
+      "candidateDurationMinutes": 5.85,
+      "quantizedGeometryDistanceKm": 4.0892007870191085,
+      "durationDifferenceMinutes": -0.11500000000000021,
+      "removedSourcePoints": 0,
+      "repeatedNodes": []
+    },
+    {
+      "id": "al-nahyan--al-danah",
+      "sourceFile": "56fdfe782ead2c854698e19e9535bc85043f7ade92d7eab5c26cef8322d3a783.json.gz",
+      "exactQuantizedGeometryMatchAfterGatewayTrim": true,
+      "frozenOriginalDistanceKm": 4.0248,
+      "frozenOriginalDurationMinutes": 5.141666666666667,
+      "candidateDistanceKm": 4.03,
+      "candidateDurationMinutes": 5.1,
+      "quantizedGeometryDistanceKm": 4.030434545343811,
+      "durationDifferenceMinutes": -0.04166666666666696,
+      "removedSourcePoints": 0,
+      "repeatedNodes": []
+    },
+    {
+      "id": "al-danah--al-khalidiyah",
+      "sourceFile": "0e906d3a0f89660794131661b339f4a9a3b1dff7bf569c4841a2cd724ce03e2b.json.gz",
+      "exactQuantizedGeometryMatchAfterGatewayTrim": true,
+      "frozenOriginalDistanceKm": 3.6748000000000003,
+      "frozenOriginalDurationMinutes": 4.5633333333333335,
+      "candidateDistanceKm": 3.68,
+      "candidateDurationMinutes": 4.57,
+      "quantizedGeometryDistanceKm": 3.6780979640468203,
+      "durationDifferenceMinutes": 0.006666666666666821,
+      "removedSourcePoints": 0,
+      "repeatedNodes": []
+    },
+    {
+      "id": "al-khalidiyah--al-danah",
+      "sourceFile": "843a691ba0bae8ae5842c68b129c37d9cc28e4b1c45f05aa21b2dce5c8eeba35.json.gz",
+      "exactQuantizedGeometryMatchAfterGatewayTrim": true,
+      "frozenOriginalDistanceKm": 3.9845,
+      "frozenOriginalDurationMinutes": 5.010000000000001,
+      "candidateDistanceKm": 3.989,
+      "candidateDurationMinutes": 5.13,
+      "quantizedGeometryDistanceKm": 3.9881635036833654,
+      "durationDifferenceMinutes": 0.11999999999999922,
+      "removedSourcePoints": 0,
+      "repeatedNodes": []
+    },
+    {
+      "id": "al-danah--al-manhal-karamah",
+      "sourceFile": "fdf81a9eb50e271b8b2f352803c67ae342980bdfc6d696dbe2c68b41c6a8d53a.json.gz",
+      "exactQuantizedGeometryMatchAfterGatewayTrim": true,
+      "frozenOriginalDistanceKm": 3.8748,
+      "frozenOriginalDurationMinutes": 5.206666666666666,
+      "candidateDistanceKm": 3.88,
+      "candidateDurationMinutes": 5.33,
+      "quantizedGeometryDistanceKm": 3.879069708796324,
+      "durationDifferenceMinutes": 0.12333333333333396,
+      "removedSourcePoints": 0,
+      "repeatedNodes": []
+    },
+    {
+      "id": "al-manhal-karamah--al-danah",
+      "sourceFile": "70a9432288b450aecf083f1240865899c29467b85b824957b2aac91e6a6bdf9e.json.gz",
+      "exactQuantizedGeometryMatchAfterGatewayTrim": true,
+      "frozenOriginalDistanceKm": 3.6299,
+      "frozenOriginalDurationMinutes": 5.238333333333333,
+      "candidateDistanceKm": 3.636,
+      "candidateDurationMinutes": 5.11,
+      "quantizedGeometryDistanceKm": 3.6347189838532565,
+      "durationDifferenceMinutes": -0.12833333333333297,
+      "removedSourcePoints": 0,
+      "repeatedNodes": []
+    },
+    {
+      "id": "al-zahiyah--al-maryah",
+      "sourceFile": "caef86b058c623ca95ab044c92f4ccf619c10ed5bb13ca6ecc8e3afd1f80007e.json.gz",
+      "exactQuantizedGeometryMatchAfterGatewayTrim": true,
+      "frozenOriginalDistanceKm": 1.6433,
+      "frozenOriginalDurationMinutes": 2.1816666666666666,
+      "candidateDistanceKm": 1.564,
+      "candidateDurationMinutes": 1.84,
+      "quantizedGeometryDistanceKm": 1.5649255805650795,
+      "durationDifferenceMinutes": -0.34166666666666656,
+      "removedSourcePoints": 6,
+      "repeatedNodes": []
+    },
+    {
+      "id": "al-maryah--al-zahiyah",
+      "sourceFile": "c712d5a95e9566216a061e020621ce24ce624e460a843849f77c363bf79ca827.json.gz",
+      "exactQuantizedGeometryMatchAfterGatewayTrim": true,
+      "frozenOriginalDistanceKm": 1.5165,
+      "frozenOriginalDurationMinutes": 2.5116666666666663,
+      "candidateDistanceKm": 1.438,
+      "candidateDurationMinutes": 2.12,
+      "quantizedGeometryDistanceKm": 1.4381687385534938,
+      "durationDifferenceMinutes": -0.39166666666666616,
+      "removedSourcePoints": 6,
+      "repeatedNodes": []
+    },
+    {
+      "id": "al-zahiyah--al-reem",
+      "sourceFile": "4ce79f1e966dd691562ab77930e4cc2b4d0beffa45ccbbd0bc5922938217cbe7.json.gz",
+      "exactQuantizedGeometryMatchAfterGatewayTrim": true,
+      "frozenOriginalDistanceKm": 6.1857,
+      "frozenOriginalDurationMinutes": 9.34,
+      "candidateDistanceKm": 6.115,
+      "candidateDurationMinutes": 8.89,
+      "quantizedGeometryDistanceKm": 6.1115182202123615,
+      "durationDifferenceMinutes": -0.4499999999999993,
+      "removedSourcePoints": 6,
+      "repeatedNodes": []
+    },
+    {
+      "id": "al-reem--al-zahiyah",
+      "sourceFile": "201b4b1fba7d25b369828df82416890a2f4c4ee6f741c6ad398923aba941918c.json.gz",
+      "exactQuantizedGeometryMatchAfterGatewayTrim": true,
+      "frozenOriginalDistanceKm": 5.394699999999999,
+      "frozenOriginalDurationMinutes": 8.551666666666668,
+      "candidateDistanceKm": 5.32,
+      "candidateDurationMinutes": 8.13,
+      "quantizedGeometryDistanceKm": 5.317735691217522,
+      "durationDifferenceMinutes": -0.42166666666666686,
+      "removedSourcePoints": 6,
+      "repeatedNodes": []
+    },
+    {
+      "id": "al-nahyan--al-mushrif",
+      "sourceFile": "282ff0997dadc53e3333f5eeeeca16b0687ef7033a52e3edeaadb78996d95e4e.json.gz",
+      "exactQuantizedGeometryMatchAfterGatewayTrim": true,
+      "frozenOriginalDistanceKm": 3.889,
+      "frozenOriginalDurationMinutes": 4.903333333333333,
+      "candidateDistanceKm": 3.818,
+      "candidateDurationMinutes": 4.69,
+      "quantizedGeometryDistanceKm": 3.816542776380098,
+      "durationDifferenceMinutes": -0.21333333333333293,
+      "removedSourcePoints": 12,
+      "repeatedNodes": []
+    },
+    {
+      "id": "al-mushrif--al-nahyan",
+      "sourceFile": "0a56b955bf123c69e0520b767cc1133fb1bc9ce7d351cb2935ffd3769c3dea4f.json.gz",
+      "exactQuantizedGeometryMatchAfterGatewayTrim": true,
+      "frozenOriginalDistanceKm": 4.3976999999999995,
+      "frozenOriginalDurationMinutes": 6.05,
+      "candidateDistanceKm": 4.328,
+      "candidateDurationMinutes": 5.69,
+      "quantizedGeometryDistanceKm": 4.326129530375913,
+      "durationDifferenceMinutes": -0.35999999999999943,
+      "removedSourcePoints": 12,
+      "repeatedNodes": []
+    },
+    {
+      "id": "al-nahyan--al-manhal-karamah",
+      "sourceFile": "baaa22969d28743999e00e6026a731aab6338ad846e1d539eb062526c900b591.json.gz",
+      "exactQuantizedGeometryMatchAfterGatewayTrim": true,
+      "frozenOriginalDistanceKm": 4.218100000000001,
+      "frozenOriginalDurationMinutes": 5.22,
+      "candidateDistanceKm": 4.223,
+      "candidateDurationMinutes": 5.23,
+      "quantizedGeometryDistanceKm": 4.222478681101285,
+      "durationDifferenceMinutes": 0.010000000000000675,
+      "removedSourcePoints": 0,
+      "repeatedNodes": []
+    },
+    {
+      "id": "al-manhal-karamah--al-nahyan",
+      "sourceFile": "74198b72e40946158e6e0a6328f0e908f862d4ff637cdd9a768dd123d94d547b.json.gz",
+      "exactQuantizedGeometryMatchAfterGatewayTrim": true,
+      "frozenOriginalDistanceKm": 3.3699,
+      "frozenOriginalDurationMinutes": 4.961666666666667,
+      "candidateDistanceKm": 3.375,
+      "candidateDurationMinutes": 5.01,
+      "quantizedGeometryDistanceKm": 3.373512190631579,
+      "durationDifferenceMinutes": 0.048333333333332895,
+      "removedSourcePoints": 0,
+      "repeatedNodes": []
+    },
+    {
+      "id": "al-manhal-karamah--al-khalidiyah",
+      "sourceFile": "8084cbe64bd8d4d0ddbe7652311d289c6562910bd6a5b1e745beb56621b0760e.json.gz",
+      "exactQuantizedGeometryMatchAfterGatewayTrim": true,
+      "frozenOriginalDistanceKm": 2.5801999999999996,
+      "frozenOriginalDurationMinutes": 3.73,
+      "candidateDistanceKm": 2.584,
+      "candidateDurationMinutes": 3.67,
+      "quantizedGeometryDistanceKm": 2.5834557629438786,
+      "durationDifferenceMinutes": -0.06000000000000005,
+      "removedSourcePoints": 0,
+      "repeatedNodes": []
+    },
+    {
+      "id": "al-khalidiyah--al-manhal-karamah",
+      "sourceFile": "05ffc220dabd35b6949bc6141db32a49f5b9a7476bd2028f6fa5b6ff6e657ac4.json.gz",
+      "exactQuantizedGeometryMatchAfterGatewayTrim": true,
+      "frozenOriginalDistanceKm": 2.6463,
+      "frozenOriginalDurationMinutes": 3.9466666666666668,
+      "candidateDistanceKm": 2.648,
+      "candidateDurationMinutes": 3.95,
+      "quantizedGeometryDistanceKm": 2.6498122462610243,
+      "durationDifferenceMinutes": 0.0033333333333334103,
+      "removedSourcePoints": 0,
+      "repeatedNodes": []
+    },
+    {
+      "id": "al-manhal-karamah--al-mushrif",
+      "sourceFile": "8115ec8cd3fb79b613c955063d05e95e6da19f87d0bac438201ef31032694e19.json.gz",
+      "exactQuantizedGeometryMatchAfterGatewayTrim": true,
+      "frozenOriginalDistanceKm": 3.8368,
+      "frozenOriginalDurationMinutes": 4.991666666666666,
+      "candidateDistanceKm": 3.767,
+      "candidateDurationMinutes": 4.8,
+      "quantizedGeometryDistanceKm": 3.7654109027132954,
+      "durationDifferenceMinutes": -0.19166666666666643,
+      "removedSourcePoints": 12,
+      "repeatedNodes": []
+    },
+    {
+      "id": "al-mushrif--al-manhal-karamah",
+      "sourceFile": "ac336412d7c41cf40a4d895f5ef8af50d7e924bdc205f4d2c8e847015b7eee15.json.gz",
+      "exactQuantizedGeometryMatchAfterGatewayTrim": true,
+      "frozenOriginalDistanceKm": 4.5382,
+      "frozenOriginalDurationMinutes": 6.0616666666666665,
+      "candidateDistanceKm": 4.469,
+      "candidateDurationMinutes": 5.73,
+      "quantizedGeometryDistanceKm": 4.467441360008221,
+      "durationDifferenceMinutes": -0.3316666666666661,
+      "removedSourcePoints": 12,
+      "repeatedNodes": []
+    },
+    {
+      "id": "al-manhal-karamah--muroor-al-saadah",
+      "sourceFile": "3959634eee554fd79eedf5a0c01e29778683e928c588c053345489668da375ae.json.gz",
+      "exactQuantizedGeometryMatchAfterGatewayTrim": true,
+      "frozenOriginalDistanceKm": 9.052100000000001,
+      "frozenOriginalDurationMinutes": 8.955,
+      "candidateDistanceKm": 9.058,
+      "candidateDurationMinutes": 8.83,
+      "quantizedGeometryDistanceKm": 9.05655120630101,
+      "durationDifferenceMinutes": -0.125,
+      "removedSourcePoints": 0,
+      "repeatedNodes": []
+    },
+    {
+      "id": "muroor-al-saadah--al-manhal-karamah",
+      "sourceFile": "db0b92ffe3d810d3086b7b465e80e18d0f2b22de846e7640b21aa0dcd7ecf591.json.gz",
+      "exactQuantizedGeometryMatchAfterGatewayTrim": true,
+      "frozenOriginalDistanceKm": 9.5115,
+      "frozenOriginalDurationMinutes": 9.461666666666668,
+      "candidateDistanceKm": 9.517,
+      "candidateDurationMinutes": 9.52,
+      "quantizedGeometryDistanceKm": 9.51774423524136,
+      "durationDifferenceMinutes": 0.058333333333331794,
+      "removedSourcePoints": 0,
+      "repeatedNodes": []
+    },
+    {
+      "id": "al-khalidiyah--al-bateen",
+      "sourceFile": "54549250046f6acacdf7a5d6233659d58a11dd7681709efbbb5a8368fad870be.json.gz",
+      "exactQuantizedGeometryMatchAfterGatewayTrim": true,
+      "frozenOriginalDistanceKm": 3.2624,
+      "frozenOriginalDurationMinutes": 4.111666666666666,
+      "candidateDistanceKm": 3.047,
+      "candidateDurationMinutes": 3.56,
+      "quantizedGeometryDistanceKm": 3.047241844503147,
+      "durationDifferenceMinutes": -0.5516666666666663,
+      "removedSourcePoints": 18,
+      "repeatedNodes": []
+    },
+    {
+      "id": "al-bateen--al-khalidiyah",
+      "sourceFile": "20f0e3cff2c70efc55e4844101940f5ee8d105d12046aae53f93aa7b531ed7c9.json.gz",
+      "exactQuantizedGeometryMatchAfterGatewayTrim": true,
+      "frozenOriginalDistanceKm": 3.0256999999999996,
+      "frozenOriginalDurationMinutes": 3.828333333333333,
+      "candidateDistanceKm": 2.813,
+      "candidateDurationMinutes": 3.16,
+      "quantizedGeometryDistanceKm": 2.810405330741104,
+      "durationDifferenceMinutes": -0.668333333333333,
+      "removedSourcePoints": 18,
+      "repeatedNodes": []
+    },
+    {
+      "id": "al-mushrif--al-bateen",
+      "sourceFile": "f6d2e2b2fac00af7ace7836dfab92247b303ac608ea1b392e22b612c76f83c07.json.gz",
+      "exactQuantizedGeometryMatchAfterGatewayTrim": true,
+      "frozenOriginalDistanceKm": 6.4645,
+      "frozenOriginalDurationMinutes": 7.546666666666667,
+      "candidateDistanceKm": 6.176,
+      "candidateDurationMinutes": 6.17,
+      "quantizedGeometryDistanceKm": 6.175339599244382,
+      "durationDifferenceMinutes": -1.376666666666667,
+      "removedSourcePoints": 30,
+      "repeatedNodes": []
+    },
+    {
+      "id": "al-bateen--al-mushrif",
+      "sourceFile": "6b806d018f9287ada5ca88e730502bd192c650fd04b98bccb0f1e4b7e1e7654e.json.gz",
+      "exactQuantizedGeometryMatchAfterGatewayTrim": true,
+      "frozenOriginalDistanceKm": 6.578,
+      "frozenOriginalDurationMinutes": 7.458333333333333,
+      "candidateDistanceKm": 6.293,
+      "candidateDurationMinutes": 6.19,
+      "quantizedGeometryDistanceKm": 6.289603432240758,
+      "durationDifferenceMinutes": -1.2683333333333326,
+      "removedSourcePoints": 30,
+      "repeatedNodes": []
+    },
+    {
+      "id": "al-mushrif--muroor-al-saadah",
+      "sourceFile": "e6ee51ce56871a184ad2001a75b74077c684fb28881a8742f914861a6577a95e.json.gz",
+      "exactQuantizedGeometryMatchAfterGatewayTrim": true,
+      "frozenOriginalDistanceKm": 6.1151,
+      "frozenOriginalDurationMinutes": 6.455,
+      "candidateDistanceKm": 6.04,
+      "candidateDurationMinutes": 6.03,
+      "quantizedGeometryDistanceKm": 6.03855723430748,
+      "durationDifferenceMinutes": -0.4249999999999998,
+      "removedSourcePoints": 12,
+      "repeatedNodes": []
+    },
+    {
+      "id": "muroor-al-saadah--al-mushrif",
+      "sourceFile": "9906da6b0e9e9bb8205f988f01c8af1f798da6cb68fdc431ad95cfb0885f0283.json.gz",
+      "exactQuantizedGeometryMatchAfterGatewayTrim": true,
+      "frozenOriginalDistanceKm": 6.0034,
+      "frozenOriginalDurationMinutes": 6.588333333333334,
+      "candidateDistanceKm": 5.928,
+      "candidateDurationMinutes": 6.14,
+      "quantizedGeometryDistanceKm": 5.927018983215816,
+      "durationDifferenceMinutes": -0.44833333333333414,
+      "removedSourcePoints": 12,
+      "repeatedNodes": []
+    },
+    {
+      "id": "muroor-al-saadah--al-rawdah",
+      "sourceFile": "787b7695e85b2a60d700b58d4f13b75101cf348501feece0c9b8f76008c753b2.json.gz",
+      "exactQuantizedGeometryMatchAfterGatewayTrim": true,
+      "frozenOriginalDistanceKm": 4.481,
+      "frozenOriginalDurationMinutes": 5.373333333333333,
+      "candidateDistanceKm": 4.484,
+      "candidateDurationMinutes": 5.4,
+      "quantizedGeometryDistanceKm": 4.481459841437454,
+      "durationDifferenceMinutes": 0.026666666666667282,
+      "removedSourcePoints": 0,
+      "repeatedNodes": []
+    },
+    {
+      "id": "al-rawdah--muroor-al-saadah",
+      "sourceFile": "84dd601f4fa370d7f86597dbd37ec3ebbeba1e48cfa5d5dd27167fe4ed8e1e79.json.gz",
+      "exactQuantizedGeometryMatchAfterGatewayTrim": true,
+      "frozenOriginalDistanceKm": 4.7677,
+      "frozenOriginalDurationMinutes": 5.821666666666667,
+      "candidateDistanceKm": 4.769,
+      "candidateDurationMinutes": 5.81,
+      "quantizedGeometryDistanceKm": 4.767128558044282,
+      "durationDifferenceMinutes": -0.011666666666667602,
+      "removedSourcePoints": 0,
+      "repeatedNodes": []
+    },
+    {
+      "id": "al-rawdah--rabdan-al-maqta",
+      "sourceFile": "1f3bfa9eda7b02d6cdacea1aa6ff7074e61e499aa96cc693b655daab567bf478.json.gz",
+      "exactQuantizedGeometryMatchAfterGatewayTrim": true,
+      "frozenOriginalDistanceKm": 6.4235,
+      "frozenOriginalDurationMinutes": 7.941666666666666,
+      "candidateDistanceKm": 6.421,
+      "candidateDurationMinutes": 7.91,
+      "quantizedGeometryDistanceKm": 6.422289045345953,
+      "durationDifferenceMinutes": -0.03166666666666629,
+      "removedSourcePoints": 0,
+      "repeatedNodes": []
+    },
+    {
+      "id": "rabdan-al-maqta--al-rawdah",
+      "sourceFile": "b67706ba5ed64c151f7d65c04ee388f59215a998cee6f6b3c2a7cc64b4ff68b7.json.gz",
+      "exactQuantizedGeometryMatchAfterGatewayTrim": true,
+      "frozenOriginalDistanceKm": 7.243,
+      "frozenOriginalDurationMinutes": 7.765,
+      "candidateDistanceKm": 7.246,
+      "candidateDurationMinutes": 7.74,
+      "quantizedGeometryDistanceKm": 7.24166866345752,
+      "durationDifferenceMinutes": -0.024999999999999467,
+      "removedSourcePoints": 0,
+      "repeatedNodes": []
+    },
+    {
+      "id": "al-rawdah--al-bateen",
+      "sourceFile": "2740d8326fa500d3cb23b0c7e2a8139ec0171483c3284f85f0093ef0d46044be.json.gz",
+      "exactQuantizedGeometryMatchAfterGatewayTrim": true,
+      "frozenOriginalDistanceKm": 13.149700000000001,
+      "frozenOriginalDurationMinutes": 13.325,
+      "candidateDistanceKm": 12.929,
+      "candidateDurationMinutes": 12.97,
+      "quantizedGeometryDistanceKm": 12.928292222364274,
+      "durationDifferenceMinutes": -0.35499999999999865,
+      "removedSourcePoints": 18,
+      "repeatedNodes": []
+    },
+    {
+      "id": "al-bateen--al-rawdah",
+      "sourceFile": "378cd56bb322289f8b50b2e7d0ccfa6e973e031365fa2ad5d86f8a5eb46d0b77.json.gz",
+      "exactQuantizedGeometryMatchAfterGatewayTrim": true,
+      "frozenOriginalDistanceKm": 13.8077,
+      "frozenOriginalDurationMinutes": 13.54,
+      "candidateDistanceKm": 13.591,
+      "candidateDurationMinutes": 13.32,
+      "quantizedGeometryDistanceKm": 13.588009687467057,
+      "durationDifferenceMinutes": -0.21999999999999886,
+      "removedSourcePoints": 18,
+      "repeatedNodes": []
+    },
+    {
+      "id": "al-reem--al-maryah",
+      "sourceFile": "3f15ba85e09e279c3e9e33ee9a4c67d023f72e1a3a0a781f657d5d536d3edc8a.json.gz",
+      "exactQuantizedGeometryMatchAfterGatewayTrim": true,
+      "frozenOriginalDistanceKm": 4.8964,
+      "frozenOriginalDurationMinutes": 7.3933333333333335,
+      "candidateDistanceKm": 4.904,
+      "candidateDurationMinutes": 7.33,
+      "quantizedGeometryDistanceKm": 4.901742793384307,
+      "durationDifferenceMinutes": -0.06333333333333346,
+      "removedSourcePoints": 0,
+      "repeatedNodes": []
+    },
+    {
+      "id": "al-maryah--al-reem",
+      "sourceFile": "a275b76a09ac4bdb65e96e8ea7fcc9dca77081831ac0f66270a666865659758c.json.gz",
+      "exactQuantizedGeometryMatchAfterGatewayTrim": true,
+      "frozenOriginalDistanceKm": 4.6425,
+      "frozenOriginalDurationMinutes": 7.638333333333334,
+      "candidateDistanceKm": 4.649,
+      "candidateDurationMinutes": 7.79,
+      "quantizedGeometryDistanceKm": 4.645849349033393,
+      "durationDifferenceMinutes": 0.1516666666666664,
+      "removedSourcePoints": 0,
+      "repeatedNodes": []
+    },
+    {
+      "id": "al-reem--al-saadiyat",
+      "sourceFile": "325d4bb677d79eb26615f047aec8c35508d3a4997fbc6822f97a4e1aeed5dd75.json.gz",
+      "exactQuantizedGeometryMatchAfterGatewayTrim": true,
+      "frozenOriginalDistanceKm": 12.2752,
+      "frozenOriginalDurationMinutes": 14.296666666666665,
+      "candidateDistanceKm": 12.284,
+      "candidateDurationMinutes": 14.28,
+      "quantizedGeometryDistanceKm": 12.279771917778094,
+      "durationDifferenceMinutes": -0.01666666666666572,
+      "removedSourcePoints": 0,
+      "repeatedNodes": []
+    },
+    {
+      "id": "al-saadiyat--al-reem",
+      "sourceFile": "9c1e760b4770b4891ac1eaef17fb1bd7045a5e75fef1f7b9a47bbbba3b8d05f9.json.gz",
+      "exactQuantizedGeometryMatchAfterGatewayTrim": true,
+      "frozenOriginalDistanceKm": 10.640799999999999,
+      "frozenOriginalDurationMinutes": 15.036666666666667,
+      "candidateDistanceKm": 10.654,
+      "candidateDurationMinutes": 14.98,
+      "quantizedGeometryDistanceKm": 10.6492178638104,
+      "durationDifferenceMinutes": -0.05666666666666664,
+      "removedSourcePoints": 0,
+      "repeatedNodes": []
+    },
+    {
+      "id": "al-maryah--al-saadiyat",
+      "sourceFile": "a2d1e453bbf73827e6af36df8de25b8a56531894600a703dfcbbc0816a310eb9.json.gz",
+      "exactQuantizedGeometryMatchAfterGatewayTrim": true,
+      "frozenOriginalDistanceKm": 13.1169,
+      "frozenOriginalDurationMinutes": 13.033333333333333,
+      "candidateDistanceKm": 13.126,
+      "candidateDurationMinutes": 12.93,
+      "quantizedGeometryDistanceKm": 13.12186948905415,
+      "durationDifferenceMinutes": -0.1033333333333335,
+      "removedSourcePoints": 0,
+      "repeatedNodes": []
+    },
+    {
+      "id": "al-saadiyat--al-maryah",
+      "sourceFile": "625dd0b86d09ef8f986e4e1694e640f2f23941fe1cf46655200f4518b25ad9f3.json.gz",
+      "exactQuantizedGeometryMatchAfterGatewayTrim": true,
+      "frozenOriginalDistanceKm": 10.586,
+      "frozenOriginalDurationMinutes": 12.211666666666668,
+      "candidateDistanceKm": 10.591,
+      "candidateDurationMinutes": 12.34,
+      "quantizedGeometryDistanceKm": 10.589927482712207,
+      "durationDifferenceMinutes": 0.12833333333333208,
+      "removedSourcePoints": 0,
+      "repeatedNodes": []
+    },
+    {
+      "id": "al-saadiyat--yas-island",
+      "sourceFile": "42e2482ad32023004e22beb9e5f0d9e5d63ae6546410b7be93d60e2f9a3a5505.json.gz",
+      "exactQuantizedGeometryMatchAfterGatewayTrim": true,
+      "frozenOriginalDistanceKm": 21.1238,
+      "frozenOriginalDurationMinutes": 17.245,
+      "candidateDistanceKm": 21.122,
+      "candidateDurationMinutes": 17.35,
+      "quantizedGeometryDistanceKm": 21.117016841488336,
+      "durationDifferenceMinutes": 0.10500000000000043,
+      "removedSourcePoints": 0,
+      "repeatedNodes": []
+    },
+    {
+      "id": "yas-island--al-saadiyat",
+      "sourceFile": "309a5df2370a83ff02f3d0717d1f184bf90506e592677139d39191d915bf2ca4.json.gz",
+      "exactQuantizedGeometryMatchAfterGatewayTrim": true,
+      "frozenOriginalDistanceKm": 19.953,
+      "frozenOriginalDurationMinutes": 17.523333333333333,
+      "candidateDistanceKm": 19.944,
+      "candidateDurationMinutes": 17.59,
+      "quantizedGeometryDistanceKm": 19.941782727006206,
+      "durationDifferenceMinutes": 0.06666666666666643,
+      "removedSourcePoints": 0,
+      "repeatedNodes": []
+    },
+    {
+      "id": "al-saadiyat--rabdan-al-maqta",
+      "sourceFile": "5ebe4e9c094791dcc1cc11cd0b19361b596e3a1cabe6f16a58a161ceec0ead39.json.gz",
+      "exactQuantizedGeometryMatchAfterGatewayTrim": true,
+      "frozenOriginalDistanceKm": 29.7568,
+      "frozenOriginalDurationMinutes": 27.115000000000002,
+      "candidateDistanceKm": 29.776,
+      "candidateDurationMinutes": 27.13,
+      "quantizedGeometryDistanceKm": 29.77582518304073,
+      "durationDifferenceMinutes": 0.014999999999997016,
+      "removedSourcePoints": 0,
+      "repeatedNodes": []
+    },
+    {
+      "id": "rabdan-al-maqta--al-saadiyat",
+      "sourceFile": "deb50638c98faf5620b6c620c44d62da37aa32b3640ceb73536d1ee26b16bf5c.json.gz",
+      "exactQuantizedGeometryMatchAfterGatewayTrim": true,
+      "frozenOriginalDistanceKm": 32.1667,
+      "frozenOriginalDurationMinutes": 28.258333333333333,
+      "candidateDistanceKm": 32.191,
+      "candidateDurationMinutes": 28.34,
+      "quantizedGeometryDistanceKm": 32.1848439124032,
+      "durationDifferenceMinutes": 0.081666666666667,
+      "removedSourcePoints": 0,
+      "repeatedNodes": []
+    },
+    {
+      "id": "rabdan-al-maqta--al-raha",
+      "sourceFile": "7459a90d8a5d52740f98eee3c400a8a0a7d83b44f3be9f9fd5206a794371c39c.json.gz",
+      "exactQuantizedGeometryMatchAfterGatewayTrim": true,
+      "frozenOriginalDistanceKm": 16.642799999999998,
+      "frozenOriginalDurationMinutes": 16.578333333333333,
+      "candidateDistanceKm": 16.642,
+      "candidateDurationMinutes": 16.67,
+      "quantizedGeometryDistanceKm": 16.639665340915194,
+      "durationDifferenceMinutes": 0.09166666666666856,
+      "removedSourcePoints": 0,
+      "repeatedNodes": []
+    },
+    {
+      "id": "al-raha--rabdan-al-maqta",
+      "sourceFile": "270794b690e8cf6c96d8fcae91d8fb8448fb2e9970590c36f886b470a2b746f9.json.gz",
+      "exactQuantizedGeometryMatchAfterGatewayTrim": true,
+      "frozenOriginalDistanceKm": 14.450700000000001,
+      "frozenOriginalDurationMinutes": 13.461666666666668,
+      "candidateDistanceKm": 14.45,
+      "candidateDurationMinutes": 13.76,
+      "quantizedGeometryDistanceKm": 14.449127894420675,
+      "durationDifferenceMinutes": 0.298333333333332,
+      "removedSourcePoints": 0,
+      "repeatedNodes": []
+    },
+    {
+      "id": "al-raha--khalifa-city",
+      "sourceFile": "2ae330f95db17247831d61069bdf6f65863dfdcbe9e8cd27070ff0e5298f4f4c.json.gz",
+      "exactQuantizedGeometryMatchAfterGatewayTrim": true,
+      "frozenOriginalDistanceKm": 6.045,
+      "frozenOriginalDurationMinutes": 8.061666666666666,
+      "candidateDistanceKm": 6.053,
+      "candidateDurationMinutes": 8.06,
+      "quantizedGeometryDistanceKm": 6.052796556919793,
+      "durationDifferenceMinutes": -0.0016666666666651508,
+      "removedSourcePoints": 0,
+      "repeatedNodes": []
+    },
+    {
+      "id": "khalifa-city--al-raha",
+      "sourceFile": "f35a8a2d37ed78a155e928a979b480a9ac064d9a614a2b7ce1ae8816c9afe853.json.gz",
+      "exactQuantizedGeometryMatchAfterGatewayTrim": true,
+      "frozenOriginalDistanceKm": 6.0758,
+      "frozenOriginalDurationMinutes": 8.106666666666666,
+      "candidateDistanceKm": 6.082,
+      "candidateDurationMinutes": 8.2,
+      "quantizedGeometryDistanceKm": 6.080750353510558,
+      "durationDifferenceMinutes": 0.09333333333333371,
+      "removedSourcePoints": 0,
+      "repeatedNodes": []
+    },
+    {
+      "id": "al-raha--yas-island",
+      "sourceFile": "b7ea4f586e232209d67ce821296835612b3d1894166258a777b6ddff1f81fa71.json.gz",
+      "exactQuantizedGeometryMatchAfterGatewayTrim": true,
+      "frozenOriginalDistanceKm": 8.390799999999999,
+      "frozenOriginalDurationMinutes": 11.848333333333333,
+      "candidateDistanceKm": 8.4,
+      "candidateDurationMinutes": 11.58,
+      "quantizedGeometryDistanceKm": 8.401174751065708,
+      "durationDifferenceMinutes": -0.26833333333333265,
+      "removedSourcePoints": 0,
+      "repeatedNodes": []
+    },
+    {
+      "id": "yas-island--al-raha",
+      "sourceFile": "45ee6f85b76c9708d22c08ff5a717902033bc8bf70357ffb987562ff2fcefa04.json.gz",
+      "exactQuantizedGeometryMatchAfterGatewayTrim": true,
+      "frozenOriginalDistanceKm": 13.6358,
+      "frozenOriginalDurationMinutes": 11.146666666666667,
+      "candidateDistanceKm": 13.639,
+      "candidateDurationMinutes": 11.17,
+      "quantizedGeometryDistanceKm": 13.639532759546643,
+      "durationDifferenceMinutes": 0.023333333333333428,
+      "removedSourcePoints": 0,
+      "repeatedNodes": []
+    },
+    {
+      "id": "yas-island--khalifa-city",
+      "sourceFile": "ed8bbf7c1b3bed3092f207d7bc8958f5b7cf1ab3da30732a0fdaf215f314b393.json.gz",
+      "exactQuantizedGeometryMatchAfterGatewayTrim": true,
+      "frozenOriginalDistanceKm": 18.7497,
+      "frozenOriginalDurationMinutes": 17.709999999999997,
+      "candidateDistanceKm": 18.757,
+      "candidateDurationMinutes": 17.73,
+      "quantizedGeometryDistanceKm": 18.75755905573256,
+      "durationDifferenceMinutes": 0.020000000000003126,
+      "removedSourcePoints": 0,
+      "repeatedNodes": []
+    },
+    {
+      "id": "khalifa-city--yas-island",
+      "sourceFile": "0bb80dbfb9209aef714375150c036f14df3e368d5e86648896cb0b02bd2a1422.json.gz",
+      "exactQuantizedGeometryMatchAfterGatewayTrim": true,
+      "frozenOriginalDistanceKm": 14.194799999999999,
+      "frozenOriginalDurationMinutes": 18.105,
+      "candidateDistanceKm": 14.206,
+      "candidateDurationMinutes": 17.75,
+      "quantizedGeometryDistanceKm": 14.206545629151488,
+      "durationDifferenceMinutes": -0.3550000000000004,
+      "removedSourcePoints": 0,
+      "repeatedNodes": []
+    },
+    {
+      "id": "khalifa-city--mbz-zayed-city",
+      "sourceFile": "8bd317565451ad528636802862924ea6589970a00287ba3224e5a19cb097b944.json.gz",
+      "exactQuantizedGeometryMatchAfterGatewayTrim": true,
+      "frozenOriginalDistanceKm": 16.0547,
+      "frozenOriginalDurationMinutes": 17.4,
+      "candidateDistanceKm": 16.076,
+      "candidateDurationMinutes": 17.39,
+      "quantizedGeometryDistanceKm": 16.07368954471663,
+      "durationDifferenceMinutes": -0.00999999999999801,
+      "removedSourcePoints": 0,
+      "repeatedNodes": []
+    },
+    {
+      "id": "mbz-zayed-city--khalifa-city",
+      "sourceFile": "4883cce9e94607c9d37a7792c328a35a8b56e9d82fe246a33a7d5e4c8ed92bf7.json.gz",
+      "exactQuantizedGeometryMatchAfterGatewayTrim": true,
+      "frozenOriginalDistanceKm": 13.411299999999999,
+      "frozenOriginalDurationMinutes": 15,
+      "candidateDistanceKm": 13.428,
+      "candidateDurationMinutes": 15,
+      "quantizedGeometryDistanceKm": 13.426039499880504,
+      "durationDifferenceMinutes": 0,
+      "removedSourcePoints": 0,
+      "repeatedNodes": []
+    },
+    {
+      "id": "khalifa-city--musaffah",
+      "sourceFile": "827be671c9dc49f3db459f6ae61d9f99cd4bf7444fbdf03ee13b296c53775ab4.json.gz",
+      "exactQuantizedGeometryMatchAfterGatewayTrim": true,
+      "frozenOriginalDistanceKm": 15.8499,
+      "frozenOriginalDurationMinutes": 16.651666666666667,
+      "candidateDistanceKm": 15.797,
+      "candidateDurationMinutes": 16.41,
+      "quantizedGeometryDistanceKm": 15.795235319521181,
+      "durationDifferenceMinutes": -0.24166666666666714,
+      "removedSourcePoints": 1,
+      "repeatedNodes": []
+    },
+    {
+      "id": "musaffah--khalifa-city",
+      "sourceFile": "3e3a0274d495a5b5dfa5af339bd5d04d439ade9a9198fa7007dae19c8d87fbf5.json.gz",
+      "exactQuantizedGeometryMatchAfterGatewayTrim": true,
+      "frozenOriginalDistanceKm": 17.1704,
+      "frozenOriginalDurationMinutes": 17.55666666666667,
+      "candidateDistanceKm": 17.12,
+      "candidateDurationMinutes": 17.45,
+      "quantizedGeometryDistanceKm": 17.117948974288982,
+      "durationDifferenceMinutes": -0.10666666666666913,
+      "removedSourcePoints": 1,
+      "repeatedNodes": []
+    },
+    {
+      "id": "mbz-zayed-city--musaffah",
+      "sourceFile": "1d4c54320bbb2ca93b2a1c62ad31c9933c06c5dc63f36976db9aff4b9c01a060.json.gz",
+      "exactQuantizedGeometryMatchAfterGatewayTrim": true,
+      "frozenOriginalDistanceKm": 9.184700000000001,
+      "frozenOriginalDurationMinutes": 11.228333333333333,
+      "candidateDistanceKm": 9.114,
+      "candidateDurationMinutes": 11.13,
+      "quantizedGeometryDistanceKm": 9.110702480987408,
+      "durationDifferenceMinutes": -0.09833333333333272,
+      "removedSourcePoints": 1,
+      "repeatedNodes": []
+    },
+    {
+      "id": "musaffah--mbz-zayed-city",
+      "sourceFile": "05d972dba5e83f91f55ead67b8bcf270b6d81d4912defaf14cf2c099c4634444.json.gz",
+      "exactQuantizedGeometryMatchAfterGatewayTrim": true,
+      "frozenOriginalDistanceKm": 9.838,
+      "frozenOriginalDurationMinutes": 12.445,
+      "candidateDistanceKm": 9.767,
+      "candidateDurationMinutes": 12.33,
+      "quantizedGeometryDistanceKm": 9.766411261446772,
+      "durationDifferenceMinutes": -0.11500000000000021,
+      "removedSourcePoints": 1,
+      "repeatedNodes": []
+    },
+    {
+      "id": "rabdan-al-maqta--musaffah",
+      "sourceFile": "0e7adf7c904600323a3fdfefa7bb3de14f812b6d6342ddd6844d6b185768ad63.json.gz",
+      "exactQuantizedGeometryMatchAfterGatewayTrim": true,
+      "frozenOriginalDistanceKm": 10.0791,
+      "frozenOriginalDurationMinutes": 9.639999999999999,
+      "candidateDistanceKm": 10.024,
+      "candidateDurationMinutes": 9.57,
+      "quantizedGeometryDistanceKm": 10.022354640983815,
+      "durationDifferenceMinutes": -0.06999999999999851,
+      "removedSourcePoints": 1,
+      "repeatedNodes": []
+    },
+    {
+      "id": "musaffah--rabdan-al-maqta",
+      "sourceFile": "c7fba361e4ac9e91a7f7695743623ee027b75dce52158423ff612851ac47453a.json.gz",
+      "exactQuantizedGeometryMatchAfterGatewayTrim": true,
+      "frozenOriginalDistanceKm": 12.0027,
+      "frozenOriginalDurationMinutes": 12.533333333333333,
+      "candidateDistanceKm": 11.954,
+      "candidateDurationMinutes": 12.43,
+      "quantizedGeometryDistanceKm": 11.951519619943618,
+      "durationDifferenceMinutes": -0.1033333333333335,
+      "removedSourcePoints": 1,
+      "repeatedNodes": []
+    },
+    {
+      "id": "rabdan-al-maqta--khalifa-city",
+      "sourceFile": "76b495835c6d67ddc74017e8921fce7c19ed4b3de0f8416f9514506169b73de9.json.gz",
+      "exactQuantizedGeometryMatchAfterGatewayTrim": true,
+      "frozenOriginalDistanceKm": 12.4133,
+      "frozenOriginalDurationMinutes": 12.208333333333334,
+      "candidateDistanceKm": 12.41,
+      "candidateDurationMinutes": 12.23,
+      "quantizedGeometryDistanceKm": 12.409817498671618,
+      "durationDifferenceMinutes": 0.0216666666666665,
+      "removedSourcePoints": 0,
+      "repeatedNodes": []
+    },
+    {
+      "id": "khalifa-city--rabdan-al-maqta",
+      "sourceFile": "8c71c2b9b2630755c974d77a51bd6b808dc1b54b49e4b9ea42c184c4eb1b4463.json.gz",
+      "exactQuantizedGeometryMatchAfterGatewayTrim": true,
+      "frozenOriginalDistanceKm": 11.4947,
+      "frozenOriginalDurationMinutes": 11.945,
+      "candidateDistanceKm": 11.495,
+      "candidateDurationMinutes": 11.96,
+      "quantizedGeometryDistanceKm": 11.493081408133124,
+      "durationDifferenceMinutes": 0.015000000000000568,
+      "removedSourcePoints": 0,
+      "repeatedNodes": []
+    }
+  ],
+  "directionalGeometryViolations": [],
+  "prohibitedTurns": [
+    {
+      "nodeId": "road-node-0020",
+      "coordinate": [
+        54.35546,
+        24.45665
+      ],
+      "incomingEdge": "road-edge-0029",
+      "incomingDirection": -1,
+      "outgoingEdge": "road-edge-0015",
+      "outgoingDirection": -1,
+      "geometryIncomingBearingFromIntersection": 45.68100892901168,
+      "geometryOutgoingBearing": 321.02254122942657,
+      "matchingIncomingObservations": 1,
+      "forbiddenObservations": 1,
+      "evidence": [
+        {
+          "sourceRoute": "al-khalidiyah--al-bateen",
+          "sourceFile": "54549250046f6acacdf7a5d6233659d58a11dd7681709efbbb5a8368fad870be.json.gz",
+          "location": [
+            54.355462,
+            24.456652
+          ],
+          "bearings": [
+            45,
+            135,
+            180,
+            225,
+            315
+          ],
+          "entry": [
+            false,
+            false,
+            false,
+            true,
+            false
+          ],
+          "in": 0,
+          "selectedOutIndex": 4,
+          "sourceOutIndex": 3
+        }
+      ]
+    },
+    {
+      "nodeId": "road-node-0041",
+      "coordinate": [
+        54.36593,
+        24.46588
+      ],
+      "incomingEdge": "road-edge-0048",
+      "incomingDirection": 1,
+      "outgoingEdge": "road-edge-0056",
+      "outgoingDirection": 1,
+      "geometryIncomingBearingFromIntersection": 226.12985489832886,
+      "geometryOutgoingBearing": 138.76551296893194,
+      "matchingIncomingObservations": 1,
+      "forbiddenObservations": 1,
+      "evidence": [
+        {
+          "sourceRoute": "al-manhal-karamah--al-danah",
+          "sourceFile": "70a9432288b450aecf083f1240865899c29467b85b824957b2aac91e6a6bdf9e.json.gz",
+          "location": [
+            54.36593,
+            24.465878
+          ],
+          "bearings": [
+            45,
+            135,
+            225,
+            315
+          ],
+          "entry": [
+            true,
+            false,
+            false,
+            false
+          ],
+          "in": 2,
+          "selectedOutIndex": 1,
+          "sourceOutIndex": 0
+        }
+      ]
+    },
+    {
+      "nodeId": "road-node-0064",
+      "coordinate": [
+        54.36971,
+        24.49049
+      ],
+      "incomingEdge": "road-edge-0070",
+      "incomingDirection": 1,
+      "outgoingEdge": "road-edge-0084",
+      "outgoingDirection": 1,
+      "geometryIncomingBearingFromIntersection": 225.67332781771225,
+      "geometryOutgoingBearing": 145.6855729070203,
+      "matchingIncomingObservations": 1,
+      "forbiddenObservations": 1,
+      "evidence": [
+        {
+          "sourceRoute": "al-danah--al-zahiyah",
+          "sourceFile": "fd7e5bc635cd7b78a0021bf82e499b6750e9b4fb656478447eedbd33640df741.json.gz",
+          "location": [
+            54.369715,
+            24.490486
+          ],
+          "bearings": [
+            60,
+            150,
+            225,
+            330
+          ],
+          "entry": [
+            true,
+            false,
+            false,
+            false
+          ],
+          "in": 2,
+          "selectedOutIndex": 1,
+          "sourceOutIndex": 0
+        }
+      ]
+    },
+    {
+      "nodeId": "road-node-0068",
+      "coordinate": [
+        54.37007,
+        24.47901
+      ],
+      "incomingEdge": "road-edge-0060",
+      "incomingDirection": 1,
+      "outgoingEdge": "road-edge-0091",
+      "outgoingDirection": 1,
+      "geometryIncomingBearingFromIntersection": 229.48298610354047,
+      "geometryOutgoingBearing": 141.02749654560535,
+      "matchingIncomingObservations": 1,
+      "forbiddenObservations": 1,
+      "evidence": [
+        {
+          "sourceRoute": "al-manhal-karamah--al-danah",
+          "sourceFile": "70a9432288b450aecf083f1240865899c29467b85b824957b2aac91e6a6bdf9e.json.gz",
+          "location": [
+            54.370071,
+            24.479012
+          ],
+          "bearings": [
+            60,
+            135,
+            240,
+            315
+          ],
+          "entry": [
+            true,
+            false,
+            false,
+            false
+          ],
+          "in": 2,
+          "selectedOutIndex": 1,
+          "sourceOutIndex": 0
+        }
+      ]
+    },
+    {
+      "nodeId": "road-node-0070",
+      "coordinate": [
+        54.37011,
+        24.47927
+      ],
+      "incomingEdge": "road-edge-0093",
+      "incomingDirection": -1,
+      "outgoingEdge": "road-edge-0079",
+      "outgoingDirection": -1,
+      "geometryIncomingBearingFromIntersection": 53.77680018538331,
+      "geometryOutgoingBearing": 321.02757446620393,
+      "matchingIncomingObservations": 3,
+      "forbiddenObservations": 3,
+      "evidence": [
+        {
+          "sourceRoute": "al-danah--al-nahyan",
+          "sourceFile": "07f18f77490a2c19cb947a7d945ef3412fabdf75f53ad8fa6d6654141915f718.json.gz",
+          "location": [
+            54.370106,
+            24.479266
+          ],
+          "bearings": [
+            60,
+            135,
+            240,
+            330
+          ],
+          "entry": [
+            false,
+            false,
+            true,
+            false
+          ],
+          "in": 0,
+          "selectedOutIndex": 3,
+          "sourceOutIndex": 2
+        },
+        {
+          "sourceRoute": "al-danah--al-khalidiyah",
+          "sourceFile": "0e906d3a0f89660794131661b339f4a9a3b1dff7bf569c4841a2cd724ce03e2b.json.gz",
+          "location": [
+            54.370106,
+            24.479266
+          ],
+          "bearings": [
+            60,
+            135,
+            240,
+            330
+          ],
+          "entry": [
+            false,
+            false,
+            true,
+            false
+          ],
+          "in": 0,
+          "selectedOutIndex": 3,
+          "sourceOutIndex": 2
+        },
+        {
+          "sourceRoute": "al-danah--al-manhal-karamah",
+          "sourceFile": "fdf81a9eb50e271b8b2f352803c67ae342980bdfc6d696dbe2c68b41c6a8d53a.json.gz",
+          "location": [
+            54.370106,
+            24.479266
+          ],
+          "bearings": [
+            60,
+            135,
+            240,
+            330
+          ],
+          "entry": [
+            false,
+            false,
+            true,
+            false
+          ],
+          "in": 0,
+          "selectedOutIndex": 3,
+          "sourceOutIndex": 2
+        }
+      ]
+    },
+    {
+      "nodeId": "road-node-0072",
+      "coordinate": [
+        54.37069,
+        24.47036
+      ],
+      "incomingEdge": "road-edge-0095",
+      "incomingDirection": -1,
+      "outgoingEdge": "road-edge-0058",
+      "outgoingDirection": -1,
+      "geometryIncomingBearingFromIntersection": 139.41543387924992,
+      "geometryOutgoingBearing": 225.677909267473,
+      "matchingIncomingObservations": 1,
+      "forbiddenObservations": 1,
+      "evidence": [
+        {
+          "sourceRoute": "al-manhal-karamah--al-danah",
+          "sourceFile": "70a9432288b450aecf083f1240865899c29467b85b824957b2aac91e6a6bdf9e.json.gz",
+          "location": [
+            54.370691,
+            24.470357
+          ],
+          "bearings": [
+            45,
+            135,
+            180,
+            225,
+            315
+          ],
+          "entry": [
+            false,
+            false,
+            false,
+            false,
+            true
+          ],
+          "in": 1,
+          "selectedOutIndex": 3,
+          "sourceOutIndex": 4
+        }
+      ]
+    },
+    {
+      "nodeId": "road-node-0072",
+      "coordinate": [
+        54.37069,
+        24.47036
+      ],
+      "incomingEdge": "road-edge-0096",
+      "incomingDirection": -1,
+      "outgoingEdge": "road-edge-0062",
+      "outgoingDirection": -1,
+      "geometryIncomingBearingFromIntersection": 52.43674509168136,
+      "geometryOutgoingBearing": 321.4660625826846,
+      "matchingIncomingObservations": 1,
+      "forbiddenObservations": 1,
+      "evidence": [
+        {
+          "sourceRoute": "muroor-al-saadah--al-manhal-karamah",
+          "sourceFile": "db0b92ffe3d810d3086b7b465e80e18d0f2b22de846e7640b21aa0dcd7ecf591.json.gz",
+          "location": [
+            54.370691,
+            24.470357
+          ],
+          "bearings": [
+            45,
+            135,
+            180,
+            225,
+            315
+          ],
+          "entry": [
+            false,
+            false,
+            false,
+            true,
+            false
+          ],
+          "in": 0,
+          "selectedOutIndex": 4,
+          "sourceOutIndex": 3
+        }
+      ]
+    },
+    {
+      "nodeId": "road-node-0081",
+      "coordinate": [
+        54.375,
+        24.49439
+      ],
+      "incomingEdge": "road-edge-0107",
+      "incomingDirection": -1,
+      "outgoingEdge": "road-edge-0101",
+      "outgoingDirection": -1,
+      "geometryIncomingBearingFromIntersection": 53.773517260716574,
+      "geometryOutgoingBearing": 325.68641714665915,
+      "matchingIncomingObservations": 1,
+      "forbiddenObservations": 1,
+      "evidence": [
+        {
+          "sourceRoute": "al-zahiyah--al-danah",
+          "sourceFile": "64d7bc77776eea71757967266375835c4dbb791897c8f78c54c9d66ab8f4d16f.json.gz",
+          "location": [
+            54.375001,
+            24.494388
+          ],
+          "bearings": [
+            45,
+            150,
+            225,
+            330
+          ],
+          "entry": [
+            false,
+            false,
+            true,
+            false
+          ],
+          "in": 0,
+          "selectedOutIndex": 3,
+          "sourceOutIndex": 2
+        }
+      ]
+    },
+    {
+      "nodeId": "road-node-0082",
+      "coordinate": [
+        54.37509,
+        24.49427
+      ],
+      "incomingEdge": "road-edge-0109",
+      "incomingDirection": -1,
+      "outgoingEdge": "road-edge-0108",
+      "outgoingDirection": 1,
+      "geometryIncomingBearingFromIntersection": 145.68637471923842,
+      "geometryOutgoingBearing": 53.773543325184846,
+      "matchingIncomingObservations": 1,
+      "forbiddenObservations": 1,
+      "evidence": [
+        {
+          "sourceRoute": "rabdan-al-maqta--al-saadiyat",
+          "sourceFile": "deb50638c98faf5620b6c620c44d62da37aa32b3640ceb73536d1ee26b16bf5c.json.gz",
+          "location": [
+            54.37509,
+            24.494273
+          ],
+          "bearings": [
+            60,
+            150,
+            240,
+            330
+          ],
+          "entry": [
+            false,
+            false,
+            false,
+            true
+          ],
+          "in": 1,
+          "selectedOutIndex": 0,
+          "sourceOutIndex": 3
+        }
+      ]
+    },
+    {
+      "nodeId": "road-node-0083",
+      "coordinate": [
+        54.37523,
+        24.47361
+      ],
+      "incomingEdge": "road-edge-0091",
+      "incomingDirection": 1,
+      "outgoingEdge": "road-edge-0096",
+      "outgoingDirection": -1,
+      "geometryIncomingBearingFromIntersection": 317.69304550966814,
+      "geometryOutgoingBearing": 235.03938605867074,
+      "matchingIncomingObservations": 1,
+      "forbiddenObservations": 1,
+      "evidence": [
+        {
+          "sourceRoute": "al-danah--al-nahyan",
+          "sourceFile": "07f18f77490a2c19cb947a7d945ef3412fabdf75f53ad8fa6d6654141915f718.json.gz",
+          "location": [
+            54.375226,
+            24.473612
+          ],
+          "bearings": [
+            45,
+            90,
+            135,
+            225,
+            315
+          ],
+          "entry": [
+            false,
+            false,
+            true,
+            false,
+            false
+          ],
+          "in": 4,
+          "selectedOutIndex": 3,
+          "sourceOutIndex": 2
+        }
+      ]
+    },
+    {
+      "nodeId": "road-node-0093",
+      "coordinate": [
+        54.37741,
+        24.43462
+      ],
+      "incomingEdge": "road-edge-0126",
+      "incomingDirection": -1,
+      "outgoingEdge": "road-edge-0125",
+      "outgoingDirection": 1,
+      "geometryIncomingBearingFromIntersection": 131.00848628808262,
+      "geometryOutgoingBearing": 45.04227811031899,
+      "matchingIncomingObservations": 1,
+      "forbiddenObservations": 1,
+      "evidence": [
+        {
+          "sourceRoute": "al-rawdah--al-bateen",
+          "sourceFile": "2740d8326fa500d3cb23b0c7e2a8139ec0171483c3284f85f0093ef0d46044be.json.gz",
+          "location": [
+            54.377405,
+            24.434621
+          ],
+          "bearings": [
+            45,
+            135,
+            225,
+            315
+          ],
+          "entry": [
+            false,
+            false,
+            false,
+            true
+          ],
+          "in": 1,
+          "selectedOutIndex": 0,
+          "sourceOutIndex": 3
+        }
+      ]
+    },
+    {
+      "nodeId": "road-node-0099",
+      "coordinate": [
+        54.3784,
+        24.50037
+      ],
+      "incomingEdge": "road-edge-0136",
+      "incomingDirection": -1,
+      "outgoingEdge": "road-edge-0137",
+      "outgoingDirection": 1,
+      "geometryIncomingBearingFromIntersection": 141.47270486868564,
+      "geometryOutgoingBearing": 58.59474465406191,
+      "matchingIncomingObservations": 2,
+      "forbiddenObservations": 2,
+      "evidence": [
+        {
+          "sourceRoute": "al-zahiyah--al-reem",
+          "sourceFile": "4ce79f1e966dd691562ab77930e4cc2b4d0beffa45ccbbd0bc5922938217cbe7.json.gz",
+          "location": [
+            54.378404,
+            24.500369
+          ],
+          "bearings": [
+            60,
+            135,
+            225,
+            315
+          ],
+          "entry": [
+            false,
+            false,
+            false,
+            true
+          ],
+          "in": 1,
+          "selectedOutIndex": 0,
+          "sourceOutIndex": 3
+        },
+        {
+          "sourceRoute": "al-zahiyah--al-danah",
+          "sourceFile": "64d7bc77776eea71757967266375835c4dbb791897c8f78c54c9d66ab8f4d16f.json.gz",
+          "location": [
+            54.378404,
+            24.500369
+          ],
+          "bearings": [
+            60,
+            135,
+            225,
+            315
+          ],
+          "entry": [
+            false,
+            false,
+            false,
+            true
+          ],
+          "in": 1,
+          "selectedOutIndex": 0,
+          "sourceOutIndex": 3
+        }
+      ]
+    },
+    {
+      "nodeId": "road-node-0105",
+      "coordinate": [
+        54.3795,
+        24.49719
+      ],
+      "incomingEdge": "road-edge-0108",
+      "incomingDirection": 1,
+      "outgoingEdge": "road-edge-0145",
+      "outgoingDirection": 1,
+      "geometryIncomingBearingFromIntersection": 241.21289872619155,
+      "geometryOutgoingBearing": 142.53702235800034,
+      "matchingIncomingObservations": 1,
+      "forbiddenObservations": 1,
+      "evidence": [
+        {
+          "sourceRoute": "al-danah--al-zahiyah",
+          "sourceFile": "fd7e5bc635cd7b78a0021bf82e499b6750e9b4fb656478447eedbd33640df741.json.gz",
+          "location": [
+            54.379498,
+            24.497193
+          ],
+          "bearings": [
+            60,
+            150,
+            240,
+            315
+          ],
+          "entry": [
+            true,
+            false,
+            false,
+            true
+          ],
+          "in": 2,
+          "selectedOutIndex": 1,
+          "sourceOutIndex": 0
+        }
+      ]
+    },
+    {
+      "nodeId": "road-node-0126",
+      "coordinate": [
+        54.38684,
+        24.4614
+      ],
+      "incomingEdge": "road-edge-0161",
+      "incomingDirection": 1,
+      "outgoingEdge": "road-edge-0130",
+      "outgoingDirection": -1,
+      "geometryIncomingBearingFromIntersection": 321.4640758337076,
+      "geometryOutgoingBearing": 232.43873059984824,
+      "matchingIncomingObservations": 1,
+      "forbiddenObservations": 1,
+      "evidence": [
+        {
+          "sourceRoute": "al-manhal-karamah--muroor-al-saadah",
+          "sourceFile": "3959634eee554fd79eedf5a0c01e29778683e928c588c053345489668da375ae.json.gz",
+          "location": [
+            54.386838,
+            24.461405
+          ],
+          "bearings": [
+            45,
+            135,
+            225,
+            315
+          ],
+          "entry": [
+            false,
+            true,
+            false,
+            false
+          ],
+          "in": 3,
+          "selectedOutIndex": 2,
+          "sourceOutIndex": 1
+        }
+      ]
+    },
+    {
+      "nodeId": "road-node-0127",
+      "coordinate": [
+        54.38693,
+        24.4613
+      ],
+      "incomingEdge": "road-edge-0133",
+      "incomingDirection": 1,
+      "outgoingEdge": "road-edge-0173",
+      "outgoingDirection": 1,
+      "geometryIncomingBearingFromIntersection": 229.48696669799682,
+      "geometryOutgoingBearing": 139.65010445378203,
+      "matchingIncomingObservations": 1,
+      "forbiddenObservations": 1,
+      "evidence": [
+        {
+          "sourceRoute": "al-mushrif--al-nahyan",
+          "sourceFile": "0a56b955bf123c69e0520b767cc1133fb1bc9ce7d351cb2935ffd3769c3dea4f.json.gz",
+          "location": [
+            54.38693,
+            24.4613
+          ],
+          "bearings": [
+            45,
+            135,
+            225,
+            315
+          ],
+          "entry": [
+            true,
+            false,
+            false,
+            false
+          ],
+          "in": 2,
+          "selectedOutIndex": 1,
+          "sourceOutIndex": 0
+        }
+      ]
+    },
+    {
+      "nodeId": "road-node-0128",
+      "coordinate": [
+        54.38705,
+        24.46156
+      ],
+      "incomingEdge": "road-edge-0175",
+      "incomingDirection": -1,
+      "outgoingEdge": "road-edge-0166",
+      "outgoingDirection": -1,
+      "geometryIncomingBearingFromIntersection": 48.04874070800014,
+      "geometryOutgoingBearing": 321.464111304418,
+      "matchingIncomingObservations": 2,
+      "forbiddenObservations": 2,
+      "evidence": [
+        {
+          "sourceRoute": "al-nahyan--al-mushrif",
+          "sourceFile": "282ff0997dadc53e3333f5eeeeca16b0687ef7033a52e3edeaadb78996d95e4e.json.gz",
+          "location": [
+            54.38705,
+            24.461564
+          ],
+          "bearings": [
+            45,
+            135,
+            225,
+            315
+          ],
+          "entry": [
+            false,
+            false,
+            true,
+            false
+          ],
+          "in": 0,
+          "selectedOutIndex": 3,
+          "sourceOutIndex": 2
+        },
+        {
+          "sourceRoute": "al-nahyan--al-manhal-karamah",
+          "sourceFile": "baaa22969d28743999e00e6026a731aab6338ad846e1d539eb062526c900b591.json.gz",
+          "location": [
+            54.38705,
+            24.461564
+          ],
+          "bearings": [
+            45,
+            135,
+            225,
+            315
+          ],
+          "entry": [
+            false,
+            false,
+            true,
+            false
+          ],
+          "in": 0,
+          "selectedOutIndex": 3,
+          "sourceOutIndex": 2
+        }
+      ]
+    },
+    {
+      "nodeId": "road-node-0129",
+      "coordinate": [
+        54.38714,
+        24.46146
+      ],
+      "incomingEdge": "road-edge-0177",
+      "incomingDirection": -1,
+      "outgoingEdge": "road-edge-0176",
+      "outgoingDirection": 1,
+      "geometryIncomingBearingFromIntersection": 137.69027520264262,
+      "geometryOutgoingBearing": 48.04876332512515,
+      "matchingIncomingObservations": 1,
+      "forbiddenObservations": 1,
+      "evidence": [
+        {
+          "sourceRoute": "muroor-al-saadah--al-manhal-karamah",
+          "sourceFile": "db0b92ffe3d810d3086b7b465e80e18d0f2b22de846e7640b21aa0dcd7ecf591.json.gz",
+          "location": [
+            54.387138,
+            24.461464
+          ],
+          "bearings": [
+            45,
+            135,
+            225,
+            315
+          ],
+          "entry": [
+            false,
+            false,
+            false,
+            true
+          ],
+          "in": 1,
+          "selectedOutIndex": 0,
+          "sourceOutIndex": 3
+        }
+      ]
+    },
+    {
+      "nodeId": "road-node-0130",
+      "coordinate": [
+        54.38717,
+        24.44333
+      ],
+      "incomingEdge": "road-edge-0120",
+      "incomingDirection": 1,
+      "outgoingEdge": "road-edge-0122",
+      "outgoingDirection": -1,
+      "geometryIncomingBearingFromIntersection": 317.68619051054503,
+      "geometryOutgoingBearing": 230.51694595986646,
+      "matchingIncomingObservations": 2,
+      "forbiddenObservations": 2,
+      "evidence": [
+        {
+          "sourceRoute": "al-nahyan--al-mushrif",
+          "sourceFile": "282ff0997dadc53e3333f5eeeeca16b0687ef7033a52e3edeaadb78996d95e4e.json.gz",
+          "location": [
+            54.387168,
+            24.443328
+          ],
+          "bearings": [
+            45,
+            135,
+            225,
+            315
+          ],
+          "entry": [
+            false,
+            true,
+            false,
+            false
+          ],
+          "in": 3,
+          "selectedOutIndex": 2,
+          "sourceOutIndex": 1
+        },
+        {
+          "sourceRoute": "al-manhal-karamah--al-mushrif",
+          "sourceFile": "8115ec8cd3fb79b613c955063d05e95e6da19f87d0bac438201ef31032694e19.json.gz",
+          "location": [
+            54.387168,
+            24.443328
+          ],
+          "bearings": [
+            45,
+            135,
+            225,
+            315
+          ],
+          "entry": [
+            false,
+            true,
+            false,
+            false
+          ],
+          "in": 3,
+          "selectedOutIndex": 2,
+          "sourceOutIndex": 1
+        }
+      ]
+    },
+    {
+      "nodeId": "road-node-0131",
+      "coordinate": [
+        54.38736,
+        24.44347
+      ],
+      "incomingEdge": "road-edge-0181",
+      "incomingDirection": -1,
+      "outgoingEdge": "road-edge-0147",
+      "outgoingDirection": -1,
+      "geometryIncomingBearingFromIntersection": 50.51690134839214,
+      "geometryOutgoingBearing": 320.67111781207683,
+      "matchingIncomingObservations": 1,
+      "forbiddenObservations": 1,
+      "evidence": [
+        {
+          "sourceRoute": "muroor-al-saadah--al-mushrif",
+          "sourceFile": "9906da6b0e9e9bb8205f988f01c8af1f798da6cb68fdc431ad95cfb0885f0283.json.gz",
+          "location": [
+            54.387364,
+            24.443469
+          ],
+          "bearings": [
+            45,
+            135,
+            225,
+            315
+          ],
+          "entry": [
+            false,
+            false,
+            true,
+            false
+          ],
+          "in": 0,
+          "selectedOutIndex": 3,
+          "sourceOutIndex": 2
+        }
+      ]
+    },
+    {
+      "nodeId": "road-node-0151",
+      "coordinate": [
+        54.38959,
+        24.49886
+      ],
+      "incomingEdge": "road-edge-0203",
+      "incomingDirection": -1,
+      "outgoingEdge": "road-edge-0201",
+      "outgoingDirection": -1,
+      "geometryIncomingBearingFromIntersection": 9.394423455319611,
+      "geometryOutgoingBearing": 278.6191495971535,
+      "matchingIncomingObservations": 2,
+      "forbiddenObservations": 2,
+      "evidence": [
+        {
+          "sourceRoute": "al-maryah--al-reem",
+          "sourceFile": "a275b76a09ac4bdb65e96e8ea7fcc9dca77081831ac0f66270a666865659758c.json.gz",
+          "location": [
+            54.389595,
+            24.498862
+          ],
+          "bearings": [
+            0,
+            90,
+            180,
+            285
+          ],
+          "entry": [
+            false,
+            false,
+            true,
+            false
+          ],
+          "in": 0,
+          "selectedOutIndex": 3,
+          "sourceOutIndex": 2
+        },
+        {
+          "sourceRoute": "al-maryah--al-saadiyat",
+          "sourceFile": "a2d1e453bbf73827e6af36df8de25b8a56531894600a703dfcbbc0816a310eb9.json.gz",
+          "location": [
+            54.389595,
+            24.498862
+          ],
+          "bearings": [
+            0,
+            90,
+            180,
+            285
+          ],
+          "entry": [
+            false,
+            false,
+            true,
+            false
+          ],
+          "in": 0,
+          "selectedOutIndex": 3,
+          "sourceOutIndex": 2
+        }
+      ]
+    },
+    {
+      "nodeId": "road-node-0161",
+      "coordinate": [
+        54.39113,
+        24.49871
+      ],
+      "incomingEdge": "road-edge-0216",
+      "incomingDirection": -1,
+      "outgoingEdge": "road-edge-0215",
+      "outgoingDirection": 1,
+      "geometryIncomingBearingFromIntersection": 90,
+      "geometryOutgoingBearing": 5.7734305629492155,
+      "matchingIncomingObservations": 1,
+      "forbiddenObservations": 1,
+      "evidence": [
+        {
+          "sourceRoute": "al-reem--al-zahiyah",
+          "sourceFile": "201b4b1fba7d25b369828df82416890a2f4c4ee6f741c6ad398923aba941918c.json.gz",
+          "location": [
+            54.391127,
+            24.498713
+          ],
+          "bearings": [
+            15,
+            90,
+            195,
+            270
+          ],
+          "entry": [
+            false,
+            false,
+            false,
+            true
+          ],
+          "in": 1,
+          "selectedOutIndex": 0,
+          "sourceOutIndex": 3
+        }
+      ]
+    },
+    {
+      "nodeId": "road-node-0176",
+      "coordinate": [
+        54.39707,
+        24.45059
+      ],
+      "incomingEdge": "road-edge-0173",
+      "incomingDirection": 1,
+      "outgoingEdge": "road-edge-0231",
+      "outgoingDirection": -1,
+      "geometryIncomingBearingFromIntersection": 321.0212236836068,
+      "geometryOutgoingBearing": 273.9276091979101,
+      "matchingIncomingObservations": 1,
+      "forbiddenObservations": 1,
+      "evidence": [
+        {
+          "sourceRoute": "al-manhal-karamah--muroor-al-saadah",
+          "sourceFile": "3959634eee554fd79eedf5a0c01e29778683e928c588c053345489668da375ae.json.gz",
+          "location": [
+            54.397071,
+            24.450594
+          ],
+          "bearings": [
+            120,
+            135,
+            195,
+            270,
+            315,
+            345
+          ],
+          "entry": [
+            false,
+            true,
+            false,
+            false,
+            false,
+            false
+          ],
+          "in": 4,
+          "selectedOutIndex": 3,
+          "sourceOutIndex": 1
+        }
+      ]
+    },
+    {
+      "nodeId": "road-node-0176",
+      "coordinate": [
+        54.39707,
+        24.45059
+      ],
+      "incomingEdge": "road-edge-0235",
+      "incomingDirection": -1,
+      "outgoingEdge": "road-edge-0234",
+      "outgoingDirection": 1,
+      "geometryIncomingBearingFromIntersection": 117.33664910008883,
+      "geometryOutgoingBearing": 139.3128387142719,
+      "matchingIncomingObservations": 1,
+      "forbiddenObservations": 1,
+      "evidence": [
+        {
+          "sourceRoute": "muroor-al-saadah--al-mushrif",
+          "sourceFile": "9906da6b0e9e9bb8205f988f01c8af1f798da6cb68fdc431ad95cfb0885f0283.json.gz",
+          "location": [
+            54.397071,
+            24.450594
+          ],
+          "bearings": [
+            120,
+            135,
+            195,
+            270,
+            315,
+            345
+          ],
+          "entry": [
+            false,
+            false,
+            false,
+            true,
+            false,
+            false
+          ],
+          "in": 0,
+          "selectedOutIndex": 1,
+          "sourceOutIndex": 3
+        }
+      ]
+    },
+    {
+      "nodeId": "road-node-0220",
+      "coordinate": [
+        54.42996,
+        24.43414
+      ],
+      "incomingEdge": "road-edge-0281",
+      "incomingDirection": -1,
+      "outgoingEdge": "road-edge-0279",
+      "outgoingDirection": -1,
+      "geometryIncomingBearingFromIntersection": 9.399167096215194,
+      "geometryOutgoingBearing": 282.38963730958403,
+      "matchingIncomingObservations": 1,
+      "forbiddenObservations": 1,
+      "evidence": [
+        {
+          "sourceRoute": "muroor-al-saadah--al-rawdah",
+          "sourceFile": "787b7695e85b2a60d700b58d4f13b75101cf348501feece0c9b8f76008c753b2.json.gz",
+          "location": [
+            54.429959,
+            24.434144
+          ],
+          "bearings": [
+            15,
+            105,
+            195,
+            285
+          ],
+          "entry": [
+            false,
+            false,
+            true,
+            false
+          ],
+          "in": 0,
+          "selectedOutIndex": 3,
+          "sourceOutIndex": 2
+        }
+      ]
+    },
+    {
+      "nodeId": "road-node-0424",
+      "coordinate": [
+        54.60078,
+        24.44817
+      ],
+      "incomingEdge": "road-edge-0513",
+      "incomingDirection": -1,
+      "outgoingEdge": "road-edge-0514",
+      "outgoingDirection": 1,
+      "geometryIncomingBearingFromIntersection": 180,
+      "geometryOutgoingBearing": 84.76964758729923,
+      "matchingIncomingObservations": 3,
+      "forbiddenObservations": 3,
+      "evidence": [
+        {
+          "sourceRoute": "yas-island--al-raha",
+          "sourceFile": "45ee6f85b76c9708d22c08ff5a717902033bc8bf70357ffb987562ff2fcefa04.json.gz",
+          "location": [
+            54.60078,
+            24.448172
+          ],
+          "bearings": [
+            0,
+            90,
+            180,
+            270
+          ],
+          "entry": [
+            true,
+            false,
+            false,
+            false
+          ],
+          "in": 2,
+          "selectedOutIndex": 1,
+          "sourceOutIndex": 0
+        },
+        {
+          "sourceRoute": "rabdan-al-maqta--al-raha",
+          "sourceFile": "7459a90d8a5d52740f98eee3c400a8a0a7d83b44f3be9f9fd5206a794371c39c.json.gz",
+          "location": [
+            54.60078,
+            24.448172
+          ],
+          "bearings": [
+            0,
+            90,
+            180,
+            270
+          ],
+          "entry": [
+            true,
+            false,
+            false,
+            false
+          ],
+          "in": 2,
+          "selectedOutIndex": 1,
+          "sourceOutIndex": 0
+        },
+        {
+          "sourceRoute": "khalifa-city--al-raha",
+          "sourceFile": "f35a8a2d37ed78a155e928a979b480a9ac064d9a614a2b7ce1ae8816c9afe853.json.gz",
+          "location": [
+            54.60078,
+            24.448172
+          ],
+          "bearings": [
+            0,
+            90,
+            180,
+            270
+          ],
+          "entry": [
+            true,
+            false,
+            false,
+            false
+          ],
+          "in": 2,
+          "selectedOutIndex": 1,
+          "sourceOutIndex": 0
+        }
+      ]
+    },
+    {
+      "nodeId": "road-node-0428",
+      "coordinate": [
+        54.60101,
+        24.44584
+      ],
+      "incomingEdge": "road-edge-0520",
+      "incomingDirection": -1,
+      "outgoingEdge": "road-edge-0516",
+      "outgoingDirection": -1,
+      "geometryIncomingBearingFromIntersection": 180,
+      "geometryOutgoingBearing": 222.31325962705816,
+      "matchingIncomingObservations": 2,
+      "forbiddenObservations": 2,
+      "evidence": [
+        {
+          "sourceRoute": "rabdan-al-maqta--al-raha",
+          "sourceFile": "7459a90d8a5d52740f98eee3c400a8a0a7d83b44f3be9f9fd5206a794371c39c.json.gz",
+          "location": [
+            54.601008,
+            24.44584
+          ],
+          "bearings": [
+            0,
+            60,
+            180,
+            225
+          ],
+          "entry": [
+            true,
+            false,
+            false,
+            false
+          ],
+          "in": 2,
+          "selectedOutIndex": 3,
+          "sourceOutIndex": 0
+        },
+        {
+          "sourceRoute": "khalifa-city--al-raha",
+          "sourceFile": "f35a8a2d37ed78a155e928a979b480a9ac064d9a614a2b7ce1ae8816c9afe853.json.gz",
+          "location": [
+            54.601008,
+            24.44584
+          ],
+          "bearings": [
+            0,
+            60,
+            180,
+            225
+          ],
+          "entry": [
+            true,
+            false,
+            false,
+            false
+          ],
+          "in": 2,
+          "selectedOutIndex": 3,
+          "sourceOutIndex": 0
+        }
+      ]
+    },
+    {
+      "nodeId": "road-node-0428",
+      "coordinate": [
+        54.60101,
+        24.44584
+      ],
+      "incomingEdge": "road-edge-0521",
+      "incomingDirection": -1,
+      "outgoingEdge": "road-edge-0518",
+      "outgoingDirection": -1,
+      "geometryIncomingBearingFromIntersection": 61.22274957958092,
+      "geometryOutgoingBearing": 355.4738529712845,
+      "matchingIncomingObservations": 1,
+      "forbiddenObservations": 1,
+      "evidence": [
+        {
+          "sourceRoute": "yas-island--khalifa-city",
+          "sourceFile": "ed8bbf7c1b3bed3092f207d7bc8958f5b7cf1ab3da30732a0fdaf215f314b393.json.gz",
+          "location": [
+            54.601008,
+            24.44584
+          ],
+          "bearings": [
+            0,
+            60,
+            180,
+            225
+          ],
+          "entry": [
+            false,
+            false,
+            false,
+            true
+          ],
+          "in": 1,
+          "selectedOutIndex": 0,
+          "sourceOutIndex": 3
+        }
+      ]
+    },
+    {
+      "nodeId": "road-node-0430",
+      "coordinate": [
+        54.60132,
+        24.44094
+      ],
+      "incomingEdge": "road-edge-0493",
+      "incomingDirection": 1,
+      "outgoingEdge": "road-edge-0524",
+      "outgoingDirection": 1,
+      "geometryIncomingBearingFromIntersection": 254.64462735580702,
+      "geometryOutgoingBearing": 170.60132269467135,
+      "matchingIncomingObservations": 2,
+      "forbiddenObservations": 2,
+      "evidence": [
+        {
+          "sourceRoute": "khalifa-city--yas-island",
+          "sourceFile": "0bb80dbfb9209aef714375150c036f14df3e368d5e86648896cb0b02bd2a1422.json.gz",
+          "location": [
+            54.60132,
+            24.440941
+          ],
+          "bearings": [
+            0,
+            75,
+            165,
+            255
+          ],
+          "entry": [
+            false,
+            true,
+            false,
+            false
+          ],
+          "in": 3,
+          "selectedOutIndex": 2,
+          "sourceOutIndex": 1
+        },
+        {
+          "sourceRoute": "khalifa-city--al-raha",
+          "sourceFile": "f35a8a2d37ed78a155e928a979b480a9ac064d9a614a2b7ce1ae8816c9afe853.json.gz",
+          "location": [
+            54.60132,
+            24.440941
+          ],
+          "bearings": [
+            0,
+            75,
+            165,
+            255
+          ],
+          "entry": [
+            false,
+            true,
+            false,
+            false
+          ],
+          "in": 3,
+          "selectedOutIndex": 2,
+          "sourceOutIndex": 1
+        }
+      ]
+    }
+  ],
+  "ambiguousTurns": [],
+  "gatewayAudit": [
+    {
+      "zoneId": "al-bateen",
+      "coordinate": [
+        54.3473,
+        24.4501
+      ],
+      "population2024": 57100,
+      "distanceToGeometricCentroidKm": 4.92088265146045,
+      "requestedActivityPoint": [
+        54.345,
+        24.452
+      ],
+      "incomingEdges": [
+        "road-edge-0005"
+      ],
+      "outgoingEdges": [
+        "road-edge-0004"
+      ],
+      "incidentRoads": [
+        "Unnamed OSM road connector"
+      ]
+    },
+    {
+      "zoneId": "al-danah",
+      "coordinate": [
+        54.36911,
+        24.48587
+      ],
+      "population2024": 259925,
+      "distanceToGeometricCentroidKm": 0.10081130386658188,
+      "requestedActivityPoint": [
+        54.369,
+        24.486
+      ],
+      "incomingEdges": [
+        "road-edge-0073",
+        "road-edge-0081"
+      ],
+      "outgoingEdges": [
+        "road-edge-0081"
+      ],
+      "incidentRoads": [
+        "Unnamed OSM road connector"
+      ]
+    },
+    {
+      "zoneId": "al-khalidiyah",
+      "coordinate": [
+        54.3509,
+        24.46692
+      ],
+      "population2024": 29700,
+      "distanceToGeometricCentroidKm": 0.010931014938672516,
+      "requestedActivityPoint": [
+        54.351,
+        24.467
+      ],
+      "incomingEdges": [
+        "road-edge-0016"
+      ],
+      "outgoingEdges": [
+        "road-edge-0013"
+      ],
+      "incidentRoads": [
+        "Khalifa bin Shakhbout Street"
+      ]
+    },
+    {
+      "zoneId": "al-manhal-karamah",
+      "coordinate": [
+        54.36599,
+        24.46201
+      ],
+      "population2024": 42760,
+      "distanceToGeometricCentroidKm": 0.04269904573051272,
+      "requestedActivityPoint": [
+        54.366,
+        24.462
+      ],
+      "incomingEdges": [
+        "road-edge-0045",
+        "road-edge-0061"
+      ],
+      "outgoingEdges": [
+        "road-edge-0045",
+        "road-edge-0061"
+      ],
+      "incidentRoads": [
+        "Unnamed OSM road connector"
+      ]
+    },
+    {
+      "zoneId": "al-mushrif",
+      "coordinate": [
+        54.38923,
+        24.44059
+      ],
+      "population2024": 33770,
+      "distanceToGeometricCentroidKm": 0.12035946079687507,
+      "requestedActivityPoint": [
+        54.389,
+        24.44
+      ],
+      "incomingEdges": [
+        "road-edge-0198"
+      ],
+      "outgoingEdges": [
+        "road-edge-0199"
+      ],
+      "incidentRoads": [
+        "Unnamed OSM road connector"
+      ]
+    },
+    {
+      "zoneId": "al-nahyan",
+      "coordinate": [
+        54.38805,
+        24.46395
+      ],
+      "population2024": 99695,
+      "distanceToGeometricCentroidKm": 0.05140294365039327,
+      "requestedActivityPoint": [
+        54.388,
+        24.464
+      ],
+      "incomingEdges": [
+        "road-edge-0186"
+      ],
+      "outgoingEdges": [
+        "road-edge-0191"
+      ],
+      "incidentRoads": [
+        "Unnamed OSM road connector"
+      ]
+    },
+    {
+      "zoneId": "muroor-al-saadah",
+      "coordinate": [
+        54.42901,
+        24.43607
+      ],
+      "population2024": 25970,
+      "distanceToGeometricCentroidKm": 0.01580112679985009,
+      "requestedActivityPoint": [
+        54.429,
+        24.436
+      ],
+      "incomingEdges": [
+        "road-edge-0275"
+      ],
+      "outgoingEdges": [
+        "road-edge-0277"
+      ],
+      "incidentRoads": [
+        "Unnamed OSM road connector"
+      ]
+    },
+    {
+      "zoneId": "al-rawdah",
+      "coordinate": [
+        54.45303,
+        24.41789
+      ],
+      "population2024": 26935,
+      "distanceToGeometricCentroidKm": 0.04383754856427799,
+      "requestedActivityPoint": [
+        54.453,
+        24.418
+      ],
+      "incomingEdges": [
+        "road-edge-0321",
+        "road-edge-0322"
+      ],
+      "outgoingEdges": [
+        "road-edge-0321",
+        "road-edge-0322"
+      ],
+      "incidentRoads": [
+        "Unnamed OSM road connector"
+      ]
+    },
+    {
+      "zoneId": "al-zahiyah",
+      "coordinate": [
+        54.37947,
+        24.49915
+      ],
+      "population2024": 122515,
+      "distanceToGeometricCentroidKm": 0.0698253473549771,
+      "requestedActivityPoint": [
+        54.38,
+        24.499
+      ],
+      "incomingEdges": [
+        "road-edge-0143"
+      ],
+      "outgoingEdges": [
+        "road-edge-0140"
+      ],
+      "incidentRoads": [
+        "Unnamed OSM road connector"
+      ]
+    },
+    {
+      "zoneId": "al-reem",
+      "coordinate": [
+        54.41649,
+        24.50469
+      ],
+      "population2024": 59725,
+      "distanceToGeometricCentroidKm": 0.967188064238729,
+      "requestedActivityPoint": [
+        54.417,
+        24.505
+      ],
+      "incomingEdges": [
+        "road-edge-0267"
+      ],
+      "outgoingEdges": [
+        "road-edge-0265"
+      ],
+      "incidentRoads": [
+        "Unnamed OSM road connector"
+      ]
+    },
+    {
+      "zoneId": "al-maryah",
+      "coordinate": [
+        54.38999,
+        24.502
+      ],
+      "population2024": 3375,
+      "distanceToGeometricCentroidKm": 0.05899269667363338,
+      "requestedActivityPoint": [
+        54.39,
+        24.502
+      ],
+      "incomingEdges": [
+        "road-edge-0209"
+      ],
+      "outgoingEdges": [
+        "road-edge-0207"
+      ],
+      "incidentRoads": [
+        "Unnamed OSM road connector"
+      ]
+    },
+    {
+      "zoneId": "al-saadiyat",
+      "coordinate": [
+        54.43995,
+        24.53996
+      ],
+      "population2024": 30555,
+      "distanceToGeometricCentroidKm": 0.6718404526793229,
+      "requestedActivityPoint": [
+        54.44,
+        24.54
+      ],
+      "incomingEdges": [
+        "road-edge-0296"
+      ],
+      "outgoingEdges": [
+        "road-edge-0295"
+      ],
+      "incidentRoads": [
+        "Unnamed OSM road connector"
+      ]
+    },
+    {
+      "zoneId": "rabdan-al-maqta",
+      "coordinate": [
+        54.49997,
+        24.39701
+      ],
+      "population2024": 32960,
+      "distanceToGeometricCentroidKm": 0.054292272973615656,
+      "requestedActivityPoint": [
+        54.5,
+        24.397
+      ],
+      "incomingEdges": [
+        "road-edge-0367",
+        "road-edge-0369"
+      ],
+      "outgoingEdges": [
+        "road-edge-0369"
+      ],
+      "incidentRoads": [
+        "Unnamed OSM road connector"
+      ]
+    },
+    {
+      "zoneId": "al-raha",
+      "coordinate": [
+        54.60055,
+        24.45027
+      ],
+      "population2024": 30200,
+      "distanceToGeometricCentroidKm": 0.8816979912244484,
+      "requestedActivityPoint": [
+        54.601,
+        24.453
+      ],
+      "incomingEdges": [
+        "road-edge-0510"
+      ],
+      "outgoingEdges": [
+        "road-edge-0508"
+      ],
+      "incidentRoads": [
+        "Unnamed OSM road connector"
+      ]
+    },
+    {
+      "zoneId": "yas-island",
+      "coordinate": [
+        54.603,
+        24.492
+      ],
+      "population2024": 36730,
+      "distanceToGeometricCentroidKm": 0.025681657030608495,
+      "requestedActivityPoint": [
+        54.603,
+        24.492
+      ],
+      "incomingEdges": [
+        "road-edge-0529"
+      ],
+      "outgoingEdges": [
+        "road-edge-0533"
+      ],
+      "incidentRoads": [
+        "Al Masar Street"
+      ]
+    },
+    {
+      "zoneId": "khalifa-city",
+      "coordinate": [
+        54.57829,
+        24.41908
+      ],
+      "population2024": 104930,
+      "distanceToGeometricCentroidKm": 0.06570855903921621,
+      "requestedActivityPoint": [
+        54.578,
+        24.419
+      ],
+      "incomingEdges": [
+        "road-edge-0488",
+        "road-edge-0489"
+      ],
+      "outgoingEdges": [
+        "road-edge-0488",
+        "road-edge-0489"
+      ],
+      "incidentRoads": [
+        "Unnamed OSM road connector"
+      ]
+    },
+    {
+      "zoneId": "mbz-zayed-city",
+      "coordinate": [
+        54.57394,
+        24.35497
+      ],
+      "population2024": 224345,
+      "distanceToGeometricCentroidKm": 0.07570399239542956,
+      "requestedActivityPoint": [
+        54.574,
+        24.355
+      ],
+      "incomingEdges": [
+        "road-edge-0475"
+      ],
+      "outgoingEdges": [
+        "road-edge-0476"
+      ],
+      "incidentRoads": [
+        "Unnamed OSM road connector"
+      ]
+    },
+    {
+      "zoneId": "musaffah",
+      "coordinate": [
+        54.50066,
+        24.35033
+      ],
+      "population2024": 296345,
+      "distanceToGeometricCentroidKm": 1.3971181703705209,
+      "requestedActivityPoint": [
+        54.5,
+        24.35
+      ],
+      "incomingEdges": [
+        "road-edge-0372",
+        "road-edge-0373"
+      ],
+      "outgoingEdges": [
+        "road-edge-0373"
+      ],
+      "incidentRoads": [
+        "Unnamed OSM road connector"
+      ]
+    }
+  ]
+}

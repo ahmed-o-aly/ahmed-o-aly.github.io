@@ -1,0 +1,26 @@
+{
+  "checkedAt": "2026-09-12T10:37:03.147Z",
+  "method": "Unmodified builder and frozen source/helper/assumption files copied into an isolated temporary workspace; default rebuild produced all four datasets byte-identically without writing to production data.",
+  "checks": [
+    {
+      "file": "baseline.json",
+      "sha256": "02970f782667a391da60198f3e006cdb282710ddd0d91c7ae36195a7e70461da",
+      "identical": true
+    },
+    {
+      "file": "roads.geojson",
+      "sha256": "2406873c51a63808fc30a37d2b64f4d502b82e3e5eb4258eedd70aca4032162f",
+      "identical": true
+    },
+    {
+      "file": "zones.geojson",
+      "sha256": "de73dcf65517bac579cc47041d967a8ee9bb910c40de2bc47354b030d4b3e494",
+      "identical": true
+    },
+    {
+      "file": "transit-stops.geojson",
+      "sha256": "44ee3db1170221a232745aa72d325734046b249780cd9ecd5297f0d714ed312d",
+      "identical": true
+    }
+  ]
+}

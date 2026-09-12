@@ -6,6 +6,8 @@ const focusedContracts = [
   "./goodreads-sync.mjs",
   "./legacy-contract.mjs",
   "./udes-contract.mjs",
+  "./udes-v2-road-flow.mjs",
+  "./udes-v2-analysis.mjs",
   "./udes-v2-history.mjs",
   "./udes-v2-contract.mjs",
 ];
@@ -16,13 +18,13 @@ const deployWorkflow = projectFile(".github/workflows/deploy.yml");
 const axeWorkflow = projectFile(".github/workflows/axe.yml");
 
 const formatTargets = [
-  "tests/{folio-contract,goodreads-sync,site-contract,udes-contract,udes-v2-contract,udes-v2-engine,udes-v2-history,udes-v2-job-capacity,udes-v2-scenarios}.mjs",
-  "assets/js/{garden,udes-v2-app,udes-v2-worker}.js",
+  "tests/{folio-contract,goodreads-sync,site-contract,udes-contract,udes-v2-contract,udes-v2-engine,udes-v2-history,udes-v2-job-capacity,udes-v2-scenarios,udes-v2-mechanics,udes-v2-network,udes-v2-turns,udes-v2-road-flow,udes-v2-analysis,udes-v2-comparison,udes-v2-evidence,udes-v2-presentation-provenance}.mjs",
+  "assets/js/{garden,udes-v2-app,udes-v2-worker,udes-v2-road-flow,udes-v2-analysis}.js",
   "assets/css/garden.scss",
   "assets/data/cnc-machine-inspector/portfolio-evidence.json",
   "assets/data/udes-v2/README.md",
   "_data/{currently_reading,read_books}.yml",
-  "scripts/{build-project-previews,sync-goodreads,validate-udes-v2-full}.mjs",
+  "scripts/{build-project-previews,sync-goodreads,validate-udes-v2-full,validate-udes-v2-uncertainty,udes-v2-experiment-statistics,udes-v2-evidence-summary,udes-v2-source-provenance,refresh-udes-v2-presentation-provenance}.mjs",
   "_sass/garden/{_cards,_content,_folio-v2,_shell,_simulation-v2,_tokens}.scss",
   "_includes/{folio-work-card,folio-work-feature,garden-card,garden-footer,garden-media,garden-nav,garden-project-card,garden-related,head,metadata}.liquid",
   "_layouts/{cv,garden,page,post}.liquid",
@@ -30,6 +32,8 @@ const formatTargets = [
   "_projects/{abu-dhabi-urban-dynamics,abu-dhabi-urban-dynamics-v2,cnc-machine-inspector,dewa-energy-optimization,sila,territory-design-probvns}.md",
   "package.json",
   ".github/workflows/{axe,deploy}.yml",
+  "scripts/lib/udes-v2-turn-restrictions.mjs",
+  "scripts/data/udes-v2-transit-services.json",
 ];
 const expectedFormatCommand = `prettier --check ${formatTargets.map((target) => JSON.stringify(target)).join(" ")}`;
 
@@ -57,7 +61,7 @@ assert.doesNotMatch(axeWorkflow, /^\s+inputs:\s*$/m, "axe manual dispatch has no
 assert.doesNotMatch(axeWorkflow, /^\s*URL:\s*/m, "axe has no unused global URL variable");
 assert.match(
   deployWorkflow,
-  /- name: Verify generated site\s+run: \|\s+test -f _site\/index\.html\s+node tests\/udes-v2-engine\.mjs\s+node tests\/udes-v2-job-capacity\.mjs\s+node tests\/udes-v2-contract\.mjs\s+node tests\/site-contract\.mjs/,
+  /- name: Verify generated site\s+run: \|\s+test -f _site\/index\.html\s+node tests\/udes-v2-engine\.mjs\s+node tests\/udes-v2-job-capacity\.mjs\s+node tests\/udes-v2-mechanics\.mjs\s+node tests\/udes-v2-network\.mjs\s+node tests\/udes-v2-turns\.mjs\s+node tests\/udes-v2-road-flow\.mjs\s+node tests\/udes-v2-analysis\.mjs\s+node tests\/udes-v2-comparison\.mjs\s+node tests\/udes-v2-history\.mjs\s+node tests\/udes-v2-evidence\.mjs\s+node tests\/udes-v2-presentation-provenance\.mjs\s+node scripts\/validate-udes-v2-full\.mjs --verify-concurrency\s+node tests\/udes-v2-contract\.mjs\s+node tests\/site-contract\.mjs/,
   "deploy verifies the simulation and generated site contracts"
 );
 assert.match(deployWorkflow, /- name: Install Node dependencies\s+run: npm ci/, "deploy installs the locked Node dependencies");
@@ -119,7 +123,23 @@ assert.equal(packageJson.scripts?.["format:check"], expectedFormatCommand, "form
 assert.equal(packageJson.scripts?.["sync:reading"], "node scripts/sync-goodreads.mjs", "sync:reading refreshes the Goodreads data source");
 assert.equal(packageJson.scripts?.["test:goodreads"], "node tests/goodreads-sync.mjs", "test:goodreads runs the RSS fixture contract");
 assert.equal(packageJson.scripts?.["test:site"], "node tests/site-contract.mjs", "test:site runs the aggregate contract");
+assert.equal(
+  packageJson.scripts?.["test:udes-v2-ui"],
+  "node tests/udes-v2-road-flow.mjs && node tests/udes-v2-analysis.mjs && node tests/udes-v2-comparison.mjs && node tests/udes-v2-history.mjs",
+  "the UI suite covers road motion, analysis charts, comparison exports and history"
+);
+assert.equal(
+  packageJson.scripts?.["test:udes-v2-evidence"],
+  "node tests/udes-v2-evidence.mjs && node tests/udes-v2-presentation-provenance.mjs && node scripts/validate-udes-v2-full.mjs --verify-concurrency",
+  "the evidence suite checks statistics, presentation provenance and deterministic parallel validation"
+);
+assert.doesNotMatch(
+  deployWorkflow,
+  /node scripts\/refresh-udes-v2-presentation-provenance\.mjs/,
+  "CI verifies committed evidence without rewriting presentation provenance"
+);
 
 for (const contract of focusedContracts) await import(contract);
 
-console.log("all site contracts passed");
+if (process.exitCode) console.error("site contracts failed");
+else console.log("all site contracts passed");

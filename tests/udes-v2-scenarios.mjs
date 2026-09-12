@@ -12,6 +12,7 @@ const baselineData = {
   links: abuDhabiBaseline.roadGraph.segments || abuDhabiBaseline.roadGraph.edges,
   nodes: abuDhabiBaseline.roadGraph.nodes,
   candidateRoutes: abuDhabiBaseline.roadGraph.candidateRoutes,
+  turnRestrictions: abuDhabiBaseline.roadGraph.turnRestrictions,
   transit: abuDhabiBaseline.transit,
   calibration: abuDhabiBaseline.calibration,
   assumptions: abuDhabiBaseline.assumptions,
@@ -84,8 +85,10 @@ function assertHousingPolicyConsistent(engine, label, { checkInitialAllocation =
 
 function assertEmploymentBand(snapshot, label) {
   assert.ok(
-    snapshot.city.employmentRate >= 64 && snapshot.city.employmentRate <= 70,
-    `${label}: employment remains near the configured 67% employed-resident target; received ${snapshot.city.employmentRate}%`
+    snapshot.city.representedEmployed >= 0 &&
+      snapshot.city.representedEmployed <= snapshot.city.representedLaborForce &&
+      snapshot.city.representedLaborForce <= snapshot.city.representedPopulation,
+    `${label}: employment is bounded by the participating resident pool, independently of its opening share`
   );
 }
 
@@ -151,21 +154,21 @@ function calendarDayDifference(startDate, endDate) {
 function assertTransitOwnershipFlowAccounting(referenceSnapshot, transitSnapshot, label) {
   const referenceEvents = referenceSnapshot.city.eventsTotal;
   const transitEvents = transitSnapshot.city.eventsTotal;
-  const referenceNetFlow = referenceEvents.carAcquisitions - referenceEvents.carDisposals;
-  const transitNetFlow = transitEvents.carAcquisitions - transitEvents.carDisposals;
-  const ownershipDifference = transitSnapshot.city.carOwnershipRate - referenceSnapshot.city.carOwnershipRate;
   assert.ok(
     [referenceEvents.carAcquisitions, referenceEvents.carDisposals, transitEvents.carAcquisitions, transitEvents.carDisposals].every(
       (value) => Number.isFinite(value) && value >= 0
     ),
     `${label}: ownership flows are finite non-negative modeled-agent events`
   );
-  if (Math.abs(ownershipDifference) <= 0.01) return;
-  const flowDifference = transitNetFlow - referenceNetFlow;
-  assert.ok(
-    Math.sign(flowDifference) === Math.sign(ownershipDifference),
-    `${label}: the ownership-stock difference is directionally consistent with acquisition minus disposal flows (${referenceNetFlow} reference versus ${transitNetFlow} transit)`
-  );
+  for (const snapshot of [referenceSnapshot, transitSnapshot]) {
+    const account = snapshot.city.carAccessAccounting;
+    assert.equal(
+      account.reconciliationDifference,
+      0,
+      `${label}: initial access plus acquisitions minus disposals and replacement exits reconciles exactly`
+    );
+    assert.equal(account.currentAgentCount, account.initialAgentCount + account.acquisitions - account.disposals - account.replacementExits);
+  }
 }
 
 const startedAt = Date.now();
@@ -314,6 +317,7 @@ if (weekend.city.daily.representedTrips === 0) {
 const weekendCommuteBeforeHire = weekend.city.averageRoundTripMinutes;
 const weekendHire = weekendEngine.citizenById.get([...weekendEngine.jobSeekerIds][0]);
 weekendEngine.config.targetEmploymentRate = 1;
+for (const enterprise of weekendEngine.enterprises) enterprise.desiredJobSlots = enterprise.maxJobSlots;
 const weekendEmployer = weekendEngine.findHiringEnterprise(weekendHire.homeZoneId);
 assert.ok(
   weekendEmployer && weekendEngine.employ(weekendHire, weekendEmployer, 9000, "weekend-new-hire"),
@@ -644,13 +648,6 @@ assert.equal(
   adverseFirm.maxJobSlots * adverseFirmEngine.config.citizenWeight,
   "Starting firm's planned post-startup capacity remains explicit"
 );
-const minimumActiveCapacity = Math.ceil(
-  adverseFirmEngine.citizens.length * adverseFirmEngine.config.targetEmploymentRate * (1 + adverseFirmEngine.config.laborMarketVacancyBuffer)
-);
-assert.ok(
-  sumBy(adverseFirmEngine.enterprises, (enterprise) => adverseFirmEngine.activeJobSlots(enterprise)) >= minimumActiveCapacity,
-  "an allowed restart leaves enough active citywide labor capacity for the target and vacancy buffer"
-);
 assert.equal(
   adverseFirmEngine.snapshot().city.vacancies,
   sumBy(adverseFirmEngine.enterprises, (enterprise) => adverseFirmEngine.openVacancySlots(enterprise) * adverseFirmEngine.config.citizenWeight),
@@ -702,9 +699,9 @@ guardedFirm.nextActionDay = guardedFirmEngine.day;
 guardedFirm.stateExitDay = guardedFirmEngine.day + 100;
 const guardedRestartCount = guardedFirmEngine.eventsTotal.firmRestarts;
 guardedFirmEngine.updateEnterprisesDaily();
-assert.equal(guardedFirm.state, "Working", "restart is paused when removing minimum-scale slots would breach the labor-capacity guard");
-assert.equal(guardedFirmEngine.eventsTotal.firmRestarts, guardedRestartCount, "capacity-guarded firm is not counted as restarted");
-assert.deepEqual(guardedFirmEngine.validateInvariants(), [], "blocked restart preserves capacity and employment invariants");
+assert.equal(guardedFirm.state, "Starting", "a sustained-loss employer can exit even when citywide labor capacity is low");
+assert.equal(guardedFirmEngine.eventsTotal.firmRestarts, guardedRestartCount + 1, "the former target-capacity floor no longer blocks exit");
+assert.deepEqual(guardedFirmEngine.validateInvariants(), [], "restart preserves capacity and employment invariants");
 
 // Snapshot `monthly*` fields report the last completed calendar month. They
 // must match the event delta stored at that same history boundary rather than
@@ -769,10 +766,12 @@ const [positiveSaver, deficitDrawer] = savingsEngine.citizens.filter((citizen) =
 for (const citizen of [positiveSaver, deficitDrawer]) {
   citizen.currentMonthTransportCostAed = 500;
   citizen.bankBalanceAed = 10000;
+  citizen.hasCar = false;
 }
 positiveSaver.salaryAed = savingsEngine.zoneById.get(positiveSaver.homeZoneId).residentialRentAed + 500 + 2000 + 4000;
 deficitDrawer.salaryAed = savingsEngine.zoneById.get(deficitDrawer.homeZoneId).residentialRentAed + 500 + 2000 - 1000;
-savingsEngine.step(1);
+for (let day = 0; day < 31; day += 1) savingsEngine.accrueDailyFinances();
+savingsEngine.closeMonth();
 const savingsSnapshot = savingsEngine.snapshot();
 assert.equal(positiveSaver.lastMonthlyBankBalanceDeltaAed, 1000, "positive residual saves exactly the configured 25% propensity");
 assert.equal(positiveSaver.bankBalanceAed, 11000, "positive monthly savings increase the balance by the modeled amount");
