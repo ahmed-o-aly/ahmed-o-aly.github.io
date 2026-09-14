@@ -4,7 +4,7 @@ title: Abu Dhabi Urban Dynamics Lab
 permalink: /projects/abu-dhabi-urban-dynamics/
 description: A browser simulation for testing housing, jobs, and transport ideas across Greater Abu Dhabi City.
 importance: 0
-work_number: 2
+work_number: 3
 home_feature:
   description: I built this model to try out changes to housing, jobs, and transport across 18 Abu Dhabi districts. It combines public data with assumptions, and isn’t a forecast.
   image: /assets/img/projects/selected-works/abu-dhabi.webp

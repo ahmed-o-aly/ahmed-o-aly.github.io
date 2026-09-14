@@ -4,7 +4,7 @@ title: Machine Lab
 permalink: /projects/cnc-machine-inspector/
 description: A browser tool for exploring eight workshop machines and seeing how their components fit together.
 importance: -1
-work_number: 1
+work_number: 2
 home_feature:
   description: I cleaned up eight machine assemblies and built a browser viewer for them. You can inspect individual parts, pull the assemblies apart, and see how they fit together.
   image: /assets/img/projects/selected-works/vmc855.webp

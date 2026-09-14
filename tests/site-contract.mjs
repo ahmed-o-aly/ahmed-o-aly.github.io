@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 
 const focusedContracts = [
   "./folio-contract.mjs",
+  "./uae-economy-contract.mjs",
   "./goodreads-sync.mjs",
   "./legacy-contract.mjs",
   "./udes-contract.mjs",
@@ -18,7 +19,8 @@ const deployWorkflow = projectFile(".github/workflows/deploy.yml");
 const axeWorkflow = projectFile(".github/workflows/axe.yml");
 
 const formatTargets = [
-  "tests/{folio-contract,goodreads-sync,site-contract,udes-contract,udes-v2-contract,udes-v2-engine,udes-v2-history,udes-v2-job-capacity,udes-v2-scenarios,udes-v2-mechanics,udes-v2-network,udes-v2-turns,udes-v2-road-flow,udes-v2-analysis,udes-v2-comparison,udes-v2-evidence,udes-v2-presentation-provenance}.mjs",
+  "tests/{folio-contract,goodreads-sync,site-contract,uae-economy-contract,udes-contract,udes-v2-contract,udes-v2-engine,udes-v2-history,udes-v2-job-capacity,udes-v2-scenarios}.mjs",
+  "tests/{udes-v2-mechanics,udes-v2-network,udes-v2-turns,udes-v2-road-flow,udes-v2-analysis,udes-v2-comparison,udes-v2-evidence,udes-v2-presentation-provenance}.mjs",
   "assets/js/{garden,udes-v2-app,udes-v2-worker,udes-v2-road-flow,udes-v2-analysis}.js",
   "assets/css/garden.scss",
   "assets/data/cnc-machine-inspector/portfolio-evidence.json",
@@ -29,7 +31,7 @@ const formatTargets = [
   "_includes/{folio-work-card,folio-work-feature,garden-card,garden-footer,garden-media,garden-nav,garden-project-card,garden-related,head,metadata}.liquid",
   "_layouts/{cv,garden,page,post}.liquid",
   "_pages/{about,blog,books,home,marginalia,projects}.md",
-  "_projects/{abu-dhabi-urban-dynamics,abu-dhabi-urban-dynamics-v2,cnc-machine-inspector,dewa-energy-optimization,sila,territory-design-probvns}.md",
+  "_projects/{abu-dhabi-urban-dynamics,abu-dhabi-urban-dynamics-v2,cnc-machine-inspector,dewa-energy-optimization,sila,territory-design-probvns,uae-economy-lab}.md",
   "package.json",
   ".github/workflows/{axe,deploy}.yml",
   "scripts/lib/udes-v2-turn-restrictions.mjs",

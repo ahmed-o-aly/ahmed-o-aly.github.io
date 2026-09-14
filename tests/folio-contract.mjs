@@ -11,6 +11,7 @@ const routes = {
   article: readRoute("/blog/2026/what-i-am-building-this-site-for/"),
   library: readRoute("/books/"),
   works: readRoute("/projects/"),
+  economy: readRoute("/projects/uae-economy-lab/"),
   cnc: readRoute("/projects/cnc-machine-inspector/"),
   urban: readRoute("/projects/abu-dhabi-urban-dynamics/"),
   urbanConsole: readRoute("/projects/abu-dhabi-urban-dynamics-v2/"),
@@ -88,6 +89,7 @@ assert.doesNotMatch(nav, /About|data-scroll-target|#sec-(?:writing|library|works
 assertContains(routes.works, /href="\/projects\/"[^>]*aria-current="page"/, "Works is current on the projects route");
 
 for (const [name, html] of Object.entries({
+  economy: routes.economy,
   cnc: routes.cnc,
   urban: routes.urban,
   dewa: routes.dewa,
@@ -124,16 +126,20 @@ assert.doesNotMatch(
 );
 const featuredProjects = [
   {
+    title: "UAE Economy Lab",
+    launch: "/uae-economy-lab/",
+    launchLabel: "Open UAE Economy Lab",
+    about: "/projects/uae-economy-lab/",
+    preview: "/assets/img/projects/uae-economy-lab/uae-economy-lab.png",
+    dimensions: [1585, 892],
+  },
+  {
     title: "Machine Lab",
     launch: "https://ahmed-o-aly.github.io/cnc-machine-inspector/?machine=vmc855",
     launchLabel: "Open Machine Lab",
     about: "/projects/cnc-machine-inspector/",
-  },
-  {
-    title: "Abu Dhabi Urban Dynamics Lab",
-    launch: "/projects/abu-dhabi-urban-dynamics-v2/",
-    launchLabel: "Open the simulation",
-    about: "/projects/abu-dhabi-urban-dynamics/",
+    preview: "/assets/img/projects/selected-works/vmc855.webp",
+    dimensions: [1200, 900],
   },
 ];
 const attribute = (html, name) => html.match(new RegExp(`(?:^|\\s)${name}="([^"]*)"`))?.[1];
@@ -157,13 +163,9 @@ for (const [index, project] of featuredProjects.entries()) {
   assert.equal(attribute(preview, "loading"), "lazy", `${project.title} defers its below-fold preview`);
   assert.equal(attribute(preview, "decoding"), "async", `${project.title} decodes its preview asynchronously`);
   const dimensions = [Number(attribute(preview, "width")), Number(attribute(preview, "height"))];
-  assert.deepEqual(dimensions, [1200, 900], `${project.title} reserves the preview's intrinsic aspect ratio`);
+  assert.deepEqual(dimensions, project.dimensions, `${project.title} reserves the preview's intrinsic aspect ratio`);
   const previewSrc = attribute(preview, "src");
-  assert.match(
-    previewSrc,
-    /^\/assets\/img\/projects\/selected-works\/[^/]+\.(?:png|jpe?g|webp|avif)$/,
-    `${project.title} uses a local project preview`
-  );
+  assert.equal(previewSrc, project.preview, `${project.title} uses its local project preview`);
   const sourcePath = new URL(`..${previewSrc}`, import.meta.url);
   const builtPath = new URL(`../_site${previewSrc}`, import.meta.url);
   assert.equal(existsSync(sourcePath), true, `${project.title} has a source preview asset`);
@@ -391,14 +393,15 @@ const ventureNote = block(routes.works, "folio-venture-note");
 assertContains(ventureNote, /Current venture/, "Works distinguishes Sila from the numbered research and software work");
 assertContains(ventureNote, /href="\/projects\/sila\/"[\s\S]*?>[\s\S]*?Sila/, "Works links the current venture to its full write-up");
 const worksIndex = block(routes.works, "folio-work-index", "ol");
-assert.equal((worksIndex.match(/class="folio-work-entry"/g) || []).length, 4, "Works renders only the four real projects");
-assert.equal((worksIndex.match(/class="folio-work-entry__description"/g) || []).length, 4, "each Works entry has one plain-language sentence");
+assert.equal((worksIndex.match(/class="folio-work-entry"/g) || []).length, 5, "Works renders the five selected projects");
+assert.equal((worksIndex.match(/class="folio-work-entry__description"/g) || []).length, 5, "each Works entry has one plain-language sentence");
 assert.doesNotMatch(
   worksIndex,
   /<img\b|<picture\b|<figure\b|folio-work-plate|machine-lab-interface\.png|urban-dynamics-console\.png|folio-tags|>\s*(?:Role|Status|Methods)\s*</i,
   "Works index uses no thumbnails or portfolio-template metadata"
 );
 for (const title of [
+  "UAE Economy Lab",
   "Machine Lab",
   "Abu Dhabi Urban Dynamics Lab",
   "Energy System Optimization with DEWA",
@@ -411,10 +414,11 @@ for (const title of ["KU MetaHub AI/XR Lab", "ADSG Public Policy Simulations", "
 }
 assert.deepEqual(
   [...worksIndex.matchAll(/class="folio-work-entry__number"[^>]*>(\d{2})<\/span>/g)].map((match) => match[1]),
-  ["01", "02", "03", "04"],
-  "Works numbers the four selected projects consecutively"
+  ["01", "02", "03", "04", "05"],
+  "Works numbers the five selected projects consecutively"
 );
-assert.doesNotMatch(worksIndex, /href="\/projects\/sila\/"/, "Sila stays outside the four-item numbered sequence");
+assert.doesNotMatch(worksIndex, /href="\/projects\/sila\/"/, "Sila stays outside the numbered sequence");
+assertContains(worksIndex, /href="\/projects\/uae-economy-lab\/"/, "Works opens the UAE Economy Lab write-up");
 assertContains(routes.works, /href="\/projects\/abu-dhabi-urban-dynamics\/"/, "Works opens the Urban Dynamics write-up");
 assert.doesNotMatch(routes.works, /href="\/projects\/abu-dhabi-urban-dynamics-v2\/"/, "Works does not drop readers directly into the console");
 assert.doesNotMatch(
@@ -422,10 +426,27 @@ assert.doesNotMatch(
   /work\.(?:role|status|methods|category|image|visual)/,
   "the shared work index entry consumes only title, description, URL, and number"
 );
-assertContains(routes.territory, /id="quick-start"/, "Work 04 contains the merged quick-start walkthrough");
-assertContains(routes.territory, /DTDPAlgorithms\.py/, "Work 04 contains the merged repository map");
-assertContains(routes.territory, /github\.com\/ahmed-o-aly\/TerritoryDesign/, "Work 04 keeps the public code artifact");
-assert.doesNotMatch(routes.territory, /<dt>\s*(?:Role|Methods|Status)\s*<\/dt>/i, "Work 04 reads as authored prose rather than template metadata");
+assertContains(routes.territory, /id="quick-start"/, "Work 05 contains the merged quick-start walkthrough");
+assertContains(routes.territory, /DTDPAlgorithms\.py/, "Work 05 contains the merged repository map");
+assertContains(routes.territory, /github\.com\/ahmed-o-aly\/TerritoryDesign/, "Work 05 keeps the public code artifact");
+assert.doesNotMatch(routes.territory, /<dt>\s*(?:Role|Methods|Status)\s*<\/dt>/i, "Work 05 reads as authored prose rather than template metadata");
+
+const economyInteractive = block(routes.economy, "folio-case-interactive");
+assert.equal((economyInteractive.match(/<iframe\b/g) || []).length, 1, "UAE Economy Lab embeds one live workspace");
+assertContains(economyInteractive, /<iframe[\s\S]*?src="\/uae-economy-lab\/"/, "UAE Economy Lab embeds the published app route");
+assertContains(economyInteractive, /title="UAE Economy Lab interactive economic scenario model"/, "the economy workspace has an accessible title");
+assertContains(economyInteractive, /loading="lazy"/, "the economy workspace defers its application payload");
+assertContains(
+  economyInteractive,
+  /<a[^>]*class="folio-case-interactive__launch"[^>]*href="\/uae-economy-lab\/"[^>]*>[\s\S]*?Open UAE Economy Lab full screen/,
+  "UAE Economy Lab offers a full-screen launch beside its embed"
+);
+const economyProse = block(routes.economy, "folio-prose", "div");
+assertContains(economyProse, /I built UAE Economy Lab/, "UAE Economy Lab has an authored project note");
+assertContains(economyProse, /2024[\s\S]*?35 industries[\s\S]*?74 external partner records/, "the economy note states its baseline coverage");
+assertContains(economyProse, /does not replicate the standard GTAP model/, "the economy note distinguishes the implementation from GTAP");
+assertContains(economyProse, /conditional scenarios, not forecasts/, "the economy note describes the limits of its results");
+assert.doesNotMatch(economyProse, /<h[2-6]\b/, "the economy note uses plain paragraphs");
 
 const cncInteractive = block(routes.cnc, "folio-case-interactive");
 assert.equal((cncInteractive.match(/<iframe\b/g) || []).length, 1, "CNC case study embeds one live explorer");
@@ -521,6 +542,7 @@ for (const [name, html] of Object.entries({
   article: routes.article,
   library: routes.library,
   works: routes.works,
+  economy: routes.economy,
   cnc: routes.cnc,
   urban: routes.urban,
   urbanConsole: routes.urbanConsole,

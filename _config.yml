@@ -170,6 +170,8 @@ kramdown:
 # Includes & excludes
 include: ["_pages", "_scripts"]
 exclude:
+  - apps/
+  - assets/apps/uae-economy-lab/
   - docs/
   - design-qa.md
   - Gemfile

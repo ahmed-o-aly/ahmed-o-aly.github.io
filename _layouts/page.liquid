@@ -30,7 +30,7 @@ layout: default
           </a>
         </div>
         {% if page.interactive.embed != false %}
-          <div class="folio-case-interactive__viewport">
+          <div class="folio-case-interactive__viewport{% if page.interactive.embed_mobile == false %} folio-case-interactive__viewport--desktop{% endif %}">
             <iframe
               src="{{ page.interactive.url | escape }}"
               title="{{ page.interactive.title | escape }}"

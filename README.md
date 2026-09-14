@@ -35,6 +35,25 @@ bundle exec jekyll serve
 
 On Windows, native Ruby gems may require the RubyInstaller MSYS2 toolchain. GitHub Actions builds the site on Linux through `.github/workflows/deploy.yml`.
 
+## UAE Economy Lab
+
+The simulator source lives in `apps/uae-economy-lab/`. Rebuild and test it before
+building the portfolio:
+
+```bash
+npm run build:uae-economy
+npm run test:uae-economy
+bundle exec jekyll build
+node tests/uae-economy-contract.mjs
+```
+
+Commit the generated `assets/apps/uae-economy-lab/` bundle with any source change.
+Jekyll excludes the app source and bundle from normal rendering. Its post-write
+hook copies the bundle to `/uae-economy-lab/` without rewriting Vite's worker,
+fonts or lazy-loaded modules. This uses the existing deployment workflow; the
+site contracts verify that every published asset matches the committed bundle.
+Serve `_site/` over HTTP. The project note is at `/projects/uae-economy-lab/`.
+
 ## Theme Credit
 
 The site uses the open-source al-folio Jekyll theme as its base, with personal content, styling, project structure, and workflow cleanup applied in this repository.

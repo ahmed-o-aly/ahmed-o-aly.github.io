@@ -6,8 +6,8 @@
       class="folio-work-feature__image"
       src="{{ feature.image | relative_url }}"
       alt="{{ feature.image_alt | escape }}"
-      width="1200"
-      height="900"
+      width="{{ feature.image_width | default: 1200 }}"
+      height="{{ feature.image_height | default: 900 }}"
       loading="lazy"
       decoding="async"
     >

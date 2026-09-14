@@ -2175,6 +2175,10 @@
 }
 
 @media (max-width: 680px) {
+  .folio-case-interactive__viewport--desktop {
+    display: none;
+  }
+
   .folio-selected-works {
     padding-top: 40px;
   }

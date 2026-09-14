@@ -3,7 +3,7 @@ layout: page
 title: Energy System Optimization with DEWA
 description: Optimization and simulation work on renewable generation, storage, demand, and power-system operations.
 importance: 3
-work_number: 3
+work_number: 4
 category: research
 thread: optimization-software
 ---

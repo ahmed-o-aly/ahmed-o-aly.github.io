@@ -3,7 +3,7 @@ layout: page
 title: Probabilistic VNS for Delivery Territory Design
 description: Open-source algorithms and benchmark instances for designing delivery territories under uncertainty.
 importance: 5
-work_number: 4
+work_number: 5
 category: research software
 thread: optimization-software
 artifacts:
