@@ -27,15 +27,16 @@ Combine **Lower import costs**, **Energy demand shock**, and **Industrial growth
 
 Use the **Fine-tune sectors** table to enter separate productivity, export-demand and imported-product price changes for several industries at once. A blank cell inherits its broad setting; entering a number replaces that setting for that sector, and entering zero explicitly cancels it. Clear the cell to restore inheritance. These are simultaneous changes in a single equilibrium, not a sum of separate simulation results.
 
-**Sectors** is a single workspace for a selected industry. It combines baseline and scenario production, value added, exports and imports; producer prices, input prices and labor demand; domestic and imported input purchases; domestic customers and final demand; and export destinations and import origins. Follow supplier/customer links with a back path, edit sector shocks, adjust assumptions, save and export without leaving the workspace. Sector links from the simulator, trade tables, partner details and Data open the same view. Selection is retained across app navigation.
+**Overview** brings scenario controls together with the main economy metrics, the sectors contributing most to GDP change, and export/import totals and movements. Sector contributions are ranked by their absolute change in value added and shown in percentage points of GDP. Select a sector or trade movement to explore its details.
+
+**Sectors** is a single workspace for a selected industry. It combines baseline and scenario production, value added, exports and imports; producer prices, input prices and labor demand; domestic and imported input purchases; domestic customers and final demand; and export destinations and import origins. Follow supplier/customer links with a back path, edit sector shocks, adjust assumptions, save and export without leaving the workspace. Sector links from Overview, Trade and Data open the same view. Selection is retained across app navigation.
+
+**Trade** is a dedicated workspace for national trade and individual products. Compare baseline and scenario exports, imports and net exports, explore the largest sector movements, inspect baseline export destinations and import origins, and adjust trade settings within the combined scenario. Monetary scenario levels use baseline prices.
 
 Imports of a sector’s product into the UAE differ from imported inputs purchased by that sector’s producers; the workspace labels both. Supplier shares cover all domestic and imported intermediate purchases. Customer shares cover sales to UAE industries. Link amounts and partner shares remain baseline estimates, while scenario monetary levels are volumes at baseline prices. Signed inventory changes are preserved.
 
 **Understand** contains Assumptions and GTAP comparison, with a direct route to the sector workspace. See [GTAP and assumptions](GTAP-AND-ASSUMPTIONS.md) for the sourced explanation.
 
-- **Sector impact:** output, price or employment changes; sort, search and open the complete sector workspace.
-- **Trade → Scenario flows:** baseline and simulated national trade volumes at baseline prices.
-- **Trade → Partner exposure:** ADB baseline bilateral trade estimates by partner and sector. This view does not claim to simulate partner-specific policies.
 - **Save / Compare:** retain up to 12 scenarios locally, including data identity, all sector changes and behavioral assumptions. Compare only scenarios using the same data.
 - **Export:** CSV with scenario inputs, assumptions, provenance, diagnostics and sector results.
 - **Data:** inspect sources, limitations, accounts and residuals. Response assumptions are also editable in **Understand → Assumptions**.
@@ -73,9 +74,10 @@ Keep observed effective tariff rates as fraction-valued `tariffRate` fields only
 ## Project structure
 
 - `src/App.tsx`, `src/SectorEditor.tsx`, `src/scenario.ts`, `src/workbench.css`: combined edits and live simulation.
+- `src/ScenarioOverview.tsx`, `src/scenario-overview.css`: sector contributions and trade summaries on Overview.
 - `src/SectorWorkspace.tsx`, `src/sector-workspace.css`, `src/sectorProfile.ts`: unified sector results, trade, production links and local controls.
+- `src/TradeWorkspace.tsx`, `src/trade-workspace.css`, `src/tradeMetrics.ts`: national and product trade, baseline partners, trade controls and shared comparison calculations.
 - `src/ExplainView.tsx`, `src/explain.css`: assumptions and GTAP comparison.
-- `src/PartnerView.tsx`: baseline bilateral exposure.
 - `src/adapter.ts`, `src/model.worker.ts`: validated data and isolated solver execution.
 - `src/model/engine.ts`: equilibrium solver.
 - `src/data/`: real accounts and provenance.

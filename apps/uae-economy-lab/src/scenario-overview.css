@@ -1,0 +1,59 @@
+.scenario-overview { display: grid; grid-template-columns: minmax(0, 1.08fr) minmax(0, 1fr); gap: 20px; align-items: stretch; }
+.overview-panel { display: flex; flex-direction: column; min-width: 0; background: #fff; border: 1px solid #e0e7e9; border-radius: 8px; overflow: hidden; color: #233b41; }
+.overview-panel-heading { display: flex; align-items: start; justify-content: space-between; gap: 16px; padding: 21px 21px 17px; }
+.overview-panel-heading h2 { font-size: 16px; line-height: 1.4; font-weight: 650; }
+.overview-panel-heading p { font-size: 11px; line-height: 1.6; color: #637b82; margin-top: 5px; }
+.overview-panel-heading .text-button { flex-shrink: 0; gap: 5px; font-size: 10px; line-height: 1.4; padding: 5px 0; }
+.overview-sector-labels, .overview-sector-row { display: grid; grid-template-columns: minmax(0, 1fr) 86px 68px; align-items: center; gap: 12px; }
+.overview-sector-labels { padding: 0 21px 11px; font-size: 9px; line-height: 1.6; color: #637b82; border-bottom: 1px solid #edf1f2; }
+.overview-sector-labels > span:not(:first-child) { text-align: right; }
+.overview-sector-list, .overview-trade-drivers { list-style: none; padding: 0; margin: 0; }
+.overview-sector-list { padding: 0 12px; }
+.overview-sector-row { width: 100%; min-height: 53px; background: transparent; padding: 11px 9px; border-bottom: 1px solid #edf1f2; text-align: left; color: inherit; }
+.overview-sector-row:hover, .overview-trade-drivers button:hover { background: #f5f9f9; }
+.overview-sector-row:focus-visible, .overview-trade-drivers button:focus-visible { outline: 2px solid #0b797d; outline-offset: -2px; }
+.overview-sector-list li:last-child .overview-sector-row { border-bottom: 0; }
+.overview-sector-name { min-width: 0; font-size: 11px; line-height: 1.6; font-weight: 550; color: #355f68; }
+.overview-impact-track { position: relative; display: block; width: 100%; max-width: 160px; height: 4px; margin-top: 6px; background: #f0f4f4; }
+.overview-impact-track::after { content: ''; position: absolute; left: 50%; width: 1px; height: 8px; top: -2px; background: #c9d9da; }
+.overview-impact-track i { position: absolute; height: 4px; top: 0; }
+.overview-impact-track i.positive { background: #62a7a6; }.overview-impact-track i.negative { background: #ca917e; }.overview-impact-track i.neutral { background: #a0b9bd; }
+.overview-value-added, .overview-sector-row > strong { font: 11px var(--mono); text-align: right; white-space: nowrap; }
+.overview-value-added { color: #526e77; }.overview-sector-row > strong { font-weight: 500; }
+.overview-definition { margin-top: auto; padding: 15px 21px; border-top: 1px solid #edf1f2; font-size: 10px; line-height: 1.7; color: #637b82; }
+.overview-trade-totals { padding: 0 21px 17px; }
+.overview-trade-total { display: grid; grid-template-columns: 1fr auto; column-gap: 12px; align-items: center; padding: 11px 0; border-top: 1px solid #edf1f2; }
+.overview-trade-label { font-size: 11px; font-weight: 600; line-height: 1.6; }
+.overview-trade-levels { grid-column: 1; display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-top: 5px; font: 11px var(--mono); }
+.overview-trade-levels > span { color: #6d838a; }.overview-trade-levels > b { font-weight: 450; }.overview-trade-levels svg { color: #83999e; flex-shrink: 0; }
+.overview-trade-total > strong { grid-column: 2; grid-row: 1 / span 2; font: 15px var(--mono); letter-spacing: -.4px; white-space: nowrap; }
+.overview-trade-total:last-child { padding-bottom: 0; }
+.overview-drivers-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 0 21px 7px; }
+.overview-drivers-heading h3 { font-size: 11px; line-height: 1.6; font-weight: 650; }.overview-drivers-heading > span { color: #637b82; font-size: 9px; text-align: right; }
+.overview-trade-drivers { padding: 0 12px 11px; }
+.overview-trade-drivers button { display: grid; grid-template-columns: minmax(0, 1fr) auto 13px; align-items: center; gap: 10px; width: 100%; background: transparent; padding: 10px 9px; text-align: left; border-top: 1px solid #edf1f2; }
+.overview-trade-drivers button > span { font-size: 11px; line-height: 1.5; color: #355f68; font-weight: 550; }
+.overview-trade-drivers small { display: block; margin-top: 3px; color: #637b82; font-size: 9px; font-weight: 400; }
+.overview-trade-drivers strong { font: 11px var(--mono); white-space: nowrap; }.overview-trade-drivers svg { color: #82999e; }
+.overview-no-change { padding: 10px 21px 24px; color: #637b82; font-size: 11px; line-height: 1.7; }
+.scenario-overview .positive { color: #0b797d; }.scenario-overview .negative { color: #ba624e; }.scenario-overview .neutral { color: #6d838a; }
+.scenario-overview .overview-import-change { color: #496c82; }
+@media (max-width: 1150px) {
+  .scenario-overview { grid-template-columns: 1fr 1fr; gap: 16px; }
+  .overview-panel-heading { flex-wrap: wrap; gap: 7px; }
+  .overview-sector-labels, .overview-sector-row { grid-template-columns: minmax(0, 1fr) 75px 57px; gap: 9px; }
+  .overview-sector-labels, .overview-panel-heading, .overview-drivers-heading { padding-left: 17px; padding-right: 17px; }
+  .overview-sector-list, .overview-trade-drivers { padding-left: 8px; padding-right: 8px; }
+  .overview-trade-totals { padding-left: 17px; padding-right: 17px; }.overview-definition { padding-left: 17px; padding-right: 17px; }
+  .overview-trade-total > strong { font-size: 13px; }.overview-trade-levels { font-size: 10px; }
+}
+@media (max-width: 900px) { .scenario-overview { grid-template-columns: 1fr; }.overview-panel-heading { flex-wrap: nowrap; }.overview-sector-labels, .overview-sector-row { grid-template-columns: minmax(0, 1fr) 96px 76px; }.overview-trade-total > strong { font-size: 15px; }.overview-trade-levels { font-size: 11px; } }
+@media (max-width: 460px) {
+  .overview-panel-heading { padding: 17px 15px 15px; gap: 10px; }
+  .overview-panel-heading h2 { font-size: 15px; }.overview-panel-heading p { font-size: 10px; }.overview-panel-heading .text-button { font-size: 10px; }
+  .overview-sector-labels, .overview-sector-row { grid-template-columns: minmax(0, 1fr) 75px 57px; gap: 8px; }
+  .overview-sector-labels { padding-left: 15px; padding-right: 15px; }.overview-sector-list { padding-left: 6px; padding-right: 6px; }
+  .overview-value-added, .overview-sector-row > strong { font-size: 10px; }.overview-sector-name { font-size: 10px; }
+  .overview-trade-totals, .overview-definition, .overview-drivers-heading, .overview-no-change { padding-left: 15px; padding-right: 15px; }
+  .overview-trade-drivers { padding-left: 6px; padding-right: 6px; }.overview-trade-total > strong { font-size: 14px; }
+}

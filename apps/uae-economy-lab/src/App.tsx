@@ -1,22 +1,22 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowRight, ArrowSquareOut, ArrowCounterClockwise, ArrowsLeftRight,
-  BookmarkSimple, ChartBar, Check, Copy, Database, DownloadSimple, Factory,
+  BookmarkSimple, CaretDown, ChartBar, Check, Copy, Database, DownloadSimple, Factory,
   Info, Lightning, BookOpen, MagnifyingGlass, Plus, SlidersHorizontal, Trash, WarningCircle, X,
 } from '@phosphor-icons/react';
 import { loadDefaultDataset, parseDataset, simulate } from './adapter';
 import { DEFAULT_SCENARIO, PRESETS, baselineScenario, money, percent } from './viewTypes';
 import type { Dataset, Result, SavedScenario, Scenario, SectorResult } from './viewTypes';
 import { loadSaved, persistSaved, readShared, loadActive, persistActive } from './storage';
-import PartnerView from './PartnerView';
+import TradeWorkspace from './TradeWorkspace';
+import ScenarioOverview from './ScenarioOverview';
 import SectorEditor from './SectorEditor';
 import SectorWorkspace from './SectorWorkspace';
 import { ASSUMPTION_HELP, assumptionExample, workforceExplanation } from './assumptionHelp';
 const ExplainView = lazy(() => import('./ExplainView'));
 import { togglePreset, presetActive, resetShocks } from './scenario';
 
-type Page = 'simulator' | 'saved' | 'model' | 'learn' | 'sector';
-type ResultTab = 'sectors' | 'trade' | 'compare';
+type Page = 'simulator' | 'saved' | 'model' | 'learn' | 'sector' | 'trade';
 const metricList = [
   { key: 'realGDP', label: 'Real GDP', detail: 'Value added at basic prices, at baseline prices' },
   { key: 'realIncome', label: 'Household purchasing power', detail: 'Income adjusted for consumer prices' },
@@ -51,7 +51,7 @@ function changeClass(value: number) { return Math.abs(value) < 0.005 ? 'neutral'
 function Metrics({ result }: { result: Result }) {
   return <div className="metrics">{metricList.map(m => <div className="metric" key={m.key}>
     <div className="metric-label">{m.label}<span title={m.detail}><Info size={14} aria-label={m.detail}/></span></div>
-    <div className={`metric-value ${changeClass(result[m.key])}`}>{percent(result[m.key])}</div>
+    <div className={`metric-value ${m.key === 'imports' ? 'trade-neutral' : changeClass(result[m.key])}`}>{percent(result[m.key])}</div>
     <div className="metric-caption">vs. baseline</div>
   </div>)}</div>;
 }
@@ -89,21 +89,6 @@ function SectorChart({ result, onSelect }: { result: Result; onSelect: (sector: 
   </>;
 }
 
-function TradeView({ result, dataset, onSelect }: { result: Result; dataset: Dataset; onSelect: (id: string) => void }) {
-  const [view, setView] = useState<'scenario' | 'partners'>('scenario');
-  return <><div className="trade-subnav"><button aria-pressed={view === 'scenario'} onClick={() => setView('scenario')}>Scenario flows</button><button aria-pressed={view === 'partners'} onClick={() => setView('partners')}>Partner exposure</button></div>{view === 'scenario' ? <TradeTable result={result} onSelect={onSelect}/> : <PartnerView dataset={dataset} onSelect={onSelect}/>}</>;
-}
-
-function TradeTable({ result, onSelect }: { result: Result; onSelect: (id: string) => void }) {
-  const [direction, setDirection] = useState<'exports' | 'imports'>('exports');
-  const rows = [...result.sectors].sort((a, b) => b[direction] - a[direction]);
-  return <><div className="chart-toolbar"><div className="segmented" aria-label="Trade flow"><button aria-pressed={direction === 'exports'} onClick={() => setDirection('exports')}>Exports</button><button aria-pressed={direction === 'imports'} onClick={() => setDirection('imports')}>Imports</button></div><span className="quiet-label">USD · baseline prices</span></div>
-    <div className="table-wrap"><table className="data-table"><thead><tr><th>Sector</th><th>Baseline</th><th>Scenario</th><th>Change</th></tr></thead><tbody>{rows.map(s => {
-      const change = direction === 'exports' ? s.exportChange : s.importChange;
-      return <tr key={s.id}><td><button className="sector-name-link" onClick={() => onSelect(s.id)}>{s.name}</button></td><td>{money(s[direction])}</td><td>{money(s[direction] * (1 + change / 100))}</td><td className={changeClass(change)}>{percent(change)}</td></tr>;
-    })}</tbody></table></div></>;
-}
-
 function Compare({ dataset, current, currentScenario, saved, notify }: {
   dataset: Dataset; current: Result; currentScenario: Scenario; saved: SavedScenario[]; notify: (message: string) => void;
 }) {
@@ -131,8 +116,12 @@ function Compare({ dataset, current, currentScenario, saved, notify }: {
 
 function App() {
   const [page, setPage] = useState<Page>('simulator');
-  const [tab, setTab] = useState<ResultTab>('sectors');
-  useEffect(() => { window.scrollTo(0, 0); }, [page]);
+  const [comparisonOpen, setComparisonOpen] = useState(false);
+  const [sectorComparisonOpen, setSectorComparisonOpen] = useState(false);
+  const [tradeSectorId, setTradeSectorId] = useState('all');
+  const [tradeFlow, setTradeFlow] = useState<'exports' | 'imports'>('exports');
+  const openTrade = (id = 'all', flow: 'exports' | 'imports' = 'exports') => { setTradeSectorId(id); setTradeFlow(flow); setPage('trade'); window.scrollTo(0, 0); };
+  useEffect(() => { window.scrollTo(0, 0); setComparisonOpen(false); }, [page]);
   const [dataset, setDataset] = useState<Dataset | null>(null);
   const [loading, setLoading] = useState(true);
   const [draft, setDraft] = useState<Scenario>(() => readShared() || DEFAULT_SCENARIO);
@@ -147,7 +136,7 @@ function App() {
   const focusedSectorId = dataset?.sectors.some(s => s.id === selectedSectorId) ? selectedSectorId : dataset?.sectors[0]?.id ?? '';
   const openSector = (id = focusedSectorId) => {
     if (id !== focusedSectorId && focusedSectorId) setSectorHistory(history => [...history, focusedSectorId].slice(-20));
-    setSelectedSectorId(id); setPage('sector'); window.scrollTo(0, 0);
+    setSectorComparisonOpen(false); setSelectedSectorId(id); setPage('sector'); window.scrollTo(0, 0);
   };
   const previousSectorId = sectorHistory.at(-1);
   const backSector = () => { if (previousSectorId) { setSelectedSectorId(previousSectorId); setSectorHistory(history => history.slice(0, -1)); window.scrollTo(0, 0); } };
@@ -247,49 +236,50 @@ function App() {
 
   return <div className="app-shell">
     <header className="app-header"><a className="brand" href="#" onClick={e => { e.preventDefault(); setPage('simulator'); }} aria-label="UAE Economy Lab home"><span className="brand-mark">ae<span>.</span></span><span className="brand-name">Economy Lab<span>United Arab Emirates</span></span></a>
-      <nav className="main-nav" aria-label="Main navigation"><button className={page === 'simulator' ? 'active' : ''} onClick={() => setPage('simulator')}><SlidersHorizontal size={18}/>Simulator</button><button className={page === 'sector' ? 'active' : ''} onClick={() => openSector()}><Factory size={18}/>Sectors</button><button className={page === 'saved' ? 'active' : ''} onClick={() => setPage('saved')}><BookmarkSimple size={18}/>Saved<span className="nav-count">{saved.length}</span></button><button className={page === 'model' ? 'active' : ''} onClick={() => setPage('model')}><Database size={18}/>Data</button><button className={page === 'learn' ? 'active' : ''} onClick={() => setPage('learn')}><BookOpen size={18}/>Understand</button></nav>
+      <nav className="main-nav" aria-label="Main navigation"><button className={page === 'simulator' ? 'active' : ''} onClick={() => setPage('simulator')}><SlidersHorizontal size={18}/>Overview</button><button className={page === 'sector' ? 'active' : ''} onClick={() => openSector()}><Factory size={18}/>Sectors</button><button className={page === 'trade' ? 'active' : ''} onClick={() => openTrade()}><ArrowsLeftRight size={18}/>Trade</button><button className={page === 'saved' ? 'active' : ''} onClick={() => setPage('saved')}><BookmarkSimple size={18}/>Saved<span className="nav-count">{saved.length}</span></button><button className={page === 'model' ? 'active' : ''} onClick={() => setPage('model')}><Database size={18}/>Data</button><button className={page === 'learn' ? 'active' : ''} onClick={() => setPage('learn')}><BookOpen size={18}/>Understand</button></nav>
       <div className="header-meta"><span className="country-flag" aria-label="UAE flag"><i/><i/><i/></span><span>UAE</span></div>
     </header>
 
     <main className="main-content">
-      <div className="page-heading"><div><span className="eyebrow">Economic scenarios</span><h1>{page === 'simulator' ? 'Explore the UAE economy' : page === 'sector' ? 'Your sector, in context' : page === 'saved' ? 'Your scenarios' : page === 'learn' ? 'Understand the model' : 'Behind the numbers'}</h1></div><button className="dataset-tag" onClick={() => setPage('model')}><span className="status-dot"/>{dataset ? `${dataset.source} · ${dataset.year}` : loading ? 'Loading accounts' : 'Dataset required'}<ArrowSquareOut size={14}/></button></div>
+      <div className="page-heading"><div><span className="eyebrow">Economic scenarios</span><h1>{page === 'simulator' ? 'Scenario overview' : page === 'trade' ? 'UAE trade' : page === 'sector' ? 'Your sector, in context' : page === 'saved' ? 'Your scenarios' : page === 'learn' ? 'Understand the model' : 'Behind the numbers'}</h1></div><button className="dataset-tag" onClick={() => setPage('model')}><span className="status-dot"/>{dataset ? `${dataset.source} · ${dataset.year}` : loading ? 'Loading accounts' : 'Dataset required'}<ArrowSquareOut size={14}/></button></div>
       {(dataError || error) && <div className="error-panel" role="alert"><WarningCircle size={20}/><span>{dataError || error}</span><IconButton label="Dismiss error" onClick={() => { setError(''); setDataError(''); }}><X size={17}/></IconButton></div>}
 
-      {page === 'simulator' && <div className="workbench">
-        {result && <div className="mobile-live-results" aria-label="Live scenario totals"><span>{running || dirty ? 'Updating…' : 'Live results'}</span><Metrics result={result}/></div>}
+      {page === 'simulator' && <div className="scenario-dashboard">
+        <section className="results-area dashboard-results" aria-label="Simulation results" aria-busy={loading || running}>
+          <div className="results-heading"><div><span className="eyebrow">Current scenario</span><input className="scenario-name" aria-label="Scenario name" maxLength={80} value={draft.name} onChange={e => edit('name', e.target.value)}/></div><div className="result-actions"><span className={`live-status ${running || dirty ? 'updating' : ''}`}><span className="status-dot"/>{loading ? 'Loading…' : running ? 'Updating…' : error || dirty ? 'Not applied' : 'Live'}</span><IconButton label="Copy scenario link" onClick={share}><Copy size={17}/></IconButton><button className="secondary-button" onClick={save} disabled={!result || dirty || running}><BookmarkSimple size={16}/>Save</button><button className="secondary-button" aria-label="Export results" onClick={exportResult} disabled={!result || dirty || running}><DownloadSimple size={16}/><span>Export</span></button></div></div>
+          {dirty && <div className="pending-note"><span className="pending-dot"/>{!error ? 'Updating all changes together. Previous results shown below.' : 'These changes could not be solved. Previous results shown below.'}{!running && <button onClick={() => setRetry(n => n + 1)}>Retry</button>}</div>}
+          {loading || (!result && running) ? <div className="loading-state"><div className="skeleton metrics-skeleton"/><span>Loading UAE accounts…</span></div> : result ? <div className={running ? 'results-body is-calculating' : 'results-body'}>
+            <Metrics result={result}/>
+            <div className="dashboard-labor"><span>Wages <strong>{percent(result.wage)}</strong></span><span>Employment <strong>{percent(result.employment)}</strong></span><button onClick={() => setPage('learn')}>Response assumptions<ArrowRight size={14}/></button></div>
+            {result.warnings.filter(w => w.startsWith('Export demand changes')).map(w => <div className="scenario-notice" key={w}>{w}</div>)}
+          </div> : <div className="empty-state"><Database size={36} weight="light"/><h2>Connect economic accounts</h2><p>Load a supported dataset to run a scenario.</p><button className="primary-button" onClick={() => fileInput.current?.click()}>Import dataset<Plus size={17}/></button></div>}
+        </section>
         <section className="broad-controls" aria-label="Combined scenario controls">
-          <div className="broad-heading"><div><h2>Build a combined scenario</h2><p>Mix broad changes with sector-specific ones. Results update as you edit.</p></div><button className="text-button" onClick={() => setDraft(s => resetShocks(s))}><ArrowCounterClockwise size={16}/>Reset changes</button></div>
+          <div className="broad-heading"><div><h2>Control your scenario</h2><p>Combine changes below. Results update as you edit.</p></div><button className="text-button" onClick={() => setDraft(s => resetShocks(s))}><ArrowCounterClockwise size={16}/>Reset changes</button></div>
           <div className="preset-strip" aria-label="Combine scenario presets">{PRESETS.map((p, i) => { const Icon = i === 0 ? ArrowsLeftRight : i === 1 ? Lightning : Factory; const active = presetActive(draft, p.id); return <button key={p.id} aria-pressed={active} onClick={() => choosePreset(p.id)}><Icon size={17}/>{p.name}{active ? <Check size={14}/> : <Plus size={14}/>}</button>; })}<span>Examples can be combined</span></div>
           <div className="broad-grid">
             <div><Lever label="Import costs" value={draft.freightCost} min={-20} max={50} onChange={v => edit('freightCost', v)} help="All imported products" explanation="Change the delivered price of imports. −5% makes imported products 5% cheaper for UAE buyers."/></div>
             <div><Lever label="Productivity change" value={draft.productivity} min={-10} max={20} step={0.5} onChange={v => edit('productivity', v)} help="Same inputs, more output" explanation="+5% means 5% more output from the same inputs in the selected sectors."/><label className="broad-select">Applies to<select aria-label="Broad productivity scope" value={draft.productivitySector} onChange={e => edit('productivitySector', e.target.value)}><option value="manufacturing">All manufacturing</option><option value="all">All sectors</option>{dataset?.sectors.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}</select></label></div>
             <div><Lever label="Mining export demand" value={draft.oilDemand} min={-40} max={40} onChange={v => edit('oilDemand', v)} help="Includes oil and gas" explanation="+10% raises foreign demand for mining products by 10% at unchanged UAE prices. Prices and production then adjust."/></div>
           </div>
-          <div className="broad-footer"><label>Workforce<select aria-label="Workforce response" aria-describedby="workforce-help" value={draft.laborClosure} onChange={e => edit('laborClosure', e.target.value as Scenario['laborClosure'])}><option value="fixed">Fixed · wages adjust</option><option value="elastic">Flexible · real wage fixed</option></select></label><button className="text-button" onClick={() => setPage('learn')}>What do these changes mean?<BookOpen size={15}/></button>{dataset?.tariffsAvailable ? <label>Tariff cut %<input aria-label="Import tariff cut value" type="number" min="0" max="100" value={draft.tariffCut} onChange={e => { if (Number.isFinite(e.target.valueAsNumber)) edit('tariffCut', Math.max(0,Math.min(100,e.target.valueAsNumber))); }}/></label> : <span title="Sector tariff rates are absent from these accounts.">Tariffs: data needed</span>}<small id="workforce-help" className="workforce-help">{workforceExplanation(draft.laborClosure)}</small></div>
+          <div className="broad-footer"><label>Workforce<select aria-label="Workforce response" aria-describedby="workforce-help" value={draft.laborClosure} onChange={e => edit('laborClosure', e.target.value as Scenario['laborClosure'])}><option value="fixed">Fixed · wages adjust</option><option value="elastic">Flexible · real wage fixed</option></select></label><button className="text-button" onClick={() => setPage('learn')}>What do these changes mean?<BookOpen size={15}/></button>{dataset?.tariffsAvailable ? <label>Tariff cut %<input aria-label="Import tariff cut value" type="number" min="0" max="100" value={draft.tariffCut} onChange={e => { if (Number.isFinite(e.target.valueAsNumber)) edit('tariffCut', Math.max(0,Math.min(100,e.target.valueAsNumber))); }}/></label> : null}<small id="workforce-help" className="workforce-help">{workforceExplanation(draft.laborClosure)}</small></div>
+          {dataset && <details className="dashboard-sector-controls"><summary><span><strong>Sector-specific changes</strong><small>{Object.keys(draft.sectorShocks || {}).length ? `${Object.keys(draft.sectorShocks || {}).length} sectors with custom settings` : 'Fine-tune productivity, foreign demand and import prices'}</small></span><CaretDown size={17}/></summary><SectorEditor dataset={dataset} scenario={draft} onChange={setDraft} onSelect={openSector}/></details>}
         </section>
-        <div className="workbench-columns">
-        {dataset && <SectorEditor dataset={dataset} scenario={draft} onChange={setDraft} onSelect={openSector}/>}
-        <section className="results-area" aria-label="Simulation results" aria-busy={loading || running}>
-          <div className="results-heading"><div><span className="eyebrow">Scenario results</span><input className="scenario-name" aria-label="Scenario name" maxLength={80} value={draft.name} onChange={e => edit('name', e.target.value)}/></div><div className="result-actions"><span className={`live-status ${running || dirty ? 'updating' : ''}`}><span className="status-dot"/>{loading ? 'Loading…' : running ? 'Updating…' : error || dirty ? 'Not applied' : 'Live'}</span><IconButton label="Copy scenario link" onClick={share}><Copy size={17}/></IconButton><button className="secondary-button" onClick={save} disabled={!result || dirty || running}><BookmarkSimple size={16}/>Save</button><button className="secondary-button" onClick={exportResult} disabled={!result || dirty || running}><DownloadSimple size={16}/><span>Export</span></button></div></div>
-          {dirty && <div className="pending-note"><span className="pending-dot"/>{!error ? 'Updating all changes together. Previous results shown below.' : 'These changes could not be solved. Previous results shown below.'}{!running && <button onClick={() => setRetry(n => n + 1)}>Retry</button>}</div>}
-          {loading || (!result && running) ? <div className="loading-state"><div className="skeleton metrics-skeleton"/><div className="skeleton chart-skeleton"/><span>Loading UAE accounts…</span></div> : result && dataset && applied ? <div className={running ? 'results-body is-calculating' : 'results-body'}>
-            <Metrics result={result}/>
-            {result.warnings.filter(w => w.startsWith('Export demand changes')).map(w => <div className="scenario-notice" key={w}>{w}</div>)}
-            <button className="understand-prompt" onClick={() => openSector()}><Factory size={18}/><span><strong>Explore a sector in context</strong>Production, trade, inputs and customers in one place.</span><ArrowRight size={17}/></button>
-            <div className="results-card"><div className="result-tabs" role="tablist" aria-label="Results view"><button role="tab" aria-selected={tab === 'sectors'} onClick={() => setTab('sectors')}><ChartBar size={17}/>Sector impact</button><button role="tab" aria-selected={tab === 'trade'} onClick={() => setTab('trade')}><ArrowsLeftRight size={17}/>Trade</button><button role="tab" aria-selected={tab === 'compare'} onClick={() => setTab('compare')}><SlidersHorizontal size={17}/>Compare</button></div>
-              <div className="tab-content" role="tabpanel">{tab === 'sectors' ? <SectorChart result={result} onSelect={s => openSector(s.id)}/> : tab === 'trade' ? <TradeView result={result} dataset={dataset} onSelect={openSector}/> : <Compare key={dataset.id} dataset={dataset} current={result} currentScenario={applied} saved={saved} notify={notify}/>}</div>
-            </div>
-            <div className="results-footnote"><span><Check size={14}/>Equilibrium solved</span><button onClick={() => setPage('learn')}>Model & assumptions<Info size={14}/></button><span>{dataset.year} baseline</span></div>
-          </div> : <div className="empty-state"><Database size={36} weight="light"/><h2>Connect economic accounts</h2><p>Load a supported dataset to run a scenario.</p><button className="primary-button" onClick={() => fileInput.current?.click()}>Import dataset<Plus size={17}/></button><button className="text-button" onClick={() => setPage('model')}>View data requirements<ArrowRight size={14}/></button></div>}
-        </section>
-        </div>
+        {result && dataset && applied && <>
+          <div className={running ? 'is-calculating' : undefined} aria-busy={running || dirty}><ScenarioOverview dataset={dataset} result={result} onSelectSector={openSector} onTrade={openTrade}/></div>
+          <details className="dashboard-comparison" onToggle={event => setComparisonOpen(event.currentTarget.open)}><summary><span><strong>Compare scenarios</strong><small>Current results alongside a saved scenario or the baseline</small></span><CaretDown size={17}/></summary>{comparisonOpen && <Compare key={dataset.id} dataset={dataset} current={result} currentScenario={applied} saved={saved} notify={notify}/>}</details>
+        </>}
       </div>}
 
-      {page === 'sector' && dataset && result && applied && <SectorWorkspace dataset={dataset} result={result} scenario={draft} applied={applied} selectedId={focusedSectorId} previousName={dataset.sectors.find(s => s.id === previousSectorId)?.name} busy={running} stale={dirty} onSelect={openSector} onBack={backSector} onChange={setDraft} onSave={save} onExport={exportResult}/>}
+      {page === 'sector' && dataset && result && applied && <>
+        <details className="dashboard-comparison sector-comparison" open={sectorComparisonOpen} onToggle={event => setSectorComparisonOpen(event.currentTarget.open)}><summary><span><strong>Compare sectors</strong><small>Output, prices and employment across {dataset.sectors.length} sectors</small></span><ChartBar size={17}/></summary><SectorChart result={result} onSelect={s => openSector(s.id)}/></details>
+        <SectorWorkspace dataset={dataset} result={result} scenario={draft} applied={applied} selectedId={focusedSectorId} previousName={dataset.sectors.find(s => s.id === previousSectorId)?.name} busy={running} stale={dirty} onSelect={openSector} onBack={backSector} onChange={setDraft} onSave={save} onExport={exportResult} onTrade={openTrade}/>
+      </>}
+      {page === 'trade' && dataset && result && applied && <TradeWorkspace key={`${dataset.id}:${tradeSectorId}:${tradeFlow}`} dataset={dataset} result={result} scenario={draft} applied={applied} busy={running} stale={dirty} onChange={setDraft} onSelectSector={openSector} onScenario={() => setPage('simulator')} initialSectorId={tradeSectorId} initialFlow={tradeFlow}/>}
 
       {page === 'saved' && <section className="saved-page"><div className="section-topline"><span>{saved.length} saved {saved.length === 1 ? 'scenario' : 'scenarios'}</span><button className="primary-button" onClick={() => { setPage('simulator'); setDraft(baselineScenario()); }}><Plus size={17}/>New scenario</button></div>{saved.length ? <div className="saved-grid">{saved.map(s => <article className="saved-card" key={s.id}><div className="saved-card-top"><BookmarkSimple size={19}/><IconButton label={`Delete ${s.scenario.name}`} onClick={() => remove(s.id)}><Trash size={17}/></IconButton></div><h2>{s.scenario.name}</h2><span className="quiet-label">{new Date(s.savedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} · {s.scenario.laborClosure === 'fixed' ? 'Fixed workforce' : 'Flexible workforce'}</span><div className="saved-changes">{[
         ['Tariff cut', s.scenario.tariffCut], ['Productivity', s.scenario.productivity], ['Mining demand', s.scenario.oilDemand], ['Import costs', s.scenario.freightCost],
-      ].filter(([, v]) => v !== 0).map(([label, value]) => <span key={label as string}>{label}<strong>{percent(Number(value), 1)}</strong></span>)}{Object.keys(s.scenario.sectorShocks || {}).length > 0 && <span>Sector overrides<strong>{Object.keys(s.scenario.sectorShocks || {}).length}</strong></span>}</div><button className="secondary-button" disabled={s.datasetId !== dataset?.id} onClick={() => { setDraft(s.scenario); setPage('simulator');  }}>Open scenario<ArrowRight size={16}/></button>{s.datasetId !== dataset?.id && <p className="quiet-label">Requires its original dataset.</p>}</article>)}</div> : <div className="empty-state"><BookmarkSimple size={42} weight="light"/><h2>Keep a scenario worth comparing</h2><p>Change a scenario, then save it here.</p><button className="primary-button" onClick={() => setPage('simulator')}>Open simulator<ArrowRight size={17}/></button></div>}</section>}
+      ].filter(([, v]) => v !== 0).map(([label, value]) => <span key={label as string}>{label}<strong>{percent(Number(value), 1)}</strong></span>)}{Object.keys(s.scenario.sectorShocks || {}).length > 0 && <span>Sector overrides<strong>{Object.keys(s.scenario.sectorShocks || {}).length}</strong></span>}</div><button className="secondary-button" disabled={s.datasetId !== dataset?.id} onClick={() => { setDraft(s.scenario); setPage('simulator');  }}>Open scenario<ArrowRight size={16}/></button>{s.datasetId !== dataset?.id && <p className="quiet-label">Requires its original dataset.</p>}</article>)}</div> : <div className="empty-state"><BookmarkSimple size={42} weight="light"/><h2>Keep a scenario worth comparing</h2><p>Change a scenario, then save it here.</p><button className="primary-button" onClick={() => setPage('simulator')}>Open overview<ArrowRight size={17}/></button></div>}</section>}
 
       {page === 'learn' && dataset && result && <section className="learn-page">
         <div className="learn-live"><div className="learn-live-heading"><span><span className="status-dot"/>{running || dirty ? 'Updating · previous results below' : 'Live scenario'}<strong>{applied?.name}</strong></span><button className="text-button" onClick={() => setPage('simulator')}>Back to changes<ArrowRight size={15}/></button></div><Metrics result={result}/></div>

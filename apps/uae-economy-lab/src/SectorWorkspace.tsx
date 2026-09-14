@@ -11,7 +11,7 @@ type Props = {
   dataset: Dataset; result: Result; scenario: Scenario; applied: Scenario;
   selectedId: string; previousName?: string; busy: boolean; stale: boolean;
   onSelect: (id: string) => void; onBack: () => void; onChange: (next: Scenario) => void;
-  onSave: () => void; onExport: () => void;
+  onSave: () => void; onExport: () => void; onTrade: (id: string) => void;
 };
 const usd = (value: number) => `${value < 0 ? '−' : ''}$${(Math.abs(value) / 1000).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}bn`;
 const amount = (value: number) => Math.abs(value) < 100 ? `${value < 0 ? '−' : ''}$${Math.abs(value).toLocaleString('en-US', {maximumFractionDigits: 1})}m` : usd(value);
@@ -129,7 +129,7 @@ export default function SectorWorkspace(props: Props) {
         {!partners[direction].length && <p className="sector-empty">{dataset.partners.length ? 'No baseline trade for this product.' : 'Partner data are not available in these accounts.'}</p>}
         {!allPartners && partners[direction].length > 5 && <div className="sector-partner-rest"><span>Other {partners[direction].length - 5} partners</span><b>{amount(partners[direction].slice(5).reduce((v, row) => v + row.value, 0))}</b><small>{share(partners[direction].slice(5).reduce((v, row) => v + row.share, 0))}</small></div>}
       </div>)}</div>
-
+      <button className="sector-trade-link text-button" onClick={() => props.onTrade(sector.id)}>Explore this product’s trade<ArrowRight size={15}/></button>
     </section>
 
     <details className="sector-assumptions"><summary><span>Response assumptions <small>{applied.laborClosure === 'fixed' ? 'Fixed workforce' : 'Flexible workforce'} · Labor share {applied.laborShare}% · Substitution {applied.substitution} · Export response {applied.exportElasticity}</small></span><CaretDown size={16}/></summary>
