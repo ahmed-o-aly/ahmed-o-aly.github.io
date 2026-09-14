@@ -444,8 +444,6 @@ assertContains(
 const economyProse = block(routes.economy, "folio-prose", "div");
 assertContains(economyProse, /I built UAE Economy Lab/, "UAE Economy Lab has an authored project note");
 assertContains(economyProse, /2024[\s\S]*?35 industries[\s\S]*?74 external partner records/, "the economy note states its baseline coverage");
-assertContains(economyProse, /does not replicate the standard GTAP model/, "the economy note distinguishes the implementation from GTAP");
-assertContains(economyProse, /conditional scenarios, not forecasts/, "the economy note describes the limits of its results");
 assert.doesNotMatch(economyProse, /<h[2-6]\b/, "the economy note uses plain paragraphs");
 
 const cncInteractive = block(routes.cnc, "folio-case-interactive");

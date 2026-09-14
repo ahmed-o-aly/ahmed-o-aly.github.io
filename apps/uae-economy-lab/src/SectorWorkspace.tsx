@@ -18,9 +18,9 @@ const share = (value: number) => `${value.toFixed(1)}%`;
 const deltaAmount = (value: number) => `${Math.abs(value) < .05 ? '' : value < 0 ? '−' : '+'}$${Math.abs(value).toLocaleString('en-US', {minimumFractionDigits: 1, maximumFractionDigits: 1})}m`;
 const signClass = (value: number) => Math.abs(value) < .005 ? 'neutral' : value > 0 ? 'positive' : 'negative';
 const dimensions: {key: keyof SectorShock; label: string; min: number; max: number; help: string}[] = [
-  {key: 'productivity', label: 'Productivity', min: -10, max: 20, help: 'Production efficiency. Actual output also responds to costs and demand.'},
-  {key: 'exportDemand', label: 'Foreign demand', min: -40, max: 40, help: 'Demand at unchanged UAE prices. Actual exports also respond to the solved price.'},
-  {key: 'importPrice', label: 'Imported-product price', min: -20, max: 50, help: 'This imported product’s price for all UAE buyers, not every input this producer buys.'},
+  {key: 'productivity', label: 'Productivity', min: -10, max: 20, help: 'Output per unit of input.'},
+  {key: 'exportDemand', label: 'Foreign demand', min: -40, max: 40, help: 'Foreign demand at baseline prices.'},
+  {key: 'importPrice', label: 'Imported-product price', min: -20, max: 50, help: 'This product’s import price for all UAE buyers.'},
 ];
 
 export default function SectorWorkspace(props: Props) {
@@ -44,8 +44,8 @@ export default function SectorWorkspace(props: Props) {
   const outcomeMetrics = [
     {label:'UAE production', level:levels.output, help:'Gross output, including the value of purchased inputs.'},
     {label:'Value added', level:levels.valueAdded, help:'The sector’s contribution to GDP after subtracting intermediate inputs.'},
-    {label:'Exports', level:levels.exports, help:totals.exports > 0 ? 'This sector’s products sold abroad.' : 'No baseline exports. A demand change cannot create exports in this model.'},
-    {label:'Imports into the UAE', level:levels.imports, help:'Imports of this product for all UAE users. Different from imported inputs used by its producers.'},
+    {label:'Exports', level:levels.exports, help:totals.exports > 0 ? 'This sector’s products sold abroad.' : 'No baseline exports; demand changes have no effect.'},
+    {label:'Imports into the UAE', level:levels.imports, help:'Imports of this product for all UAE users.'},
   ];
   const outputUses = [
     {id:'industries', name:'UAE businesses', value:totals.domesticIntermediateSales},
@@ -74,7 +74,7 @@ export default function SectorWorkspace(props: Props) {
       <div className="sector-price-strip">{[
         {label:'Producer price', value:sector.priceChange, note:'UAE output price'},
         {label:'Input price index', value:sector.intermediateInputPrice, note:'Materials & services; before productivity'},
-        {label:'Labor demand', value:sector.employmentChange, note:'Model index; not a count of jobs'},
+        {label:'Labor demand', value:sector.employmentChange, note:'Change in labor input'},
       ].map(m => <div key={m.label}><span>{m.label}<small>{m.note}</small></span><strong className={signClass(m.value ?? 0)}>{m.value == null ? '—' : percent(m.value)}</strong></div>)}</div>
       <div className="sector-sales-bridge" aria-label="Output change by domestic use and exports"><span>Where output changed<small>Changes at baseline prices</small></span><div><span>Used within the UAE</span><b className={signClass(levels.domesticSales.change)}>{deltaAmount(levels.domesticSales.change)}</b></div><span aria-hidden="true">+</span><div><span>Exported abroad</span><b className={signClass(levels.exports.change)}>{deltaAmount(levels.exports.change)}</b></div><span aria-hidden="true">=</span><div><span>Total output</span><b className={signClass(levels.output.change)}>{deltaAmount(levels.output.change)}</b></div></div>
     </section>
@@ -90,7 +90,7 @@ export default function SectorWorkspace(props: Props) {
       <details className="sector-active-changes" open={activeChanges.length <= 6}><summary>{activeChanges.length ? `${activeChanges.length} active changes across the economy` : 'No active changes'}<CaretDown size={14}/></summary><div>{activeChanges.map(change => <button key={change.id} onClick={() => select(change.sectorId)} aria-label={`Explore ${change.name}, ${change.label} ${percent(change.value)}`}><span>{change.name}</span><small>{change.label} <b>{percent(change.value, 1)}</b></small></button>)}</div></details>
     </section>
 
-    <div className="sector-section-line sector-network-label"><h2>Follow the money</h2><span>{dataset.year} baseline · {dataset.source} estimates · Links stay at baseline</span></div>
+    <div className="sector-section-line sector-network-label"><h2>Follow the money</h2><span>{dataset.source} · {dataset.year} baseline flows</span></div>
     <div className="sector-network-grid">
       <section className="sector-flow-panel" aria-label="Inputs used by this sector">
         <div className="sector-flow-heading"><span className="sector-step">01</span><div><h3>What producers buy</h3><p>Domestic and imported inputs used by this sector.</p></div></div>
@@ -115,7 +115,7 @@ export default function SectorWorkspace(props: Props) {
         })}</tbody></table></div>
         {!buyers.length && <p className="sector-empty">No sales to UAE industries in these accounts.</p>}
         {buyers.length > 5 && <button className="sector-expand" onClick={() => setAllBuyers(!allBuyers)}>{allBuyers ? 'Show top 5' : `Show all ${buyers.length} business customers`}<CaretDown size={13}/></button>}
-        <p className="sector-definition">“Buys” means used in that business’s production. Shares are of UAE business sales. A same-sector link can connect different firms or production stages. Output change is the customer’s simulated result.</p>
+        <p className="sector-definition">Purchases for production · Shares of UAE business sales.</p>
       </section>
     </div>
 
@@ -128,15 +128,15 @@ export default function SectorWorkspace(props: Props) {
         {!partners[direction].length && <p className="sector-empty">{dataset.partners.length ? 'No baseline trade for this product.' : 'Partner data are not available in these accounts.'}</p>}
         {!allPartners && partners[direction].length > 5 && <div className="sector-partner-rest"><span>Other {partners[direction].length - 5} partners</span><b>{amount(partners[direction].slice(5).reduce((v, row) => v + row.value, 0))}</b><small>{share(partners[direction].slice(5).reduce((v, row) => v + row.share, 0))}</small></div>}
       </div>)}</div>
-      <p className="sector-definition">Partner amounts and shares are baseline estimates. The model solves national trade changes; it does not allocate those changes to individual countries. Import origins describe this product, not all inputs purchased by its UAE producers.</p>
+
     </section>
 
     <details className="sector-assumptions"><summary><span>Response assumptions <small>{applied.laborClosure === 'fixed' ? 'Fixed workforce' : 'Flexible workforce'} · Labor share {applied.laborShare}% · Substitution {applied.substitution} · Export response {applied.exportElasticity}</small></span><CaretDown size={16}/></summary>
-      <p>Illustrative response rules. Changing them recalculates the same scenario across every sector.</p><div className="sector-assumption-inputs">
+      <p>Changes apply across all sectors.</p><div className="sector-assumption-inputs">
         <label>Workforce<select aria-label="Sector workspace workforce" value={scenario.laborClosure} onChange={e => onChange({...scenario, laborClosure:e.target.value as Scenario['laborClosure']})}><option value="fixed">Fixed · wages adjust</option><option value="elastic">Flexible · real wage fixed</option></select><small>Fixed labor moves across sectors. Flexible labor lets total supply adjust.</small></label>
         {([{key:'laborShare',label:'Labor share (%)',min:10,max:90,step:5,help:'Share of value added paid to labor; sector capital stays fixed.'},{key:'substitution',label:'Import substitution',min:0,max:8,step:.5,help:'Higher values allow more switching between domestic and imported products.'},{key:'exportElasticity',label:'Export response',min:.5,max:12,step:.5,help:'Higher values make foreign buyers more sensitive to UAE prices.'}] as const).map(a => <label key={a.key}>{a.label}<input aria-label={`Sector workspace ${a.label}`} type="number" value={scenario[a.key]} min={a.min} max={a.max} step={a.step} onChange={e => {if(Number.isFinite(e.target.valueAsNumber)) onChange({...scenario,[a.key]:Math.min(a.max,Math.max(a.min,e.target.valueAsNumber))});}}/><small>{a.help}</small></label>)}
-      </div><p>Government and investment real demand are fixed. Household taxes and foreign financing balance the accounts. Results are a comparison with the baseline, not a forecast.</p>
+      </div>
     </details>
-    <div className="sector-source"><span>{dataset.source} starting accounts + simplified UAE model</span><a href={dataset.sourceUrl} target="_blank" rel="noreferrer">Source accounts<ArrowSquareOut size={13}/></a></div>
+    <div className="sector-source"><span>{dataset.source} · {dataset.year}</span><a href={dataset.sourceUrl} target="_blank" rel="noreferrer">Source accounts<ArrowSquareOut size={13}/></a></div>
   </section>;
 }

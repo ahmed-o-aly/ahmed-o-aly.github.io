@@ -51,7 +51,7 @@ export function PartnerView({ dataset, onSelect }: { dataset: Dataset; onSelect:
         <span className="partner-source">{dataset.year} baseline · {dataset.source}</span>
         <h2 id={headingId}>Trading partners</h2>
       </div>
-      <span className="partner-baseline-note">Baseline estimates</span>
+
     </header>
 
     <div className="partner-controls">
@@ -116,7 +116,7 @@ export function PartnerView({ dataset, onSelect }: { dataset: Dataset; onSelect:
       </aside>}
     </div>
 
-    <footer className="partner-note">Shares use the selected trade flow and sector. Values include goods and services at current prices.</footer>
+    <footer className="partner-note">Goods and services · Current USD</footer>
   </section>;
 }
 
