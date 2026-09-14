@@ -2,22 +2,24 @@ import { useId, useState } from 'react';
 import type { CSSProperties } from 'react';
 import { ArrowSquareOut, CaretDown, Graph, GlobeHemisphereEast, SlidersHorizontal } from '@phosphor-icons/react';
 import { DEFAULT_SCENARIO } from './viewTypes';
+import { ASSUMPTION_HELP, assumptionExample, workforceExplanation } from './assumptionHelp';
 import type { Dataset, Result, Scenario } from './viewTypes';
 import './explain.css';
 
 type Props = { dataset: Dataset; result: Result; scenario: Scenario; onChange: (next: Scenario) => void; onExploreSector: () => void };
 type Topic = 'assumptions' | 'gtap';
 
-function AssumptionControl({ label, value, unit, min, max, step, description, why, implication, onChange }: {
+function AssumptionControl({ label, value, unit, min, max, step, description, example, why, implication, onChange }: {
   label: string; value: number; unit?: string; min: number; max: number; step: number;
-  description: string; why: string; implication: string; onChange: (value: number) => void;
+  description: string; example: string; why: string; implication: string; onChange: (value: number) => void;
 }) {
   const id = useId();
   return <section className="explain-assumption">
     <div className="explain-assumption-heading"><label htmlFor={id}>{label}</label><output htmlFor={id}>{value}{unit}</output></div>
     <p id={`${id}-description`}>{description}</p>
+    <p id={`${id}-example`} className="assumption-example">{example}</p>
     <input id={id} type="range" value={value} min={min} max={max} step={step}
-      aria-describedby={`${id}-description`} aria-valuetext={`${value}${unit ?? ''}`}
+      aria-describedby={`${id}-description ${id}-example`} aria-valuetext={`${value}${unit ?? ''}`}
       style={{ '--range-fill': `${(value - min) / (max - min) * 100}%` } as CSSProperties}
       onChange={event => onChange(Number(event.target.value))} />
     <div className="explain-range-ends"><span>{min}{unit}</span><span>{max}{unit}</span></div>
@@ -56,25 +58,26 @@ export default function ExplainView({ dataset, scenario, onChange, onExploreSect
           <label className={scenario.laborClosure === 'fixed' ? 'chosen' : ''}><input type="radio" name={`${headingId}-labor`} checked={scenario.laborClosure === 'fixed'} onChange={() => update('laborClosure', 'fixed')} /><span><strong>Fixed total labor</strong><small>Wages adjust; labor moves across sectors.</small></span></label>
           <label className={scenario.laborClosure === 'elastic' ? 'chosen' : ''}><input type="radio" name={`${headingId}-labor`} checked={scenario.laborClosure === 'elastic'} onChange={() => update('laborClosure', 'elastic')} /><span><strong>Flexible labor supply</strong><small>Real wage stays fixed; total labor adjusts.</small></span></label>
         </fieldset>
-        <p className="explain-closure-meaning">{scenario.laborClosure === 'fixed'
-          ? 'Total labor stays fixed. Workers move between sectors as wages adjust.'
-          : 'Labor supply expands or contracts at the baseline real wage.'}</p>
+        <p className="explain-closure-meaning">{workforceExplanation(scenario.laborClosure)}</p>
       </section>
       <div className="explain-assumptions-grid">
         <AssumptionControl label="Labor share of value added" value={scenario.laborShare} unit="%" min={10} max={90} step={1}
-          description="Assumed labor payments in every sector; the remainder goes to capital."
+          description={ASSUMPTION_HELP.laborShare}
+          example={assumptionExample('laborShare', scenario.laborShare)}
           why="The starting assumption assigns 60% of value added to labor and 40% to capital."
           implication="A higher share gives wages more weight in production costs and assigns more income to labor."
           onChange={value => update('laborShare', value)} />
         <AssumptionControl label="Domestic/import substitution" value={scenario.substitution} min={0} max={8} step={.25}
-          description="How easily buyers switch between domestic and imported versions of a product."
+          description={ASSUMPTION_HELP.substitution}
+          example={assumptionExample('substitution', scenario.substitution)}
           why="2 represents a moderate response to relative prices."
-          implication="At 0, the domestic/import mix stays fixed. At 2, a 1% rise in the domestic price relative to imports lowers the domestic/import quantity ratio by about 2%, all else equal."
+          implication="Raise it to make sourcing more responsive to price differences. Lower it to keep buyers closer to their original mix."
           onChange={value => update('substitution', value)} />
         <AssumptionControl label="Export demand sensitivity" value={scenario.exportElasticity} min={.5} max={12} step={.25}
-          description="How strongly foreign buyers respond to UAE export prices."
+          description={ASSUMPTION_HELP.exportElasticity}
+          example={assumptionExample('exportElasticity', scenario.exportElasticity)}
           why="4 gives all sectors a common starting response to export prices."
-          implication="At 4, a 1% export-price rise reduces foreign demand by about 4%, all else equal. Higher values make exports more price-sensitive."
+          implication="Raise it to make export demand more sensitive to price changes. Lower it for a steadier response."
           onChange={value => update('exportElasticity', value)} />
       </div>
       <details className="explain-disclosure explain-wide-note"><summary>Other model settings <CaretDown size={14} aria-hidden="true" /></summary>

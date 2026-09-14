@@ -4,6 +4,7 @@ import type { Dataset, Result, Scenario, SectorShock } from './viewTypes';
 import { percent } from './viewTypes';
 import { effectiveShock, inheritedShock, setSectorShock } from './scenario';
 import { getSectorProfile } from './sectorProfile';
+import { ASSUMPTION_HELP, assumptionExample, workforceExplanation } from './assumptionHelp';
 import './sector-workspace.css';
 
 type Props = {
@@ -18,9 +19,9 @@ const share = (value: number) => `${value.toFixed(1)}%`;
 const deltaAmount = (value: number) => `${Math.abs(value) < .05 ? '' : value < 0 ? '−' : '+'}$${Math.abs(value).toLocaleString('en-US', {minimumFractionDigits: 1, maximumFractionDigits: 1})}m`;
 const signClass = (value: number) => Math.abs(value) < .005 ? 'neutral' : value > 0 ? 'positive' : 'negative';
 const dimensions: {key: keyof SectorShock; label: string; min: number; max: number; help: string}[] = [
-  {key: 'productivity', label: 'Productivity', min: -10, max: 20, help: 'Output per unit of input.'},
-  {key: 'exportDemand', label: 'Foreign demand', min: -40, max: 40, help: 'Foreign demand at baseline prices.'},
-  {key: 'importPrice', label: 'Imported-product price', min: -20, max: 50, help: 'This product’s import price for all UAE buyers.'},
+  {key: 'productivity', label: 'Productivity', min: -10, max: 20, help: 'Production efficiency. +5% means 5% more output from the same inputs.'},
+  {key: 'exportDemand', label: 'Foreign demand', min: -40, max: 40, help: 'Demand at unchanged UAE prices. +10% means foreign buyers want 10% more; prices and output then adjust.'},
+  {key: 'importPrice', label: 'Imported-product price', min: -20, max: 50, help: 'This product’s import price for all UAE buyers. −5% makes it 5% cheaper.'},
 ];
 
 export default function SectorWorkspace(props: Props) {
@@ -133,8 +134,8 @@ export default function SectorWorkspace(props: Props) {
 
     <details className="sector-assumptions"><summary><span>Response assumptions <small>{applied.laborClosure === 'fixed' ? 'Fixed workforce' : 'Flexible workforce'} · Labor share {applied.laborShare}% · Substitution {applied.substitution} · Export response {applied.exportElasticity}</small></span><CaretDown size={16}/></summary>
       <p>Changes apply across all sectors.</p><div className="sector-assumption-inputs">
-        <label>Workforce<select aria-label="Sector workspace workforce" value={scenario.laborClosure} onChange={e => onChange({...scenario, laborClosure:e.target.value as Scenario['laborClosure']})}><option value="fixed">Fixed · wages adjust</option><option value="elastic">Flexible · real wage fixed</option></select><small>Fixed labor moves across sectors. Flexible labor lets total supply adjust.</small></label>
-        {([{key:'laborShare',label:'Labor share (%)',min:10,max:90,step:5,help:'Share of value added paid to labor; sector capital stays fixed.'},{key:'substitution',label:'Import substitution',min:0,max:8,step:.5,help:'Higher values allow more switching between domestic and imported products.'},{key:'exportElasticity',label:'Export response',min:.5,max:12,step:.5,help:'Higher values make foreign buyers more sensitive to UAE prices.'}] as const).map(a => <label key={a.key}>{a.label}<input aria-label={`Sector workspace ${a.label}`} type="number" value={scenario[a.key]} min={a.min} max={a.max} step={a.step} onChange={e => {if(Number.isFinite(e.target.valueAsNumber)) onChange({...scenario,[a.key]:Math.min(a.max,Math.max(a.min,e.target.valueAsNumber))});}}/><small>{a.help}</small></label>)}
+        <label>Workforce<select aria-label="Sector workspace workforce" aria-describedby="sector-workforce-help" value={scenario.laborClosure} onChange={e => onChange({...scenario, laborClosure:e.target.value as Scenario['laborClosure']})}><option value="fixed">Fixed · wages adjust</option><option value="elastic">Flexible · real wage fixed</option></select><small id="sector-workforce-help">{workforceExplanation(scenario.laborClosure)}</small></label>
+        {([{key:'laborShare',label:'Labor share (%)',min:10,max:90,step:5},{key:'substitution',label:'Import substitution',min:0,max:8,step:.5},{key:'exportElasticity',label:'Export response',min:.5,max:12,step:.5}] as const).map(a => <label key={a.key}>{a.label}<input aria-label={`Sector workspace ${a.label}`} aria-describedby={`sector-${a.key}-help`} type="number" value={scenario[a.key]} min={a.min} max={a.max} step={a.step} onChange={e => {if(Number.isFinite(e.target.valueAsNumber)) onChange({...scenario,[a.key]:Math.min(a.max,Math.max(a.min,e.target.valueAsNumber))});}}/><small className="assumption-help" id={`sector-${a.key}-help`}><span>{ASSUMPTION_HELP[a.key]}</span><span>{assumptionExample(a.key, scenario[a.key])}</span></small></label>)}
       </div>
     </details>
     <div className="sector-source"><span>{dataset.source} · {dataset.year}</span><a href={dataset.sourceUrl} target="_blank" rel="noreferrer">Source accounts<ArrowSquareOut size={13}/></a></div>

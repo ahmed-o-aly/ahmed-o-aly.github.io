@@ -234,3 +234,11 @@ select { color: #576f76; border: 1px solid #e0e7e9; background: #fff; border-rad
 .trade-subnav { display:flex; gap:20px; padding:18px 24px 0; }
 .trade-subnav button { background:transparent; color:#7b8f97; padding:0 0 8px; font-size:11px; border-bottom:1px solid transparent; }
 .trade-subnav button[aria-pressed=true] { color:var(--teal); border-bottom-color:#85b5b7; }
+.assumption-help { display: block; font-size: 11px; line-height: 1.7; color: #526f78; font-weight: 400; }
+.assumption-help > span { display: block; }
+.assumption-help > span + span { margin-top: 8px; }
+.parameters { align-items: start; }
+.parameters label { color: var(--ink); }
+.lever .lever-explanation { margin-top: 12px; font-size: 11px; line-height: 1.7; color: #526f78; }
+.broad-footer .workforce-help { flex-basis: 100%; font-size: 11px; line-height: 1.7; color: #526f78; }
+@media (max-width: 900px) { .model-section.parameters { grid-template-columns: 1fr; gap: 22px; }.parameters input { max-width: 220px; } }

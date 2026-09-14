@@ -11,6 +11,7 @@ import { loadSaved, persistSaved, readShared, loadActive, persistActive } from '
 import PartnerView from './PartnerView';
 import SectorEditor from './SectorEditor';
 import SectorWorkspace from './SectorWorkspace';
+import { ASSUMPTION_HELP, assumptionExample, workforceExplanation } from './assumptionHelp';
 const ExplainView = lazy(() => import('./ExplainView'));
 import { togglePreset, presetActive, resetShocks } from './scenario';
 
@@ -27,20 +28,21 @@ function IconButton({ label, children, onClick, disabled = false }: { label: str
   return <button className="icon-button" aria-label={label} title={label} onClick={onClick} disabled={disabled}>{children}</button>;
 }
 
-function Lever({ label, value, min, max, step = 1, onChange, suffix = '%', help }: {
+function Lever({ label, value, min, max, step = 1, onChange, suffix = '%', help, explanation }: {
   label: string; value: number; min: number; max: number; step?: number;
-  onChange: (value: number) => void; suffix?: string; help: string;
+  onChange: (value: number) => void; suffix?: string; help: string; explanation?: string;
 }) {
   const id = label.toLowerCase().replaceAll(' ', '-');
   return <div className="lever">
     <div className="lever-heading"><label htmlFor={id}>{label}</label><span className="number-input"><input
-      aria-label={`${label} value`} type="number" min={min} max={max} step={step} value={value}
+      aria-label={`${label} value`} aria-describedby={`${id}-help${explanation ? ` ${id}-explanation` : ''}`} type="number" min={min} max={max} step={step} value={value}
       onChange={e => { const n = e.target.valueAsNumber; if (Number.isFinite(n)) onChange(Math.min(max, Math.max(min, n))); }}
     /><span>{suffix}</span></span></div>
     <input id={id} type="range" min={min} max={max} step={step} value={value}
-      aria-describedby={`${id}-help`} onChange={e => onChange(Number(e.target.value))}
+      aria-describedby={`${id}-help${explanation ? ` ${id}-explanation` : ''}`} onChange={e => onChange(Number(e.target.value))}
       style={{ '--range-fill': `${(value - min) / (max - min) * 100}%` } as React.CSSProperties} />
     <div className="range-captions"><span>{min}{suffix}</span><span id={`${id}-help`}>{help}</span><span>{max}{suffix}</span></div>
+    {explanation && <p id={`${id}-explanation`} className="lever-explanation">{explanation}</p>}
   </div>;
 }
 
@@ -259,11 +261,11 @@ function App() {
           <div className="broad-heading"><div><h2>Build a combined scenario</h2><p>Mix broad changes with sector-specific ones. Results update as you edit.</p></div><button className="text-button" onClick={() => setDraft(s => resetShocks(s))}><ArrowCounterClockwise size={16}/>Reset changes</button></div>
           <div className="preset-strip" aria-label="Combine scenario presets">{PRESETS.map((p, i) => { const Icon = i === 0 ? ArrowsLeftRight : i === 1 ? Lightning : Factory; const active = presetActive(draft, p.id); return <button key={p.id} aria-pressed={active} onClick={() => choosePreset(p.id)}><Icon size={17}/>{p.name}{active ? <Check size={14}/> : <Plus size={14}/>}</button>; })}<span>Examples can be combined</span></div>
           <div className="broad-grid">
-            <div><Lever label="Import costs" value={draft.freightCost} min={-20} max={50} onChange={v => edit('freightCost', v)} help="All imported products"/></div>
-            <div><Lever label="Productivity change" value={draft.productivity} min={-10} max={20} step={0.5} onChange={v => edit('productivity', v)} help="Same inputs, more output"/><label className="broad-select">Applies to<select aria-label="Broad productivity scope" value={draft.productivitySector} onChange={e => edit('productivitySector', e.target.value)}><option value="manufacturing">All manufacturing</option><option value="all">All sectors</option>{dataset?.sectors.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}</select></label></div>
-            <div><Lever label="Mining export demand" value={draft.oilDemand} min={-40} max={40} onChange={v => edit('oilDemand', v)} help="Includes oil and gas"/></div>
+            <div><Lever label="Import costs" value={draft.freightCost} min={-20} max={50} onChange={v => edit('freightCost', v)} help="All imported products" explanation="Change the delivered price of imports. −5% makes imported products 5% cheaper for UAE buyers."/></div>
+            <div><Lever label="Productivity change" value={draft.productivity} min={-10} max={20} step={0.5} onChange={v => edit('productivity', v)} help="Same inputs, more output" explanation="+5% means 5% more output from the same inputs in the selected sectors."/><label className="broad-select">Applies to<select aria-label="Broad productivity scope" value={draft.productivitySector} onChange={e => edit('productivitySector', e.target.value)}><option value="manufacturing">All manufacturing</option><option value="all">All sectors</option>{dataset?.sectors.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}</select></label></div>
+            <div><Lever label="Mining export demand" value={draft.oilDemand} min={-40} max={40} onChange={v => edit('oilDemand', v)} help="Includes oil and gas" explanation="+10% raises foreign demand for mining products by 10% at unchanged UAE prices. Prices and production then adjust."/></div>
           </div>
-          <div className="broad-footer"><label>Workforce<select aria-label="Workforce response" value={draft.laborClosure} onChange={e => edit('laborClosure', e.target.value as Scenario['laborClosure'])}><option value="fixed">Fixed · wages adjust</option><option value="elastic">Flexible · wages fixed</option></select></label><button className="text-button" onClick={() => setPage('learn')}>What do these changes mean?<BookOpen size={15}/></button>{dataset?.tariffsAvailable ? <label>Tariff cut %<input aria-label="Import tariff cut value" type="number" min="0" max="100" value={draft.tariffCut} onChange={e => { if (Number.isFinite(e.target.valueAsNumber)) edit('tariffCut', Math.max(0,Math.min(100,e.target.valueAsNumber))); }}/></label> : <span title="Sector tariff rates are absent from these accounts.">Tariffs: data needed</span>}</div>
+          <div className="broad-footer"><label>Workforce<select aria-label="Workforce response" aria-describedby="workforce-help" value={draft.laborClosure} onChange={e => edit('laborClosure', e.target.value as Scenario['laborClosure'])}><option value="fixed">Fixed · wages adjust</option><option value="elastic">Flexible · real wage fixed</option></select></label><button className="text-button" onClick={() => setPage('learn')}>What do these changes mean?<BookOpen size={15}/></button>{dataset?.tariffsAvailable ? <label>Tariff cut %<input aria-label="Import tariff cut value" type="number" min="0" max="100" value={draft.tariffCut} onChange={e => { if (Number.isFinite(e.target.valueAsNumber)) edit('tariffCut', Math.max(0,Math.min(100,e.target.valueAsNumber))); }}/></label> : <span title="Sector tariff rates are absent from these accounts.">Tariffs: data needed</span>}<small id="workforce-help" className="workforce-help">{workforceExplanation(draft.laborClosure)}</small></div>
         </section>
         <div className="workbench-columns">
         {dataset && <SectorEditor dataset={dataset} scenario={draft} onChange={setDraft} onSelect={openSector}/>}
@@ -297,9 +299,22 @@ function App() {
       {page === 'model' && <section className="model-page">
         <div className="model-overview"><div className="model-icon"><Database size={27} weight="light"/></div><div><h2>{dataset ? dataset.title : 'UAE economic accounts'}</h2><p>{dataset ? `${dataset.sectors.length} sectors · ${dataset.year} · ${dataset.units}` : 'A balanced input-output dataset is required.'}</p></div><button className="secondary-button" onClick={() => fileInput.current?.click()}><Plus size={16}/>Import dataset</button></div>
         <div className="model-grid"><div className="model-section"><span className="eyebrow">Data</span><h2>UAE input-output accounts</h2>{dataset && <><dl className="metadata-list"><div><dt>Source</dt><dd><a href={dataset.sourceUrl} target="_blank" rel="noreferrer">{dataset.source}<ArrowSquareOut size={14}/></a></dd></div><div><dt>Reference year</dt><dd>{dataset.year}</dd></div><div><dt>Economy</dt><dd>United Arab Emirates</dd></div><div><dt>Coverage</dt><dd>{dataset.sectors.length} national sectors</dd></div><div><dt>Currency</dt><dd>{dataset.currency} · current prices</dd></div></dl></>}</div>
-          <div className="model-section"><span className="eyebrow">Model</span><h2>Single-country CGE</h2><div className="model-flow"><span>Trade & policy</span><ArrowRight size={17}/><span>Production & prices</span><ArrowRight size={17}/><span>Income & demand</span></div><p className="model-description">Prices, production and demand adjust together across the UAE economy.</p><dl className="metadata-list"><div><dt>Government & investment</dt><dd>Fixed real demand</dd></div><div><dt>Capital</dt><dd>Fixed in each sector</dd></div><div><dt>Labor</dt><dd>Choose fixed workforce or fixed wage</dd></div><div><dt>International markets</dt><dd>Fixed import prices; responsive export demand</dd></div><div><dt>External financing</dt><dd>Adjusts to balance accounts</dd></div></dl></div>
+          <div className="model-section"><span className="eyebrow">Model</span><h2>Single-country CGE</h2><div className="model-flow"><span>Trade & policy</span><ArrowRight size={17}/><span>Production & prices</span><ArrowRight size={17}/><span>Income & demand</span></div><p className="model-description">Prices, production and demand adjust together across the UAE economy.</p><dl className="metadata-list"><div><dt>Government & investment</dt><dd>Fixed real demand</dd></div><div><dt>Capital</dt><dd>Fixed in each sector</dd></div><div><dt>Labor</dt><dd>Choose fixed workforce or fixed real wage</dd></div><div><dt>International markets</dt><dd>Fixed import prices; responsive export demand</dd></div><div><dt>External financing</dt><dd>Adjusts to balance accounts</dd></div></dl></div>
         </div>
-        <div className="model-section parameters"><div><span className="eyebrow">Parameters</span><h2>Adjust the response</h2><p>Assumed starting values.</p></div><label>Labor share (%)<input type="number" min="10" max="90" step="5" value={draft.laborShare} onChange={e => { if (Number.isFinite(e.target.valueAsNumber)) edit('laborShare', Math.min(90, Math.max(10, e.target.valueAsNumber))); }}/></label><label>Import substitution<input type="number" min="0" max="8" step="0.5" value={draft.substitution} onChange={e => { if (Number.isFinite(e.target.valueAsNumber)) edit('substitution', Math.min(8, Math.max(0, e.target.valueAsNumber))); }}/></label><label>Export response<input type="number" min="0.5" max="12" step="0.5" value={draft.exportElasticity} onChange={e => { if (Number.isFinite(e.target.valueAsNumber)) edit('exportElasticity', Math.min(12, Math.max(0.5, e.target.valueAsNumber))); }}/></label><button className="secondary-button" onClick={() => { setPage('simulator'); }}>View live results<ArrowRight size={16}/></button></div><div className="model-section diagnostics"><div><span className="eyebrow">Verification</span><h2>Solver checks</h2></div><div><span>Solver status</span><strong>{result?.diagnostics.converged ? 'Converged' : 'No result'}</strong></div><div><span>Maximum residual</span><strong>{result ? result.diagnostics.residual.toExponential(2) : '—'}</strong></div><div><span>Iterations</span><strong>{result?.diagnostics.iterations ?? '—'}</strong></div></div>
+        <div className="model-section parameters">
+          <div><span className="eyebrow">Parameters</span><h2>Adjust the response</h2><p>Choose how labor and trade respond to your scenario.</p></div>
+          {([
+            { key: 'laborShare', label: 'Labor share (%)', min: 10, max: 90, step: 5 },
+            { key: 'substitution', label: 'Import substitution', min: 0, max: 8, step: .5 },
+            { key: 'exportElasticity', label: 'Export response', min: .5, max: 12, step: .5 },
+          ] as const).map(control => <label key={control.key}>
+            <span>{control.label}</span>
+            <input type="number" aria-label={control.label} aria-describedby={`data-${control.key}-help`} min={control.min} max={control.max} step={control.step} value={draft[control.key]}
+              onChange={event => { if (Number.isFinite(event.target.valueAsNumber)) edit(control.key, Math.min(control.max, Math.max(control.min, event.target.valueAsNumber))); }}/>
+            <small className="assumption-help" id={`data-${control.key}-help`}><span>{ASSUMPTION_HELP[control.key]}</span><span>{assumptionExample(control.key, draft[control.key])}</span></small>
+          </label>)}
+          <button className="secondary-button" onClick={() => setPage('simulator')}>View live results<ArrowRight size={16}/></button>
+        </div><div className="model-section diagnostics"><div><span className="eyebrow">Verification</span><h2>Solver checks</h2></div><div><span>Solver status</span><strong>{result?.diagnostics.converged ? 'Converged' : 'No result'}</strong></div><div><span>Maximum residual</span><strong>{result ? result.diagnostics.residual.toExponential(2) : '—'}</strong></div><div><span>Iterations</span><strong>{result?.diagnostics.iterations ?? '—'}</strong></div></div>
         {dataset && <div className="model-section"><div className="section-topline"><h2>Baseline economy</h2><span className="quiet-label">USD billion</span></div><div className="table-wrap"><table className="data-table"><thead><tr><th>Sector</th><th>Gross output</th><th>Value added</th><th>Exports</th><th>Imports</th></tr></thead><tbody>{dataset.sectors.map(s => <tr key={s.id}><td><button className="sector-name-link" onClick={() => openSector(s.id)}>{s.name}</button></td><td>{money(s.output)}</td><td>{money(s.valueAdded)}</td><td>{money(s.exports)}</td><td>{money(s.imports)}</td></tr>)}</tbody></table></div></div>}
       </section>}
       <footer className="app-footer"><span>UAE Economy Lab</span></footer>
