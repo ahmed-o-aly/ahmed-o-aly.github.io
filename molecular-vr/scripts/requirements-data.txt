@@ -1,0 +1,5 @@
+numpy==1.26.4
+scipy==1.13.1
+scikit-image==0.24.0
+gemmi==0.7.5
+msgpack==1.1.2

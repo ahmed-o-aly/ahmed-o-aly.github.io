@@ -10,3 +10,15 @@ scripts/lib/udes-v2*.mjs text eol=lf
 scripts/data/udes-v2-sources/*.json text eol=lf
 scripts/data/udes-v2-sources/*.gz binary
 scripts/data/udes-v2-transit-services.json text eol=lf
+
+# Preserve experimental archive files exactly, including their original spacing.
+molecular-vr/public/data/*.cif binary
+molecular-vr/public/data/*.bcif binary
+molecular-vr/public/data/*.bin binary
+molecular-vr/public/data/motion/*.cif.gz binary
+assets/apps/protein-structures/data/*.cif binary
+assets/apps/protein-structures/data/*.bcif binary
+assets/apps/protein-structures/data/*.bin binary
+assets/apps/protein-structures/data/motion/*.cif.gz binary
+# Bundled Three.js shaders retain upstream spacing inside template literals.
+assets/apps/protein-structures/assets/* -whitespace

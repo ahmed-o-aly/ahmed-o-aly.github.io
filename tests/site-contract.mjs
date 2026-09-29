@@ -31,7 +31,7 @@ const formatTargets = [
   "_includes/{folio-work-card,folio-work-feature,garden-card,garden-footer,garden-media,garden-nav,garden-project-card,garden-related,head,metadata}.liquid",
   "_layouts/{cv,garden,page,post}.liquid",
   "_pages/{about,blog,books,home,marginalia,projects}.md",
-  "_projects/{abu-dhabi-urban-dynamics,abu-dhabi-urban-dynamics-v2,cnc-machine-inspector,dewa-energy-optimization,sila,territory-design-probvns,uae-economy-lab}.md",
+  "_projects/{abu-dhabi-urban-dynamics,abu-dhabi-urban-dynamics-v2,cnc-machine-inspector,dewa-energy-optimization,protein-structures,sila,territory-design-probvns,uae-economy-lab}.md",
   "package.json",
   ".github/workflows/{axe,deploy}.yml",
   "scripts/lib/udes-v2-turn-restrictions.mjs",

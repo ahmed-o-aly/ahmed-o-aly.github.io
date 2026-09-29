@@ -17,6 +17,7 @@ const routes = {
   urbanConsole: readRoute("/projects/abu-dhabi-urban-dynamics-v2/"),
   dewa: readRoute("/projects/dewa-energy-optimization/"),
   territory: readRoute("/projects/territory-design-probvns/"),
+  protein: readRoute("/projects/protein-structures/"),
   sila: readRoute("/projects/sila/"),
   records: readRoute("/cv/"),
   marginalia: readRoute("/marginalia/"),
@@ -90,6 +91,7 @@ assertContains(routes.works, /href="\/projects\/"[^>]*aria-current="page"/, "Wor
 
 for (const [name, html] of Object.entries({
   economy: routes.economy,
+  protein: routes.protein,
   cnc: routes.cnc,
   urban: routes.urban,
   dewa: routes.dewa,
@@ -393,8 +395,8 @@ const ventureNote = block(routes.works, "folio-venture-note");
 assertContains(ventureNote, /Current venture/, "Works distinguishes Sila from the numbered research and software work");
 assertContains(ventureNote, /href="\/projects\/sila\/"[\s\S]*?>[\s\S]*?Sila/, "Works links the current venture to its full write-up");
 const worksIndex = block(routes.works, "folio-work-index", "ol");
-assert.equal((worksIndex.match(/class="folio-work-entry"/g) || []).length, 5, "Works renders the five selected projects");
-assert.equal((worksIndex.match(/class="folio-work-entry__description"/g) || []).length, 5, "each Works entry has one plain-language sentence");
+assert.equal((worksIndex.match(/class="folio-work-entry"/g) || []).length, 6, "Works renders the six selected projects");
+assert.equal((worksIndex.match(/class="folio-work-entry__description"/g) || []).length, 6, "each Works entry has one plain-language sentence");
 assert.doesNotMatch(
   worksIndex,
   /<img\b|<picture\b|<figure\b|folio-work-plate|machine-lab-interface\.png|urban-dynamics-console\.png|folio-tags|>\s*(?:Role|Status|Methods)\s*</i,
@@ -406,6 +408,7 @@ for (const title of [
   "Abu Dhabi Urban Dynamics Lab",
   "Energy System Optimization with DEWA",
   "Probabilistic VNS for Delivery Territory Design",
+  "Protein Structures",
 ]) {
   assertContains(worksIndex, new RegExp(title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i"), `Works includes ${title}`);
 }
@@ -414,11 +417,12 @@ for (const title of ["KU MetaHub AI/XR Lab", "ADSG Public Policy Simulations", "
 }
 assert.deepEqual(
   [...worksIndex.matchAll(/class="folio-work-entry__number"[^>]*>(\d{2})<\/span>/g)].map((match) => match[1]),
-  ["01", "02", "03", "04", "05"],
-  "Works numbers the five selected projects consecutively"
+  ["01", "02", "03", "04", "05", "06"],
+  "Works numbers the six selected projects consecutively"
 );
 assert.doesNotMatch(worksIndex, /href="\/projects\/sila\/"/, "Sila stays outside the numbered sequence");
 assertContains(worksIndex, /href="\/projects\/uae-economy-lab\/"/, "Works opens the UAE Economy Lab write-up");
+assertContains(worksIndex, /href="\/projects\/protein-structures\/"/, "Works opens the Protein Structures write-up");
 assertContains(routes.works, /href="\/projects\/abu-dhabi-urban-dynamics\/"/, "Works opens the Urban Dynamics write-up");
 assert.doesNotMatch(routes.works, /href="\/projects\/abu-dhabi-urban-dynamics-v2\/"/, "Works does not drop readers directly into the console");
 assert.doesNotMatch(
@@ -430,6 +434,85 @@ assertContains(routes.territory, /id="quick-start"/, "Work 05 contains the merge
 assertContains(routes.territory, /DTDPAlgorithms\.py/, "Work 05 contains the merged repository map");
 assertContains(routes.territory, /github\.com\/ahmed-o-aly\/TerritoryDesign/, "Work 05 keeps the public code artifact");
 assert.doesNotMatch(routes.territory, /<dt>\s*(?:Role|Methods|Status)\s*<\/dt>/i, "Work 05 reads as authored prose rather than template metadata");
+
+const proteinInteractive = block(routes.protein, "folio-case-interactive");
+assert.equal((proteinInteractive.match(/<iframe\b/g) || []).length, 1, "Protein Structures embeds one molecular viewer");
+assertContains(proteinInteractive, /<iframe[\s\S]*?src="\/protein-structures\/"/, "Protein Structures embeds the permanent app route");
+assertContains(
+  proteinInteractive,
+  /title="Protein Structures interactive molecular and experimental density viewer"/,
+  "the molecular viewer has an accessible title"
+);
+assertContains(proteinInteractive, /allow="fullscreen; xr-spatial-tracking"/, "the molecular viewer permits fullscreen and WebXR");
+assertContains(proteinInteractive, /loading="lazy"/, "the molecular viewer defers its data payload");
+assertContains(
+  proteinInteractive,
+  /<a[^>]*class="folio-case-interactive__launch"[^>]*href="\/protein-structures\/"[^>]*>[\s\S]*?Open Protein Structures full screen/,
+  "Protein Structures provides a full-screen launch for headset browsers"
+);
+const proteinProse = block(routes.protein, "folio-prose", "div");
+assertContains(
+  proteinProse,
+  /Playback shows experimental snapshots by default/,
+  "the protein write-up states the default scientific comparison mode"
+);
+assertContains(
+  proteinProse,
+  /Optional interpolation is off by default and labeled as illustrative/,
+  "the protein write-up distinguishes interpolated shapes from observations"
+);
+assertContains(
+  proteinProse,
+  /density is hidden in this mode because it belongs to a different experimental state/,
+  "the protein write-up explains state-specific density"
+);
+assertContains(proteinProse, /href="https:\/\/doi\.org\/10\.1038\/s41586-022-04671-8"/, "the protein write-up cites the original research");
+assertContains(routes.protein, /href="\/protein-structures\/data\/7w38\.cif"/, "the protein page retains original coordinate access");
+assert.doesNotMatch(routes.protein, /trycloudflare\.com|localhost|127\.0\.0\.1/, "the published protein page contains no temporary viewer address");
+
+const proteinViewer = readRoute("/protein-structures/");
+const proteinPublishedFile = (path) => new URL(`../_site/protein-structures/${path}`, import.meta.url);
+const proteinBuiltFile = (path) => new URL(`../assets/apps/protein-structures/${path}`, import.meta.url);
+assert.equal(
+  readFileSync(proteinPublishedFile("index.html")).equals(readFileSync(proteinBuiltFile("index.html"))),
+  true,
+  "Jekyll publishes the molecular viewer HTML without rewriting the Vite build"
+);
+const proteinAssets = [...proteinViewer.matchAll(/(?:src|href)="\.\/([^\"]+\.(?:js|css))"/g)].map((match) => match[1]);
+assert.ok(
+  proteinAssets.some((asset) => asset.endsWith(".js")),
+  "the published viewer references its built JavaScript"
+);
+assert.ok(
+  proteinAssets.some((asset) => asset.endsWith(".css")),
+  "the published viewer references its built stylesheet"
+);
+for (const asset of proteinAssets) {
+  assert.equal(
+    readFileSync(proteinPublishedFile(asset)).equals(readFileSync(proteinBuiltFile(asset))),
+    true,
+    `the published molecular viewer preserves ${asset}`
+  );
+}
+for (const asset of ["data/backbone.json", "data/7w38.cif", "data/motion/motion.json"]) {
+  assert.ok(statSync(proteinPublishedFile(asset)).size > 0, `${asset} is deployed with the molecular viewer`);
+}
+const proteinDensity = JSON.parse(readFileSync(proteinPublishedFile("data/density-manifest.json"), "utf8"));
+for (const level of proteinDensity.levels) {
+  assert.equal(
+    statSync(proteinPublishedFile(`data/${level.positions}`)).size,
+    level.vertexCount * 3 * 4,
+    `density ${level.sigma} has all vertex data`
+  );
+  assert.equal(
+    statSync(proteinPublishedFile(`data/${level.indices}`)).size,
+    level.triangleCount * 3 * 4,
+    `density ${level.sigma} has all triangle data`
+  );
+}
+for (const path of ["molecular-vr/", "protein-structures/node_modules/", "protein-structures/src/", "protein-structures/.runtime/"]) {
+  assert.equal(existsSync(new URL(`../_site/${path}`, import.meta.url)), false, `publication excludes development path ${path}`);
+}
 
 const economyInteractive = block(routes.economy, "folio-case-interactive");
 assert.equal((economyInteractive.match(/<iframe\b/g) || []).length, 1, "UAE Economy Lab embeds one live workspace");
@@ -541,6 +624,7 @@ for (const [name, html] of Object.entries({
   library: routes.library,
   works: routes.works,
   economy: routes.economy,
+  protein: routes.protein,
   cnc: routes.cnc,
   urban: routes.urban,
   urbanConsole: routes.urbanConsole,

@@ -2,7 +2,7 @@
 layout: default
 title: Projects
 permalink: /projects/
-description: Products and research software I have built, from field-sales systems to simulation and optimization.
+description: Products and research software I have built, from field-sales systems to simulation, optimization, and protein visualization.
 ---
 
 {% assign sorted_projects = site.projects | where_exp: 'project', 'project.work_number' | sort: 'work_number' %}
@@ -13,7 +13,7 @@ description: Products and research software I have built, from field-sales syste
   <header class="folio-page__header">
     <p class="folio-kicker">Selected Works</p>
     <h1>A few things I have built.</h1>
-    <p>Software for field work, machine inspection, economic and city simulation, energy systems, and delivery territories.</p>
+    <p>Software for field work, machine inspection, protein structures, economic and city simulation, energy systems, and delivery territories.</p>
   </header>
 
 {% if current_venture %}
