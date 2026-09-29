@@ -1,0 +1,138 @@
+{
+  "formatVersion": "1.0.0",
+  "axisOrder": [
+    0,
+    1,
+    2
+  ],
+  "origin": [
+    0,
+    0,
+    0
+  ],
+  "dimensions": [
+    1,
+    1,
+    1
+  ],
+  "spacegroup": {
+    "number": 1,
+    "size": [
+      438.3999938964844,
+      438.3999938964844,
+      438.3999938964844
+    ],
+    "angles": [
+      90,
+      90,
+      90
+    ],
+    "isPeriodic": false
+  },
+  "channels": [
+    "em"
+  ],
+  "valueType": "float32",
+  "blockSize": 96,
+  "sampling": [
+    {
+      "byteOffset": 0,
+      "rate": 1,
+      "valuesInfo": [
+        {
+          "mean": -0.00004745750309858097,
+          "sigma": 0.0015793528508373808,
+          "min": -0.0030254560988396406,
+          "max": 0.028798691928386688
+        }
+      ],
+      "sampleCount": [
+        640,
+        640,
+        640
+      ]
+    },
+    {
+      "byteOffset": 1048576000,
+      "rate": 2,
+      "valuesInfo": [
+        {
+          "mean": -0.00004741411749782113,
+          "sigma": 0.0015335678018007562,
+          "min": -0.001991225639358163,
+          "max": 0.02333482913672924
+        }
+      ],
+      "sampleCount": [
+        320,
+        320,
+        320
+      ]
+    },
+    {
+      "byteOffset": 1179648000,
+      "rate": 4,
+      "valuesInfo": [
+        {
+          "mean": -0.00004697435708364371,
+          "sigma": 0.0014849379372645394,
+          "min": -0.0011691071558743715,
+          "max": 0.01631060428917408
+        }
+      ],
+      "sampleCount": [
+        160,
+        160,
+        160
+      ]
+    },
+    {
+      "byteOffset": 1196032000,
+      "rate": 8,
+      "valuesInfo": [
+        {
+          "mean": -0.00004600975354394732,
+          "sigma": 0.0014388490142237986,
+          "min": -0.0009800009429454803,
+          "max": 0.010847204364836216
+        }
+      ],
+      "sampleCount": [
+        80,
+        80,
+        80
+      ]
+    }
+  ],
+  "availablePrecisions": [
+    {
+      "precision": 0,
+      "maxVoxels": 524288
+    },
+    {
+      "precision": 1,
+      "maxVoxels": 1048576
+    },
+    {
+      "precision": 2,
+      "maxVoxels": 2097152
+    },
+    {
+      "precision": 3,
+      "maxVoxels": 4194304
+    },
+    {
+      "precision": 4,
+      "maxVoxels": 8388608
+    },
+    {
+      "precision": 5,
+      "maxVoxels": 16777216
+    },
+    {
+      "precision": 6,
+      "maxVoxels": 25165824
+    }
+  ],
+  "isAvailable": true
+}
