@@ -233,3 +233,23 @@ test('repeated activation waits for preparation and cannot reveal an incomplete 
   assert.equal(changes.at(-1).position, 0);
   assert.equal(element('motion-loading').hidden, true);
 });
+
+test('VR panel playback state and previous action track the live comparison', async () => {
+  const { motion, changes } = environment();
+  assert.equal(motion.playing, false);
+  motion.action('toggle-playback');
+  assert.equal(motion.playing, false, 'inactive mode ignores playback controls');
+  await motion.activate();
+  motion.action('toggle-playback');
+  assert.equal(motion.playing, true);
+  motion.update(8);
+  assert.equal(changes.at(-1).position, 2);
+  motion.action('previous-state');
+  assert.equal(changes.at(-1).position, 1);
+  assert.equal(motion.playing, false, 'stepping from the panel pauses playback');
+  motion.action('previous-state'); motion.action('previous-state');
+  assert.equal(changes.at(-1).position, 0, 'previous is clamped at the first observation');
+  motion.action('toggle-playback');
+  motion.deactivate();
+  assert.equal(motion.playing, false, 'returning to 7W38 clears the live playback indicator');
+});

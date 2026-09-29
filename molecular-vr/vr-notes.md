@@ -1,10 +1,10 @@
 # VR integration and validation
 
-`src/vr.js` exports `setupVR({ renderer, scene, camera, modelRoot, onStatus, onAction })`.
+`src/vr.js` exports `setupVR({ renderer, scene, camera, modelRoot, panel, onStatus, onAction })`.
 
 - Append the returned `button` in the viewer UI. The CSS class is `vr-button`; `data-state` is `checking`, `ready`, `unavailable`, `entering`, `active`, or `error`.
 - `onStatus({ kind, message })` provides a human-readable availability, controls, or error message. It can be called immediately during setup.
-- Optional `onAction(action)` receives `'toggle-playback'` on a press of additional controller button 4, and `'next-state'` on button 5. Each fires once on press, including while grabbing; holding a button or recentering does not repeat it. Only tracked `xr-standard` input sources with these optional buttons are used. The parent viewer owns the action implementation and playback feedback.
+- Optional `onAction(action)` receives `'toggle-playback'` on a right-controller button 4 press (A), and `'next-state'` on right button 5 (B). Left button 4 (X) toggles the panel; left button 5 (Y) recenters. A right-thumbstick click also toggles the panel. Each action fires once on press. Only tracked `xr-standard` input sources with the relevant controls are used. The parent viewer owns playback and settings.
 - Call `vr.update(deltaSeconds)` from `renderer.setAnimationLoop()`, before rendering. Suspend OrbitControls and desktop auto-rotation whenever `vr.active` is true.
 - `vr.reset()` recenters the model in front of the headset at the size and orientation it had when VR started. `vr.refreshSupport()` checks for a newly connected headset. `await vr.dispose()` removes the module’s scene content and listeners.
 
@@ -12,13 +12,15 @@ The model must be centered inside `modelRoot`, preferably about two metres tall 
 
 Controls:
 
-- Hold either trigger or grip to move and rotate the model with one controller.
-- Hold both to move, rotate, and scale the model between the two hands. Hand tracking uses pinch gestures when the runtime supplies them.
-- Push a standard XR controller thumbstick up or down to change size without grabbing. Click a thumbstick to recenter.
-- Where available, A/X toggles state playback and B/Y advances one state. Those labels match the Oculus Touch profile. Other controllers may label additional buttons differently or omit them; `xr-standard` itself defines only buttons 0–3, so these labels are not universal. Hand pinch remains dedicated to grabbing.
+- Hold either lower grip to move and rotate the model with one controller. Triggers aimed away from the panel also grab.
+- Hold both lower grips to move, rotate, and scale the model between the two hands. Hand tracking uses pinch gestures when the runtime supplies them.
+- Move the left thumbstick to move the viewer forward/backward and sideways relative to the horizontal headset direction. This changes the camera rig position, not the model transform or size. Neither thumbstick resizes the model.
+- Press X or click the right thumbstick to summon/hide the panel. It opens on VR entry, placed in front and to the right of the viewer, and stays anchored in the scene rather than following the head. Reopening places it by the current viewpoint. Aim a controller at its controls; press or hold the trigger to select or drag. Grips remain available to grab the model while the panel is open.
+- The panel controls contour (seven discrete presets), opacity, density representation, model visibility, chain isolation, and cutaway. State comparison has mode-specific playback, previous/next, focus, ED4 overlay, and RPT5 controls. Cutaway works in both views. Contour loads show progress and errors; a failed request leaves the existing mesh and restores its preset. Settings share the desktop handlers.
+- Y recenters; A toggles state playback and B advances one state. These labels match the Oculus Touch profile. Other controllers may label additional buttons differently or omit them; `xr-standard` itself defines only buttons 0–3, so these labels are not universal. Hand pinch remains dedicated to grabbing, and panel interaction currently requires controllers.
 - Release to leave the model in place. Scaling is bounded to 0.15–4 times its initial size.
 
-The module adds laser pointers, small controller markers, a subtle floor grid, and sphere-based hand visuals. It uses no remote controller or hand-model downloads.
+The module adds laser pointers, small controller markers, a subtle floor grid, and sphere-based hand visuals. It uses no remote controller or hand-model downloads. `src/vr-panel.js` owns the canvas-backed panel geometry and pointer hit targets; `main.js` supplies live settings through `getState`, `onChange`, and `onAction`. The panel belongs to the scene, independent of the model and camera rig, so scaling a protein never scales its controls. The application camera is parented to the locomotion rig while in VR and restored on exit; pass that camera to world-space captions after `vr.update()` has updated it.
 
 ## Opening in a headset
 
@@ -29,6 +31,8 @@ Use a WebXR-compatible headset browser and load the viewer from a trusted HTTPS 
 `node --check src/vr.js` passed. A Node harness using real Three.js transforms and mocked XR/DOM objects verified supported/unsupported states, entry, floor placement, controller translation, two-hand scale, scale bounds, desktop restoration, and rejection of insecure contexts. This verifies logic; it is not a hardware test. Headset rendering, input tracking, hand pinch support, frame rate, and comfort still require an actual device.
 
 Additional mocked checks cover playback button press/release edges, no repeat while held or recentering, callbacks during controller grabs, absent optional buttons, ignored non-XR-standard gamepads, tracking loss, and reconnect state.
+
+The committed `scripts/test-vr.mjs` regression suite covers head-relative locomotion, shared head/controller movement, unchanged two-grip scaling, panel-versus-model pointer ownership, tracking loss, held-button focus recovery, current-view recentering, and desktop restoration. `scripts/test-vr-panel.mjs` checks panel placement, ray hit coordinates, slider ranges, chain pagination, disabled controls, and capture cancellation. Both run with the motion tests via `npm test`. Browser preview checks verify the actual panel texture and desktop integration; they do not emulate headset input.
 
 References checked for this implementation:
 

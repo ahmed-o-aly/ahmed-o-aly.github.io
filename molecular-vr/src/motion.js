@@ -158,7 +158,7 @@ export function createMotionComparison({ parent, onChange = () => {}, onFocus = 
       context.fillStyle = '#294f7b'; context.font = '500 42px sans-serif'; context.fillText(text, 30, 64);
       context.fillStyle = '#5e788f'; context.font = '26px sans-serif';
       context.fillText('Experimental states · display timing only', 30, 116);
-      context.fillText('A/X: play/pause   B/Y: next (where available)', 30, 164);
+      context.fillText('A: play/pause   B: next   X: controls', 30, 164);
       hud.userData.texture.needsUpdate = true; lastHud = text;
     }
     if (vrCamera) {
@@ -263,6 +263,7 @@ export function createMotionComparison({ parent, onChange = () => {}, onFocus = 
   }
   return {
     get active() { return active; },
+    get playing() { return Boolean(active && playback?.playing); },
     get chainCount() { return data?.chains.filter(allowed).length ?? 0; },
     get data() { return data; },
     getBounds,
@@ -296,6 +297,7 @@ export function createMotionComparison({ parent, onChange = () => {}, onFocus = 
       if (!active || !playback) return;
       if (action === 'toggle-playback') playback.toggle();
       if (action === 'next-state') playback.step(1);
+      if (action === 'previous-state') playback.step(-1);
       display();
     },
     setClipping(nextPlanes) { planes = nextPlanes; for (const material of materials) { material.clippingPlanes = planes; material.needsUpdate = true; } },

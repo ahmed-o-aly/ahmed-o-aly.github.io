@@ -6,10 +6,11 @@ import { XRHandModelFactory } from 'three/addons/webxr/XRHandModelFactory.js';
  * from renderer.setAnimationLoop. Suspend desktop controls while `active`.
  * onStatus receives { kind, message }, where kind is checking, ready,
  * unavailable, entering, active, or error. No headset or permission is assumed.
- * Optional onAction receives 'toggle-playback' or 'next-state' for rising edges
- * of additional xr-standard buttons 4/5 (A/X and B/Y on Oculus Touch profiles).
+ * Optional panel supplies a world-space settings surface. Grips always manipulate
+ * the model; trigger presses belong to either the panel or model until release.
+ * Left stick moves the viewer. Right stick click / X summons the panel.
  */
-export function setupVR({ renderer, scene, camera, modelRoot, onStatus = () => {}, onAction = () => {} }) {
+export function setupVR({ renderer, scene, camera, modelRoot, panel = null, onStatus = () => {}, onAction = () => {} }) {
   renderer.xr.enabled = true;
   renderer.xr.setReferenceSpaceType('local');
 
@@ -28,6 +29,8 @@ export function setupVR({ renderer, scene, camera, modelRoot, onStatus = () => {
   let desktop = null;
   let gesture = null;
   let pendingRecenter = false;
+  let pendingPanel = false;
+  let movementArmed = false;
   const baseScale = new THREE.Vector3(1, 1, 1);
   const baseQuaternion = new THREE.Quaternion();
   const matrix = new THREE.Matrix4();
@@ -41,6 +44,12 @@ export function setupVR({ renderer, scene, camera, modelRoot, onStatus = () => {
   const deltaRotation = new THREE.Quaternion();
   const listeners = [];
   const handFactory = new XRHandModelFactory();
+  const rig = new THREE.Group();
+  rig.name = 'VR viewer locomotion';
+  scene.add(rig);
+  if (panel) scene.add(panel.group);
+  const walkForward = new THREE.Vector3(0, 0, -1);
+  const walkRight = new THREE.Vector3();
 
   const environment = new THREE.Group();
   environment.name = 'VR floor';
@@ -69,15 +78,16 @@ export function setupVR({ renderer, scene, camera, modelRoot, onStatus = () => {
     const hand = renderer.xr.getHand(index);
     const handModel = handFactory.createHandModel(hand, 'spheres');
     hand.add(handModel);
-    scene.add(controller, grip, hand);
+    rig.add(controller, grip, hand);
 
     const rayGeometry = new THREE.BufferGeometry().setFromPoints([
       new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0, -1),
     ]);
     const rayMaterial = new THREE.LineBasicMaterial({
-      color: 0x91baf0, transparent: true, opacity: 0.5, depthWrite: false,
+      color: 0x91baf0, transparent: true, opacity: 0.5, depthWrite: false, depthTest: false,
     });
     const ray = new THREE.Line(rayGeometry, rayMaterial);
+    ray.renderOrder = 110;
     ray.scale.z = 2.3;
     controller.add(ray);
     const marker = new THREE.Mesh(
@@ -85,9 +95,14 @@ export function setupVR({ renderer, scene, camera, modelRoot, onStatus = () => {
       new THREE.MeshBasicMaterial({ color: 0xc5dcff }),
     );
     controller.add(marker);
+    const cursor = new THREE.Mesh(new THREE.SphereGeometry(0.005, 10, 6), new THREE.MeshBasicMaterial({ color: 0x174789, depthTest: false, depthWrite: false }));
+    cursor.renderOrder = 111;
+    cursor.visible = false;
+    controller.add(cursor);
     const input = {
-      index, controller, grip, hand, handModel, ray, marker,
+      index, controller, grip, hand, handModel, ray, marker, cursor,
       source: null, select: false, squeeze: false, pinch: false,
+      selectOwner: null,
       stickPressed: false, primaryPressed: false, secondaryPressed: false,
       pose: new THREE.Matrix4(),
       point: new THREE.Vector3(), tracked: false,
@@ -97,25 +112,61 @@ export function setupVR({ renderer, scene, camera, modelRoot, onStatus = () => {
       input.stickPressed = input.primaryPressed = input.secondaryPressed = false;
     });
     listen(controller, 'disconnected', () => {
+      panel?.cancelPointer(input.index);
       input.source = null;
       input.select = input.squeeze = input.pinch = false;
+      input.selectOwner = null;
+      input.cursor.visible = false;
       input.stickPressed = input.primaryPressed = input.secondaryPressed = false;
       gesture = null;
     });
-    listen(controller, 'selectstart', () => { input.select = true; });
-    listen(controller, 'selectend', () => { input.select = false; });
-    listen(controller, 'squeezestart', () => { input.squeeze = true; });
+    listen(controller, 'selectstart', () => beginSelect(input, 'select'));
+    listen(controller, 'selectend', () => endSelect(input, 'select'));
+    listen(controller, 'squeezestart', () => { if (canInteract()) input.squeeze = true; });
     listen(controller, 'squeezeend', () => { input.squeeze = false; });
-    listen(hand, 'pinchstart', () => { input.pinch = true; });
-    listen(hand, 'pinchend', () => { input.pinch = false; });
+    listen(hand, 'pinchstart', () => beginSelect(input, 'pinch'));
+    listen(hand, 'pinchend', () => endSelect(input, 'pinch'));
     return input;
   });
+
+  function canInteract() {
+    return session && !entering && !disposed && (!session.visibilityState || session.visibilityState === 'visible');
+  }
+
+  function beginSelect(input, type) {
+    if (!canInteract() || !input.source) return;
+    input[type] = true;
+    if (input.selectOwner) return;
+    rig.updateMatrixWorld(true);
+    const hit = !input.source.hand && input.controller.visible && panel?.visible ? panel.intersect(input.controller) : null;
+    input.selectOwner = hit ? 'panel' : 'model';
+    if (hit) {
+      gesture = null;
+      // Even a disabled row or a second pointer hitting the panel is consumed.
+      panel.pointerDown(input.index, hit);
+    }
+  }
+
+  function endSelect(input, type) {
+    input[type] = false;
+    if (input.select || input.pinch) return;
+    if (input.selectOwner === 'panel') panel?.pointerUp(input.index);
+    input.selectOwner = null;
+  }
 
   function clearInteraction(resetSticks = true) {
     gesture = null;
     for (const input of inputs) {
+      panel?.cancelPointer(input.index);
       input.select = input.squeeze = input.pinch = false;
-      if (resetSticks) input.stickPressed = input.primaryPressed = input.secondaryPressed = false;
+      input.selectOwner = null;
+      input.cursor.visible = false;
+      if (resetSticks) {
+        const buttons = resetSticks === 'held' ? input.source?.gamepad?.buttons : null;
+        input.stickPressed = Boolean(buttons?.[3]?.pressed);
+        input.primaryPressed = Boolean(buttons?.[4]?.pressed);
+        input.secondaryPressed = Boolean(buttons?.[5]?.pressed);
+      }
     }
   }
 
@@ -133,14 +184,13 @@ export function setupVR({ renderer, scene, camera, modelRoot, onStatus = () => {
   function placeModel(inFrontOfViewer = false) {
     position.set(0, floorSpace ? 1.4 : -0.15, -2.3);
     if (inFrontOfViewer) {
-      const xrCamera = renderer.xr.getCamera();
-      xrCamera.updateWorldMatrix(true, false);
-      xrCamera.getWorldPosition(position);
-      xrCamera.getWorldDirection(forward);
+      camera.updateWorldMatrix(true, false);
+      camera.getWorldPosition(position);
+      camera.getWorldDirection(forward);
       forward.y = 0;
       if (forward.lengthSq() < 0.001) forward.set(0, 0, -1);
       position.addScaledVector(forward.normalize(), 2.3);
-      position.y = xrCamera.getWorldPosition(forward).y - 0.2;
+      position.y = camera.getWorldPosition(forward).y - 0.2;
     }
     const worldMatrix = new THREE.Matrix4().compose(position, baseQuaternion, baseScale);
     applyWorldMatrix(worldMatrix);
@@ -156,6 +206,7 @@ export function setupVR({ renderer, scene, camera, modelRoot, onStatus = () => {
       modelQuaternion: modelRoot.quaternion.clone(),
       modelScale: modelRoot.scale.clone(),
       cameraPosition: camera.position.clone(),
+      cameraParent: camera.parent,
       cameraQuaternion: camera.quaternion.clone(),
       cameraScale: camera.scale.clone(),
       near: camera.near, far: camera.far, fov: camera.fov, aspect: camera.aspect, zoom: camera.zoom,
@@ -168,6 +219,8 @@ export function setupVR({ renderer, scene, camera, modelRoot, onStatus = () => {
     modelRoot.quaternion.copy(desktop.modelQuaternion);
     modelRoot.scale.copy(desktop.modelScale);
     modelRoot.updateMatrix();
+    if (desktop.cameraParent) desktop.cameraParent.add(camera);
+    else camera.removeFromParent();
     camera.position.copy(desktop.cameraPosition);
     camera.quaternion.copy(desktop.cameraQuaternion);
     camera.scale.copy(desktop.cameraScale);
@@ -181,6 +234,9 @@ export function setupVR({ renderer, scene, camera, modelRoot, onStatus = () => {
     session = null;
     entering = false;
     pendingRecenter = false;
+    pendingPanel = false;
+    movementArmed = false;
+    panel?.hide();
     environment.visible = false;
     clearInteraction();
     restoreDesktop();
@@ -216,7 +272,7 @@ export function setupVR({ renderer, scene, camera, modelRoot, onStatus = () => {
       button.textContent = supported ? 'Enter VR' : 'Open in a VR headset';
       button.setAttribute('aria-label', supported ? 'Enter immersive virtual reality' : 'Virtual reality headset unavailable');
       status(supported ? 'ready' : 'unavailable', supported
-        ? 'VR ready. Trigger or pinch to move; use both hands to rotate and resize.'
+        ? 'VR ready. Grips hold and scale the model. Left stick moves you; X or right-stick click opens controls.'
         : 'No immersive VR device is available in this browser. Open this same HTTPS page in a compatible headset browser.');
     } catch (error) {
       button.disabled = true;
@@ -251,6 +307,25 @@ export function setupVR({ renderer, scene, camera, modelRoot, onStatus = () => {
       } catch { /* 'local' is the baseline reference space for immersive VR. */ }
       renderer.xr.setReferenceSpaceType(floorSpace ? 'local-floor' : 'local');
       saveDesktop();
+      rig.position.set(0, 0, 0);
+      rig.quaternion.identity();
+      rig.scale.setScalar(1);
+      rig.add(camera);
+      camera.position.set(0, 0, 0);
+      camera.quaternion.identity();
+      camera.scale.setScalar(1);
+      rig.updateMatrixWorld(true);
+      movementArmed = false;
+      const visibilityChanged = () => {
+        clearInteraction('held');
+        movementArmed = false;
+        if (requestedSession.visibilityState !== 'visible') {
+          panel?.hide();
+          pendingPanel = false;
+        }
+      };
+      requestedSession.addEventListener('visibilitychange', visibilityChanged);
+      requestedSession.addEventListener('end', () => requestedSession.removeEventListener('visibilitychange', visibilityChanged), { once: true });
       await renderer.xr.setSession(requestedSession);
       if (disposed || session !== requestedSession) {
         await requestedSession.end().catch(() => {});
@@ -260,11 +335,12 @@ export function setupVR({ renderer, scene, camera, modelRoot, onStatus = () => {
       environment.visible = floorSpace;
       placeModel();
       pendingRecenter = true;
+      pendingPanel = true;
       document.body.classList.add('is-vr');
       button.textContent = 'Exit VR';
       button.disabled = false;
       button.setAttribute('aria-label', 'Exit immersive virtual reality');
-      status('active', 'Trigger, grip, or pinch: grab. Both hands: rotate and resize. Thumbstick up/down: scale. Click a thumbstick: recenter.');
+      status('active', 'Grips: hold, turn, and scale. Left stick: move yourself. X or right-stick click: controls. Point and trigger to adjust. A: play/pause; B: next; Y: recenter (Touch controllers).');
     } catch (error) {
       if (requestedSession) await requestedSession.end().catch(() => {});
       session = null;
@@ -282,7 +358,10 @@ export function setupVR({ renderer, scene, camera, modelRoot, onStatus = () => {
     if (input.source?.hand && input.hand.visible && wrist?.visible) trackedObject = wrist;
     input.tracked = Boolean(input.source && trackedObject.visible);
     if (!input.tracked) {
+      panel?.cancelPointer(input.index);
       input.select = input.squeeze = input.pinch = false;
+      input.selectOwner = null;
+      input.cursor.visible = false;
       return;
     }
     trackedObject.updateWorldMatrix(true, false);
@@ -316,13 +395,90 @@ export function setupVR({ renderer, scene, camera, modelRoot, onStatus = () => {
 
   function update(delta = 1 / 60) {
     if (!session || entering || !renderer.xr.isPresenting || disposed) return;
+    if (!canInteract()) {
+      clearInteraction('held');
+      movementArmed = false;
+      panel?.hide();
+      return;
+    }
+    rig.updateMatrixWorld(true);
+    // WebXR poses are in reference-space coordinates; update their parent rig
+    // before using the app camera for world-space panel placement and walking.
+    renderer.xr.updateCamera(camera);
     if (pendingRecenter) {
       pendingRecenter = false;
       placeModel(true);
     }
+    if (pendingPanel && inputs.some((input) => input.source?.gamepad && !input.source.hand)) {
+      pendingPanel = false;
+      panel?.show(camera);
+    }
     const dt = Math.min(Math.max(Number.isFinite(delta) ? delta : 1 / 60, 0), 0.05);
     for (const input of inputs) readPose(input);
-    const activeInputs = inputs.filter((input) => input.tracked && (input.select || input.squeeze || input.pinch));
+    for (const input of inputs) {
+      const gamepad = input.source?.gamepad;
+      if (!gamepad || gamepad.mapping !== 'xr-standard') {
+        input.stickPressed = input.primaryPressed = input.secondaryPressed = false;
+        continue;
+      }
+      const primaryPressed = Boolean(gamepad.buttons[4]?.pressed);
+      const secondaryPressed = Boolean(gamepad.buttons[5]?.pressed);
+      const stickPressed = Boolean(gamepad.buttons[3]?.pressed);
+      const primaryStarted = primaryPressed && !input.primaryPressed;
+      const secondaryStarted = secondaryPressed && !input.secondaryPressed;
+      const stickStarted = stickPressed && !input.stickPressed;
+      input.primaryPressed = primaryPressed;
+      input.secondaryPressed = secondaryPressed;
+      input.stickPressed = stickPressed;
+      if (!input.tracked) continue;
+      const handedness = input.source.handedness;
+      // A/B/X/Y are optional Touch-style buttons, never assumed on all devices.
+      if (handedness === 'left') {
+        if (primaryStarted) panel?.toggle(camera);
+        if (secondaryStarted) placeModel(true);
+      } else if (handedness === 'right') {
+        if (primaryStarted) onAction('toggle-playback');
+        if (secondaryStarted) onAction('next-state');
+      }
+      if (stickStarted && handedness !== 'left') panel?.toggle(camera);
+    }
+
+    panel?.update();
+    const uiActive = inputs.some((input) => input.selectOwner === 'panel' && (input.select || input.pinch));
+    for (const input of inputs) {
+      if (!input.tracked) continue;
+      const hit = !input.source.hand && input.controller.visible && panel?.visible ? panel.intersect(input.controller) : null;
+      if (input.selectOwner === 'panel') panel?.pointerMove(input.index, hit);
+      input.ray.scale.z = hit ? hit.distance : 2.3;
+      input.cursor.visible = Boolean(hit);
+      if (hit) input.cursor.position.set(0, 0, -hit.distance);
+      if (hit) input.ray.material.color.set(0x315f96);
+    }
+
+    const walker = inputs.find((input) => input.tracked && input.source?.handedness === 'left' && input.source.gamepad?.mapping === 'xr-standard');
+    const axes = walker?.source.gamepad.axes;
+    // xr-standard reserves axes 2/3 for a thumbstick; do not treat touchpad axes
+    // or unknown mappings as movement. Neither stick ever changes model scale.
+    if (axes?.length >= 4 && Number.isFinite(axes[2]) && Number.isFinite(axes[3])) {
+      const x = THREE.MathUtils.clamp(axes[2], -1, 1);
+      const y = THREE.MathUtils.clamp(axes[3], -1, 1);
+      const magnitude = Math.hypot(x, y);
+      if (magnitude < 0.18) movementArmed = true;
+      if (movementArmed && !uiActive && !panel?.interacting && magnitude >= 0.18) {
+        camera.getWorldDirection(forward);
+        forward.y = 0;
+        if (forward.lengthSq() > 0.001) walkForward.copy(forward).normalize();
+        walkRight.set(-walkForward.z, 0, walkForward.x);
+        const speed = 0.65 * (Math.min(magnitude, 1) - 0.18) / 0.82;
+        rig.position.addScaledVector(walkRight, x / magnitude * speed * dt);
+        rig.position.addScaledVector(walkForward, -y / magnitude * speed * dt);
+        rig.updateMatrixWorld(true);
+        renderer.xr.updateCamera(camera);
+        for (const input of inputs) readPose(input);
+      }
+    } else movementArmed = false;
+
+    const activeInputs = uiActive ? [] : inputs.filter((input) => input.tracked && (input.squeeze || input.selectOwner === 'model' && (input.select || input.pinch)));
     // Closely overlapping hands should not generate unstable scale/rotation.
     if (activeInputs.length === 2 && activeInputs[0].point.distanceTo(activeInputs[1].point) < 0.05) activeInputs.pop();
     const key = activeInputs.map((input) => input.index).join(',');
@@ -346,34 +502,6 @@ export function setupVR({ renderer, scene, camera, modelRoot, onStatus = () => {
       }
     } else gesture = null;
 
-    for (const input of inputs) {
-      const gamepad = input.source?.gamepad;
-      if (!gamepad || gamepad.mapping !== 'xr-standard') {
-        input.primaryPressed = input.secondaryPressed = false;
-        continue;
-      }
-      // Only 0–3 are standardized. These optional extra-button bindings match
-      // A/X and B/Y on Touch controllers; their labels vary on other hardware.
-      const primaryPressed = Boolean(gamepad.buttons[4]?.pressed);
-      const secondaryPressed = Boolean(gamepad.buttons[5]?.pressed);
-      const primaryStarted = primaryPressed && !input.primaryPressed;
-      const secondaryStarted = secondaryPressed && !input.secondaryPressed;
-      input.primaryPressed = primaryPressed;
-      input.secondaryPressed = secondaryPressed;
-      if (input.tracked && primaryStarted) onAction('toggle-playback');
-      if (input.tracked && secondaryStarted) onAction('next-state');
-      const stickPressed = Boolean(gamepad.buttons[3]?.pressed);
-      if (stickPressed && !input.stickPressed) placeModel(true);
-      input.stickPressed = stickPressed;
-      if (activeInputs.length || !input.tracked) continue;
-      const axis = gamepad.axes.length >= 4 ? gamepad.axes[3] : gamepad.axes[1];
-      if (!Number.isFinite(axis) || Math.abs(axis) < 0.15) continue;
-      modelRoot.updateWorldMatrix(true, false);
-      modelRoot.matrixWorld.decompose(position, quaternion, scale);
-      const nextRelativeScale = THREE.MathUtils.clamp(scale.x / baseScale.x * Math.exp(-axis * dt * 1.3), 0.15, 4);
-      scale.copy(baseScale).multiplyScalar(nextRelativeScale);
-      applyWorldMatrix(new THREE.Matrix4().compose(position, quaternion, scale));
-    }
   }
 
   listen(button, 'click', toggleSession);
@@ -396,10 +524,10 @@ export function setupVR({ renderer, scene, camera, modelRoot, onStatus = () => {
       restoreDesktop();
       for (const removeListener of listeners) removeListener();
       for (const input of inputs) {
-        input.controller.remove(input.ray, input.marker);
+        input.controller.remove(input.ray, input.marker, input.cursor);
         input.hand.remove(input.handModel);
-        scene.remove(input.controller, input.grip, input.hand);
-        for (const object of [input.ray, input.marker]) {
+        rig.remove(input.controller, input.grip, input.hand);
+        for (const object of [input.ray, input.marker, input.cursor]) {
           object.geometry.dispose();
           object.material.dispose();
         }
@@ -410,6 +538,8 @@ export function setupVR({ renderer, scene, camera, modelRoot, onStatus = () => {
         });
       }
       scene.remove(environment);
+      scene.remove(rig);
+      if (panel) { scene.remove(panel.group); panel.dispose(); }
       grid.geometry.dispose();
       grid.material.dispose();
       button.remove();

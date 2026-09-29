@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { setupVR } from './vr.js';
+import { createVRPanel } from './vr-panel.js';
 import { createMotionComparison } from './motion.js';
 import './style.css';
 
@@ -53,6 +54,9 @@ const densityMaterial = new THREE.MeshBasicMaterial({
 const surfaceMaterial = new THREE.MeshStandardMaterial({ color: '#174789', transparent: true, opacity: 0.5, side: THREE.DoubleSide, depthWrite: false, roughness: 0.65, metalness: 0, clippingPlanes: [] });
 let densityMesh, manifest, structure, vr, motion, ready = false, densityMode = 'wireframe', loadVersion = 0;
 let center, height, localMaxZ, localMinZ, selectedChain = 'all';
+let contourLoading = false, displayedContourIndex = 0, densityError = '', comparisonError = '', motionPending = false, modeRequest = 0;
+let motionLabel = '';
+const panelChains = [];
 let frameCounter = 0, fpsTime = performance.now();
 const meshCache = new Map();
 const palette = ['#d2a570','#70a99c','#90a8c4','#bd8e95','#9c9f6c','#bf9374','#8e9cbc','#83b6b0','#c9b26e','#a498b4','#79a0a6','#c49686'];
@@ -114,6 +118,7 @@ function buildBackbone(data) {
     mesh.userData.baseColor = color;
     backboneRoot.add(mesh);
     chainMeshes.push(mesh);
+    panelChains.push({ id: chain.id, label: `${chain.authId || chain.id} · ${chain.name}` });
     const option = document.createElement('option');
     option.value = chain.id;
     option.textContent = `${chain.authId || chain.id} · ${chain.name}`;
@@ -123,10 +128,15 @@ function buildBackbone(data) {
 }
 
 async function setContour(index) {
+  if (!manifest || !Number.isFinite(index)) return;
+  index = THREE.MathUtils.clamp(Math.round(index), 0, manifest.levels.length - 1);
+  $('contour').value = index;
   const version = ++loadVersion;
   const entry = manifest.levels[index];
-  $('contour-value').textContent = `${Number(entry.sigma).toFixed(2)} σ`;
-  $('scene-state').textContent = 'Loading contour';
+  contourLoading = true; densityError = '';
+  $('contour').setAttribute('aria-busy', 'true');
+  $('contour-value').textContent = `${Number(entry.sigma).toFixed(2)} σ · loading`;
+  if (!motion?.active) $('scene-state').textContent = 'Loading contour';
   try {
     let geometry = meshCache.get(index);
     if (!geometry) {
@@ -155,6 +165,8 @@ async function setContour(index) {
       densityMesh.renderOrder = 1;
       contents.add(densityMesh);
     }
+    displayedContourIndex = index;
+    $('contour-value').textContent = `${Number(entry.sigma).toFixed(2)} σ`;
     densityMesh.visible = densityMode !== 'off' && !motion?.active;
     densityMesh.material = densityMode === 'surface' ? surfaceMaterial : densityMaterial;
     $('density-note').textContent = 'Experimental map · 2.74 Å sampling. Contours in σ relative to the full deposited map.';
@@ -162,13 +174,19 @@ async function setContour(index) {
     $('contour-value').title = `Absolute map value: ${entry.absolute}`;
   } catch (error) {
     if (version !== loadVersion) return;
-    $('scene-state').textContent = 'Contour could not load';
-    $('density-note').textContent = `Could not load density. Check the connection and try another contour. ${error.message}`;
+    densityError = 'Contour could not load. Check your connection and try again.';
+    $('contour').value = displayedContourIndex;
+    $('contour-value').textContent = `${Number(manifest.levels[displayedContourIndex].sigma).toFixed(2)} σ`;
+    if (!motion?.active) $('scene-state').textContent = 'Contour could not load';
+    $('density-note').textContent = `${densityError} ${error.message}`;
     if (!ready) throw error;
+  } finally {
+    if (version === loadVersion) { contourLoading = false; $('contour').setAttribute('aria-busy', 'false'); }
   }
 }
 
 function chooseChain(id, showLabel = false) {
+  if (id !== 'all' && !panelChains.some((chain) => chain.id === id)) return;
   selectedChain = id;
   $('chain').value = id;
   for (const mesh of chainMeshes) mesh.visible = id === 'all' || mesh.userData.chain.id === id;
@@ -234,6 +252,7 @@ motion = createMotionComparison({ parent: contents,
     if (ready && options.fit !== false) fitView();
   },
   onChange({ exact, state, stateName, evidence }) {
+    motionLabel = `${stateName}${exact ? ` · ${state.pdbId} · observed` : ' · illustrative'}`;
     $('stage-name').textContent = stateName;
     $('stage-name').classList.toggle('interpolated-title', !exact);
     $('stage-subtitle').textContent = exact ? `${state.pdbId} · Substrate-engaged proteasome` : 'Illustrative intermediate · matched residues only';
@@ -243,8 +262,21 @@ motion = createMotionComparison({ parent: contents,
     $('selection').hidden = true;
   },
 });
-$('mode-motion').onclick = () => { if (ready) motion.activate(); };
-$('mode-structure').onclick = () => motion.deactivate();
+async function activateMotion() {
+  if (!ready || motionPending || motion.active) return;
+  const request = ++modeRequest;
+  motionPending = true; comparisonError = '';
+  await motion.activate();
+  if (request !== modeRequest) return;
+  motionPending = false;
+  if (!motion.active) comparisonError = 'State comparison could not load. Return to 7W38 and retry.';
+}
+function activateStructure() {
+  modeRequest++; motionPending = false; comparisonError = '';
+  motion.deactivate();
+}
+$('mode-motion').onclick = activateMotion;
+$('mode-structure').onclick = activateStructure;
 $('reset').onclick = resetView;
 $('front').onclick = () => { resetView(); fitView(new THREE.Vector3(0, 0, 1)); };
 $('side').onclick = () => { resetView(); fitView(new THREE.Vector3(1, 0, 0)); };
@@ -257,39 +289,89 @@ $('capture').onclick = () => {
   anchor.href = renderer.domElement.toDataURL('image/png');
   anchor.click();
 };
-$('density-style').addEventListener('click', (event) => {
-  const button = event.target.closest('button');
-  if (!button) return;
-  densityMode = button.dataset.mode;
-  for (const item of $('density-style').children) item.setAttribute('aria-pressed', String(item === button));
-  if (densityMesh) densityMesh.visible = densityMode !== 'off';
-  if (densityMesh) densityMesh.material = densityMode === 'surface' ? surfaceMaterial : densityMaterial;
-});
-$('contour').addEventListener('input', () => { if (manifest) setContour(Number($('contour').value)); });
-$('recommended').onclick = () => {
-  if (!manifest) return;
-  const index = manifest.levels.length - 1;
-  $('contour').value = index;
-  setContour(index);
-};
-$('opacity').addEventListener('input', () => {
-  surfaceMaterial.opacity = densityMaterial.opacity = Number($('opacity').value);
+function setDensityMode(mode) {
+  if (!['wireframe', 'surface', 'off'].includes(mode)) return;
+  densityMode = mode;
+  for (const item of $('density-style').children) item.setAttribute('aria-pressed', String(item.dataset.mode === mode));
+  if (densityMesh) {
+    densityMesh.visible = mode !== 'off' && !motion.active;
+    densityMesh.material = mode === 'surface' ? surfaceMaterial : densityMaterial;
+  }
+}
+function setOpacity(value) {
+  if (!Number.isFinite(value)) return;
+  surfaceMaterial.opacity = densityMaterial.opacity = THREE.MathUtils.clamp(value, 0.05, 1);
+  $('opacity').value = densityMaterial.opacity;
   $('opacity-value').textContent = densityMaterial.opacity.toFixed(2);
-});
-$('density-color').addEventListener('input', () => {
-  densityMaterial.color.set($('density-color').value);
-  surfaceMaterial.color.copy(densityMaterial.color);
-  $('color-hex').textContent = $('density-color').value.toUpperCase();
-});
-$('model-visible').onchange = () => { backboneRoot.visible = $('model-visible').checked; };
-$('chain').onchange = () => chooseChain($('chain').value, true);
-$('slice').addEventListener('input', () => {
-  const amount = Number($('slice').value);
+}
+function setModelVisible(visible) {
+  $('model-visible').checked = Boolean(visible);
+  backboneRoot.visible = Boolean(visible) && !motion.active;
+}
+function setCutaway(value) {
+  if (!Number.isFinite(value)) return;
+  const amount = Math.round(THREE.MathUtils.clamp(value, 0, 100));
+  $('slice').value = amount;
   $('slice-value').textContent = amount ? `${amount}%` : 'Off';
   const planes = amount ? [clipPlane] : [];
   for (const material of [densityMaterial, surfaceMaterial]) { material.clippingPlanes = planes; material.needsUpdate = true; }
   chainMeshes.forEach((mesh) => { mesh.material.clippingPlanes = planes; mesh.material.needsUpdate = true; });
   motion.setClipping(planes);
+}
+$('density-style').addEventListener('click', (event) => {
+  const button = event.target.closest('button');
+  if (button) setDensityMode(button.dataset.mode);
+});
+$('contour').addEventListener('input', () => { if (manifest) setContour(Number($('contour').value)); });
+$('recommended').onclick = () => { if (manifest) setContour(manifest.levels.length - 1); };
+$('opacity').addEventListener('input', () => setOpacity(Number($('opacity').value)));
+$('density-color').addEventListener('input', () => {
+  densityMaterial.color.set($('density-color').value);
+  surfaceMaterial.color.copy(densityMaterial.color);
+  $('color-hex').textContent = $('density-color').value.toUpperCase();
+});
+$('model-visible').onchange = () => setModelVisible($('model-visible').checked);
+$('chain').onchange = () => chooseChain($('chain').value, true);
+$('slice').addEventListener('input', () => setCutaway(Number($('slice').value)));
+
+// The headset panel uses the same setters as the desktop controls so returning
+// from VR always preserves the selected contour, chain, and section.
+const panel = createVRPanel({
+  getState: () => ({
+    ready, mode: motion.active || motionPending || comparisonError ? 'motion' : 'structure',
+    contourIndex: Number($('contour').value), contours: manifest?.levels.map((entry) => Number(entry.sigma)) ?? [],
+    contourLoading, opacity: densityMaterial.opacity, cutaway: Number($('slice').value),
+    densityMode, modelVisible: $('model-visible').checked, chains: panelChains, selectedChain,
+    motionPlaying: motion.playing, motionLabel, motionLoading: motionPending, motionAvailable: motion.active,
+    motionFocus: $('motion-focus').value, motionOverlay: $('motion-ghost').checked, motionHideRPT5: $('motion-open-channel').checked,
+    message: motionPending ? $('motion-loading').textContent : comparisonError || (!motion.active ? densityError : ''),
+  }),
+  onChange(key, value) {
+    if (!ready) return;
+    if (key === 'cutaway') { setCutaway(Number(value)); return; }
+    if (motion.active) {
+      const input = { motionFocus: 'motion-focus', motionOverlay: 'motion-ghost', motionHideRPT5: 'motion-open-channel' }[key];
+      if (!input) return;
+      if (key === 'motionFocus') {
+        if (!['motor', 'usp14', 'complex'].includes(value)) return;
+        $(input).value = value;
+      } else $(input).checked = Boolean(value);
+      $(input).dispatchEvent(new Event('change', { bubbles: true }));
+      return;
+    }
+    if (motionPending || comparisonError) return;
+    if (key === 'contourIndex') setContour(Number(value));
+    if (key === 'opacity') setOpacity(Number(value));
+    if (key === 'densityMode') setDensityMode(value);
+    if (key === 'modelVisible') setModelVisible(value);
+    if (key === 'selectedChain') chooseChain(value, true);
+  },
+  onAction(action) {
+    if (action === 'structure-mode') activateStructure();
+    else if (action === 'motion-mode') activateMotion();
+    else if (action === 'recenter') resetView();
+    else motion.action(action);
+  },
 });
 const dialog = $('help');
 function showHelp() { dialog.showModal(); }
@@ -337,7 +419,7 @@ const clock = new THREE.Clock();
 renderer.setAnimationLoop(() => {
   const delta = Math.min(clock.getDelta(), 0.05);
   if (vr?.active) vr.update(delta); else controls.update();
-  motion?.update(delta, vr?.active ? renderer.xr.getCamera() : null);
+  motion?.update(delta, vr?.active ? camera : null);
   if (height && $('slice').valueAsNumber) {
     // Cut in model coordinates, so the section follows VR grabs and turns.
     const z = THREE.MathUtils.lerp(localMaxZ + 2, localMinZ - 2, $('slice').valueAsNumber / 100);
@@ -369,7 +451,7 @@ async function init() {
     $('contour').disabled = false;
     $('density-note').textContent = 'Experimental map · 2.74 Å sampling. Contours in σ relative to the full deposited map.';
     $('map-detail').textContent = 'The deposited map has 0.685 Å voxels; this interactive overview uses 2.74 Å sampling. The deposited contour is 0.005 absolute (about 3.2 σ). The starting setting of 0.5 σ shows more weak density. The Cα trace omits side chains and ligands; download the original mmCIF for all atomic coordinates.';
-    vr = setupVR({ renderer, scene, camera, modelRoot, onAction: (action) => motion.action(action), onStatus: ({ kind, message }) => {
+    vr = setupVR({ renderer, scene, camera, modelRoot, panel, onAction: (action) => motion.action(action), onStatus: ({ kind, message }) => {
       $('vr-status').textContent = message;
       controls.enabled = kind !== 'active' && kind !== 'entering';
       if (kind === 'active') {
