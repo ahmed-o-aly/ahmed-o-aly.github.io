@@ -336,6 +336,22 @@ test('optional buttons held across lost XR focus cannot act again until released
   assert.ok(worldMatrix(f.modelRoot).elements.some((value, i) => Math.abs(value - moved.elements[i]) > 1e-7), 'release and a new Y press recenter the model');
 });
 
+test('stale neutral button values during visibility events cannot rearm actions before a visible frame', async t => {
+  const f = await fixture(t);
+  f.press(1, 4);
+  assert.deepEqual(f.actions, ['toggle-playback']);
+  f.session.visibilityState = 'visible-blurred'; await f.session.emit('visibilitychange'); f.frame();
+  // A runtime may briefly report zeroed gamepad values as system UI closes,
+  // then restore the still-held physical button in the first resumed frame.
+  f.sources[1].gamepad.buttons[4].pressed = false;
+  f.session.visibilityState = 'visible'; await f.session.emit('visibilitychange');
+  f.sources[1].gamepad.buttons[4].pressed = true; f.frame(); f.frame();
+  assert.deepEqual(f.actions, ['toggle-playback'], 'an event-time neutral snapshot is insufficient to rearm a held button');
+  f.press(1, 4, false);
+  f.press(1, 4);
+  assert.deepEqual(f.actions, ['toggle-playback', 'toggle-playback'], 'a neutral visible frame followed by a fresh press rearms the action');
+});
+
 test('leaving VR restores desktop transforms and projection settings', async t => {
   const f = await fixture(t);
   f.panel.hide(); f.sources[0].gamepad.axes[3] = -1; f.frame(0.05);

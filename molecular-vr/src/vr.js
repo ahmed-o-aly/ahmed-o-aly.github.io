@@ -104,16 +104,19 @@ export function setupVR({ renderer, scene, camera, modelRoot, panel = null, onSt
       source: null, select: false, squeeze: false, pinch: false,
       selectOwner: null,
       stickPressed: false, primaryPressed: false, secondaryPressed: false,
+      buttonsArmed: false,
       pose: new THREE.Matrix4(),
       point: new THREE.Vector3(), tracked: false,
     };
     listen(controller, 'connected', (event) => {
       input.source = event.data;
+      input.buttonsArmed = false;
       input.stickPressed = input.primaryPressed = input.secondaryPressed = false;
     });
     listen(controller, 'disconnected', () => {
       panel?.cancelPointer(input.index);
       input.source = null;
+      input.buttonsArmed = false;
       input.select = input.squeeze = input.pinch = false;
       input.selectOwner = null;
       input.cursor.visible = false;
@@ -162,6 +165,7 @@ export function setupVR({ renderer, scene, camera, modelRoot, panel = null, onSt
       input.selectOwner = null;
       input.cursor.visible = false;
       if (resetSticks) {
+        input.buttonsArmed = false;
         const buttons = resetSticks === 'held' ? input.source?.gamepad?.buttons : null;
         input.stickPressed = Boolean(buttons?.[3]?.pressed);
         input.primaryPressed = Boolean(buttons?.[4]?.pressed);
@@ -358,6 +362,7 @@ export function setupVR({ renderer, scene, camera, modelRoot, panel = null, onSt
     if (input.source?.hand && input.hand.visible && wrist?.visible) trackedObject = wrist;
     input.tracked = Boolean(input.source && trackedObject.visible);
     if (!input.tracked) {
+      input.buttonsArmed = false;
       panel?.cancelPointer(input.index);
       input.select = input.squeeze = input.pinch = false;
       input.selectOwner = null;
@@ -418,19 +423,22 @@ export function setupVR({ renderer, scene, camera, modelRoot, panel = null, onSt
     for (const input of inputs) {
       const gamepad = input.source?.gamepad;
       if (!gamepad || gamepad.mapping !== 'xr-standard') {
+        input.buttonsArmed = false;
         input.stickPressed = input.primaryPressed = input.secondaryPressed = false;
         continue;
       }
       const primaryPressed = Boolean(gamepad.buttons[4]?.pressed);
       const secondaryPressed = Boolean(gamepad.buttons[5]?.pressed);
       const stickPressed = Boolean(gamepad.buttons[3]?.pressed);
+      const actionsArmed = input.buttonsArmed;
+      if (!primaryPressed && !secondaryPressed && !stickPressed) input.buttonsArmed = true;
       const primaryStarted = primaryPressed && !input.primaryPressed;
       const secondaryStarted = secondaryPressed && !input.secondaryPressed;
       const stickStarted = stickPressed && !input.stickPressed;
       input.primaryPressed = primaryPressed;
       input.secondaryPressed = secondaryPressed;
       input.stickPressed = stickPressed;
-      if (!input.tracked) continue;
+      if (!input.tracked || !actionsArmed) continue;
       const handedness = input.source.handedness;
       // A/B/X/Y are optional Touch-style buttons, never assumed on all devices.
       if (handedness === 'left') {
