@@ -18,6 +18,7 @@ const routes = {
   dewa: readRoute("/projects/dewa-energy-optimization/"),
   territory: readRoute("/projects/territory-design-probvns/"),
   protein: readRoute("/projects/protein-structures/"),
+  circuits: readRoute("/projects/circuits-lab/"),
   sila: readRoute("/projects/sila/"),
   records: readRoute("/cv/"),
   marginalia: readRoute("/marginalia/"),
@@ -92,6 +93,7 @@ assertContains(routes.works, /href="\/projects\/"[^>]*aria-current="page"/, "Wor
 for (const [name, html] of Object.entries({
   economy: routes.economy,
   protein: routes.protein,
+  circuits: routes.circuits,
   cnc: routes.cnc,
   urban: routes.urban,
   dewa: routes.dewa,
@@ -395,8 +397,8 @@ const ventureNote = block(routes.works, "folio-venture-note");
 assertContains(ventureNote, /Current venture/, "Works distinguishes Sila from the numbered research and software work");
 assertContains(ventureNote, /href="\/projects\/sila\/"[\s\S]*?>[\s\S]*?Sila/, "Works links the current venture to its full write-up");
 const worksIndex = block(routes.works, "folio-work-index", "ol");
-assert.equal((worksIndex.match(/class="folio-work-entry"/g) || []).length, 6, "Works renders the six selected projects");
-assert.equal((worksIndex.match(/class="folio-work-entry__description"/g) || []).length, 6, "each Works entry has one plain-language sentence");
+assert.equal((worksIndex.match(/class="folio-work-entry"/g) || []).length, 7, "Works renders the seven selected projects");
+assert.equal((worksIndex.match(/class="folio-work-entry__description"/g) || []).length, 7, "each Works entry has one plain-language sentence");
 assert.doesNotMatch(
   worksIndex,
   /<img\b|<picture\b|<figure\b|folio-work-plate|machine-lab-interface\.png|urban-dynamics-console\.png|folio-tags|>\s*(?:Role|Status|Methods)\s*</i,
@@ -409,6 +411,7 @@ for (const title of [
   "Energy System Optimization with DEWA",
   "Probabilistic VNS for Delivery Territory Design",
   "Protein Structures",
+  "Circuits Lab",
 ]) {
   assertContains(worksIndex, new RegExp(title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i"), `Works includes ${title}`);
 }
@@ -417,12 +420,13 @@ for (const title of ["KU MetaHub AI/XR Lab", "ADSG Public Policy Simulations", "
 }
 assert.deepEqual(
   [...worksIndex.matchAll(/class="folio-work-entry__number"[^>]*>(\d{2})<\/span>/g)].map((match) => match[1]),
-  ["01", "02", "03", "04", "05", "06"],
-  "Works numbers the six selected projects consecutively"
+  ["01", "02", "03", "04", "05", "06", "07"],
+  "Works numbers the seven selected projects consecutively"
 );
 assert.doesNotMatch(worksIndex, /href="\/projects\/sila\/"/, "Sila stays outside the numbered sequence");
 assertContains(worksIndex, /href="\/projects\/uae-economy-lab\/"/, "Works opens the UAE Economy Lab write-up");
 assertContains(worksIndex, /href="\/projects\/protein-structures\/"/, "Works opens the Protein Structures write-up");
+assertContains(worksIndex, /href="\/projects\/circuits-lab\/"/, "Works opens the Circuits Lab write-up");
 assertContains(routes.works, /href="\/projects\/abu-dhabi-urban-dynamics\/"/, "Works opens the Urban Dynamics write-up");
 assert.doesNotMatch(routes.works, /href="\/projects\/abu-dhabi-urban-dynamics-v2\/"/, "Works does not drop readers directly into the console");
 assert.doesNotMatch(
@@ -434,6 +438,59 @@ assertContains(routes.territory, /id="quick-start"/, "Work 05 contains the merge
 assertContains(routes.territory, /DTDPAlgorithms\.py/, "Work 05 contains the merged repository map");
 assertContains(routes.territory, /github\.com\/ahmed-o-aly\/TerritoryDesign/, "Work 05 keeps the public code artifact");
 assert.doesNotMatch(routes.territory, /<dt>\s*(?:Role|Methods|Status)\s*<\/dt>/i, "Work 05 reads as authored prose rather than template metadata");
+
+const circuitsInteractive = block(routes.circuits, "folio-case-interactive");
+assert.equal((circuitsInteractive.match(/<iframe\b/g) || []).length, 1, "Circuits Lab embeds one experiment bench");
+assertContains(
+  circuitsInteractive,
+  /<iframe[\s\S]*?src="https:\/\/ahmed-o-aly\.github\.io\/circuits-lab\/"/,
+  "Circuits Lab embeds the permanent same-origin app route"
+);
+assertContains(circuitsInteractive, /title="Circuits Lab interactive electrical circuit bench"/, "the circuit bench has an accessible title");
+assertContains(circuitsInteractive, /allow="fullscreen; xr-spatial-tracking"/, "the circuit bench permits fullscreen and WebXR");
+assertContains(circuitsInteractive, /loading="lazy"/, "the circuit bench defers its application payload");
+assertContains(
+  circuitsInteractive,
+  /<a[^>]*class="folio-case-interactive__launch"[^>]*href="https:\/\/ahmed-o-aly\.github\.io\/circuits-lab\/"[^>]*>[\s\S]*?Open Circuits Lab full screen/,
+  "Circuits Lab provides a full-screen launch for headset browsers"
+);
+const circuitsProse = block(routes.circuits, "folio-prose", "div");
+assertContains(
+  circuitsProse,
+  /Thévenin[\s\S]*?superposition[\s\S]*?operational amplifiers[\s\S]*?RC\/RL/,
+  "Circuits Lab describes all four experiments"
+);
+assertContains(circuitsProse, /readings, calculations, and answers on paper/, "Circuits Lab keeps written work outside the experiment interface");
+assertContains(circuitsProse, /Physical headset testing remains outstanding/, "the circuit page states its hardware verification boundary");
+assert.doesNotMatch(routes.circuits, /trycloudflare\.com|localhost|127\.0\.0\.1/, "the published circuit page contains no temporary lab address");
+
+const circuitsViewer = readRoute("/circuits-lab/");
+const circuitsPublishedFile = (path) => new URL(`../_site/circuits-lab/${path}`, import.meta.url);
+const circuitsBuiltFile = (path) => new URL(`../assets/apps/circuits-lab/${path}`, import.meta.url);
+assert.equal(
+  readFileSync(circuitsPublishedFile("index.html")).equals(readFileSync(circuitsBuiltFile("index.html"))),
+  true,
+  "Jekyll publishes the circuit bench HTML without rewriting the Vite build"
+);
+const circuitsAssets = [...circuitsViewer.matchAll(/(?:src|href)="\.\/([^\"]+\.(?:js|css))"/g)].map((match) => match[1]);
+assert.ok(
+  circuitsAssets.some((asset) => asset.endsWith(".js")),
+  "the published circuit bench references its built JavaScript"
+);
+assert.ok(
+  circuitsAssets.some((asset) => asset.endsWith(".css")),
+  "the published circuit bench references its built stylesheet"
+);
+for (const asset of circuitsAssets) {
+  assert.equal(
+    readFileSync(circuitsPublishedFile(asset)).equals(readFileSync(circuitsBuiltFile(asset))),
+    true,
+    `the published circuit bench preserves ${asset}`
+  );
+}
+for (const path of ["circuits-lab/node_modules/", "circuits-lab/src/", "circuits-lab/tests/", "circuits-lab/package.json"]) {
+  assert.equal(existsSync(new URL(`../_site/${path}`, import.meta.url)), false, `publication excludes development path ${path}`);
+}
 
 const proteinInteractive = block(routes.protein, "folio-case-interactive");
 assert.equal((proteinInteractive.match(/<iframe\b/g) || []).length, 1, "Protein Structures embeds one molecular viewer");
@@ -625,6 +682,7 @@ for (const [name, html] of Object.entries({
   works: routes.works,
   economy: routes.economy,
   protein: routes.protein,
+  circuits: routes.circuits,
   cnc: routes.cnc,
   urban: routes.urban,
   urbanConsole: routes.urbanConsole,

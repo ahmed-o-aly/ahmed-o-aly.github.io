@@ -54,6 +54,23 @@ fonts or lazy-loaded modules. This uses the existing deployment workflow; the
 site contracts verify that every published asset matches the committed bundle.
 Serve `_site/` over HTTP. The project note is at `/projects/uae-economy-lab/`.
 
+## Circuits Lab
+
+The Works page is `/projects/circuits-lab/`. Open `/circuits-lab/` directly in a
+headset browser, then select **Enter VR**. Students use the circuits and instruments;
+their calculations and answers stay on paper.
+
+```bash
+npm run build:circuits-lab
+npm run test:circuits-lab
+bundle exec jekyll build
+```
+
+Commit `assets/apps/circuits-lab/` with changes to the `circuits-lab/` source.
+The Jekyll post-write hook copies that bundle unchanged to `/circuits-lab/`.
+Source files and dependencies are excluded from the published site. The existing
+site deployment serves the app over HTTPS for headset access.
+
 ## Theme Credit
 
 The site uses the open-source al-folio Jekyll theme as its base, with personal content, styling, project structure, and workflow cleanup applied in this repository.
