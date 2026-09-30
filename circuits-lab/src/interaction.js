@@ -38,6 +38,7 @@ export function createDirectInteraction({
   getModel = () => ({}),
   getTerminals = () => [],
   onProbe = () => {},
+  onBeforeConnect = () => {},
   onConnect = () => {},
   onDisconnect = () => {},
   onChange = () => {},
@@ -129,6 +130,7 @@ export function createDirectInteraction({
     if (hold.target.kind === "terminal" || hold.target.kind === "plug") {
       const from = hold.target.from || hold.target.terminal;
       if (!cancelled && terminal && terminal.id !== from) {
+        onBeforeConnect(from, terminal, hold);
         onConnect(from, terminal.id);
         result = { kind: "connected", terminal: terminal.id };
       } else {

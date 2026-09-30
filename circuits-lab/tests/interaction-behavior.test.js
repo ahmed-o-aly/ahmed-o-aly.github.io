@@ -64,6 +64,111 @@ test("two controllers cannot own the same probe or dial at once", () => {
   assert.equal(engine.begin("right", probe), true);
 });
 
+test("accepted terminal and plug drops capture their visual state immediately before synchronous connection updates", () => {
+  for (const kind of ["terminal", "plug"]) {
+    const events = [],
+      contacts = [
+        { id: "a", socket: 0, position: v(0) },
+        { id: "b", socket: 3, position: v(0.2) },
+      ];
+    let displayedLead = { path: [v(0), v(0.1, 0.02), v(0.2)], socket: 3 },
+      captured = null,
+      expectedHold;
+    const engine = createDirectInteraction({
+      getTerminals: () => contacts,
+      onBeforeConnect(from, terminal, hold) {
+        events.push("before");
+        assert.equal(hold, expectedHold);
+        assert.equal(from, "a");
+        assert.equal(terminal, contacts[1], "Pass the exact selected physical terminal, including its socket and position");
+        assert.equal(terminal.id, "b");
+        assert.equal(terminal.socket, 3);
+        assert.equal(terminal.position, contacts[1].position);
+        nearVector(hold.position, contacts[1].position);
+        captured = displayedLead;
+      },
+      onConnect(...args) {
+        events.push("connect");
+        assert.deepEqual(args, ["a", "b"], "Existing connection callback keeps exactly two arguments");
+        assert.equal(captured, displayedLead, "Visual capture precedes any synchronous render replacing the cable");
+        displayedLead = null;
+      },
+      onHold(phase, hold) {
+        if (phase === "end") {
+          events.push("end");
+          assert.equal(hold, expectedHold);
+        }
+      },
+    });
+    const target = kind === "terminal" ? { kind, id: "a", terminal: "a" } : { kind, id: "plug-a", from: "a", wireIndex: 0 };
+    engine.begin("hand", target, { position: v(0) });
+    expectedHold = engine.hold("hand");
+    assert.deepEqual(engine.end("hand", { position: v(0.2) }), { kind: "connected", terminal: "b" });
+    assert.deepEqual(events, ["before", "connect", "end"]);
+    assert.equal(captured.socket, 3);
+    assert.equal(displayedLead, null);
+  }
+});
+
+test("pre-connect captures the originating hold when two hands release different leads", () => {
+  const contacts = [
+      { id: "b", socket: 2, position: v(0.2) },
+      { id: "d", socket: 5, position: v(0.6) },
+    ],
+    captures = [];
+  const engine = createDirectInteraction({
+    getTerminals: () => contacts,
+    onBeforeConnect: (from, terminal, hold) => captures.push({ from, terminal, hold }),
+  });
+  engine.begin("left", { kind: "terminal", id: "a", terminal: "a" }, { position: v(0) });
+  engine.begin("right", { kind: "plug", id: "plug-c", from: "c", wireIndex: 1 }, { position: v(0.4) });
+  const left = engine.hold("left"),
+    right = engine.hold("right");
+  right.visualPath = [v(0.4), v(0.5, 0.1), v(0.6)];
+  engine.end("right", { position: v(0.6) });
+  assert.equal(engine.hold("left"), left, "The other hand remains active during capture");
+  engine.end("left", { position: v(0.2) });
+  assert.deepEqual(
+    captures.map(({ from, terminal, hold }) => [from, terminal.id, terminal.socket, hold.input]),
+    [
+      ["c", "d", 5, "right"],
+      ["a", "b", 2, "left"],
+    ]
+  );
+  assert.equal(captures[0].terminal, contacts[1]);
+  assert.equal(captures[1].terminal, contacts[0]);
+  assert.equal(captures[0].hold, right);
+  assert.equal(captures[0].hold.visualPath, right.visualPath);
+  assert.equal(captures[1].hold, left);
+});
+
+test("pre-connect is skipped for cancelled, same-terminal, distant and non-wire drops", () => {
+  for (const kind of ["terminal", "plug"]) {
+    const events = [],
+      contacts = [
+        { id: "a", position: v(0) },
+        { id: "b", position: v(0.2) },
+      ];
+    const engine = createDirectInteraction({
+      getTerminals: () => contacts,
+      onBeforeConnect: () => events.push("before"),
+      onConnect: () => events.push("connect"),
+    });
+    const target = { kind, id: `${kind}-a`, terminal: "a", from: "a" };
+    engine.begin("hand", target, { position: v(0) });
+    engine.move("hand", { position: v(0.2) });
+    engine.cancelAll();
+    engine.release("hand");
+    engine.begin("hand", target, { position: v(0) });
+    engine.end("hand", { position: v(0) });
+    engine.begin("hand", target, { position: v(0) });
+    engine.end("hand", { position: v(0.2, 0.2) });
+    engine.begin("hand", { kind: "probe", id: "red", channel: "red" }, { position: v(0) });
+    engine.end("hand", { position: v(0.2) });
+    assert.deepEqual(events, []);
+  }
+});
+
 test("dial detents accumulate wrist turns once and clamp values rather than wrapping", () => {
   const model = { parameters: { rail: 9 }, options: { rail: [5, 9, 12, 15] } },
     events = [];

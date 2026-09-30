@@ -162,22 +162,77 @@ function perimeterFallback(start, end, bounds, lane, height) {
   ];
 }
 
-/** Plan all patch leads together, reserving distinct lanes independent of input array order. */
+const patchRouteMetadata = new WeakMap();
+
+/** Reuse a previous returned Map to keep untouched leads still; changed leads reserve fresh lanes around them. */
 export function routePatchLeads(
   connections,
-  { obstacles = [], bounds = { minX: -1.64, maxX: 1.64, minZ: -0.94, maxZ: 0.94 }, step = 0.045, floor = 0.95 } = {}
+  { obstacles = [], bounds = { minX: -1.64, maxX: 1.64, minZ: -0.94, maxZ: 0.94 }, step = 0.045, floor = 0.95, previousRoutes, layoutKey = null } = {}
 ) {
   const reserved = new Map(),
     occupied = new Map(),
-    result = new Map();
+    result = new Map(),
+    records = new Map();
+  const signature = JSON.stringify([
+    layoutKey,
+    [bounds.minX, bounds.maxX, bounds.minZ, bounds.maxZ],
+    step,
+    floor,
+    obstacles.map((o) => [o.minX, o.maxX, o.minZ, o.maxZ, o.top ?? null]).sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b))),
+  ]);
+  const previous = previousRoutes && patchRouteMetadata.get(previousRoutes);
+  const samePoint = (a, b) => a && b && a.x === b.x && a.y === b.y && a.z === b.z;
+  function reserve(cells, layer) {
+    for (const [index, c] of cells.entries()) {
+      if (index <= 1 || index >= cells.length - 2) continue;
+      const id = `${c.x},${c.z}`;
+      occupied.set(id, [...(occupied.get(id) || []), layer]);
+      for (let dx = -1; dx <= 1; dx++)
+        for (let dz = -1; dz <= 1; dz++) {
+          const key = `${c.x + dx},${c.z + dz}`;
+          reserved.set(key, (reserved.get(key) || 0) + (dx || dz ? 0.45 : 1));
+        }
+    }
+  }
+  function fallbackCells(points) {
+    const minX = Math.floor(bounds.minX / step) * step,
+      minZ = Math.floor(bounds.minZ / step) * step;
+    const cells = [];
+    for (let i = 1; i < points.length; i++) {
+      const count = Math.max(1, Math.ceil(distance(points[i - 1], points[i]) / (step / 2)));
+      for (let j = 0; j <= count; j++) {
+        const p = mix(points[i - 1], points[i], j / count),
+          c = { x: Math.round((p.x - minX) / step), z: Math.round((p.z - minZ) / step) };
+        if (cells.at(-1)?.x !== c.x || cells.at(-1)?.z !== c.z) cells.push(c);
+      }
+    }
+    return cells;
+  }
+  // Reserve all surviving routes first, regardless of the new connection's sort order.
+  if (previous?.signature === signature)
+    for (const connection of connections) {
+      const record = previous.records.get(connection.id),
+        route = previousRoutes.get(connection.id);
+      if (record && route && samePoint(connection.start, record.start) && samePoint(connection.end, record.end)) {
+        result.set(connection.id, route);
+        records.set(connection.id, record);
+        reserve(record.cells, record.layer);
+      }
+    }
   const ordered = [...connections].sort((a, b) => distance(a.start, a.end) - distance(b.start, b.end) || a.id.localeCompare(b.id));
   for (const connection of ordered) {
+    if (result.has(connection.id)) continue;
     const { start, end } = connection;
     const route = gridRoute(start, end, { bounds, obstacles, step, padding: step * 1.15, reserved });
     if (!route) {
       // Never hide an unroutable wire: visibly carry it above the blocking component to the outer edge.
       const height = Math.max(start.y, end.y, ...obstacles.map((o) => o.top || floor)) + 0.06;
-      result.set(connection.id, roundCorners(perimeterFallback(start, end, bounds, step, height), step));
+      const points = roundCorners(perimeterFallback(start, end, bounds, step, height), step);
+      const cells = fallbackCells(points),
+        layer = Math.round((height - floor) / 0.027);
+      result.set(connection.id, points);
+      records.set(connection.id, { start: point(start), end: point(end), cells, layer });
+      reserve(cells, layer);
       continue;
     }
     const unavailable = new Set();
@@ -185,17 +240,7 @@ export function routePatchLeads(
     let layer = 0;
     while (unavailable.has(layer)) layer++;
     const y = floor + layer * 0.027;
-    for (const [index, c] of route.cells.entries()) {
-      if (index > 1 && index < route.cells.length - 2) {
-        const id = `${c.x},${c.z}`;
-        occupied.set(id, [...(occupied.get(id) || []), layer]);
-        for (let dx = -1; dx <= 1; dx++)
-          for (let dz = -1; dz <= 1; dz++) {
-            const key = `${c.x + dx},${c.z + dz}`;
-            reserved.set(key, (reserved.get(key) || 0) + (dx || dz ? 0.45 : 1));
-          }
-      }
-    }
+    reserve(route.cells, layer);
     const planar = simplify(route.points.map((p) => ({ ...p, y })));
     const rounded = roundCorners(planar, step * 0.75);
     // Land once onto the board without an up/down loop at a plug. The first and last
@@ -205,7 +250,9 @@ export function routePatchLeads(
     const startLanding = mix({ ...start, y }, first, Math.min(0.1 / Math.max(distance(start, first), 1e-6), 0.3));
     const endLanding = mix({ ...end, y }, last, Math.min(0.1 / Math.max(distance(end, last), 1e-6), 0.3));
     result.set(connection.id, [point(start), startLanding, ...rounded.slice(1, -1), endLanding, point(end)]);
+    records.set(connection.id, { start: point(start), end: point(end), cells: route.cells, layer });
   }
+  patchRouteMetadata.set(result, { signature, records });
   return result;
 }
 

@@ -1,4 +1,4 @@
-# Circuits Lab v0.8
+# Circuits Lab v0.9
 
 Four Electrical Circuits I experiments share a desktop 3D bench and an immersive WebXR lab. Students wire circuits, use instruments, change values and inspect live traces. Readings and written answers stay on paper.
 
@@ -27,6 +27,8 @@ In VR, grip a probe to hold it and release its tip near a contact to connect. A 
 
 The scope or recorder sits within reach on the left ledge, with the large graph above it. The right display gives three labelled readings. Use the graph tabs to select a channel or quantity, then point and hold the trigger to inspect the trace. RC/RL plots share the same time and cursor; the small recorder also has Voltage, Current and Energy buttons. Graph and Schematic buttons switch the left display. Floating labels do not cover the equipment.
 
+Moving a lead keeps the other wires in place. The held cable bends with the moving end, then settles gently after release. Common sockets keep the fixed end where it was placed.
+
 The amplifier parts and lead routes have more space. Separate GND sockets share one ground connection, and the OUT sockets share the same output. Meter and scope tips can connect without stacking on one socket.
 
 ## The four experiments
@@ -50,6 +52,6 @@ RC uses 100 µF and RL uses 100 mH, with a 5 V source. Switching and resistance 
 
 The email's four learning tasks are covered. The op-amp handout was not supplied; inverting and non-inverting circuits are the current examples. Exact handout circuits and component values still need confirmation.
 
-User headset feedback has guided the layout changes. Version 0.8 brings the scope and graph to the left, spaces out the amplifier and wire routes, and starts probe pickup tip-down. Its headset reach, clarity and frame rate still need confirmation on the intended device; the assistant has not operated a physical headset.
+User headset feedback has guided the layout changes. Version 0.9 keeps untouched wire paths stable and smooths cable movement during pickup and release. Its headset feel and frame rate still need confirmation on the intended device; the assistant has not operated a physical headset.
 
 See [module designs](docs/module-designs.md), [experiment checks](docs/experiment-checklist.md) and [verification](docs/verification.md).

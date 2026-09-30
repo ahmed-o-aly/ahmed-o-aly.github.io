@@ -1,6 +1,21 @@
-# Circuits Lab v0.8 verification
+# Circuits Lab v0.9 verification
 
 Updated 30 September 2026. The user reported improved VR handling in v0.5 and better readability in v0.6, with control text and resistor names still unclear. The assistant has not operated a physical headset.
+
+## Version 0.9 cable motion
+
+Untouched wires retain their exact routes when another lead is added or removed. While held, a cable bends from its displayed path instead of running the route planner. After release, the cable body settles toward its resting route at a maximum 0.3 metres per second; the contact itself connects immediately. Re-grabbing captures the current displayed shape. Fixed common sockets remain assigned when moving the other end, and new wires use the chosen starting socket. Loose probes and plugs lower onto the mat gradually.
+
+The suite passed **158 tests**, including route retention and lane reservations, bounded motion at different frame rates, fixed endpoints, no accumulated drift, pre-connect callback ordering for two hands, and common-socket transfers. The production build passed. These are simulated inputs, not physical headset tests.
+
+Observed through the desktop production build:
+
+- Moving COM between ground sockets kept the −2 V sample; dropping it away disconnected it, and Undo restored GND.
+- Moving the amplifier's plus− ground lead to another GND post retained −2 V, gain −2 and 2 Vpk, with the other wires staying in place.
+- Pulling that patch plug away cleared the amplifier readings. Undo restored the same readings and connection.
+- In Build circuit, a new GND → Rin B lead started on the far-right ground socket. Moving its other end to Rin A kept that fixed ground socket.
+
+The revised motion and frame rate still need checking on a physical headset. Earlier results below are historical evidence.
 
 ## Version 0.8 layout and cable update
 

@@ -43,6 +43,20 @@ export function createTerminalSocketAllocator() {
         mapping.set(resource, slot);
       return mapping.get(resource);
     },
+    /** Rename a reconnected lead at its fixed end before synchronizing the changed resource list. */
+    transfer(id, fromResource, toResource, resources) {
+      const mapping = assignments.get(id);
+      const slot = mapping?.get(fromResource);
+      // A duplicate connection must not steal another lead's socket.
+      if (slot === undefined || !toResource || (fromResource !== toResource && mapping.has(toResource))) return null;
+      if (fromResource !== toResource) {
+        mapping.delete(fromResource);
+        mapping.set(toResource, slot);
+      }
+      // Callers may still have the old pair, already have the new pair, or contain both during a handoff.
+      sync(id, [...resources.filter((resource) => resource !== fromResource), toResource]);
+      return slot;
+    },
     clear() {
       assignments.clear();
     },

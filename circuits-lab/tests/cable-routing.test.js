@@ -29,6 +29,60 @@ test("patch routes keep exact contacts and are deterministic when wire order cha
   }
 });
 
+test("adding and removing a connection retains untouched route arrays exactly", () => {
+  const a = { id: "a|b", start: p(-1.1, -0.4), end: p(0.9, 0.4) };
+  const b = { id: "c|d", start: p(-1.0, 0.5), end: p(0.9, -0.5) };
+  const added = { id: "e|f", start: p(-0.3, -0.1), end: p(0.3, 0.1) };
+  const first = routePatchLeads([a, b], { layoutKey: "board-a" });
+  const next = routePatchLeads([added, b, a], { previousRoutes: first, layoutKey: "board-a" });
+  assert.strictEqual(next.get(a.id), first.get(a.id));
+  assert.strictEqual(next.get(b.id), first.get(b.id));
+  const removed = routePatchLeads([a, added], { previousRoutes: next, layoutKey: "board-a" });
+  assert.strictEqual(removed.get(a.id), first.get(a.id));
+  assert.strictEqual(removed.get(added.id), next.get(added.id));
+  assert.equal(removed.has(b.id), false);
+});
+
+test("new routes reserve space around retained lanes without moving them", () => {
+  const a = { id: "long", start: p(-1.1, 0), end: p(1.1, 0) };
+  const b = { id: "short", start: p(-0.8, 0.02), end: p(0.8, 0.02) };
+  const previous = routePatchLeads([a]);
+  const next = routePatchLeads([b, a], { previousRoutes: previous });
+  assert.strictEqual(next.get(a.id), previous.get(a.id));
+  const existing = samples(next.get(a.id)),
+    added = samples(next.get(b.id));
+  let clearance = Infinity;
+  for (const x of existing) for (const y of added) clearance = Math.min(clearance, x.distanceTo(y));
+  assert(clearance > 0.018, "New insulated cable clears the reserved existing lead");
+  assert.notDeepEqual(next.get(b.id), routePatchLeads([b]).get(b.id), "New lead considers the occupied lane");
+});
+
+test("moving a contact invalidates only that connection while layout changes invalidate all", () => {
+  const a = { id: "a|b", start: p(-1.1, -0.4), end: p(0.9, 0.4) };
+  const b = { id: "c|d", start: p(-1.0, 0.5), end: p(0.9, -0.5) };
+  const first = routePatchLeads([a, b], { layoutKey: "board-a" });
+  const moved = { ...a, end: p(0.7, 0.6) };
+  const next = routePatchLeads([moved, b], { previousRoutes: first, layoutKey: "board-a" });
+  assert.notStrictEqual(next.get(a.id), first.get(a.id));
+  assert.deepEqual(next.get(a.id).at(-1), moved.end);
+  assert.strictEqual(next.get(b.id), first.get(b.id));
+  const switched = routePatchLeads([moved, b], { previousRoutes: next, layoutKey: "board-b" });
+  for (const id of [a.id, b.id]) assert.notStrictEqual(switched.get(id), next.get(id));
+});
+
+test("changed footprints invalidate retained geometry; removed leads leave no reservation", () => {
+  const a = { id: "a|b", start: p(-1.1, 0), end: p(1.1, 0) };
+  const first = routePatchLeads([a]);
+  const obstacle = { minX: -0.3, maxX: 0.3, minZ: -0.2, maxZ: 0.2, top: 1.2 };
+  const next = routePatchLeads([a], { previousRoutes: first, obstacles: [obstacle] });
+  assert.notStrictEqual(next.get(a.id), first.get(a.id));
+  for (const v of samples(next.get(a.id))) assert(!(v.x > obstacle.minX && v.x < obstacle.maxX && v.z > obstacle.minZ && v.z < obstacle.maxZ));
+  const replacement = { ...a, id: "new-pair" };
+  const replaced = routePatchLeads([replacement], { previousRoutes: first });
+  assert.equal(replaced.has(a.id), false);
+  assert.deepEqual(replaced.get(replacement.id), routePatchLeads([replacement]).get(replacement.id));
+});
+
 test("interpolated patch cables clear a component footprint and stay above the PCB", () => {
   const obstacle = { minX: -0.32, maxX: 0.32, minZ: -0.24, maxZ: 0.24, top: 1.3 };
   const route = routePatchLeads([{ id: "left|right", start: p(-1.1, 0), end: p(1.1, 0) }], { obstacles: [obstacle] }).get("left|right");

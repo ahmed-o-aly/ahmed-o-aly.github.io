@@ -15,6 +15,7 @@ import {
 } from "./equipment.js";
 import { createVRSession, recenterRig, snapshotDesktopView, restoreDesktopView } from "./vr-session.js";
 import { routePatchLeads, routeInstrumentLead } from "./cable-routing.js";
+import { deformCablePath, settleCablePath } from "./cable-motion.js";
 import { commonSocketPosition, createTerminalSocketAllocator, wireSocketKey } from "./terminal-sockets.js";
 
 /** A shared patch bench. Both mouse picks and XR rays call the same experiment actions. */
@@ -796,8 +797,40 @@ export function createBench({
     }
   }
   let cableObstacleCache = null,
-    cableLayoutRevision = 0;
+    cableLayoutRevision = 0,
+    patchLayoutRevision = 0;
   const flexibleRouteCache = new WeakMap();
+  let patchRoutes = new Map(),
+    patchVisuals = new Map();
+  const pendingPatchShapes = new Map();
+  const cableVectors = (points) => points.map((p) => new THREE.Vector3(p.x, p.y, p.z));
+  const sampleCable = (points) => new THREE.CatmullRomCurve3(cableVectors(points)).getSpacedPoints(47);
+  const pathGap = (a, b) => Math.max(...a.map((p, i) => Math.hypot(p.x - b[i].x, p.y - b[i].y, p.z - b[i].z)));
+  function updatePatchGeometry(visual) {
+    const local = cableVectors(visual.points).map((p) => board.worldToLocal(p));
+    const curve = new THREE.CatmullRomCurve3(local);
+    for (const [object, radius] of [
+      [visual.wire, 0.009],
+      [visual.hit, 0.019],
+    ]) {
+      object.geometry.dispose();
+      object.geometry = new THREE.TubeGeometry(curve, 96, radius, 7, false);
+    }
+  }
+  function updatePatchLeads(now) {
+    for (const visual of patchVisuals.values()) {
+      if (!visual.settling) continue;
+      const dt = (now - visual.time) / 1000;
+      visual.time = now;
+      visual.points = settleCablePath(visual.points, visual.target, dt, { maxSpeed: 0.3 });
+      if (pathGap(visual.points, visual.target) < 0.0001) {
+        visual.points = visual.target;
+        visual.settling = false;
+      }
+      updatePatchGeometry(visual);
+      renderer.shadowMap.needsUpdate = true;
+    }
+  }
   function cableObstacles(world = false) {
     if (!cableObstacleCache) {
       board.updateWorldMatrix(true, true);
@@ -822,8 +855,8 @@ export function createBench({
     return cableObstacleCache[world ? "world" : "local"];
   }
   function buildWires(wires) {
-    cableObstacleCache = null;
-    cableLayoutRevision++;
+    const previousVisuals = patchVisuals;
+    patchVisuals = new Map();
     clearGroup(wireGroup);
     wireTargets = [];
     plugTargets = [];
@@ -838,20 +871,27 @@ export function createBench({
       if (!startWorld || !endWorld) return [];
       return [{ id, a, b, index, startPin, endPin, start: board.worldToLocal(startWorld), end: board.worldToLocal(endWorld) }];
     });
-    const routes = routePatchLeads(connections, { obstacles: cableObstacles() });
+    const routes = routePatchLeads(connections, {
+      obstacles: cableObstacles(),
+      previousRoutes: patchRoutes,
+      layoutKey: patchLayoutRevision,
+    });
+    patchRoutes = routes;
     connections.forEach(({ id, a, b, index, startPin, endPin, start, end }) => {
       const grounded = a === "gnd" || b === "gnd" || a.endsWith("-") || b.endsWith("-") || a === "return" || b === "return";
       const material = mat(grounded ? "#202121" : "#8b2925", { roughness: 0.79 });
-      const points = routes.get(id).map((point) => new THREE.Vector3(point.x, point.y, point.z));
-      const wire = tube(points, 0.009, material, wireGroup, Math.max(32, points.length * 6));
+      const route = routes.get(id);
+      const previous = previousVisuals.get(id);
+      const target = previous?.route === route ? previous.target : sampleCable(route).map((p) => board.localToWorld(p));
+      const seed = pendingPatchShapes.get(id);
+      pendingPatchShapes.delete(id);
+      const seededPoints = seed ? (seed.from === a ? seed.points : [...seed.points].reverse()) : null;
+      const displayed = seededPoints || (previous?.route === route ? previous.points : target);
+      const points = cableVectors(displayed).map((p) => board.worldToLocal(p));
+      const wire = tube(points, 0.009, material, wireGroup, 96);
       wire.userData = { kind: "wire", index };
-      const hit = tube(
-        points,
-        0.019,
-        new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false }),
-        wireGroup,
-        Math.max(32, points.length * 6)
-      );
+      const hit = tube(points, 0.019, new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false }), wireGroup, 96);
+      patchVisuals.set(id, { a, b, route, points: displayed, target, wire, hit, time: performance.now(), settling: displayed !== target });
       hit.castShadow = false;
       hit.receiveShadow = false;
       hit.userData = { kind: "wire", index, id: String(index), label: `${startPin.label} → ${endPin.label}`, wire, color: material.color.getHex() };
@@ -892,7 +932,7 @@ export function createBench({
     const resources = current.wires.filter((wire) => wire.includes(id)).map(([a, b]) => wireSocketKey(a, b, id));
     for (const channel of ["red", "black", "ch1", "ch2", "ch1Ground", "ch2Ground"])
       if (connectedTerminal(channel) === id) resources.push(`probe:${channel}`);
-    for (const lead of looseLeads) if (lead.from === id && lead.originalPair) resources.push(wireSocketKey(...lead.originalPair, id));
+    for (const lead of looseLeads) if (lead.from === id) resources.push(lead.resource);
     return resources;
   }
   function terminalPositions() {
@@ -991,6 +1031,7 @@ export function createBench({
       if (direct.isHeld(`probe:${probe.channel}`)) continue;
       const id = connectedTerminal(probe.channel);
       if (id !== probe.connected || rebuilt) {
+        delete probe.restPose;
         probe.connected = id;
         const contact = terminalPosition(id, `probe:${probe.channel}`);
         if (contact) {
@@ -1005,44 +1046,50 @@ export function createBench({
     }
     updateFlexibleLeads();
   }
-  function cableCurve(start, end, options = {}, cable = null) {
-    const signature = [
-      cableLayoutRevision,
-      options.lane,
-      options.branch,
-      ...start.toArray(),
-      ...end.toArray(),
-      options.exit?.x || 0,
-      options.exit?.y || 0,
-      options.exit?.z || 0,
-    ]
-      .map((value) => (typeof value === "number" ? value.toFixed(4) : value))
-      .join(":");
-    const cached = cable && flexibleRouteCache.get(cable);
-    if (cached?.signature === signature) return cached.points;
+  function cableCurve(start, end, options, cable, held = false) {
     const now = performance.now();
-    if (
-      cached &&
-      cached.revision === cableLayoutRevision &&
-      now - cached.time < 40 &&
-      start.distanceTo(cached.start) < 0.08 &&
-      end.distanceTo(cached.end) < 0.08
-    ) {
-      const points = cached.points.map((point) => point.clone());
-      const startDelta = start.clone().sub(cached.start),
-        endDelta = end.clone().sub(cached.end);
-      for (const index of [0, 1]) points[index]?.add(startDelta);
-      for (const index of [points.length - 2, points.length - 1]) points[index]?.add(endDelta);
-      return points;
+    const signature = [...start.toArray(), ...end.toArray()].map((v) => v.toFixed(5)).join(":");
+    let cached = flexibleRouteCache.get(cable);
+    if (!cached || cached.revision !== cableLayoutRevision) {
+      const points = sampleCable(routeInstrumentLead(start, end, options));
+      cached = { points, target: points, reference: points, signature, held, time: now, revision: cableLayoutRevision };
+      flexibleRouteCache.set(cable, cached);
     }
-    const points = routeInstrumentLead(start, end, options).map((point) => new THREE.Vector3(point.x, point.y, point.z));
-    if (cable) flexibleRouteCache.set(cable, { signature, points, time: now, revision: cableLayoutRevision, start: start.clone(), end: end.clone() });
-    return points;
+    // Capture the displayed shape at pickup, even if it is still settling.
+    // Hand motion never runs the grid planner or switches to another lane.
+    if (held) {
+      if (!cached.held) cached.reference = cached.points;
+      if (!cached.held || cached.signature !== signature) cached.points = deformCablePath(cached.reference, start, end);
+    } else {
+      // Plan once at release. The body settles at a bounded speed while the
+      // tip makes contact immediately; later frames only advance this blend.
+      if (cached.held || cached.signature !== signature) cached.target = sampleCable(routeInstrumentLead(start, end, options));
+      if (cached.points !== cached.target) {
+        cached.points = settleCablePath(cached.points, cached.target, (now - cached.time) / 1000, { maxSpeed: 0.3 });
+        if (pathGap(cached.points, cached.target) < 0.0001) cached.points = cached.target;
+        renderer.shadowMap.needsUpdate = true;
+      }
+    }
+    cached.signature = signature;
+    cached.held = held;
+    cached.time = now;
+    return cached.points;
   }
   function updateFlexibleLeads() {
+    const now = performance.now();
+    updatePatchLeads(now);
     const obstacles = cableObstacles(true);
     for (const probe of movableProbes.values()) {
       if (!probe.unit.group.visible) continue;
+      if (probe.restPose) {
+        const dt = Math.min((now - probe.restPose.time) / 1000, 0.05);
+        probe.restPose.time = now;
+        const gap = probe.unit.group.position.distanceTo(probe.restPose.position);
+        probe.unit.group.position.lerp(probe.restPose.position, gap ? Math.min(1, (0.4 * dt) / gap) : 1);
+        probe.unit.group.quaternion.slerp(probe.restPose.quaternion, 1 - Math.exp(-10 * dt));
+        if (gap < 0.0001 && probe.unit.group.quaternion.angleTo(probe.restPose.quaternion) < 0.001) delete probe.restPose;
+        renderer.shadowMap.needsUpdate = true;
+      }
       const channel = probe.channel,
         ground = channel.endsWith("Ground");
       const anchor =
@@ -1054,15 +1101,29 @@ export function createBench({
       const exit = anchor
         ? new THREE.Vector3(0, 0, 1).applyQuaternion(anchor.getWorldQuaternion(new THREE.Quaternion()))
         : new THREE.Vector3(0, 0, 1);
-      if (start) probe.cable.update(cableCurve(start, end, { lane, exit, obstacles, branch: ground }, probe.cable));
+      const held =
+        direct.isHeld(`probe:${channel}`) ||
+        !!probe.restPose ||
+        !!(pairedProbe && (direct.isHeld(`probe:${pairedProbe.channel}`) || pairedProbe.restPose));
+      if (start) probe.cable.update(cableCurve(start, end, { lane, exit, obstacles, branch: ground }, probe.cable, held));
     }
     for (const lead of looseLeads) {
-      const start = terminalPosition(lead.from, lead.originalPair ? `wire:${[...lead.originalPair].sort().join("|")}:${lead.from}` : undefined);
+      if (lead.restPosition) {
+        const dt = Math.min((now - lead.restTime) / 1000, 0.05);
+        lead.restTime = now;
+        const gap = lead.plug.position.distanceTo(lead.restPosition);
+        lead.plug.position.lerp(lead.restPosition, gap ? Math.min(1, (0.4 * dt) / gap) : 1);
+        if (gap < 0.0001) delete lead.restPosition;
+        renderer.shadowMap.needsUpdate = true;
+      }
+      const start = terminalPosition(lead.from, lead.resource);
       if (!start) {
         lead.cable.group.visible = lead.plug.visible = false;
         continue;
       }
-      lead.cable.update(cableCurve(start, lead.plug.position, { lane: 4, obstacles }, lead.cable));
+      // A patch lead keeps its board path, including while its plug rests loose.
+      lead.points = deformCablePath(lead.reference, start, lead.plug.position);
+      lead.cable.update(lead.points);
     }
   }
   const leadPreviewGeometry = new THREE.BufferGeometry();
@@ -1604,7 +1665,7 @@ export function createBench({
   };
 
   function makeLooseLead(target, position) {
-    const cable = createCable({ color: target.color || "#862926", radius: 0.0038 });
+    const cable = createCable({ color: target.color || "#862926", radius: 0.00324 });
     const plug = new THREE.Group();
     mesh(new THREE.CylinderGeometry(0.009, 0.011, 0.038, 20), mat(target.color || "#862926"), plug, 0, 0.015, 0);
     mesh(new THREE.CylinderGeometry(0.003, 0.003, 0.013, 16), shared.metal, plug, 0, -0.009, 0);
@@ -1618,10 +1679,22 @@ export function createBench({
     );
     plug.position.copy(position);
     const lead = { from: target.from || target.terminal, cable, plug, originalPair: target.wirePair?.slice() || null };
+    const looseId = `loose:${Math.random().toString(36).slice(2)}`;
+    lead.resource = lead.originalPair ? wireSocketKey(...lead.originalPair, lead.from) : looseId;
+    looseLeads.add(lead);
+    if (!lead.originalPair && pins.get(lead.from)?.common)
+      socketAllocator.prefer(lead.from, lead.resource, target.socket, socketResources(lead.from));
+    const saved = target.wirePair && patchVisuals.get([...target.wirePair].sort().join("|"));
+    const start = terminalPosition(lead.from, lead.resource);
+    lead.reference = saved
+      ? cableVectors(saved.a === lead.from ? saved.points : [...saved.points].reverse())
+      : sampleCable([start || position, position]);
+    lead.points = deformCablePath(lead.reference, start || position, position);
+    cable.update(lead.points);
     const descriptor = {
       object: sleeve,
       kind: "plug",
-      id: `loose:${Math.random().toString(36).slice(2)}`,
+      id: looseId,
       from: lead.from,
       label: "Grab loose plug",
       lead,
@@ -1630,7 +1703,6 @@ export function createBench({
     sleeve.userData.direct = descriptor;
     lead.target = descriptor;
     scene.add(plug, cable.group);
-    looseLeads.add(lead);
     return lead;
   }
   function removeLooseLead(lead) {
@@ -1644,6 +1716,24 @@ export function createBench({
     getModel: () => ({ ...current, parameters: { ...current.parameters, meterMode, timeCursor: current.parameters?.time } }),
     getTerminals: terminalPositions,
     onProbe,
+    onBeforeConnect: (from, terminal, hold) => {
+      const lead = hold.lead;
+      if (!lead) return;
+      // Stage the exact held shape and physical sockets before onConnect renders.
+      lead.plug.position.copy(hold.position);
+      updateFlexibleLeads();
+      const pair = [from, terminal.id],
+        id = [...pair].sort().join("|");
+      // Dropping onto an existing connection must not move that other lead.
+      if (current.wires.some((wire) => wire.includes(from) && wire.includes(terminal.id))) return;
+      if (pins.get(from)?.common) socketAllocator.transfer(from, lead.resource, wireSocketKey(...pair, from), socketResources(from));
+      lead.originalPair = pair;
+      lead.resource = wireSocketKey(...pair, from);
+      if (pins.get(terminal.id)?.common)
+        socketAllocator.prefer(terminal.id, wireSocketKey(...pair, terminal.id), terminal.socket, socketResources(terminal.id));
+      pendingPatchShapes.set(id, { from, points: cableVectors(lead.points) });
+      hold.pendingPair = id;
+    },
     onConnect,
     onDisconnect,
     onGraphCursor,
@@ -1672,12 +1762,15 @@ export function createBench({
         if (target.kind === "probe") {
           const probe = movableProbes.get(target.channel);
           if (probe) {
+            delete probe.restPose;
             probe.loose = true;
             hold.probe = probe;
             hold.position = probe.unit.group.position.clone();
           }
         } else if (target.kind === "terminal" || target.kind === "plug") {
           hold.lead = target.lead || makeLooseLead(target, hold.position || terminalPosition(target.terminal));
+          delete hold.lead.restPosition;
+          hold.lead.reference = cableVectors(hold.lead.points);
         }
       }
       if (phase === "move") {
@@ -1709,21 +1802,28 @@ export function createBench({
             probe.loose = false;
           } else {
             // A released probe rests on the mat, with a tethered cable; it remains available to grab again.
-            probe.unit.group.position.set(
-              THREE.MathUtils.clamp(hold.position?.x ?? probe.home.x, -0.88, 0.88),
-              0.87,
-              THREE.MathUtils.clamp(hold.position?.z ?? probe.home.z, -1.2, -0.34)
-            );
-            probe.unit.group.rotation.set(-Math.PI / 2, 0, 0);
+            probe.restPose = {
+              position: new THREE.Vector3(
+                THREE.MathUtils.clamp(hold.position?.x ?? probe.home.x, -0.88, 0.88),
+                0.87,
+                THREE.MathUtils.clamp(hold.position?.z ?? probe.home.z, -1.2, -0.34)
+              ),
+              quaternion: new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, 0)),
+              time: performance.now(),
+            };
             probe.loose = true;
           }
         }
+        if (hold.pendingPair) pendingPatchShapes.delete(hold.pendingPair);
         if (hold.lead) {
           if (result.kind === "connected" || result.kind === "cancelled" || target.kind === "terminal") removeLooseLead(hold.lead);
           else {
-            hold.lead.plug.position.y = 0.87;
-            hold.lead.plug.position.x = THREE.MathUtils.clamp(hold.lead.plug.position.x, -0.58, 0.58);
-            hold.lead.plug.position.z = THREE.MathUtils.clamp(hold.lead.plug.position.z, -1.1, -0.41);
+            hold.lead.restPosition = new THREE.Vector3(
+              THREE.MathUtils.clamp(hold.lead.plug.position.x, -0.58, 0.58),
+              0.87,
+              THREE.MathUtils.clamp(hold.lead.plug.position.z, -1.1, -0.41)
+            );
+            hold.lead.restTime = performance.now();
           }
         }
         if (["probe", "plug", "terminal"].includes(target.kind)) onManipulation("end", hold);
@@ -1747,6 +1847,13 @@ export function createBench({
       componentSignature = nextComponents;
       direct.cancelAll();
       for (const lead of [...looseLeads]) removeLooseLead(lead);
+      cableObstacleCache = null;
+      cableLayoutRevision++;
+      patchLayoutRevision++;
+      patchRoutes = new Map();
+      patchVisuals = new Map();
+      pendingPatchShapes.clear();
+      for (const probe of movableProbes.values()) delete probe.restPose;
       buildComponents(current.components);
       rebuilt = true;
       renderer.shadowMap.needsUpdate = true;
