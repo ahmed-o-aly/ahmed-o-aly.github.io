@@ -69,7 +69,9 @@ export function createBench({
   const rig = new THREE.Group();
   scene.add(rig);
   rig.add(camera);
-  const homeDirection = new THREE.Vector3(0.3, 2.6, 2.9).normalize();
+  const controlPosition = new THREE.Vector3(0.8, 0.883, -0.1);
+  const controlOrientation = new THREE.Quaternion().setFromEuler(new THREE.Euler(-0.62, -Math.atan2(0.8, 0.1), 0, "YXZ"));
+  const homeDirection = new THREE.Vector3(-1.2, 2.9, 3.1).normalize();
   const homeTarget = new THREE.Vector3(0, 0.97, -1.0);
   let framedAspect = 0;
   function resetView() {
@@ -81,6 +83,11 @@ export function createBench({
     let distance = 4.5;
     const corners = [];
     for (const x of [-0.97, 0.97]) for (const y of [0.81, 1.16]) for (const z of [-1.62, -0.31]) corners.push(new THREE.Vector3(x, y, z));
+    // Fit the actual side instrument and its ledge, rather than an oversized room-wide box.
+    for (const x of [-0.3, 0.3])
+      for (const y of [0, 0.35])
+        for (const z of [-0.1, 0.1]) corners.push(new THREE.Vector3(x, y, z).applyQuaternion(controlOrientation).add(controlPosition));
+    for (const x of [0.55, 1.22]) for (const z of [-0.46, 0.25]) corners.push(new THREE.Vector3(x, 0.82, z));
     for (let iteration = 0; iteration < 7; iteration++) {
       camera.position.copy(controls.target).addScaledVector(homeDirection, distance);
       camera.lookAt(controls.target);
@@ -183,6 +190,27 @@ export function createBench({
     }
   for (const z of [-1.57, -0.4]) mesh(new THREE.BoxGeometry(1.85, 0.065, 0.035), shared.metal, vrEnvironment, 0, 0.729, z);
   for (const x of [-0.91, 0.91]) mesh(new THREE.BoxGeometry(0.035, 0.065, 1.2), shared.metal, vrEnvironment, x, 0.729, -0.985);
+
+  // Attached front-right ledge and metal cradle support the tilted control instrument.
+  mesh(rounded(0.67, 0.04, 0.525, 0.004), tableTop.material, vrEnvironment, 0.885, 0.8, -0.0125);
+  mesh(rounded(0.16, 0.04, 0.185, 0.004), tableTop.material, vrEnvironment, 1.14, 0.8, -0.3675);
+  for (const z of [-0.37, 0.16]) {
+    mesh(new THREE.BoxGeometry(0.045, 0.765, 0.045), shared.metal, vrEnvironment, 1.16, 0.3975, z);
+    mesh(new THREE.CylinderGeometry(0.034, 0.034, 0.027, 20), shared.black, vrEnvironment, 1.16, 0.0135, z);
+  }
+  mesh(new THREE.BoxGeometry(0.58, 0.065, 0.035), shared.metal, vrEnvironment, 0.87, 0.729, 0.16);
+  const controlCradle = new THREE.Group();
+  controlCradle.position.copy(controlPosition);
+  controlCradle.quaternion.copy(controlOrientation);
+  vrEnvironment.add(controlCradle);
+  mesh(rounded(0.6, 0.012, 0.195, 0.006), shared.metal, controlCradle, 0, -0.01, 0);
+  for (const x of [-0.23, 0.23])
+    for (const z of [-0.066, 0.066]) {
+      const top = new THREE.Vector3(x, -0.018, z).applyQuaternion(controlOrientation).add(controlPosition);
+      const height = Math.max(0.01, top.y - 0.821);
+      mesh(new THREE.CylinderGeometry(0.008, 0.008, height, 16), shared.metal, vrEnvironment, top.x, 0.821 + height / 2, top.z);
+      mesh(new THREE.CylinderGeometry(0.019, 0.019, 0.003, 20), shared.black, vrEnvironment, top.x, 0.822, top.z);
+    }
 
   function canvasSurface(width, height, worldW, worldH) {
     const canvas = document.createElement("canvas");
@@ -342,7 +370,11 @@ export function createBench({
     if (part.type === "L") return "L1";
     if (part.type === "opamp") return "U1";
     if (part.type === "switch") return "S1";
-    if (part.type === "R" && (part.label === "LOAD" || part.label === "BRANCH")) return "RL";
+    if (part.type === "R") {
+      const name = { load: "RL", rin: "Rin", rf: "Rf", r: "R", r1: "R1", r2: "R2" }[part.id];
+      if (name) return name;
+      if (part.id === "req") return current.parameters?.representation === "norton" ? "Rn" : "Rth";
+    }
     return String(part.label).replace("DC SOURCE", "DC SUPPLY").replace("REFERENCE", "GND");
   }
   function editableParameter(part) {
@@ -379,10 +411,10 @@ export function createBench({
     list.push(unit);
     return unit;
   }
-  function mountOnPart(unit, body, attachment) {
+  function mountOnPart(unit, body, attachment, tilt = -0.53) {
     registerEquipment(unit, componentEquipment);
     unit.group.scale.setScalar(1 / 0.36);
-    unit.group.rotation.x = -0.53;
+    unit.group.rotation.x = tilt;
     body.add(unit.group);
     body.updateWorldMatrix(true, true);
     const contacts = unit.anchors["+"]
@@ -419,7 +451,7 @@ export function createBench({
           const parameter = editableParameter(part);
           if (parameter) {
             body.rotation.y = 0;
-            const unit = mountOnPart(createResistanceBox({ id: part.id, label: partName(part), parameter }), body, attachment);
+            const unit = mountOnPart(createResistanceBox({ id: part.id, label: partName(part), parameter }), body, attachment, -0.18);
             updateHardware = () => unit.update(current);
             break;
           }
@@ -950,8 +982,8 @@ export function createBench({
       experimentControls?.dispose();
       experimentControls = createExperimentControls({ module: current.module || "thevenin" });
       registerEquipment(experimentControls, []);
-      experimentControls.group.position.set(-0.2, 0.823, -1.4);
-      experimentControls.group.rotation.x = -0.42;
+      experimentControls.group.position.copy(controlPosition);
+      experimentControls.group.quaternion.copy(controlOrientation);
       equipmentGroup.add(experimentControls.group);
     }
     for (const unit of [...stationaryEquipment, ...componentEquipment, experimentControls].filter(Boolean)) unit.update({ ...current, meterMode });
@@ -1983,7 +2015,10 @@ export function createBench({
   const controllers = [];
   const rotationMatrix = new THREE.Matrix4();
   const locomotion = createLocomotion({
-    obstacles: [{ minX: -1.07, maxX: 1.07, minZ: -1.7, maxZ: -0.27 }],
+    obstacles: [
+      { minX: -1.07, maxX: 1.07, minZ: -1.7, maxZ: -0.27 },
+      { minX: 0.55, maxX: 1.22, minZ: -0.46, maxZ: 0.25 },
+    ],
     bounds: { minX: -3.1, maxX: 3.1, minZ: -4.6, maxZ: 2.4 },
   });
   let suspended = false,

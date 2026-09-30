@@ -1,6 +1,19 @@
-# Circuits Lab v0.6 verification
+# Circuits Lab v0.7 verification
 
-Updated 30 September 2026. The user tested v0.5 in VR and reported that direct handling was much better, but the equipment displays, graph and right panel were difficult to read. Version 0.6 addresses that feedback. The assistant has not operated a physical headset.
+Updated 30 September 2026. The user reported improved VR handling in v0.5 and better readability in v0.6, with control text and resistor names still unclear. The assistant has not operated a physical headset.
+
+## Version 0.7 control update
+
+The experiment control box now sits closer on a front-right ledge, facing the user. Larger button faces carry their captions; setting labels and resistor names such as Rth have more space. All four experiments retain their actions.
+
+Version 0.7 passed **122 of 122 tests**, the production build, `format:check` and the diff whitespace check. The root agent operated the final build at `localhost:5188` through visible browser controls:
+
+- Turning Circuit from Original to Thévenin retained 3 V, 6 mA and 18 mW. Turning Rth from 500 Ω to 1000 Ω changed these to 2 V, 4 mA and 8 mW.
+- Build and Explore changed mode and printed caption correctly; returning to Explore retained Rth and its readings. Physical Lab 6, 7 and 8 buttons each loaded the correct experiment.
+- Screenshots showed the enlarged Sources / Inactive source, Rin / Rf and Circuit / Speed / Time labels.
+- The physical Run button started RC acquisition at 11.5 ms with 0.543 V, 4.457 mA and 0.0148 mJ. Its caption became Pause and the time readout advanced.
+
+Physical v0.7 headset readability and frame rate remain unverified. The v0.6 results below remain historical evidence.
 
 ## What students can do
 

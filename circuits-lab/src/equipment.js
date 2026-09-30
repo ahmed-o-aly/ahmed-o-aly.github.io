@@ -238,8 +238,8 @@ function hardware(id) {
     }
     return { descriptor, set, rotor };
   }
-  function button(label, action, x, y, z, { color = "#6f7974", width = 0.025 } = {}) {
-    const key = box(width, 0.012, 0.007, material(color), group, [x, y, z + 0.004], 0.002);
+  function button(label, action, x, y, z, { color = "#6f7974", width = 0.025, height = 0.012 } = {}) {
+    const key = box(width, height, 0.007, material(color), group, [x, y, z + 0.004], 0.002);
     target(key, { kind: "button", label, action });
     return key;
   }
@@ -721,93 +721,123 @@ export function createGenerator({ id = "generator", label = "FUNCTION GENERATOR"
 
 export function createResistanceBox({ id = "resistance-box", label = "RESISTANCE", parameter = "load", values = OPTIONS[parameter] } = {}) {
   const h = hardware(id),
-    z = h.enclosure(0.133, 0.097, 0.093);
-  h.text(label, 0.11, 0.01, [0, 0.083, z + 0.0005], { size: 48 });
-  const control = h.dial(label, parameter, 0.028, 0.039, z, { radius: 0.015, values });
-  const valueDisplay = h.screen(0.064, 0.029, [-0.03, 0.059, z + 0.0006], { pixels: [768, 348], background: "#e1ead5" });
-  h.socket("A", -0.045, 0.024, z, COLORS.red);
-  h.socket("B", -0.016, 0.024, z, COLORS.black);
+    z = h.enclosure(0.18, 0.14, 0.11);
+  const labelKey = String(label)
+    .toLowerCase()
+    .replace(/[ₜₕₙ]/g, (character) => ({ ₜ: "t", ₕ: "h", ₙ: "n" })[character]);
+  const title =
+    parameter === "rf"
+      ? "Rf"
+      : parameter === "rin"
+        ? "Rin"
+        : parameter === "load"
+          ? "RL"
+          : parameter === "equivalentResistance"
+            ? /norton|rn|r_n|rₙ/.test(labelKey)
+              ? "Rn"
+              : "Rth"
+            : parameter === "resistance"
+              ? "R"
+              : label;
+  h.text(title, 0.144, 0.032, [0, 0.116, z + 0.0007]);
+  const control = h.dial(title, parameter, 0.052, 0.059, z, { radius: 0.023, values });
+  h.box(0.096, 0.041, 0.003, h.m.dark, h.group, [-0.03, 0.067, z], 0.002);
+  const valueDisplay = h.screen(0.09, 0.035, [-0.03, 0.067, z + 0.0017], { pixels: [900, 350], background: "#e1ead5" });
+  h.socket("A", -0.06, 0.025, z, COLORS.red);
+  h.socket("B", -0.014, 0.025, z, COLORS.black);
   function update(data = {}) {
     const value = data.parameters?.[parameter] ?? data.value;
     control.set(value);
-    valueDisplay.draw(value, (ctx, w, ht) => {
-      writeText(ctx, resistance(value), w / 2, ht / 2, { size: ht * 0.72, width: w - 28, align: "center" });
-    });
+    valueDisplay.draw(value, (ctx, w, ht) => writeText(ctx, resistance(value), w / 2, ht / 2, { size: ht * 0.86, width: w - 24, align: "center" }));
   }
   h.finish();
   update();
-  return { group: h.group, targets: h.targets, anchors: h.anchors, update, dispose: h.dispose };
+  return { group: h.group, targets: h.targets, anchors: h.anchors, width: 0.18, height: 0.14, update, dispose: h.dispose };
 }
 
 export function createExperimentControls({ id = "experiment-controls", module = "thevenin" } = {}) {
   const h = hardware(id),
-    z = h.enclosure(0.34, 0.172, 0.13),
-    controls = [];
-  const titles = { thevenin: "EQUIVALENT CIRCUITS", superposition: "SOURCE CONTROL", opamp: "AMPLIFIER CONTROL", transient: "TRANSIENT CONTROL" };
-  h.text(titles[module] || "CIRCUIT CONTROL", 0.29, 0.013, [0, 0.151, z + 0.0005], { size: 47 });
-  function selector(label, parameter, values, x, y = 0.1, { min, max, step, radius = 0.012 } = {}) {
-    const control = h.dial(label, parameter, x, y, z, { radius, values, min, max, step });
-    const display = h.screen(0.074, 0.016, [x, y + 0.03, z + 0.0006], { pixels: [740, 160], background: COLORS.face });
+    z = h.enclosure(0.56, 0.34, 0.16),
+    controls = [],
+    captions = [];
+  const labIds = ["thevenin", "superposition", "opamp", "transient"];
+  const labNumber = 5 + Math.max(0, labIds.indexOf(module));
+  const heading = h.screen(0.49, 0.03, [0, 0.315, z + 0.0007], { pixels: [1470, 90], background: COLORS.face });
+  function selector(label, parameter, values, x, width) {
+    h.text(label, width, 0.03, [x, 0.281, z + 0.0007]);
+    const control = h.dial(label, parameter, x, 0.235, z, {
+      radius: 0.023,
+      values,
+      min: parameter === "timeCursor" ? 0 : undefined,
+      max: parameter === "timeCursor" ? 1 : undefined,
+      step: parameter === "timeCursor" ? 0.001 : 1,
+    });
+    h.box(width, 0.04, 0.003, h.m.dark, h.group, [x, 0.184, z], 0.002);
+    const display = h.screen(width - 0.008, 0.034, [x, 0.184, z + 0.0017], {
+      pixels: [Math.round((width - 0.008) * 5000), 170],
+      background: "#e1ead5",
+    });
     controls.push({ ...control, parameter, display, label });
-    return control;
   }
-  function push(label, action, x, y, width = 0.032) {
-    const object = h.button(label, action, x, y, z, { width });
-    h.text(label, width + 0.006, 0.01, [x, y - 0.014, z + 0.0005]);
-    return object;
+  function push(label, action, x, y, width, height = 0.04, color = "#354b45") {
+    const object = h.button(label, action, x, y, z, { width, height, color });
+    const descriptor = object.userData.equipmentTarget;
+    const display = h.screen(width - 0.008, height - 0.008, [x, y, z + 0.0078], {
+      pixels: [Math.round((width - 0.008) * 5000), 160],
+      background: color,
+      foreground: "#f7fff8",
+    });
+    display.object.userData.equipmentTarget = descriptor;
+    const entry = { object, descriptor, display, color, label };
+    captions.push(entry);
+    return entry;
   }
-  const mode = push("MODE", "build", -0.132, 0.028);
-  push("CLEAR", "reset-circuit", -0.089, 0.028);
-  push("UNDO", "undo", -0.046, 0.028);
-  for (const [index, lab] of ["thevenin", "superposition", "opamp", "transient"].entries())
-    push(String(5 + index).padStart(2, "0"), `module:${lab}`, 0.016 + index * 0.037, 0.028, 0.024);
-  const stateDisplay = h.screen(0.108, 0.014, [0.103, 0.05, z + 0.0007], { pixels: [620, 120], background: COLORS.face });
-  let run, drive;
-  if (module === "thevenin") selector("Circuit", "representation", ["original", "thevenin", "norton"], -0.064);
+  if (module === "thevenin") selector("Circuit", "representation", ["original", "thevenin", "norton"], 0, 0.34);
   if (module === "superposition") {
-    selector("Sources", "sourceMode", ["a", "both", "b"], -0.08);
-    selector("Inactive source", "replacement", ["short", "open"], 0.063);
+    selector("Sources", "sourceMode", ["a", "both", "b"], -0.14, 0.23);
+    selector("Inactive source", "replacement", ["short", "open"], 0.14, 0.23);
   }
-  if (module === "opamp") selector("Amplifier", "configuration", ["inverting", "noninverting"], -0.064);
+  if (module === "opamp") selector("Amplifier", "configuration", ["inverting", "noninverting"], 0, 0.34);
+  let run, drive;
   if (module === "transient") {
-    selector("Circuit", "kind", ["RC", "RL"], -0.117, 0.106);
-    selector("Speed", "speed", OPTIONS.speed, -0.04, 0.106);
-    selector("Cursor", "timeCursor", undefined, 0.039, 0.106, { min: 0, max: 1, step: 0.001 });
-    run = push("RUN / PAUSE", "play", 0.121, 0.112, 0.045);
-    push("REPLAY", "replay", 0.121, 0.073, 0.039);
-    drive = push("SOURCE / RETURN", "switch", -0.112, 0.062, 0.05);
-    push("ZERO ENERGY", "reset-energy", -0.031, 0.062, 0.045);
+    selector("Circuit", "kind", ["RC", "RL"], -0.18, 0.156);
+    selector("Speed", "speed", OPTIONS.speed, 0, 0.156);
+    selector("Time", "timeCursor", undefined, 0.18, 0.156);
+    run = push("Run", "play", -0.208, 0.13, 0.124, 0.036);
+    push("Replay", "replay", -0.069, 0.13, 0.124, 0.036);
+    drive = push("Return", "switch", 0.069, 0.13, 0.124, 0.036);
+    push("Reset", "reset-energy", 0.208, 0.13, 0.124, 0.036);
   }
+  const mode = push("Build", "build", -0.18, 0.077, 0.156);
+  push("Clear", "reset-circuit", 0, 0.077, 0.156);
+  push("Undo", "undo", 0.18, 0.077, 0.156);
+  for (const [index, lab] of labIds.entries())
+    push(`Lab ${5 + index}`, `module:${lab}`, -0.2025 + index * 0.135, 0.022, 0.124, 0.036, lab === module ? "#e3eee0" : "#485658");
   const names = {
-    original: "ORIGINAL",
-    thevenin: "THÉVENIN",
-    norton: "NORTON",
-    both: "BOTH",
-    a: "A ONLY",
-    b: "B ONLY",
-    short: "SHORT",
-    open: "OPEN",
-    inverting: "INVERTING",
-    noninverting: "NON-INVERTING",
+    original: "Original",
+    thevenin: "Thévenin",
+    norton: "Norton",
+    both: "Both",
+    a: "A only",
+    b: "B only",
+    short: "Short",
+    open: "Open",
+    inverting: "Inverting",
+    noninverting: "Non-inverting",
   };
   function update(data = {}) {
-    const p = data.parameters || {};
-    mode.userData.equipmentTarget.action = data.mode === "build" ? "explore" : "build";
-    mode.userData.equipmentTarget.label = data.mode === "build" ? "Explore reference" : "Build circuit";
-    stateDisplay.object.visible = module !== "transient";
-    stateDisplay.draw([data.mode, p.charging, p.playing], (ctx, w, ht) => {
-      writeText(
-        ctx,
-        module === "transient"
-          ? `${p.playing ? "RUN" : "PAUSED"} · ${p.charging ? "SOURCE" : "RETURN"}`
-          : data.mode === "build"
-            ? "BUILD CIRCUIT"
-            : "REFERENCE",
-        w / 2,
-        ht / 2,
-        { size: ht * 0.85, width: w - 16, align: "center" }
-      );
-    });
+    const p = data.parameters || {},
+      build = data.mode === "build";
+    mode.descriptor.action = build ? "explore" : "build";
+    mode.descriptor.label = build ? "Explore reference" : "Build circuit";
+    mode.label = build ? "Explore" : "Build";
+    heading.draw(build, (ctx, w, height) =>
+      writeText(ctx, `Lab ${labNumber} · ${build ? "Build circuit" : "Explore"}`, w / 2, height / 2, {
+        size: height * 0.88,
+        width: w - 24,
+        align: "center",
+      })
+    );
     for (const control of controls) {
       const value = control.parameter === "timeCursor" ? p.time : p[control.parameter];
       if (control.parameter === "timeCursor") {
@@ -815,22 +845,33 @@ export function createExperimentControls({ id = "experiment-controls", module = 
         control.descriptor.step = Math.max(0.000001, control.descriptor.max / 100);
       }
       control.set(value);
-      control.display.draw(value, (ctx, w, ht) => {
-        const text =
-          control.parameter === "timeCursor"
-            ? `${number((value || 0) * 1000, 3)} ms`
-            : control.parameter === "speed"
-              ? `${number(value, 2)}×`
-              : names[value] || String(value || control.label);
-        writeText(ctx, text, w / 2, ht / 2, { size: ht * 0.85, width: w - 16, align: "center" });
-      });
+      const label =
+        control.parameter === "timeCursor"
+          ? `${number((value || 0) * 1000, 3)} ms`
+          : control.parameter === "speed"
+            ? `${number(value, 2)}×`
+            : names[value] || String(value || control.label);
+      control.display.draw(label, (ctx, w, height) =>
+        writeText(ctx, label, w / 2, height / 2, { size: height * 0.9, width: w - 20, align: "center" })
+      );
     }
-    if (run) run.userData.equipmentTarget.label = p.playing ? "Pause" : "Run";
-    if (drive) drive.userData.equipmentTarget.label = p.charging ? "Switch to return loop" : "Switch to source";
+    if (run) {
+      run.label = p.playing ? "Pause" : "Run";
+      run.descriptor.label = run.label;
+    }
+    if (drive) {
+      drive.label = p.charging ? "Return" : "Source";
+      drive.descriptor.label = p.charging ? "Switch to return loop" : "Switch to source";
+    }
+    for (const entry of captions)
+      entry.display.draw(entry.label, (ctx, w, height) => {
+        ctx.fillStyle = entry.color === "#e3eee0" ? "#10251b" : "#f7fff8";
+        writeText(ctx, entry.label, w / 2, height / 2, { size: height * 0.9, width: w - 16, align: "center" });
+      });
   }
   h.finish();
   update();
-  return { group: h.group, targets: h.targets, anchors: h.anchors, module, width: 0.34, height: 0.172, update, dispose: h.dispose };
+  return { group: h.group, targets: h.targets, anchors: h.anchors, module, width: 0.56, height: 0.34, update, dispose: h.dispose };
 }
 
 export function createProbe({

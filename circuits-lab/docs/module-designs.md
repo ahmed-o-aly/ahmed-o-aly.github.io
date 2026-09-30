@@ -14,6 +14,8 @@ Desktop: drag between terminals to wire, drag a probe to place it, and drag a di
 
 VR: grip a probe, move its tip to a contact, then release. Hold and turn a dial, and operate switches on the apparatus. Left stick moves and right stick turns. Physical movement within the play area remains tracked. Guide and lab selection are available in the room; students do not need a floating settings menu to do the experiment.
 
+The experiment control box sits on the closer front-right ledge. Its larger buttons and setting labels keep the same circuit, source, amplifier and transient controls. Resistor names and values have larger displays.
+
 The right display shows three large, labelled readings. The central display shows one full-size graph at a time; tabs select the scope channel or transient quantity. Point and hold the trigger to inspect a trace. Transient tabs retain the same acquired time and cursor; the small recorder has Voltage, Current and Energy buttons too. The Graph and Schematic buttons switch that display, and floating labels do not cover the apparatus.
 
 The reference schematic shows the assigned layout and selected values. It does not redraw itself from arbitrary student wires. The electrical solver and instrument readings use the actual connections.
@@ -106,4 +108,4 @@ Playback is slowed for inspection. At 1×, two real seconds represent the baseli
 
 The DC solver uses the actual patch network. Amplifier and transient models support the shown layouts, rather than every possible circuit. Invalid wiring does not produce a valid measurement trace. Meters and components are ideal; no tolerance, parasitic effects or heat model is included.
 
-Automated checks cover physics, signed contributions, changed wiring, probes, acquisition, cable moves, Undo and XR session handling. See the separate experiment checklist and verification record for completed checks. The user reported better direct handling in v0.5 VR, with readability problems that prompted v0.6. Desktop inspection and mocked XR tests cannot confirm the revised headset readability, comfort or performance; these still need confirmation on the target device.
+Automated checks cover physics, signed contributions, changed wiring, probes, acquisition, cable moves, Undo and XR session handling. See the separate experiment checklist and verification record for completed checks. The user reported better handling and readability in v0.5 and v0.6, with remaining control text problems prompting v0.7. Desktop inspection and mocked XR tests cannot confirm the revised headset readability, comfort or performance; these still need confirmation on the target device.
