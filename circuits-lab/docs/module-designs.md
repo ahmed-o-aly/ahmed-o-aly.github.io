@@ -12,11 +12,11 @@ The bench is the working surface. Students use the actual instrument dials, swit
 
 Desktop: drag between terminals to wire, drag a probe to place it, and drag a dial to turn it. Drag empty space to change the view, and scroll to zoom. Keyboard controls are an optional way to operate the same equipment.
 
-VR: grip a probe, move its tip to a contact, then release. Hold and turn a dial, and operate switches on the apparatus. Left stick moves and right stick turns. Physical movement within the play area remains tracked. Guide and lab selection are available in the room; students do not need a floating settings menu to do the experiment.
+VR: grip a probe, move its tip to a contact, then release. Pickup starts tip-down; subsequent wrist turns aim the probe. Hold and turn a dial, and operate switches on the apparatus. Left stick moves and right stick turns. Physical movement within the play area remains tracked. Guide and lab selection are available in the room; students do not need a floating settings menu to do the experiment.
 
 The experiment control box sits on the closer front-right ledge. Its larger buttons and setting labels keep the same circuit, source, amplifier and transient controls. Resistor names and values have larger displays.
 
-The right display shows three large, labelled readings. The central display shows one full-size graph at a time; tabs select the scope channel or transient quantity. Point and hold the trigger to inspect a trace. Transient tabs retain the same acquired time and cursor; the small recorder has Voltage, Current and Energy buttons too. The Graph and Schematic buttons switch that display, and floating labels do not cover the apparatus.
+The scope or recorder sits on the left ledge within reach, with the large graph above it. The right display shows three labelled readings. Graph tabs select one scope channel or transient quantity at a time. Point and hold the trigger to inspect a trace. Transient tabs retain the same acquired time and cursor; the small recorder has Voltage, Current and Energy buttons too. The Graph and Schematic buttons switch the left display, and floating labels do not cover the apparatus.
 
 The reference schematic shows the assigned layout and selected values. It does not redraw itself from arbitrary student wires. The electrical solver and instrument readings use the actual connections.
 
@@ -70,6 +70,8 @@ Email task: design an amplifier for a specified gain, then find how large the in
 
 The email refers to configurations in a lab handout that was not supplied. Inverting and non-inverting amplifiers are the current examples. These cover the requested activity, but their exact layout and values cannot be claimed to match that unseen handout.
 
+The amplifier parts and lead routes are spaced apart. Separate physical GND sockets share one electrical ground, and the OUT sockets share one output node. This separates meter and scope tips without changing the circuit.
+
 ### Procedure
 
 1. Start with an inverting amplifier and the assigned gain of −3. Choose input and feedback resistances and wire the circuit, including both supply rails.
@@ -108,4 +110,4 @@ Playback is slowed for inspection. At 1×, two real seconds represent the baseli
 
 The DC solver uses the actual patch network. Amplifier and transient models support the shown layouts, rather than every possible circuit. Invalid wiring does not produce a valid measurement trace. Meters and components are ideal; no tolerance, parasitic effects or heat model is included.
 
-Automated checks cover physics, signed contributions, changed wiring, probes, acquisition, cable moves, Undo and XR session handling. See the separate experiment checklist and verification record for completed checks. The user reported better handling and readability in v0.5 and v0.6, with remaining control text problems prompting v0.7. Desktop inspection and mocked XR tests cannot confirm the revised headset readability, comfort or performance; these still need confirmation on the target device.
+Automated checks cover physics, signed contributions, changed wiring, probes, acquisition, cable moves, Undo and XR session handling. See the separate experiment checklist and verification record for completed checks. User headset feedback has guided the successive layout changes. Desktop inspection and mocked XR tests cannot confirm the revised headset reach, readability, comfort or performance; these still need confirmation on the target device.
