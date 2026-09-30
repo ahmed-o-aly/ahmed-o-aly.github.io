@@ -1,6 +1,24 @@
-# Circuits Lab v0.9 verification
+# Circuits Lab v0.10 verification
 
 Updated 30 September 2026. The user reported improved VR handling in v0.5 and better readability in v0.6, with control text and resistor names still unclear. The assistant has not operated a physical headset.
+
+## Version 0.10 panels, circuit status and full reset
+
+VR now uses the physical left device for graphs; the separate floating graph and duplicate centre lab menu were removed. The right readings stay. The smaller centre panel shows a specific circuit or instrument issue and a next step, with a Diagram tab for the reference circuit. The recorder retains the initial trace point and time-constant marker.
+
+Reset experiment (Reset lab on the physical box) returns the current lab to fresh Explore defaults. It cancels held inputs, restores wires, probes, sockets, meter and scope settings, and clears that lab’s saved variants, traces, playback and Undo history. Other labs retain their state. Clear leads remains in the secondary keyboard controls.
+
+All **185 tests passed**. New coverage checks all four reset paths, erased Explore and Build caches, variant changes, held scope data, transient energy/clock, late two-hand releases and stale Undo. Circuit-status tests cover source shorts, open supply/feedback/return paths, valid alternative DC networks, scope grounds, trigger/scale/Hold, clipping, meter state and transient playback.
+
+Observed in the desktop production build:
+
+- Panel preview showed only the centre status/diagram panel and right readings. The Diagram tab remained usable.
+- Removing the amplifier’s plus+ → V+ lead displayed “+ supply disconnected” and the next connection to check.
+- Clearing amplifier Explore removed all leads/readings. Reset restored all 10 leads, −2 V, gain −2 and 2 Vpk. Reset from Build also returned to Explore.
+- Turning the physical Rf dial changed gain to −4. Pressing the physical Reset lab button restored gain −2 and 2 Vpk.
+- The physical transient Run button started acquisition. Dragging the left recorder screen read 236.009 ms, 4.528 V, 0.472 mA and 1.025 mJ, and changed status to reviewing recorded time.
+
+These checks use a desktop browser and simulated inputs. Physical headset reach, readability and controller operation of the revised controls remain unverified. Earlier version checks are retained below.
 
 ## Version 0.9 cable motion
 

@@ -334,20 +334,15 @@ export function createBench({
   let componentSignature = "",
     wireSignature = "",
     liveSignature = "",
-    actionSignature = "",
-    graphSignature = "";
-  let probeSignature = "";
-  let actionPage = 0;
-  let actionTab = "bench";
+    actionSignature = "";
   let hovered = null;
   let hoverSignature = "";
   let panelPreview = false;
   let previewCamera = null;
-  let graphView = "graph";
+  let statusView = "status";
   let schematicURL = "";
   let schematicImage = null;
   let schematicVersion = 0;
-  let livePage = 0;
   let disposed = false;
 
   function clearGroup(group) {
@@ -1204,71 +1199,75 @@ export function createBench({
     group.add(surface.object);
     return group;
   }
-  const actionPanel = canvasSurface(1024, 1200, 0.9, 1.055);
+  const actionPanel = canvasSurface(1152, 768, 0.96, 0.64);
   const livePanel = canvasSurface(840, 1280, 0.68, 1.036);
-  const graphPanel = canvasSurface(1600, 1008, 1.3, 0.819);
   const actionMount = panel(actionPanel, 0, 1.72, -1.8);
   const liveMount = panel(livePanel, 1.24, 1.62, -1.02, -0.88);
-  const graphMount = panel(graphPanel, -0.94, 1.7, -0.62, 0.99);
   const actionBoxes = [];
-  const liveBoxes = [];
-  const graphBoxes = [];
-  let graphIndex = 0;
-  const graphControl = { object: graphPanel.object, kind: "screen", id: "large-graph", label: "Graph cursor", bounds: [] };
-  function panelBase(surface, eyebrow, title) {
-    const { context: ctx, canvas } = surface;
-    ctx.fillStyle = "#eff0ed";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = "#495a66";
-    ctx.font = "600 30px Arial, sans-serif";
-    ctx.fillText(eyebrow, 48, 57);
-    ctx.fillStyle = "#193743";
-    ctx.font = "600 52px Arial, sans-serif";
-    textLine(ctx, title, 48, 119, canvas.width - 96);
-    return ctx;
-  }
-  let focusPartSettings = true;
   function drawActions() {
-    const ctx = panelBase(actionPanel, "LAB GUIDE", "Experiments");
+    const { context: ctx, canvas } = actionPanel;
+    const status = current.diagnostic || { level: "info", title: "Circuit ready", message: "Use the equipment to take readings." };
+    const ink = status.level === "error" ? "#893e25" : status.level === "warning" ? "#7b551e" : "#25483d";
+    ctx.fillStyle = "#f7f8f3";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.textAlign = "left";
+    ctx.textBaseline = "alphabetic";
+    ctx.fillStyle = "#344b43";
+    ctx.font = "600 40px Arial";
+    ctx.fillText(statusView === "schematic" ? "Circuit diagram" : "Circuit check", 42, 68);
     actionBoxes.length = 0;
-    const button = (x, y, w, h, title, callback) => {
-      ctx.fillStyle = "#fff";
+    const button = (x, y, w, h, title, callback, active = false) => {
+      ctx.fillStyle = active ? "#29463b" : "#e1e8e0";
       ctx.fillRect(x, y, w, h);
-      ctx.strokeStyle = "#a0aaa8";
-      ctx.strokeRect(x, y, w, h);
-      ctx.fillStyle = "#273b42";
-      ctx.font = "600 40px Arial";
+      ctx.fillStyle = active ? "#fff" : "#273b32";
+      ctx.font = "600 36px Arial";
       ctx.textAlign = "center";
-      textLine(ctx, title, x + w / 2, y + h / 2 + 10, w - 20);
+      textLine(ctx, title, x + w / 2, y + h / 2 + 12, w - 24);
       ctx.textAlign = "left";
       actionBoxes.push({ x, y, w, h, action: callback });
     };
-    const labs = (current.actions || []).filter((a) => String(a.group).toLowerCase() === "labs");
-    labs.forEach((action, i) => button(42, 148 + i * 78, 940, 65, action.label, () => onAction(action.id)));
-    const guide = (current.actions || []).filter((a) => String(a.group).toLowerCase() === "guide" || ["undo", "check-wiring"].includes(a.id));
-    guide
-      .slice(0, 4)
-      .forEach((action, i) => button(42 + (i % 2) * 478, 480 + Math.floor(i / 2) * 77, 462, 64, action.label, () => onAction(action.id)));
-    ctx.fillStyle = "#273b42";
-    ctx.font = "40px Arial";
-    const instructions = renderer.xr.isPresenting
-      ? [
-          "Grip: pick up probes and plugs.",
-          "Release at a terminal to connect.",
-          "Trigger: turn knobs or use switches.",
-          "Left stick: move. Right stick: turn.",
-          "Stick click: recenter at the bench.",
-        ]
-      : [
-          "Drag probes onto terminals.",
-          "Drag between terminals to wire.",
-          "Pull a plug out to disconnect it.",
-          "Drag knobs. Click switches.",
-          "Drag empty space to look around.",
-        ];
-    instructions.forEach((line, i) => ctx.fillText(line, 48, 692 + i * 55));
-    button(42, 1010, 458, 64, "Recenter", () => recenterVR());
-    button(520, 1010, 462, 64, renderer.xr.isPresenting ? "Exit VR" : "Close guide", () =>
+    for (const [i, [view, label]] of [
+      ["status", "Status"],
+      ["schematic", "Diagram"],
+    ].entries())
+      button(
+        740 + i * 185,
+        26,
+        170,
+        62,
+        label,
+        () => {
+          statusView = view;
+          drawActions();
+        },
+        statusView === view
+      );
+    if (statusView === "schematic") {
+      if (schematicImage) {
+        const area = { x: 22, y: 115, w: 1108, h: 518 };
+        const scale = Math.min(area.w / schematicImage.width, area.h / schematicImage.height);
+        const w = schematicImage.width * scale,
+          h = schematicImage.height * scale;
+        ctx.drawImage(schematicImage, area.x + (area.w - w) / 2, area.y + (area.h - h) / 2, w, h);
+      } else {
+        ctx.fillStyle = "#344b43";
+        ctx.font = "42px Arial";
+        ctx.fillText("Loading the circuit diagram…", 48, 260);
+      }
+    } else {
+      ctx.fillStyle = ink;
+      ctx.fillRect(42, 132, 8, 454);
+      ctx.font = "700 64px Arial";
+      wrapText(ctx, status.title, 78, 193, 1026, 75, 2);
+      ctx.fillStyle = "#22382e";
+      ctx.font = "48px Arial";
+      wrapText(ctx, status.message, 78, 367, 1026, 60, 3);
+      ctx.fillStyle = "#526258";
+      ctx.font = "38px Arial";
+      wrapText(ctx, status.detail || "", 78, 565, 1026, 48, 2);
+    }
+    button(42, 667, 335, 66, "Recenter", () => recenterVR());
+    button(775, 667, 335, 66, renderer.xr.isPresenting ? "Exit VR" : "Close preview", () =>
       renderer.xr.isPresenting ? void vrSession.exit() : setPanelPreview(false)
     );
     actionPanel.texture.needsUpdate = true;
@@ -1377,292 +1376,9 @@ export function createBench({
       ctx.font = "37px Arial";
       ctx.fillText("Readings follow the circuit.", 48, 1096);
     }
-    liveBoxes.length = 0;
     livePanel.texture.needsUpdate = true;
   }
   livePanel.object.userData = { kind: "panel", activate: () => true };
-
-  function graphPanelName(chart, index) {
-    const names = { voltage: "Voltage", current: "Current", energy: "Energy", ch1: "CH1", ch2: "CH2" };
-    return names[chart.id] || chart.title || `Graph ${index + 1}`;
-  }
-  function drawGraph() {
-    const ctx = graphPanel.context,
-      width = 1600,
-      height = 1008,
-      graph = current.graph || {};
-    const panels = graph.panels?.length ? graph.panels : [graph];
-    graphIndex = Math.max(0, Math.min(graphIndex, panels.length - 1));
-    const chart = panels[graphIndex] || graph;
-    ctx.fillStyle = "#fafbf8";
-    ctx.fillRect(0, 0, width, height);
-    ctx.textAlign = "left";
-    ctx.textBaseline = "alphabetic";
-    graphBoxes.length = 0;
-    ctx.fillStyle = "#172720";
-    ctx.font = "700 53px Arial";
-    const title =
-      graphView === "schematic"
-        ? "Circuit schematic"
-        : {
-            thevenin: "Load power",
-            superposition: "Source contributions",
-            opamp: "Oscilloscope",
-            transient: `${current.parameters?.kind || "RC"} response`,
-          }[current.module] || "Circuit graph";
-    ctx.fillText(title, 48, 89);
-    const button = (x, y, w, h, label, action, active = false) => {
-      ctx.fillStyle = active ? "#263e34" : "#e4ebe5";
-      ctx.fillRect(x, y, w, h);
-      ctx.fillStyle = active ? "#fff" : "#22392c";
-      ctx.font = "600 39px Arial";
-      ctx.textAlign = "center";
-      textLine(ctx, label, x + w / 2, y + h / 2 + 14, w - 24);
-      ctx.textAlign = "left";
-      graphBoxes.push({ x, y, w, h, action });
-    };
-    button(
-      1110,
-      35,
-      180,
-      68,
-      "Graph",
-      () => {
-        graphView = "graph";
-        drawGraph();
-      },
-      graphView === "graph"
-    );
-    button(
-      1310,
-      35,
-      242,
-      68,
-      "Schematic",
-      () => {
-        graphView = "schematic";
-        drawGraph();
-      },
-      graphView === "schematic"
-    );
-    if (graphView === "schematic") {
-      graphControl.bounds = [];
-      if (schematicImage) {
-        const available = { x: 30, y: 135, w: 1540, h: 840 },
-          scale = Math.min(available.w / schematicImage.width, available.h / schematicImage.height);
-        const w = schematicImage.width * scale,
-          h = schematicImage.height * scale;
-        ctx.drawImage(schematicImage, available.x + (available.w - w) / 2, available.y + (available.h - h) / 2, w, h);
-      } else {
-        ctx.fillStyle = "#44564a";
-        ctx.font = "46px Arial";
-        ctx.fillText("Circuit reference is loading.", 48, 246);
-      }
-      graphPanel.texture.needsUpdate = true;
-      return;
-    }
-    if (panels.length > 1) {
-      // One full-width trace at a time keeps every graph readable; no graph is discarded.
-      const tabWidth = (1504 - 14 * (panels.length - 1)) / panels.length;
-      panels.forEach((item, index) =>
-        button(
-          48 + index * (tabWidth + 14),
-          141,
-          tabWidth,
-          70,
-          graphPanelName(item, index),
-          () => {
-            graphIndex = index;
-            scope.selectPanel?.(index);
-            drawGraph();
-          },
-          index === graphIndex
-        )
-      );
-    } else {
-      ctx.fillStyle = "#43544a";
-      ctx.font = "39px Arial";
-      textLine(ctx, graph.subtitle || "Current circuit values", 48, 185, width - 96);
-    }
-    const left = 182,
-      right = 1534,
-      top = 280,
-      bottom = 720;
-    const px = (value) => left + value * (right - left),
-      py = (value) => bottom - value * (bottom - top);
-    graphControl.bounds = [
-      { left: left / width, top: top / height, width: (right - left) / width, height: (bottom - top) / height, panel: graphIndex },
-    ];
-    ctx.fillStyle = "#263b2e";
-    ctx.font = "600 43px Arial";
-    textLine(ctx, chart.yLabel || "Response", left, 256, right - left);
-    const xDivisions = chart.xDivisions || graph.xDivisions || 4,
-      yDivisions = chart.yDivisions || graph.yDivisions || 4;
-    ctx.strokeStyle = "#c9d3cc";
-    ctx.lineWidth = 1.8;
-    for (let i = 0; i <= xDivisions; i++) {
-      const x = px(i / xDivisions);
-      ctx.beginPath();
-      ctx.moveTo(x, top);
-      ctx.lineTo(x, bottom);
-      ctx.stroke();
-    }
-    for (let i = 0; i <= yDivisions; i++) {
-      const y = py(i / yDivisions);
-      ctx.beginPath();
-      ctx.moveTo(left, y);
-      ctx.lineTo(right, y);
-      ctx.stroke();
-    }
-    ctx.strokeStyle = "#607166";
-    ctx.lineWidth = 2.5;
-    ctx.strokeRect(left, top, right - left, bottom - top);
-    ctx.save();
-    ctx.beginPath();
-    ctx.rect(left - 3, top - 3, right - left + 6, bottom - top + 6);
-    ctx.clip();
-    const series = chart.series || [];
-    for (const trace of series) {
-      ctx.strokeStyle = trace.color || "#147587";
-      ctx.lineWidth = 6;
-      ctx.lineJoin = "round";
-      ctx.lineCap = "round";
-      ctx.beginPath();
-      let started = false;
-      for (const [x, y] of trace.points || []) {
-        if (!Number.isFinite(x) || !Number.isFinite(y)) {
-          started = false;
-          continue;
-        }
-        if (started) ctx.lineTo(px(x), py(y));
-        else ctx.moveTo(px(x), py(y));
-        started = true;
-      }
-      ctx.stroke();
-      if (trace.points?.length === 1) {
-        ctx.beginPath();
-        ctx.arc(px(trace.points[0][0]), py(trace.points[0][1]), 6, 0, Math.PI * 2);
-        ctx.fillStyle = trace.color || "#147587";
-        ctx.fill();
-      }
-    }
-    if (chart.reference && Number.isFinite(chart.reference.x)) {
-      const x = px(chart.reference.x);
-      ctx.strokeStyle = "#805528";
-      ctx.lineWidth = 3;
-      ctx.setLineDash([12, 9]);
-      ctx.beginPath();
-      ctx.moveTo(x, top);
-      ctx.lineTo(x, bottom);
-      ctx.stroke();
-      ctx.setLineDash([]);
-      ctx.fillStyle = "#654117";
-      ctx.font = "600 37px Arial";
-      ctx.fillText(chart.reference.label || "", Math.max(left + 10, Math.min(x + 14, right - 105)), top + 47);
-    }
-    const cursor = chart.cursor || graph.cursor;
-    if (cursor && Number.isFinite(cursor.x)) {
-      const x = px(cursor.x);
-      ctx.strokeStyle = "#263e34";
-      ctx.lineWidth = 3;
-      ctx.setLineDash([8, 7]);
-      ctx.beginPath();
-      ctx.moveTo(x, top);
-      ctx.lineTo(x, bottom);
-      ctx.stroke();
-      ctx.setLineDash([]);
-    }
-    if (chart.marker && Number.isFinite(chart.marker.x) && Number.isFinite(chart.marker.y)) {
-      ctx.beginPath();
-      ctx.arc(px(chart.marker.x), py(chart.marker.y), 9, 0, Math.PI * 2);
-      ctx.fillStyle = "#fff";
-      ctx.fill();
-      ctx.lineWidth = 5;
-      ctx.strokeStyle = "#83432b";
-      ctx.stroke();
-    }
-    ctx.restore();
-    ctx.fillStyle = "#283d31";
-    ctx.font = "600 40px Arial";
-    const sparseTicks = (ticks) => {
-      const valid = (ticks || []).filter((tick) => Number.isFinite(tick.position));
-      if (valid.length <= 3) return valid;
-      const middle = valid.reduce((best, tick) => (Math.abs(tick.position - 0.5) < Math.abs(best.position - 0.5) ? tick : best), valid[0]);
-      return [...new Set([valid[0], middle, valid.at(-1)])];
-    };
-    const xTicks = sparseTicks(chart.xTicks);
-    ctx.textAlign = "center";
-    xTicks.forEach((tick, index) => {
-      if (xTicks.length > 6 && index !== 0 && index !== xTicks.length - 1 && index % 2) return;
-      textLine(ctx, String(tick.label), px(tick.position), 772, Math.min(260, (right - left) / Math.max(3, xTicks.length - 1)));
-    });
-    ctx.textAlign = "right";
-    const yTicks = sparseTicks(chart.yTicks);
-    yTicks.forEach((tick, index) => {
-      if (yTicks.length > 5 && index !== 0 && index !== yTicks.length - 1 && index % 2) return;
-      textLine(ctx, String(tick.label), left - 20, py(tick.position) + 13, 149);
-    });
-    ctx.textAlign = "center";
-    ctx.font = "600 42px Arial";
-    textLine(ctx, chart.xLabel || graph.xLabel || "Time", (left + right) / 2, 827, right - left);
-    ctx.textAlign = "left";
-    ctx.fillStyle = "#e5ede6";
-    ctx.fillRect(30, 862, 1540, 120);
-    const traceNames = new Set(series.map((trace) => trace.name).filter(Boolean));
-    const readings = (cursor?.readings || []).filter((reading) => !traceNames.size || traceNames.has(reading.name));
-    if (cursor && (cursor.xLabel || readings.length)) {
-      const cells = [
-        { label: "Cursor", value: cursor.xLabel || "—" },
-        ...readings.map((reading) => ({ label: reading.name, value: `${formatReadout(reading.value)} ${reading.unit || ""}` })),
-      ];
-      const cellWidth = 1500 / Math.max(1, cells.length);
-      cells.forEach((cell, index) => {
-        const x = 50 + index * cellWidth;
-        ctx.fillStyle = "#3f5447";
-        ctx.font = "32px Arial";
-        textLine(ctx, cell.label, x, 904, cellWidth - 22);
-        ctx.fillStyle = "#13271b";
-        ctx.font = "700 53px Arial";
-        textLine(ctx, cell.value, x, 963, cellWidth - 22);
-      });
-    } else {
-      ctx.fillStyle = "#2b4234";
-      ctx.font = "600 43px Arial";
-      const empty = !series.some((trace) => trace.points?.length);
-      textLine(
-        ctx,
-        empty
-          ? chart.subtitle || graph.subtitle || "Connect the circuit to acquire a trace."
-          : "Point at the graph and hold the trigger to inspect a reading.",
-        52,
-        936,
-        1496
-      );
-    }
-    graphPanel.texture.needsUpdate = true;
-  }
-  graphPanel.object.userData = {
-    kind: "panel",
-    direct: graphControl,
-    activate: (intersection) => {
-      const x = intersection.uv.x * 1600,
-        y = (1 - intersection.uv.y) * 1008;
-      const button = graphBoxes.find((box) => x >= box.x && x <= box.x + box.w && y >= box.y && y <= box.y + box.h);
-      if (button) {
-        button.action();
-        return true;
-      }
-      const area = graphControl.bounds[0];
-      return (
-        graphView !== "graph" ||
-        !area ||
-        x < area.left * 1600 ||
-        x > (area.left + area.width) * 1600 ||
-        y < area.top * 1008 ||
-        y > (area.top + area.height) * 1008
-      );
-    },
-  };
 
   function makeLooseLead(target, position) {
     const cable = createCable({ color: target.color || "#862926", radius: 0.00324 });
@@ -1750,8 +1466,6 @@ export function createBench({
         const index = Number(String(id).split(":")[1]);
         if (Number.isInteger(index) && index >= 0) {
           scope.selectPanel?.(index);
-          graphIndex = index;
-          drawGraph();
         }
       } else onAction(id);
     },
@@ -1833,13 +1547,7 @@ export function createBench({
   });
 
   function update(model) {
-    if (model.module && model.module !== current.module) graphIndex = 0;
-    if (model.live?.title && model.live.title !== current.live?.title) livePage = 0;
-    if (model.selectedPart && model.selectedPart !== current.selectedPart) {
-      actionTab = "settings";
-      actionPage = 0;
-      focusPartSettings = true;
-    }
+    if (model.module && model.module !== current.module) statusView = "status";
     current = { ...current, ...model };
     const nextComponents = JSON.stringify(current.components.map(({ value, ...rest }) => rest));
     let rebuilt = false;
@@ -1889,15 +1597,10 @@ export function createBench({
       liveSignature = nextLive;
       drawLive();
     }
-    const nextActions = JSON.stringify([current.actions, current.tool, current.selectedTerminal, current.selectedPart, current.partActions]);
+    const nextActions = JSON.stringify(current.diagnostic);
     if (nextActions !== actionSignature) {
       actionSignature = nextActions;
       drawActions();
-    }
-    const nextGraph = JSON.stringify(current.graph);
-    if (nextGraph !== graphSignature) {
-      graphSignature = nextGraph;
-      drawGraph();
     }
     if (current.schematicDataURL !== undefined && current.schematicDataURL !== schematicURL) {
       schematicURL = current.schematicDataURL;
@@ -1908,15 +1611,15 @@ export function createBench({
         img.onload = () => {
           if (!disposed && version === schematicVersion) {
             schematicImage = img;
-            drawGraph();
+            drawActions();
           }
         };
         img.onerror = () => {
-          if (!disposed && version === schematicVersion) drawGraph();
+          if (!disposed && version === schematicVersion) drawActions();
         };
         img.src = schematicURL;
       }
-      drawGraph();
+      drawActions();
     }
   }
 
@@ -1946,7 +1649,7 @@ export function createBench({
       ...equipment,
       ...probes,
       ...loose,
-      ...(xrPanels.visible ? [actionPanel.object, livePanel.object, graphPanel.object] : []),
+      ...(xrPanels.visible ? [actionPanel.object, livePanel.object] : []),
     ];
   }
   function pick() {
@@ -1984,9 +1687,6 @@ export function createBench({
     else if (action.kind === "wire") {
       if (current.tool === "remove") onWire(action.index);
     } else if (action.kind === "part") {
-      actionTab = "settings";
-      actionPage = 0;
-      focusPartSettings = true;
       onPart(action.id);
       if (action.type === "switch") onAction("switch");
       drawActions();
@@ -2316,10 +2016,8 @@ export function createBench({
   function positionPanels(eyeHeight) {
     // The displays face the recentered viewer and stay fixed while students move.
     const eye = new THREE.Vector3(0, eyeHeight, 0);
-    graphMount.position.set(-0.94, Math.max(1.69, eyeHeight + 0.04), -0.62);
     liveMount.position.set(1.24, Math.max(1.61, eyeHeight - 0.01), -1.02);
-    actionMount.position.set(0, Math.max(1.66, eyeHeight + 0.08), -1.8);
-    graphMount.lookAt(eye);
+    actionMount.position.set(0, Math.max(1.58, eyeHeight + 0.04), -1.45);
     liveMount.lookAt(eye);
     actionMount.lookAt(eye);
   }
@@ -2506,9 +2204,24 @@ export function createBench({
     renderer.dispose();
     renderer.domElement.remove();
   }
+  function resetExperiment() {
+    cancelInteractions();
+    meterMode = "vdc";
+    socketAllocator.clear();
+    componentSignature = "";
+    wireSignature = "";
+    actionSignature = "";
+    statusView = "status";
+    scope.selectPanel?.(0);
+    for (const probe of movableProbes.values()) {
+      probe.loose = false;
+      probe.connected = null;
+      delete probe.restPose;
+    }
+  }
   function cancelInteractions() {
     suspendInput();
     for (const lead of [...looseLeads]) removeLooseLead(lead);
   }
-  return { cancelInteractions, update, enterVR, refreshVRSupport, recenterVR, resetView, setPanelPreview, dispose, renderer };
+  return { cancelInteractions, resetExperiment, update, enterVR, refreshVRSupport, recenterVR, resetView, setPanelPreview, dispose, renderer };
 }

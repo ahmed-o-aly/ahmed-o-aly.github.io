@@ -654,6 +654,34 @@ function initializeChallenge(s) {
   if (s.module === "thevenin") Object.assign(s.params.thevenin, { equivalentVoltage: 4, equivalentResistance: 750, nortonCurrent: 8 });
 }
 
+function resetExperiment(s) {
+  const module = s.module;
+  const belongsToModule = (contextKey) => contextKey.split(":")[1] === module;
+  // Remove every variant and mode, including caches that have no current wire entry.
+  for (const field of ["wireSets", "probeSets", "scopeSets", "scopeHolds", "history"])
+    for (const contextKey of Object.keys(s[field])) if (belongsToModule(contextKey)) delete s[field][contextKey];
+  const groups = manipulationGroups.get(s);
+  if (groups) {
+    for (const contextKey of groups.keys()) if (belongsToModule(contextKey)) groups.delete(contextKey);
+    if (!groups.size) manipulationGroups.delete(s);
+  }
+  if (module === "opamp") scopeCache.delete(s);
+  if (module === "transient") s.predictions = {};
+  if (module === "superposition") s.sumSubmissions = {};
+  s.records = s.records.filter((record) => record.module !== module);
+  s.attempts[module] = 0;
+  delete s.challengeStarted[module];
+  delete s.checks[module];
+  s.params[module] = clone(MODULES[module].defaults);
+  s.mode = "explore";
+  s.tool = "wire";
+  s.selectedTerminal = null;
+  s.sequence++;
+  context(s);
+  s.feedback = "Experiment reset. Explore starts with the complete circuit and default settings.";
+  return true;
+}
+
 export function terminal(s, id) {
   const { circuit, wires, probes } = context(s);
   if (!circuit.pins.some((p) => p.id === id)) return;
@@ -849,6 +877,7 @@ export function assess(s) {
 }
 
 export function action(s, id) {
+  if (id === "reset-experiment") return resetExperiment(s);
   if (id.startsWith("scrub:") && s.module === "transient") {
     const milliseconds = Number(id.slice(6));
     if (!Number.isFinite(milliseconds) || !context(s).correct) return false;
@@ -1346,6 +1375,7 @@ export function vrActions(s) {
   };
   add("Guide", s.mode === "explore" ? "build" : "explore", s.mode === "explore" ? "Build circuit" : "Explore");
   add("Guide", "reset-circuit", "Clear circuit");
+  add("Guide", "reset-experiment", "Reset experiment");
   for (const [tool, label] of [
     ["select", "Select"],
     ["wire", "Wire"],

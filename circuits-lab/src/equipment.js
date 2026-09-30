@@ -453,6 +453,28 @@ function plotScreen(ctx, width, height, graph, params) {
         }
       }
       ctx.stroke();
+      if (trace.points?.length === 1) {
+        const [px, py] = trace.points[0];
+        if (Number.isFinite(px) && Number.isFinite(py)) {
+          ctx.fillStyle = ctx.strokeStyle;
+          ctx.beginPath();
+          ctx.arc(x + px * plotW, y + (1 - py) * plotH, 6, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+    }
+    if (Number.isFinite(panel.reference?.x)) {
+      const rx = x + panel.reference.x * plotW;
+      ctx.strokeStyle = "#bacabb";
+      ctx.lineWidth = 2;
+      ctx.setLineDash([8, 6]);
+      ctx.beginPath();
+      ctx.moveTo(rx, y);
+      ctx.lineTo(rx, y + plotH);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = "#d5e5d7";
+      writeText(ctx, panel.reference.label || "", Math.min(x + plotW - 60, rx + 12), y + 25, { size: 28, width: 100 });
     }
     if (!(panel.series || []).some((trace) => trace.points?.length)) {
       ctx.fillStyle = "#f5faf4";
@@ -806,10 +828,10 @@ export function createExperimentControls({ id = "experiment-controls", module = 
     run = push("Run", "play", -0.208, 0.13, 0.124, 0.036);
     push("Replay", "replay", -0.069, 0.13, 0.124, 0.036);
     drive = push("Return", "switch", 0.069, 0.13, 0.124, 0.036);
-    push("Reset", "reset-energy", 0.208, 0.13, 0.124, 0.036);
+    push("New run", "reset-energy", 0.208, 0.13, 0.124, 0.036);
   }
   const mode = push("Build", "build", -0.18, 0.077, 0.156);
-  push("Clear", "reset-circuit", 0, 0.077, 0.156);
+  push("Reset lab", "reset-experiment", 0, 0.077, 0.156);
   push("Undo", "undo", 0.18, 0.077, 0.156);
   for (const [index, lab] of labIds.entries())
     push(`Lab ${5 + index}`, `module:${lab}`, -0.2025 + index * 0.135, 0.022, 0.124, 0.036, lab === module ? "#e3eee0" : "#485658");

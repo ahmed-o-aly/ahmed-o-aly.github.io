@@ -1583,7 +1583,16 @@ textarea {
     max-width: 65px;
   }
   .panel-header {
-    height: 49px;
+    height: auto;
+    min-height: 49px;
+    flex-wrap: wrap;
+  }
+  .bench-tabs,
+  .bench-toolbar {
+    min-height: 43px;
+  }
+  .bench-toolbar {
+    margin-left: auto;
   }
   .scope-time {
     grid-template-columns: 1fr 1fr;

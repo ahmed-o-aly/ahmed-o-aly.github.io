@@ -1,4 +1,4 @@
-# Circuits Lab v0.9
+# Circuits Lab v0.10
 
 Four Electrical Circuits I experiments share a desktop 3D bench and an immersive WebXR lab. Students wire circuits, use instruments, change values and inspect live traces. Readings and written answers stay on paper.
 
@@ -18,6 +18,7 @@ Vite prints the local URL. The normal dev port is 5186; pass `-- --port 5187` if
 ## Use the bench
 
 - **Explore** starts with a wired circuit. **Build circuit** starts with loose connections. Each keeps its own wiring.
+- **Reset experiment**, labelled **Reset lab** on the physical control box, restores this lab’s original Explore circuit, default values, probes and instrument settings. It clears the lab’s old traces and Undo history, including other saved variants. Other labs keep their settings.
 - Drag between contacts to connect a lead. Move a plug to change its connection. Drop it away from a contact to disconnect it. **Undo** restores the last change.
 - Move the meter's V and COM tips to the two points being measured. The display reads V minus COM. Swapping the tips reverses its sign.
 - Use the dials and switches on the equipment. The experiment control box is on the closer front-right ledge, with larger buttons and setting labels. Optional **Keyboard controls** expose the same settings.
@@ -25,7 +26,7 @@ Vite prints the local URL. The normal dev port is 5186; pass `-- --port 5187` if
 
 In VR, grip a probe to hold it and release its tip near a contact to connect. A picked-up probe starts with its tip down; turn your wrist to aim it. Hold and turn a dial. The left stick moves, the right stick turns, and room-scale tracking lets you walk within your play area. Use the headset system menu to exit.
 
-The scope or recorder sits within reach on the left ledge, with the large graph above it. The right display gives three labelled readings. Use the graph tabs to select a channel or quantity, then point and hold the trigger to inspect the trace. RC/RL plots share the same time and cursor; the small recorder also has Voltage, Current and Energy buttons. Graph and Schematic buttons switch the left display. Floating labels do not cover the equipment.
+The scope or recorder sits within reach on the left ledge and is the graph display in VR. Point at its screen and hold the trigger to inspect a trace. The RC/RL recorder has Voltage, Current and Energy buttons; the scope shows both channels and has scale, trigger and Run/Hold controls. The right panel gives three labelled readings. The smaller centre panel explains the current circuit or instrument issue and what to check; its Diagram tab shows the reference circuit. Floating labels do not cover the equipment.
 
 Moving a lead keeps the other wires in place. The held cable bends with the moving end, then settles gently after release. Common sockets keep the fixed end where it was placed.
 
@@ -52,6 +53,6 @@ RC uses 100 µF and RL uses 100 mH, with a 5 V source. Switching and resistance 
 
 The email's four learning tasks are covered. The op-amp handout was not supplied; inverting and non-inverting circuits are the current examples. Exact handout circuits and component values still need confirmation.
 
-User headset feedback has guided the layout changes. Version 0.9 keeps untouched wire paths stable and smooths cable movement during pickup and release. Its headset feel and frame rate still need confirmation on the intended device; the assistant has not operated a physical headset.
+User headset feedback has guided the layout changes. Version 0.10 removes the duplicate floating graph, adds circuit status and provides a complete Explore reset. Its revised panel readability and control reach still need confirmation on the intended device; the assistant has not operated a physical headset.
 
 See [module designs](docs/module-designs.md), [experiment checks](docs/experiment-checklist.md) and [verification](docs/verification.md).

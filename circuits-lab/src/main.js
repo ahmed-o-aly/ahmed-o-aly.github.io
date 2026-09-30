@@ -26,6 +26,7 @@ import {
 import { transient } from "./physics.js";
 import { createBench } from "./bench.js";
 import { renderSchematic } from "./schematic.js";
+import { circuitStatus } from "./circuit-status.js";
 
 const app = document.querySelector("#app");
 const state = createLab();
@@ -67,7 +68,7 @@ app.innerHTML = `
       .join("")}</nav>
     <div class="sidebar-bottom"><div class="course-mark">ELEN <strong>221</strong></div><button class="text-button" id="guide-button">Help ${svgIcon(
       "arrow"
-    )}</button><span class="prototype-tag">Lab build · v0.9</span></div>
+    )}</button><span class="prototype-tag">Lab build · v0.10</span></div>
   </aside>
   <main class="workspace">
     <header class="topbar"><div class="breadcrumb">Lab <span id="lab-number">05</span><span class="slash">/</span><span id="topic-label"></span></div><div class="header-actions"><button class="button vr-button" id="vr-button">${svgIcon(
@@ -78,7 +79,7 @@ app.innerHTML = `
     <section class="experiment-brief" aria-label="Experiment aim"><span>Your experiment</span><p id="experiment-aim"></p><details><summary>Experiment steps</summary><div id="experiment-steps"></div></details></section>
     <div class="lab-layout">
       <section class="bench-panel" aria-label="Interactive circuit experiment">
-        <div class="panel-header"><div class="bench-tabs"><button id="bench-tab" class="active">3D bench</button><button id="reference-tab">Schematic</button><button id="vr-preview-tab" hidden title="Desktop check of panel layout only">Panel preview</button></div><div class="bench-toolbar"><span id="circuit-status" class="status-tag">Circuit connected</span><button class="icon-button" id="reset-view" aria-label="Reset 3D view">${svgIcon(
+        <div class="panel-header"><div class="bench-tabs"><button id="bench-tab" class="active">3D bench</button><button id="reference-tab">Schematic</button><button id="vr-preview-tab" hidden title="Desktop check of panel layout only">Panel preview</button></div><div class="bench-toolbar"><span id="circuit-status" class="status-tag">Circuit connected</span><button class="button subtle" data-action="reset-experiment" title="Restore this lab's original Explore circuit, values and probes">Reset experiment</button><button class="icon-button" id="reset-view" aria-label="Reset 3D view">${svgIcon(
           "reset"
         )}</button></div></div>
         <div class="stage-wrap"><div id="bench"></div><div id="schematic" hidden></div><div class="stage-top"><span id="bench-caption">Original circuit</span><span id="hover-label" hidden></span></div><div class="stage-bottom"><span>Drag empty space to look around · Scroll to zoom</span><span>Drag a probe to a contact · Drag a dial to turn it</span></div></div>
@@ -100,7 +101,7 @@ app.innerHTML = `
     )}</button></footer>
   </main>
   <dialog id="headset-dialog" aria-labelledby="headset-title"><div class="dialog-header"><h2 id="headset-title">Open the lab in VR</h2><button class="icon-button" data-close aria-label="Close VR setup">×</button></div><p>Open this lab in your headset’s browser, then select <strong>Enter VR</strong>. The circuit bench and all four experiments open around you.</p><div id="headset-address" class="headset-address"></div><ol class="headset-steps"><li>Choose a lab and Explore or Build circuit.</li><li>Enter VR and accept the headset’s request.</li><li>Grip a probe to pick it up. Bring its tip to a contact and release. Hold a dial and turn your wrist to adjust it.</li><li>Use the left stick to move and the right stick to turn. You can also walk around within your play area.</li></ol><p id="headset-status" class="headset-status" role="status"></p><p>Your circuit and readings stay when you leave VR.</p><div class="dialog-actions"><button class="button primary" id="headset-enter" hidden>Enter VR</button><button class="button subtle" id="headset-check">Check headset</button><a id="headset-fullscreen" class="button subtle" target="_blank" rel="noopener" hidden>Open lab full screen</a></div></dialog>
-  <dialog id="guide-dialog"><div class="dialog-header"><div><span class="eyebrow">ELEN 221</span><h2>Lab guide</h2></div><button class="icon-button" data-close aria-label="Close guide">×</button></div><div class="guide-body"><h3>Use the equipment</h3><p>Explore starts with a wired circuit. Build circuit starts with loose connections. Follow the experiment steps above the bench.</p><ol><li>Drag from one contact to another to add a lead. Grab an existing lead to move or remove it. Undo puts the last connection back.</li><li>Pick up a test probe and put its metal tip on a contact. The red lead runs to V and the black lead to COM on the meter. The reading is V minus COM. Swap the tips to reverse the sign.</li><li>Turn the dials on the equipment to change values. Flip the circuit switch to change its state. In the amplifier lab, use the two scope probes to compare input and output.</li><li>Drag on a graph to choose a load or inspect an acquired trace. The graph labels state what is being calculated or measured. Put your answers on paper.</li></ol><h3>In VR</h3><p id="vr-help-status"></p><p>Open the HTTPS link in your headset browser and select Enter VR. Grip a probe to pick it up, move it to a contact, and release. Hold a dial and turn your wrist. Use the left stick to move and the right stick to turn. You can also walk within your play area. Recenter brings you back to the bench.</p><h3>Keyboard and mouse</h3><p>Drag empty space to orbit and scroll to zoom. Drag equipment to use it. Keyboard controls below the bench offer the same settings without dragging. Focus the graph and use the arrow keys to move its cursor.</p><h3>Model limits</h3><p>DC resistor circuits are solved from your connections. The amplifier and transient labs support the shown circuit layouts. Disconnected or invalid circuits do not produce valid traces.</p><p>The amplifier uses ideal gain with adjustable supply rails. Its output stays 1 V inside each rail. This model does not include device bandwidth, slew rate, input common-mode limits, component tolerances or output current limits.</p><p>RC and RL models preserve capacitor voltage and inductor current at switching. New run resets stored energy. The instructor must confirm the amplifier configurations against the lab handout, which was not included in the email.</p><p><a href="./docs/module-designs.md" target="_blank" rel="noopener">Instructor guide ↗</a></p></div></dialog>
+  <dialog id="guide-dialog"><div class="dialog-header"><div><span class="eyebrow">ELEN 221</span><h2>Lab guide</h2></div><button class="icon-button" data-close aria-label="Close guide">×</button></div><div class="guide-body"><h3>Use the equipment</h3><p>Explore starts with a wired circuit. Build circuit starts with loose connections. Follow the experiment steps above the bench. Reset experiment (Reset lab on the control box) returns this lab to its original Explore circuit, values and probes.</p><ol><li>Drag from one contact to another to add a lead. Grab an existing lead to move or remove it. Undo puts the last connection back.</li><li>Pick up a test probe and put its metal tip on a contact. The red lead runs to V and the black lead to COM on the meter. The reading is V minus COM. Swap the tips to reverse the sign.</li><li>Turn the dials on the equipment to change values. Flip the circuit switch to change its state. In the amplifier lab, use the two scope probes to compare input and output.</li><li>Drag on a graph to choose a load or inspect an acquired trace. The graph labels state what is being calculated or measured. Put your answers on paper.</li></ol><h3>In VR</h3><p id="vr-help-status"></p><p>Open the HTTPS link in your headset browser and select Enter VR. Grip a probe to pick it up, move it to a contact, and release. Hold a dial and turn your wrist. Use the left stick to move and the right stick to turn. You can also walk within your play area. Recenter brings you back to the bench. Read graphs on the left device, readings on the right, and circuit errors on the centre panel. The Diagram tab shows the target circuit.</p><h3>Keyboard and mouse</h3><p>Drag empty space to orbit and scroll to zoom. Drag equipment to use it. Keyboard controls below the bench offer the same settings without dragging. Focus the graph and use the arrow keys to move its cursor.</p><h3>Model limits</h3><p>DC resistor circuits are solved from your connections. The amplifier and transient labs support the shown circuit layouts. Disconnected or invalid circuits do not produce valid traces.</p><p>The amplifier uses ideal gain with adjustable supply rails. Its output stays 1 V inside each rail. This model does not include device bandwidth, slew rate, input common-mode limits, component tolerances or output current limits.</p><p>RC and RL models preserve capacitor voltage and inductor current at switching. New run resets stored energy. The instructor must confirm the amplifier configurations against the lab handout, which was not included in the email.</p><p><a href="./docs/module-designs.md" target="_blank" rel="noopener">Instructor guide ↗</a></p></div></dialog>
 `;
 
 const select = (name, label, values, display = (v) => v) =>
@@ -632,11 +633,12 @@ function renderLive() {
     ms = metrics(state).map((reading, index) =>
       index === 0 && meterMode === "off" ? { ...reading, value: "—", unit: "", detail: "Meter off" } : reading
     );
+  const diagnostic = circuitStatus(state, { measurement: m, acquisition: g.scope, meterMode });
   document.querySelector("#readings").innerHTML = ms
     .map((r) => `<div class="reading"><span>${r.label}</span><div>${escape(r.value)}<small>${r.unit}</small></div><p>${escape(r.detail)}</p></div>`)
     .join("");
   const status = document.querySelector("#circuit-status");
-  status.textContent = m.ok ? (c.correct ? "Circuit connected" : "Check wiring") : "Connect the circuit";
+  status.textContent = m.ok ? (c.correct ? "Circuit connected" : "Different wiring") : "Connect the circuit";
   status.classList.toggle("warning", !m.ok || !c.correct);
   document.querySelector("#chart-title").textContent = g.title;
   document.querySelector("#chart-subtitle").textContent = g.subtitle;
@@ -685,7 +687,10 @@ function renderLive() {
     ch2: "Click a terminal for the CH2 scope tip.",
     scopeGround: "Click circuit ground for the selected scope ground lead.",
   };
-  document.querySelector("#bench-help").textContent = instructions[state.tool] || state.feedback;
+  document.querySelector("#bench-help").textContent =
+    state.tool !== "wire" || state.selectedTerminal
+      ? instructions[state.tool] || state.feedback
+      : `${diagnostic.title}. ${diagnostic.message}${diagnostic.detail ? " " + diagnostic.detail : ""}`;
   document.querySelector("#cancel-wire").hidden = !state.selectedTerminal;
   document.querySelector("#source-comparison").hidden = state.module !== "superposition";
   if (state.module === "superposition") renderSourceComparison();
@@ -704,6 +709,7 @@ function renderLive() {
     mode: state.mode,
     parameters: { ...p },
     measurement: m,
+    diagnostic,
     metrics: ms,
     options: OPTIONS,
     experiment: { challenge: MODULES[state.module].challenge, steps: MODULES[state.module].steps || [] },
@@ -755,11 +761,18 @@ function render() {
 }
 
 function doAction(id) {
-  if (/^(module:|explore$|build$|undo$|clear$|restore$|reset-circuit$|set:(representation|kind|configuration):)/.test(id))
+  if (/^(module:|explore$|build$|undo$|clear$|restore$|reset-circuit$|reset-experiment$|set:(representation|kind|configuration):)/.test(id))
     bench?.cancelInteractions?.();
   if (id.startsWith("module:") || /set:(representation|kind|configuration):/.test(id)) {
     selectedPart = null;
     traceCursor.active = false;
+  }
+  if (id === "reset-experiment") {
+    selectedPart = null;
+    traceCursor = { fraction: 0.5, panel: 0, active: false };
+    traceDrag = null;
+    meterMode = "vdc";
+    bench?.resetExperiment();
   }
   action(state, id);
   render();
