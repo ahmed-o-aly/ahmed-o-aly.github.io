@@ -1,4 +1,4 @@
-# Circuits Lab
+# Circuits Lab v0.6
 
 Four Electrical Circuits I experiments share a desktop 3D bench and an immersive WebXR lab. Students wire circuits, use instruments, change values and inspect live traces. Readings and written answers stay on paper.
 
@@ -25,6 +25,8 @@ Vite prints the local URL. The normal dev port is 5186; pass `-- --port 5187` if
 
 In VR, grip a probe to hold it and release its tip near a contact to connect. Hold and turn a dial. The left stick moves, the right stick turns, and room-scale tracking lets you walk within your play area. Use the headset system menu to exit.
 
+The right display gives three large, labelled readings. The main graph sits closer to the bench and shows one full-size plot at a time. Use its tabs to change channel or quantity, then point and hold the trigger to inspect the trace. RC/RL plots share the same time and cursor; the small recorder also has Voltage, Current and Energy buttons. Graph and Schematic buttons switch the central display. Floating labels no longer cover the equipment.
+
 ## The four experiments
 
 | Experiment                         | Student task                                                                          | Measurement view                                                                                                           |
@@ -46,4 +48,6 @@ RC uses 100 µF and RL uses 100 mH, with a 5 V source. Switching and resistance 
 
 The email's four learning tasks are covered. The op-amp handout was not supplied; inverting and non-inverting circuits are the current examples. Exact handout circuits and component values still need confirmation.
 
-See [module designs](docs/module-designs.md), [experiment checks](docs/experiment-checklist.md) and [verification](docs/verification.md). Physical headset comfort and controller behaviour require testing on the intended headset.
+The user tested v0.5 in VR and reported improved direct handling, with equipment displays and panels still difficult to read. Version 0.6 increases text and display sizes, corrects stretched lettering, moves panels closer and disables peripheral foveation. Its headset readability and frame rate still need confirmation on the intended device; the assistant has not operated a physical headset.
+
+See [module designs](docs/module-designs.md), [experiment checks](docs/experiment-checklist.md) and [verification](docs/verification.md).

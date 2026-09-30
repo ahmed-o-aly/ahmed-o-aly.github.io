@@ -67,7 +67,7 @@ app.innerHTML = `
       .join("")}</nav>
     <div class="sidebar-bottom"><div class="course-mark">ELEN <strong>221</strong></div><button class="text-button" id="guide-button">Help ${svgIcon(
       "arrow"
-    )}</button><span class="prototype-tag">Lab build · v0.5</span></div>
+    )}</button><span class="prototype-tag">Lab build · v0.6</span></div>
   </aside>
   <main class="workspace">
     <header class="topbar"><div class="breadcrumb">Lab <span id="lab-number">05</span><span class="slash">/</span><span id="topic-label"></span></div><div class="header-actions"><button class="button vr-button" id="vr-button">${svgIcon(
@@ -397,15 +397,16 @@ function renderScopeControls() {
       p.triggerLevel
     }"><span>V</span></div></label></div><p class="hint">Both ground clips share circuit GND. Scales change the view, not the circuit.</p></details>`;
 }
-function graphForVR(g) {
-  const cursor = traceCursor.active ? graphCursor(state, traceCursor.fraction, traceCursor.panel) : null;
+function graphForVR(g, panelIndex = traceCursor.panel) {
+  const reading = traceCursor.active ? graphCursor(state, traceCursor.fraction, panelIndex) : null;
+  const cursor = reading ? { x: traceCursor.fraction, label: reading.text, xLabel: reading.xLabel, readings: reading.readings } : null;
   const interaction = g.interaction || { thevenin: "load", superposition: "source", opamp: "scope", transient: "time" }[state.module];
   if (g.bars) {
     const max = Math.max(...g.bars.map((b) => Math.abs(b.value ?? 0)), 1) * 1.25;
     return {
       title: g.title,
       interaction,
-      cursor: cursor ? { x: traceCursor.fraction, label: cursor.text } : null,
+      cursor,
       subtitle: g.subtitle,
       xLabel: "Source case",
       yLabel: "Current (mA)",
@@ -428,7 +429,8 @@ function graphForVR(g) {
   return {
     title: g.title,
     interaction,
-    cursor: cursor ? { x: traceCursor.fraction, label: cursor.text } : null,
+    cursor,
+    id: g.id,
     subtitle: g.subtitle,
     xLabel: g.xLabel,
     yLabel: g.yLabel,
@@ -441,7 +443,11 @@ function graphForVR(g) {
     yTicks: Array.from({ length: 5 }, (_, i) => ({ position: i / 4, label: fmt(g.yMin + ((g.yMax - g.yMin) * i) / 4, 2) })),
     marker: g.marker ? { x: g.marker.x / g.xMax, y: (g.marker.y - g.yMin) / (g.yMax - g.yMin) } : null,
     reference: g.tau ? { x: g.tau / g.xMax, label: "1 τ" } : null,
-    series: g.series.map((line) => ({ color: line.color, points: line.points.map(([x, y]) => [x / g.xMax, (y - g.yMin) / (g.yMax - g.yMin)]) })),
+    series: g.series.map((line) => ({
+      name: line.name,
+      color: line.color,
+      points: line.points.map(([x, y]) => [x / g.xMax, (y - g.yMin) / (g.yMax - g.yMin)]),
+    })),
   };
 }
 

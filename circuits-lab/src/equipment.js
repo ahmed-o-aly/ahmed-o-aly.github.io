@@ -30,6 +30,28 @@ const point = (value) =>
       ? new THREE.Vector3(...value)
       : new THREE.Vector3(value?.x || 0, value?.y || 0, value?.z || 0);
 
+function writeText(ctx, text, x, y, { size, width, align = "left", weight = 700, family = "Arial, sans-serif" }) {
+  const value = String(text);
+  let fitted = size;
+  ctx.font = `${weight} ${fitted}px ${family}`;
+  if (width && ctx.measureText(value).width > width) {
+    fitted *= width / ctx.measureText(value).width;
+    ctx.font = `${weight} ${fitted}px ${family}`;
+  }
+  ctx.textAlign = align;
+  ctx.fillText(value, x, y);
+}
+
+function wrapText(ctx, value, width) {
+  const lines = [];
+  for (const word of String(value).split(/\s+/)) {
+    const last = lines.length - 1;
+    if (last >= 0 && ctx.measureText(`${lines[last]} ${word}`).width <= width) lines[last] += ` ${word}`;
+    else lines.push(word);
+  }
+  return lines;
+}
+
 function hardware(id) {
   const group = new THREE.Group();
   group.name = id;
@@ -88,14 +110,15 @@ function hardware(id) {
     targets.push(entry);
     return entry;
   }
-  function screen(width, height, position, { pixels = [768, 320], background = "#a7afa0", foreground = "#1d2a25" } = {}) {
+  function screen(width, height, position, { pixels = [768, 320], background = "#dbe6cb", foreground = "#102018" } = {}) {
     const canvas = document.createElement("canvas");
     canvas.width = pixels[0];
-    canvas.height = pixels[1];
+    // Match texel and physical aspect ratios; never stretch printed letters.
+    canvas.height = Math.round((pixels[0] * height) / width);
     const ctx = canvas.getContext("2d");
     const texture = new THREE.CanvasTexture(canvas);
     texture.colorSpace = THREE.SRGBColorSpace;
-    texture.anisotropy = 4;
+    texture.anisotropy = 8;
     const mat = new THREE.MeshBasicMaterial({ map: texture, toneMapped: false });
     materials.add(mat);
     textures.add(texture);
@@ -121,12 +144,10 @@ function hardware(id) {
       },
     };
   }
-  function text(textValue, width, height, position, { size = 52, color = "#3c4243", background = "#e8e8e2", align = "center" } = {}) {
-    const display = screen(width, height, position, { pixels: [768, 128], background, foreground: color });
+  function text(textValue, width, height, position, { size = 52, color = "#172120", background = "#e8e8e2", align = "center" } = {}) {
+    const display = screen(width, height, position, { pixels: [Math.round((128 * width) / height), 128], background, foreground: color });
     display.draw(textValue, (ctx, w, h) => {
-      ctx.font = `600 ${size}px Arial, sans-serif`;
-      ctx.textAlign = align;
-      ctx.fillText(textValue, align === "center" ? w / 2 : 15, h / 2, w - 24);
+      writeText(ctx, textValue, align === "center" ? w / 2 : 8, h / 2, { size: h * 0.88, width: w - 16, align });
     });
     return display;
   }
@@ -289,9 +310,9 @@ export function createMultimeter({ id = "multimeter", label = "DIGITAL MULTIMETE
     { group, m } = h;
   h.box(0.11, 0.213, 0.046, h.material("#b49a49", { roughness: 0.88 }), group, [0, 0.112, 0], 0.012);
   h.box(0.096, 0.198, 0.008, m.dark, group, [0, 0.112, 0.024], 0.008);
-  h.box(0.086, 0.052, 0.004, m.black, group, [0, 0.174, 0.03], 0.003);
-  const lcd = h.screen(0.08, 0.043, [0, 0.174, 0.0325], { pixels: [640, 300] });
-  h.text(label, 0.084, 0.01, [0, 0.207, 0.029], { size: 46, background: COLORS.dark, color: "#e0e1d8" });
+  h.box(0.09, 0.063, 0.004, m.black, group, [0, 0.172, 0.03], 0.003);
+  const lcd = h.screen(0.084, 0.057, [0, 0.172, 0.0325], { pixels: [840, 570] });
+  h.text("MULTIMETER", 0.084, 0.01, [0, 0.209, 0.029], { background: COLORS.dark, color: "#f5f7ef" });
   const selector = h.dial("Meter", "meterMode", 0, 0.106, 0.031, { radius: 0.02, values: ["off", "vdc"] });
   h.text("OFF", 0.024, 0.01, [-0.027, 0.078, 0.031], { background: COLORS.dark, color: "#d7d9d1" });
   h.text("V⎓", 0.023, 0.011, [0.028, 0.078, 0.031], { background: COLORS.dark, color: "#d7d9d1" });
@@ -309,14 +330,14 @@ export function createMultimeter({ id = "multimeter", label = "DIGITAL MULTIMETE
     const value = measurement.probeReady ? measurement.probeVoltage : null;
     lcd.draw([mode, value, data.module], (ctx, w, ht) => {
       if (mode === "off") return;
-      ctx.font = "500 35px Arial, sans-serif";
-      ctx.fillText(data.module === "opamp" ? "V SAMPLE" : "DC V", 26, 43);
-      ctx.font = "500 112px monospace";
-      ctx.textAlign = "right";
-      ctx.fillText(value === null ? "— — —" : number(value, 3), w - 34, ht * 0.57, w - 60);
-      ctx.font = "30px Arial, sans-serif";
-      ctx.textAlign = "left";
-      ctx.fillText(value === null ? "CONNECT PROBES" : "", 26, ht - 29);
+      writeText(ctx, data.module === "opamp" ? "V SAMPLE" : "DC V", 28, ht * 0.14, { size: ht * 0.16, width: w - 56 });
+      writeText(ctx, value === null ? "— —" : number(value, 3), w - 26, ht * 0.54, {
+        size: ht * 0.55,
+        width: w - 52,
+        align: "right",
+        family: "Arial, sans-serif",
+      });
+      if (value === null) writeText(ctx, "CONNECT PROBES", w / 2, ht * 0.87, { size: ht * 0.13, width: w - 40, align: "center" });
     });
   }
   h.finish();
@@ -325,8 +346,8 @@ export function createMultimeter({ id = "multimeter", label = "DIGITAL MULTIMETE
 }
 
 function plotBounds(width, height, count) {
-  const margin = { l: 64, r: 24, t: 44, b: 54 },
-    gap = 28;
+  const margin = { l: 100, r: 30, t: 78, b: 138 },
+    gap = 52;
   const plotH = (height - margin.t - margin.b - gap * (count - 1)) / count;
   return Array.from({ length: count }, (_, panel) => ({
     panel,
@@ -337,70 +358,85 @@ function plotBounds(width, height, count) {
   }));
 }
 
+function compactReading(reading) {
+  const aliases = { "Capacitor voltage": "V", "Inductor voltage": "V", "Storage current": "I", "Stored energy": "E", "Calculated load power": "P" };
+  const label = aliases[reading.name] || reading.name || "";
+  return `${label} ${number(reading.value, 3)} ${reading.unit || ""}`.trim();
+}
+
 function plotScreen(ctx, width, height, graph, params) {
-  ctx.fillStyle = "#151d20";
+  ctx.fillStyle = "#071015";
   ctx.fillRect(0, 0, width, height);
   const panels = graph?.panels?.length ? graph.panels : [graph];
   const validPanels = panels.filter(Boolean).slice(0, 3);
   const bounds = plotBounds(width, height, validPanels.length || 1);
-  ctx.textAlign = "left";
-  ctx.textBaseline = "middle";
-  ctx.font = "20px monospace";
   const state = params.recorder
     ? params.recorder === "transient"
       ? params.playing
         ? "ACQUIRING"
         : "PAUSED"
-      : "CALCULATED · CURRENT WIRING"
-    : params?.scopeRunning === false
+      : "CALCULATED · WIRING"
+    : params.scopeRunning === false
       ? params.scopeStale
         ? "HOLD · OLD SETTINGS"
         : "HOLD"
       : "RUN";
-  ctx.fillStyle = "#cad6d5";
-  ctx.fillText(state, 18, 20);
-  ctx.fillText(Number.isFinite(params?.timeDiv) ? `${number(params.timeDiv, 3)} ms/div` : graph?.xLabel || "TIME", width * 0.56, 20);
+  ctx.fillStyle = "#f1faf5";
+  writeText(ctx, state, 20, 29, { size: 30, width: width * 0.56 });
+  const axis = Number.isFinite(params.timeDiv)
+    ? `${number(params.timeDiv, 3)} ms/div`
+    : (graph?.xLabel || "TIME").replace("Elapsed circuit time", "Time").replace("Load resistance", "Load");
+  writeText(ctx, axis, width - 22, 29, { size: 30, width: width * 0.41, align: "right" });
   if (!validPanels.length) {
-    ctx.font = "24px Arial, sans-serif";
-    ctx.fillText("Connect the channels", 40, height / 2);
+    writeText(ctx, "CONNECT THE CHANNELS", width / 2, height / 2, { size: 36, width: width - 60, align: "center" });
     return;
   }
+  const palette = ["#ffe27b", "#79e4f6", "#dfbfff"];
   for (let index = 0; index < validPanels.length; index++) {
-    const panel = validPanels[index];
-    const rect = bounds[index],
-      x = rect.left * width,
+    const panel = validPanels[index],
+      rect = bounds[index];
+    const x = rect.left * width,
       y = rect.top * height,
       plotW = rect.width * width,
       plotH = rect.height * height;
-    ctx.strokeStyle = "#364146";
-    ctx.lineWidth = 1;
-    for (let i = 0; i <= 10; i++) {
+    ctx.strokeStyle = "#344750";
+    ctx.lineWidth = 1.5;
+    const xDivisions = panel.xDivisions || 4,
+      yDivisions = panel.yDivisions || 4;
+    for (let i = 0; i <= xDivisions; i++) {
       ctx.beginPath();
-      ctx.moveTo(x + (plotW * i) / 10, y);
-      ctx.lineTo(x + (plotW * i) / 10, y + plotH);
+      ctx.moveTo(x + (plotW * i) / xDivisions, y);
+      ctx.lineTo(x + (plotW * i) / xDivisions, y + plotH);
       ctx.stroke();
     }
-    for (let i = 0; i <= 8; i++) {
+    for (let i = 0; i <= yDivisions; i++) {
       ctx.beginPath();
-      ctx.moveTo(x, y + (plotH * i) / 8);
-      ctx.lineTo(x + plotW, y + (plotH * i) / 8);
+      ctx.moveTo(x, y + (plotH * i) / yDivisions);
+      ctx.lineTo(x + plotW, y + (plotH * i) / yDivisions);
       ctx.stroke();
     }
-    ctx.font = "16px monospace";
-    ctx.fillStyle = "#aebcbe";
-    ctx.textAlign = "right";
-    for (const tick of panel.yTicks || []) ctx.fillText(tick.label, x - 7, y + (1 - tick.position) * plotH, x - 9);
-    ctx.textAlign = "center";
-    for (const tick of panel.xTicks || []) ctx.fillText(tick.label, x + tick.position * plotW, y + plotH + 12, 135);
-    ctx.textAlign = "left";
-    ctx.fillText([panel.title, panel.yLabel].filter(Boolean).join(" · "), x + 8, y + 13, plotW - 16);
+    ctx.fillStyle = "#f1faf5";
+    const yTicks = panel.yTicks || [];
+    for (const [i, tick] of yTicks.entries()) {
+      if (validPanels.length > 1 && i !== 0 && i !== Math.floor(yTicks.length / 2) && i !== yTicks.length - 1) continue;
+      writeText(ctx, tick.label, x - 12, y + (1 - tick.position) * plotH, { size: 32, width: x - 20, align: "right" });
+    }
+    for (const [tickIndex, tick] of (panel.xTicks || []).entries()) {
+      ctx.fillStyle = graph.interaction === "source" ? palette[tickIndex % palette.length] : "#f1faf5";
+      writeText(ctx, tick.label, x + tick.position * plotW, y + plotH + 24, { size: 31, width: Math.max(150, plotW / 5), align: "center" });
+    }
+    const panelLabel = params.recorder ? panel.yLabel : panel.title;
+    ctx.fillStyle = palette[index % palette.length];
+    writeText(ctx, panelLabel || panel.yLabel || "", x + 12, y - 22, { size: 31, width: plotW - 24 });
     ctx.save();
     ctx.beginPath();
     ctx.rect(x, y, plotW, plotH);
     ctx.clip();
     for (const [traceIndex, trace] of (panel.series || []).entries()) {
-      ctx.strokeStyle = trace.color || (traceIndex ? COLORS.ch2 : COLORS.ch1);
-      ctx.lineWidth = 2.5;
+      ctx.strokeStyle = palette[validPanels.length > 1 ? index : traceIndex % palette.length];
+      ctx.lineWidth = graph.interaction === "source" ? 12 : 5;
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
       ctx.beginPath();
       let started = false;
       for (const pair of trace.points || []) {
@@ -419,39 +455,49 @@ function plotScreen(ctx, width, height, graph, params) {
       ctx.stroke();
     }
     if (!(panel.series || []).some((trace) => trace.points?.length)) {
-      ctx.font = "20px Arial, sans-serif";
-      ctx.fillStyle = "#bfc8c6";
-      ctx.fillText(params.scopeError || panel.subtitle || "No acquired signal", x + 16, y + plotH / 2, plotW - 32);
+      ctx.fillStyle = "#f5faf4";
+      ctx.font = "700 32px Arial, sans-serif";
+      const lines = wrapText(ctx, params.scopeError || panel.subtitle || "No acquired signal", plotW - 44).slice(0, 2);
+      for (const [line, text] of lines.entries())
+        writeText(ctx, text, x + plotW / 2, y + plotH / 2 + (line - (lines.length - 1) / 2) * 38, { size: 32, align: "center" });
     }
     const cursor = panel.cursor || panel.marker;
     if (cursor && Number.isFinite(cursor.x)) {
       const cursorX = x + THREE.MathUtils.clamp(cursor.x, 0, 1) * plotW;
-      ctx.strokeStyle = "#d6dfdb";
-      ctx.lineWidth = 1.5;
-      ctx.setLineDash([5, 5]);
+      ctx.strokeStyle = "#f4fff7";
+      ctx.lineWidth = 3;
+      ctx.setLineDash([9, 7]);
       ctx.beginPath();
       ctx.moveTo(cursorX, y);
       ctx.lineTo(cursorX, y + plotH);
       ctx.stroke();
       ctx.setLineDash([]);
+      if (Number.isFinite(cursor.y)) {
+        ctx.fillStyle = "#f4fff7";
+        ctx.beginPath();
+        ctx.arc(cursorX, y + (1 - cursor.y) * plotH, 7, 0, Math.PI * 2);
+        ctx.fill();
+      }
     }
     ctx.restore();
   }
-  const cursorLabel = graph?.cursor?.label || validPanels.find((panel) => panel.cursor?.label)?.cursor?.label;
-  if (params.recorder || cursorLabel) {
-    ctx.font = "18px Arial, sans-serif";
-    ctx.fillStyle = "#c0ceca";
-    ctx.fillText(cursorLabel || graph?.subtitle || "", 20, height - 15, width - 40);
-    return;
-  }
-  ctx.font = "19px monospace";
-  ctx.fillStyle = COLORS.ch1;
-  ctx.fillText(Number.isFinite(params?.ch1Scale) ? `CH1 ${number(params.ch1Scale, 2)} V/div` : validPanels[0]?.yLabel || "", 20, height - 15);
-  ctx.fillStyle = COLORS.ch2;
-  ctx.fillText(
-    Number.isFinite(params?.ch2Scale) ? `CH2 ${number(params.ch2Scale, 2)} V/div` : validPanels[1]?.yLabel || "",
-    width * 0.53,
-    height - 15
+  const cursor = graph?.cursor || validPanels.find((panel) => panel.cursor)?.cursor;
+  const readings = cursor?.readings?.length ? cursor.readings.map(compactReading) : params.readings || [];
+  const stripTop = height - 94;
+  ctx.fillStyle = "#172b31";
+  ctx.fillRect(0, stripTop, width, 94);
+  ctx.fillStyle = "#f6fff7";
+  const cursorTime = cursor?.xLabel;
+  const lines = cursorTime
+    ? [cursorTime, readings.join("   ·   ")]
+    : readings.length > 2
+      ? [readings.slice(0, 2).join("   ·   "), readings.slice(2).join("   ·   ")]
+      : [...readings];
+  const visibleLines = lines.slice(0, 2);
+  if (!visibleLines.length)
+    visibleLines.push(params.scopeError ? "CHECK CONNECTIONS" : params.recorder ? "Select a point to read it" : "CONNECT THE CHANNELS");
+  visibleLines.forEach((line, index) =>
+    writeText(ctx, line, 22, stripTop + (visibleLines.length === 1 ? 47 : 25 + index * 43), { size: 35, width: width - 44 })
   );
 }
 
@@ -459,17 +505,18 @@ export function createOscilloscope({ id = "oscilloscope", label = "OSCILLOSCOPE"
   const h = hardware(id),
     z = h.enclosure(0.43, 0.245, 0.18);
   h.text(label, 0.27, 0.014, [-0.044, 0.224, z + 0.0007], { align: "left", size: 45 });
-  h.box(0.263, 0.176, 0.007, h.m.dark, h.group, [-0.066, 0.127, z + 0.0015], 0.004);
-  const display = h.screen(0.25, 0.159, [-0.066, 0.128, z + 0.0055], { pixels: [960, 600], background: "#151d20" });
+  h.box(0.278, 0.18, 0.007, h.m.dark, h.group, [-0.066, 0.127, z + 0.0015], 0.004);
+  const display = h.screen(0.266, 0.17, [-0.066, 0.128, z + 0.0055], { pixels: [1064, 680], background: "#071015" });
   const screenTarget = h.target(display.object, { kind: "screen", label: "Scope", action: "scope-screen", bounds: [] });
   const time = h.dial("Time/div", "timeDiv", 0.108, 0.182, z, { radius: 0.014 });
-  h.text("TIME / DIV", 0.074, 0.009, [0.109, 0.212, z + 0.0005], { size: 52 });
+  h.text("TIME / DIV", 0.074, 0.011, [0.109, 0.213, z + 0.0005]);
   const ch1 = h.dial("CH1 volts/div", "ch1Scale", 0.099, 0.104, z, { color: "#807341" });
   const ch2 = h.dial("CH2 volts/div", "ch2Scale", 0.163, 0.104, z, { color: "#3f6e7b" });
-  h.text("CH1      CH2", 0.104, 0.01, [0.129, 0.138, z + 0.0006], { size: 46 });
-  h.text("VOLTS / DIV", 0.1, 0.009, [0.13, 0.077, z + 0.0006], { size: 45 });
+  h.text("CH1", 0.038, 0.012, [0.099, 0.137, z + 0.0006]);
+  h.text("CH2", 0.038, 0.012, [0.163, 0.137, z + 0.0006]);
+  h.text("VOLTS / DIV", 0.1, 0.011, [0.13, 0.077, z + 0.0006]);
   const trigger = h.dial("Trigger level", "triggerLevel", 0.171, 0.182, z, { radius: 0.008 });
-  h.text("TRIGGER", 0.052, 0.008, [0.17, 0.208, z + 0.0006], { size: 45 });
+  h.text("TRIGGER", 0.052, 0.011, [0.17, 0.212, z + 0.0006]);
   const edge = h.button("Trigger edge", "set:triggerEdge:falling", 0.171, 0.148, z, { width: 0.028 });
   const edgeText = h.screen(0.043, 0.01, [0.171, 0.16, z + 0.0007], { pixels: [400, 100], background: COLORS.face });
   h.button("Run / Hold", "scope-toggle", -0.054, 0.02, z, { width: 0.03, color: "#5f7567" });
@@ -485,12 +532,10 @@ export function createOscilloscope({ id = "oscilloscope", label = "OSCILLOSCOPE"
     ch2.set(p.ch2Scale);
     trigger.set(p.triggerLevel);
     edge.userData.equipmentTarget.action = `set:triggerEdge:${p.triggerEdge === "falling" ? "rising" : "falling"}`;
-    edgeText.draw(p.triggerEdge, (ctx, w, ht) => {
-      ctx.font = "45px Arial, sans-serif";
-      ctx.textAlign = "center";
-      ctx.fillText(p.triggerEdge === "falling" ? "FALL" : "RISE", w / 2, ht / 2);
-    });
-    screenTarget.bounds = plotBounds(960, 600, Math.min(3, data.graph?.panels?.length || 1));
+    edgeText.draw(p.triggerEdge, (ctx, w, ht) =>
+      writeText(ctx, p.triggerEdge === "falling" ? "FALL" : "RISE", w / 2, ht / 2, { size: ht * 0.85, width: w - 16, align: "center" })
+    );
+    screenTarget.bounds = plotBounds(display.canvas.width, display.canvas.height, Math.min(3, data.graph?.panels?.length || 1));
     const acquisition = data.rawGraph?.scope;
     const displayed = acquisition
       ? {
@@ -501,10 +546,23 @@ export function createOscilloscope({ id = "oscilloscope", label = "OSCILLOSCOPE"
           scopeRunning: acquisition.running,
           scopeStale: acquisition.stale,
           scopeError: acquisition.error,
+          readings: [
+            `CH1 ${number(acquisition.channels.ch1.peak, 2)} V pk  ·  CH2 ${number(acquisition.channels.ch2.peak, 2)} V pk`,
+            `TRIGGER ${acquisition.trigger?.edge === "falling" ? "↓" : "↑"} ${number(acquisition.trigger?.level, 2)} V`,
+          ],
         }
       : p;
     display.draw(
-      [data.graph, displayed.timeDiv, displayed.ch1Scale, displayed.ch2Scale, displayed.scopeRunning, displayed.scopeStale, displayed.scopeError],
+      [
+        data.graph,
+        displayed.timeDiv,
+        displayed.ch1Scale,
+        displayed.ch2Scale,
+        displayed.scopeRunning,
+        displayed.scopeStale,
+        displayed.scopeError,
+        displayed.readings,
+      ],
       (ctx, w, ht) => plotScreen(ctx, w, ht, data.graph, displayed)
     );
   }
@@ -516,19 +574,79 @@ export function createOscilloscope({ id = "oscilloscope", label = "OSCILLOSCOPE"
 export function createRecorder({ id = "lab-recorder", module = "thevenin" } = {}) {
   const h = hardware(id),
     z = h.enclosure(0.43, 0.245, 0.18);
-  h.text("LAB RECORDER", 0.3, 0.014, [-0.038, 0.224, z + 0.0007], { align: "left", size: 47 });
-  h.box(0.398, 0.191, 0.007, h.m.dark, h.group, [0, 0.119, z + 0.0015], 0.004);
-  const display = h.screen(0.385, 0.18, [0, 0.119, z + 0.0055], { pixels: [1280, 640], background: "#151d20" });
+  h.text("LAB RECORDER", 0.3, 0.014, [-0.038, 0.224, z + 0.0007], { align: "left" });
+  h.box(0.402, 0.187, 0.007, h.m.dark, h.group, [0, 0.119, z + 0.0015], 0.004);
+  const display = h.screen(0.391, 0.177, [0, 0.119, z + 0.0055], { pixels: [1280, 580], background: "#071015" });
   const screenTarget = h.target(display.object, { kind: "screen", label: "Lab recorder", action: "scope-screen", bounds: [] });
+  let selectedPanel = 0,
+    lastData = {},
+    status = [];
+  if (module === "transient")
+    for (const [index, label] of ["VOLTAGE", "CURRENT", "ENERGY"].entries()) {
+      const x = -0.135 + index * 0.135;
+      const key = h.button(label, `recorder-panel:${index}`, x, 0.013, z, { width: 0.11, color: "#47565b" });
+      const text = h.screen(0.102, 0.009, [x, 0.013, z + 0.0077], { pixels: [1020, 90], background: "#47565b", foreground: "#ffffff" });
+      text.object.userData.equipmentTarget = key.userData.equipmentTarget;
+      status.push({ text, label, index });
+    }
   function update(data = {}) {
-    const p = data.parameters || {};
-    screenTarget.bounds = plotBounds(1280, 640, Math.min(3, data.graph?.panels?.length || 1));
-    const displayParameters = { recorder: module, playing: p.playing };
-    display.draw([data.graph, displayParameters], (ctx, width, height) => plotScreen(ctx, width, height, data.graph, displayParameters));
+    lastData = data;
+    const p = data.parameters || {},
+      m = data.measurement || {};
+    let graph = data.graph;
+    if (module === "transient" && graph?.panels?.length) {
+      selectedPanel = Math.min(selectedPanel, graph.panels.length - 1);
+      graph = { ...graph.panels[selectedPanel], panels: undefined };
+    }
+    screenTarget.bounds = plotBounds(display.canvas.width, display.canvas.height, 1).map((rect) => ({
+      ...rect,
+      panel: module === "transient" ? selectedPanel : 0,
+    }));
+    const signed = (value) => `${value >= 0 ? "+" : ""}${number(value, 2)}`;
+    let readings = [];
+    if (module === "thevenin")
+      readings = m.ok
+        ? [`${resistance(p.load)}  ·  ${number(m.voltage, 3)} V`, `${number(m.current * 1000, 3)} mA  ·  ${number(m.power * 1000, 3)} mW`]
+        : ["CONNECT CIRCUIT"];
+    if (module === "superposition") {
+      const bars = data.rawGraph?.bars || [];
+      readings = [
+        bars
+          .slice(0, 2)
+          .map((bar, index) => `${index ? "B" : "A"} ${Number.isFinite(bar.value) ? signed(bar.value) : "—"} mA`)
+          .join("  ·  "),
+        `BOTH ${Number.isFinite(bars[2]?.value) ? signed(bars[2].value) : "—"} mA`,
+      ];
+    }
+    if (module === "transient") {
+      const quantities = [m.voltage, m.current * 1000, m.energy * 1000],
+        units = ["V", "mA", "mJ"];
+      readings = m.ok
+        ? [
+            `${number(p.time * 1000, 3)} ms  ·  ${number(quantities[selectedPanel], 3)} ${units[selectedPanel]}`,
+            `${p.charging ? "SOURCE" : "RETURN"}  ·  ${number((p.acquiredTime || 0) * 1000, 3)} ms acquired`,
+          ]
+        : ["CONNECT CIRCUIT"];
+    }
+    for (const entry of status)
+      entry.text.draw(selectedPanel === entry.index, (ctx, w, height) => {
+        ctx.fillStyle = selectedPanel === entry.index ? "#ecf7ec" : "#47565b";
+        ctx.fillRect(0, 0, w, height);
+        ctx.fillStyle = selectedPanel === entry.index ? "#14251d" : "#ffffff";
+        writeText(ctx, entry.label, w / 2, height / 2, { size: height * 0.88, width: w - 20, align: "center" });
+      });
+    const displayParameters = { recorder: module, playing: p.playing, readings };
+    display.draw([graph, displayParameters], (ctx, width, height) => plotScreen(ctx, width, height, graph, displayParameters));
+  }
+  function selectPanel(index) {
+    if (module !== "transient" || !Number.isInteger(index) || index < 0 || index > 2) return false;
+    selectedPanel = index;
+    update(lastData);
+    return true;
   }
   h.finish();
   update();
-  return { group: h.group, targets: h.targets, anchors: h.anchors, screen: display, module, update, dispose: h.dispose };
+  return { group: h.group, targets: h.targets, anchors: h.anchors, screen: display, module, selectPanel, update, dispose: h.dispose };
 }
 
 export function createPowerSupply({
@@ -543,11 +661,11 @@ export function createPowerSupply({
   const h = hardware(id),
     z = h.enclosure(0.22, 0.186, 0.2);
   h.text(label, 0.183, 0.014, [0, 0.168, z + 0.0005], { size: 46 });
-  h.box(0.178, 0.056, 0.004, h.m.dark, h.group, [0, 0.122, z], 0.003);
-  const display = h.screen(0.169, 0.048, [0, 0.122, z + 0.0025], { background: "#142a27", foreground: "#9ec9ad", pixels: [768, 240] });
+  h.box(0.194, 0.071, 0.004, h.m.dark, h.group, [0, 0.124, z], 0.003);
+  const display = h.screen(0.186, 0.063, [0, 0.124, z + 0.0025], { background: "#071612", foreground: "#d8ffe0", pixels: [1116, 378] });
   const currentSource = parameter === "nortonCurrent";
   const control = fixedValue === null ? h.dial(currentSource ? "Current" : "Voltage", parameter, 0.059, 0.059, z, { radius: 0.014 }) : null;
-  h.text(fixedValue === null ? (currentSource ? "CURRENT" : "VOLTAGE") : "FIXED OUTPUT", 0.07, 0.008, [0.057, 0.088, z + 0.0004], { size: 46 });
+  h.text(fixedValue === null ? (currentSource ? "CURRENT" : "VOLTAGE") : "FIXED", 0.07, 0.009, [0.057, 0.083, z + 0.0004]);
   h.socket(negativeTerminal, -0.067, 0.046, z, COLORS.black);
   h.socket(positiveTerminal, -0.02, 0.046, z, COLORS.red);
   h.text("−        +", 0.09, 0.011, [-0.044, 0.026, z + 0.0005], { size: 64 });
@@ -560,10 +678,13 @@ export function createPowerSupply({
     const open = inactive && p.replacement === "open";
     const output = inactive ? 0 : Number.isFinite(value) ? value * polarity : value;
     display.draw([output, parameter, inactive, open], (ctx, w, ht) => {
-      ctx.font = "60px monospace";
-      ctx.fillText(open ? "OPEN" : `${number(output, 2)} ${currentSource ? "mA" : "V"}`, 30, ht * 0.48, w - 60);
-      ctx.font = "26px Arial, sans-serif";
-      ctx.fillText(open ? "DISCONNECTED" : inactive ? "0 V · SHORT" : parameter === "rail" ? "LINKED RAIL SET" : "SET OUTPUT", 30, ht * 0.82);
+      writeText(ctx, open ? "OPEN" : `${number(output, 2)} ${currentSource ? "mA" : "V"}`, w / 2, ht * 0.43, {
+        size: ht * 0.72,
+        width: w - 48,
+        align: "center",
+      });
+      const status = open ? "DISCONNECTED" : inactive ? "SHORT" : parameter === "rail" ? "LINKED RAILS" : "OUTPUT";
+      writeText(ctx, status, w / 2, ht * 0.86, { size: ht * 0.17, width: w - 40, align: "center" });
     });
   }
   h.finish();
@@ -575,8 +696,8 @@ export function createGenerator({ id = "generator", label = "FUNCTION GENERATOR"
   const h = hardware(id),
     z = h.enclosure(0.28, 0.135, 0.16);
   h.text(label, 0.238, 0.012, [0, 0.118, z + 0.0005], { size: 48 });
-  h.box(0.158, 0.065, 0.004, h.m.dark, h.group, [-0.05, 0.073, z], 0.003);
-  const display = h.screen(0.15, 0.057, [-0.05, 0.073, z + 0.0025], { pixels: [760, 300], background: "#20312f", foreground: "#c5d5c0" });
+  h.box(0.167, 0.086, 0.004, h.m.dark, h.group, [-0.049, 0.064, z], 0.003);
+  const display = h.screen(0.159, 0.078, [-0.049, 0.064, z + 0.0025], { pixels: [954, 468], background: "#071612", foreground: "#e5ffe5" });
   const frequency = h.dial("Frequency", "frequency", 0.064, 0.078, z, { radius: 0.012 });
   const amplitude = h.dial("Amplitude", "amplitude", 0.112, 0.078, z, { radius: 0.01 });
   h.text("Hz", 0.027, 0.009, [0.063, 0.104, z + 0.0007]);
@@ -588,12 +709,9 @@ export function createGenerator({ id = "generator", label = "FUNCTION GENERATOR"
     frequency.set(p.frequency);
     amplitude.set(p.amplitude);
     display.draw([p.frequency, p.amplitude], (ctx, w, ht) => {
-      ctx.font = "64px monospace";
-      ctx.fillText(`${number(p.frequency, 1)} Hz`, 24, 88, w - 48);
-      ctx.font = "43px monospace";
-      ctx.fillText(`${number(p.amplitude, 2)} V pk`, 24, 178, w - 48);
-      ctx.font = "27px Arial, sans-serif";
-      ctx.fillText("SINE   OFFSET 0 V", 24, 253);
+      writeText(ctx, `${number(p.frequency, 1)} Hz`, w / 2, ht * 0.27, { size: ht * 0.35, width: w - 44, align: "center" });
+      writeText(ctx, `${number(p.amplitude, 2)} V pk`, w / 2, ht * 0.65, { size: ht * 0.33, width: w - 44, align: "center" });
+      writeText(ctx, "SINE · 0 V OFFSET", w / 2, ht * 0.92, { size: ht * 0.1, width: w - 40, align: "center" });
     });
   }
   h.finish();
@@ -606,16 +724,14 @@ export function createResistanceBox({ id = "resistance-box", label = "RESISTANCE
     z = h.enclosure(0.133, 0.097, 0.093);
   h.text(label, 0.11, 0.01, [0, 0.083, z + 0.0005], { size: 48 });
   const control = h.dial(label, parameter, 0.028, 0.039, z, { radius: 0.015, values });
-  const valueDisplay = h.screen(0.058, 0.023, [-0.029, 0.058, z + 0.0006], { pixels: [600, 200], background: "#c7cec1" });
+  const valueDisplay = h.screen(0.064, 0.029, [-0.03, 0.059, z + 0.0006], { pixels: [768, 348], background: "#e1ead5" });
   h.socket("A", -0.045, 0.024, z, COLORS.red);
   h.socket("B", -0.016, 0.024, z, COLORS.black);
   function update(data = {}) {
     const value = data.parameters?.[parameter] ?? data.value;
     control.set(value);
     valueDisplay.draw(value, (ctx, w, ht) => {
-      ctx.textAlign = "center";
-      ctx.font = "70px monospace";
-      ctx.fillText(resistance(value), w / 2, ht / 2, w - 20);
+      writeText(ctx, resistance(value), w / 2, ht / 2, { size: ht * 0.72, width: w - 28, align: "center" });
     });
   }
   h.finish();
@@ -631,13 +747,13 @@ export function createExperimentControls({ id = "experiment-controls", module = 
   h.text(titles[module] || "CIRCUIT CONTROL", 0.29, 0.013, [0, 0.151, z + 0.0005], { size: 47 });
   function selector(label, parameter, values, x, y = 0.1, { min, max, step, radius = 0.012 } = {}) {
     const control = h.dial(label, parameter, x, y, z, { radius, values, min, max, step });
-    const display = h.screen(0.074, 0.012, [x, y + 0.03, z + 0.0006], { pixels: [620, 120], background: COLORS.face });
+    const display = h.screen(0.074, 0.016, [x, y + 0.03, z + 0.0006], { pixels: [740, 160], background: COLORS.face });
     controls.push({ ...control, parameter, display, label });
     return control;
   }
   function push(label, action, x, y, width = 0.032) {
     const object = h.button(label, action, x, y, z, { width });
-    h.text(label, width + 0.006, 0.0075, [x, y - 0.014, z + 0.0005], { size: 48 });
+    h.text(label, width + 0.006, 0.01, [x, y - 0.014, z + 0.0005]);
     return object;
   }
   const mode = push("MODE", "build", -0.132, 0.028);
@@ -678,10 +794,10 @@ export function createExperimentControls({ id = "experiment-controls", module = 
     const p = data.parameters || {};
     mode.userData.equipmentTarget.action = data.mode === "build" ? "explore" : "build";
     mode.userData.equipmentTarget.label = data.mode === "build" ? "Explore reference" : "Build circuit";
+    stateDisplay.object.visible = module !== "transient";
     stateDisplay.draw([data.mode, p.charging, p.playing], (ctx, w, ht) => {
-      ctx.font = "39px Arial, sans-serif";
-      ctx.textAlign = "center";
-      ctx.fillText(
+      writeText(
+        ctx,
         module === "transient"
           ? `${p.playing ? "RUN" : "PAUSED"} · ${p.charging ? "SOURCE" : "RETURN"}`
           : data.mode === "build"
@@ -689,7 +805,7 @@ export function createExperimentControls({ id = "experiment-controls", module = 
             : "REFERENCE",
         w / 2,
         ht / 2,
-        w - 8
+        { size: ht * 0.85, width: w - 16, align: "center" }
       );
     });
     for (const control of controls) {
@@ -700,15 +816,13 @@ export function createExperimentControls({ id = "experiment-controls", module = 
       }
       control.set(value);
       control.display.draw(value, (ctx, w, ht) => {
-        ctx.font = "42px Arial, sans-serif";
-        ctx.textAlign = "center";
         const text =
           control.parameter === "timeCursor"
             ? `${number((value || 0) * 1000, 3)} ms`
             : control.parameter === "speed"
               ? `${number(value, 2)}×`
               : names[value] || String(value || control.label);
-        ctx.fillText(text, w / 2, ht / 2, w - 12);
+        writeText(ctx, text, w / 2, ht / 2, { size: ht * 0.85, width: w - 16, align: "center" });
       });
     }
     if (run) run.userData.equipmentTarget.label = p.playing ? "Pause" : "Run";
