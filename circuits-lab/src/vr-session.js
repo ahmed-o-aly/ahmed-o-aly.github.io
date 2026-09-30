@@ -132,7 +132,7 @@ export function createVRSession({
       active = true;
       entering = false;
       onSessionStarted({ session: requested, floorReference });
-      report("active", "VR active. Use the trigger to select. Recenter with the panel button or a thumbstick click.");
+      report("active", "VR active. Grip probes and dials. Left stick moves; right stick turns. Click a stick to return to the bench.");
       return true;
     } catch (error) {
       if (requested) await requested.end().catch(() => {});

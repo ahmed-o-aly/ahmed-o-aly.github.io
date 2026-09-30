@@ -6,7 +6,15 @@ export const MODULES = {
     name: "Thévenin & Norton",
     topic: "Thévenin, Norton & maximum power transfer",
     description: "Compare load voltage, current and power.",
-    challenge: "Wire the original circuit and its Thévenin and Norton equivalents. Compare readings at 250, 500 and 1000 Ω, then vary the load to find maximum power. Write your results on paper.",
+    purpose: "Build equivalent circuits, verify the same load behaviour, and find maximum load power.",
+    steps: [
+      "Wire the original network. Measure load voltage, current and power at 250, 500 and 1000 Ω.",
+      "Switch to Thévenin and Norton. Set their source and resistance values, then wire each equivalent.",
+      "Repeat the same loads. Compare all three circuits using your paper measurements.",
+      "Vary the load and inspect the calculated power sweep. Find the load that receives maximum power.",
+    ],
+    challenge:
+      "Wire the original circuit and its Thévenin and Norton equivalents. Compare readings at 250, 500 and 1000 Ω, then vary the load to find maximum power. Write your results on paper.",
     principle: "Equivalent circuits preserve voltage and current at the load terminals. Their internal behaviour can differ.",
     defaults: { representation: "original", load: 500, equivalentVoltage: 6, equivalentResistance: 500, nortonCurrent: 12 },
   },
@@ -17,6 +25,13 @@ export const MODULES = {
     name: "Superposition",
     topic: "Superposition in linear DC circuits",
     description: "Measure each source’s contribution.",
+    purpose: "Add signed source contributions and explain how two active sources can cancel one branch current.",
+    steps: [
+      "Wire the network with A at +6 V and B at −3 V. Read the branch current with both sources active.",
+      "Select A alone, then B alone. Replace each inactive ideal voltage source with a short.",
+      "Compare the signed contributions with the complete circuit. Add currents on paper, not powers.",
+      "Keep both sources active and adjust B until branch current is zero. Check which other branches still carry current.",
+    ],
     challenge:
       "Compare A alone, B alone and both at +6 V / −3 V. Short each inactive voltage source. Adjust source B until the branch current is zero, then compare the signed contributions. Write your explanation on paper.",
     principle: "Add signed voltage or current contributions. Power must be calculated from the combined result.",
@@ -29,6 +44,13 @@ export const MODULES = {
     name: "Operational amplifiers",
     topic: "Closed-loop gain & output clipping",
     description: "Set the gain and check for clipping.",
+    purpose: "Design a gain with resistors, then find the largest input before output clipping.",
+    steps: [
+      "Choose the amplifier circuit assigned in your lab sheet. For this example, start with the inverting circuit.",
+      "For a first design, use the inverting circuit at gain −3. Set Rin and Rf, wire feedback, and connect both supplies.",
+      "Connect CH1 to input and CH2 to output, with both grounds at GND. Set a readable timebase and voltage scales.",
+      "Increase input amplitude until clipping begins. Change the supplies or signal frequency and compare the traces.",
+    ],
     challenge:
       "At ±12 V and 100 Hz, build an inverting amplifier with gain −3. Connect CH1 to Vin and CH2 to Vout, with both grounds at GND. Increase the input until clipping appears. Put measurements and calculations on paper.",
     principle: "Negative feedback sets the gain only while the amplifier operates within its limits.",
@@ -56,6 +78,13 @@ export const MODULES = {
     name: "RC & RL transients",
     topic: "First-order RC & RL transient response",
     description: "Measure charging and decay.",
+    purpose: "Predict how resistance changes response speed, then test both RC and RL circuits.",
+    steps: [
+      "Wire RC. On paper, predict whether increasing R makes the response faster or slower.",
+      "Run from zero energy. Watch voltage, current and stored energy; pause, slow, replay or drag through the acquired trace.",
+      "Increase R and repeat from zero energy. Use the same playback speed and compare the time to reach the same fraction of the final value.",
+      "Repeat with RL, then switch each circuit to Return to observe decay. Compare both trends with your predictions.",
+    ],
     challenge:
       "Wire the RC and RL circuits. Run charging and decay, compare voltage and current, and change R to see its effect on response time. Use pause, replay and the time cursor. Put predictions and measurements on paper.",
     principle: "Capacitor voltage and inductor current remain continuous through switching in these ideal circuits.",
@@ -67,6 +96,7 @@ export const MODULES = {
       charging: true,
       initial: 0,
       time: 0,
+      acquiredTime: 0,
       playing: false,
       speed: 1,
       predictionChoice: "unset",

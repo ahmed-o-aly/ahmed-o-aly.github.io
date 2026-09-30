@@ -18,6 +18,10 @@ import {
   advanceTransient,
   removeWire,
   setProbe,
+  graphCursor,
+  moveWire,
+  beginManipulation,
+  endManipulation,
 } from "./lab.js";
 import { transient } from "./physics.js";
 import { createBench } from "./bench.js";
@@ -30,6 +34,9 @@ let xrStatus = { kind: "checking", supported: false, active: false, message: "Ch
   showReference = false,
   selectedPart = null,
   panelPreview = false;
+let traceCursor = { fraction: 0.5, panel: 0, active: false };
+let traceDrag = null;
+let meterMode = "vdc";
 const escape = (value) =>
   String(value ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 const icon = (name) =>
@@ -60,7 +67,7 @@ app.innerHTML = `
       .join("")}</nav>
     <div class="sidebar-bottom"><div class="course-mark">ELEN <strong>221</strong></div><button class="text-button" id="guide-button">Help ${svgIcon(
       "arrow"
-    )}</button><span class="prototype-tag">Prototype · v0.4</span></div>
+    )}</button><span class="prototype-tag">Lab build · v0.5</span></div>
   </aside>
   <main class="workspace">
     <header class="topbar"><div class="breadcrumb">Lab <span id="lab-number">05</span><span class="slash">/</span><span id="topic-label"></span></div><div class="header-actions"><button class="button vr-button" id="vr-button">${svgIcon(
@@ -68,31 +75,32 @@ app.innerHTML = `
     )} Checking VR…</button></div></header>
     <div class="vr-status-row"><span id="vr-status" role="status">Checking headset…</span><button id="headset-help" class="text-button">Open on a headset</button></div>
     <section class="intro"><div><h1 id="module-title"></h1><p id="module-description"></p></div><div class="mode-switch" aria-label="Learning mode"><button data-action="explore" class="active">Explore</button><button data-action="build">Build circuit</button></div></section>
+    <section class="experiment-brief" aria-label="Experiment aim"><span>Your experiment</span><p id="experiment-aim"></p><details><summary>Experiment steps</summary><div id="experiment-steps"></div></details></section>
     <div class="lab-layout">
       <section class="bench-panel" aria-label="Interactive circuit experiment">
         <div class="panel-header"><div class="bench-tabs"><button id="bench-tab" class="active">3D bench</button><button id="reference-tab">Schematic</button><button id="vr-preview-tab" hidden title="Desktop check of panel layout only">Panel preview</button></div><div class="bench-toolbar"><span id="circuit-status" class="status-tag">Circuit connected</span><button class="icon-button" id="reset-view" aria-label="Reset 3D view">${svgIcon(
           "reset"
         )}</button></div></div>
-        <div class="stage-wrap"><div id="bench"></div><div id="schematic" hidden></div><div class="stage-top"><span id="bench-caption">Original circuit</span><span id="hover-label" hidden></span></div><div class="stage-bottom"><span>Drag to orbit · Scroll to zoom</span><span>Click a part to edit · Click the switch to flip it</span></div></div>
-        <div class="patch-toolbar" aria-label="Bench tools"><button data-action="tool:select" data-tool="select" title="Select a part (1)">Select</button><button data-action="tool:wire" data-tool="wire" class="active" title="Connect two terminals (2)">Connect</button><button data-action="tool:red" data-tool="red" title="Place red voltmeter probe (3)"><i class="probe-dot red"></i> Red probe</button><button data-action="tool:black" data-tool="black" title="Place black voltmeter probe (4)"><i class="probe-dot black"></i> Black probe</button><button data-action="tool:remove" data-tool="remove" title="Remove a lead (5)">Remove</button><button data-action="undo" title="Undo last wire or probe change">Undo</button><button data-action="cancel" id="cancel-wire" title="Cancel selection (Esc)">Cancel</button></div>
+        <div class="stage-wrap"><div id="bench"></div><div id="schematic" hidden></div><div class="stage-top"><span id="bench-caption">Original circuit</span><span id="hover-label" hidden></span></div><div class="stage-bottom"><span>Drag empty space to look around · Scroll to zoom</span><span>Drag a probe to a contact · Drag a dial to turn it</span></div></div>
+        <div class="bench-strip"><p id="object-help">Use the equipment on the bench. The meter reads the voltage between its two test tips.</p><button class="button subtle" data-action="undo" title="Undo last wire or probe change">Undo</button><button class="button subtle" data-action="cancel" id="cancel-wire" title="Cancel selection (Esc)">Cancel lead</button></div>
         <div class="bench-help"><span id="bench-help"></span></div>
         <div id="readings" class="readings"></div>
       </section>
-      <aside class="controls-panel"><div class="control-heading"><div><h2>Settings</h2></div><span class="small-circuit">${svgIcon(
+      <aside class="controls-panel"><details id="keyboard-controls"><summary>Keyboard controls</summary><p class="hint">The same equipment settings, for keyboard and touch use.</p><div class="patch-toolbar" aria-label="Keyboard bench tools"><button data-action="tool:select" data-tool="select">Select</button><button data-action="tool:wire" data-tool="wire">Connect contacts</button><button data-action="tool:red" data-tool="red">Move V tip</button><button data-action="tool:black" data-tool="black">Move COM tip</button><button data-action="tool:remove" data-tool="remove">Remove lead</button></div><div class="control-heading"><div><h2>Equipment settings</h2></div><span class="small-circuit">${svgIcon(
         "circuit"
-      )}</span></div><div id="part-controls" hidden></div><div id="controls"></div><div id="model-note" class="model-note"></div></aside>
+      )}</span></div><div id="part-controls" hidden></div><div id="controls"></div><div id="model-note" class="model-note"></div></details></aside>
     </div>
     <div class="lower-layout">
-      <section class="chart-panel"><div class="chart-heading"><div><h2 id="chart-title"></h2></div><div id="chart-legend"></div></div><p id="chart-subtitle"></p><div id="source-comparison" hidden></div><div id="scope-controls" hidden></div><div id="chart"></div></section>
-      <section class="challenge-panel"><h2>Experiment</h2><div id="activity-controls"></div><div class="challenge-actions"><button class="button subtle" data-action="check-wiring">Check connections</button><button class="button subtle" id="new-attempt" data-action="reset-circuit" hidden>Clear circuit</button></div><p class="feedback" id="feedback" role="status" aria-live="polite"></p></section>
+      <section class="chart-panel"><div class="chart-heading"><div><h2 id="chart-title"></h2></div><div id="chart-legend"></div></div><p id="chart-subtitle"></p><p id="chart-use" class="chart-use"></p><div id="source-comparison" hidden></div><div id="scope-controls" hidden></div><div id="chart" tabindex="0" aria-label="Interactive measurement graph"></div><output id="trace-reading" class="trace-reading" aria-live="polite"></output></section>
+      <section class="challenge-panel"><h2>At the bench</h2><div id="activity-controls"></div><div class="challenge-actions"><button class="button subtle" data-action="check-wiring">Check connections</button><button class="button subtle" id="new-attempt" data-action="reset-circuit" hidden>Clear circuit</button></div><p class="feedback" id="feedback" role="status" aria-live="polite"></p></section>
     </div>
-    <section class="connection-panel"><details><summary>Connections</summary><div class="connection-content"><div><h3>Connect a patch lead</h3><div class="wiring-form"><label>From<select id="wire-from"></select></label><label>To<select id="wire-to"></select></label><button class="button primary" id="add-wire">Connect</button></div><div class="wiring-form"><label>Red voltage probe<select id="red-probe"></select></label><label>Black voltage probe<select id="black-probe"></select></label></div><div class="connection-buttons"><button class="button subtle" data-action="check-wiring">Check connections</button><button class="button subtle" data-action="clear">Clear leads</button><button class="button subtle" data-action="restore" id="restore-button">Use shown circuit</button></div></div><div><h3>Connected leads</h3><div id="wire-list"></div></div></div></details></section>
+    <section class="connection-panel"><details><summary>Wiring list and keyboard connections</summary><div class="connection-content"><div><h3>Connect a patch lead</h3><div class="wiring-form"><label>From<select id="wire-from"></select></label><label>To<select id="wire-to"></select></label><button class="button primary" id="add-wire">Connect</button></div><div class="wiring-form"><label>Meter V tip (red)<select id="red-probe"></select></label><label>Meter COM tip (black)<select id="black-probe"></select></label></div><div class="connection-buttons"><button class="button subtle" data-action="check-wiring">Check connections</button><button class="button subtle" data-action="clear">Clear leads</button><button class="button subtle" data-action="restore" id="restore-button">Use shown circuit</button></div></div><div><h3>Connected leads</h3><div id="wire-list"></div></div></div></details></section>
     <footer class="workspace-footer"><span><i class="footer-dot"></i> Desktop 3D / VR</span><span>Ideal circuit models</span><button id="model-guide">Model limits ${svgIcon(
       "arrow"
     )}</button></footer>
   </main>
-  <dialog id="headset-dialog" aria-labelledby="headset-title"><div class="dialog-header"><h2 id="headset-title">Open the lab in VR</h2><button class="icon-button" data-close aria-label="Close VR setup">×</button></div><p>Open this lab in your headset’s browser, then select <strong>Enter VR</strong>. The circuit bench and all four experiments open around you.</p><div id="headset-address" class="headset-address"></div><ol class="headset-steps"><li>Choose a lab and Explore or Build circuit.</li><li>Enter VR and accept the headset’s request.</li><li>Point and press the trigger to connect leads, place probes and use the controls. Choose <strong>Recenter</strong> if the bench is out of reach.</li></ol><p id="headset-status" class="headset-status" role="status"></p><p>Your circuit and readings stay when you leave VR.</p><div class="dialog-actions"><button class="button primary" id="headset-enter" hidden>Enter VR</button><button class="button subtle" id="headset-check">Check headset</button><a id="headset-fullscreen" class="button subtle" target="_blank" rel="noopener" hidden>Open lab full screen</a></div></dialog>
-  <dialog id="guide-dialog"><div class="dialog-header"><div><span class="eyebrow">ELEN 221</span><h2>Lab guide</h2></div><button class="icon-button" data-close aria-label="Close guide">×</button></div><div class="guide-body"><p>Explore opens a connected reference circuit. Build circuit gives you an empty patch bench: connect the component terminals, place the voltage probes and take measurements.</p><ol><li>Select <strong>Connect</strong>, then two terminals. Hover to read their names. Use <strong>Remove</strong> to delete a lead, <strong>Undo</strong> to reverse a wire or probe change, or <strong>Esc</strong> to cancel. Click a part to change its value. The terminal lists also work by keyboard.</li><li>Select the <strong>red</strong> or <strong>black probe</strong>, then a contact. The voltmeter reads red minus black. The current sensor is fixed in the indicated branch.</li><li>Change the settings and read the meters and graphs. Write your readings, calculations and answers on paper.</li></ol><h3>Electrical models</h3><p>DC resistor networks are solved from your actual connections. Invalid or floating circuits produce diagnostics. Op-amp and transient activities support the displayed configurations and require matching connections before reporting measurements.</p><p>The op-amp uses ideal gain with adjustable supply rails and sine frequency. Output remains 1 V inside each rail (±11 V for ±12 V supplies). The voltage sample is at the positive input peak, one quarter-period into the cycle. It does not model a specific device, input common-mode limits, bandwidth, slew rate or output-current limits. Meters have ideal input impedance. Components have no tolerance or parasitic effects.</p><p>RC and RL responses preserve capacitor voltage and inductor current when the switch or resistance changes. Playback has a speed control and keeps the same time scale when resistance changes. Both graphs show circuit time. “New run” explicitly resets stored energy.</p><p>These are proposed teaching circuits. The instructor should match them to the lab handouts before classroom use.</p><h3>Use in a VR headset</h3><p id="vr-help-status"></p><p>Open the lab’s HTTPS link in your headset’s browser and select Enter VR. Use Open on a headset at the top of the page to get the link and check your headset.</p><p>Use a controller trigger to select terminal pairs, remove leads, place probes, or press a control. The panel has Bench, Settings, Guide and Labs tabs. Point at a part to see its settings. Use Guide for the experiment steps and Settings for the scope and playback controls. Use Recenter to bring the bench in front of you. Exit with the panel button or the headset system menu.</p><p class="notice">Headset interaction is implemented but has not been verified on physical hardware in this environment. The desktop view is not a substitute for that check.</p><p><a href="./docs/module-designs.md" target="_blank" rel="noopener">Instructor guide ↗</a></p></div></dialog>
+  <dialog id="headset-dialog" aria-labelledby="headset-title"><div class="dialog-header"><h2 id="headset-title">Open the lab in VR</h2><button class="icon-button" data-close aria-label="Close VR setup">×</button></div><p>Open this lab in your headset’s browser, then select <strong>Enter VR</strong>. The circuit bench and all four experiments open around you.</p><div id="headset-address" class="headset-address"></div><ol class="headset-steps"><li>Choose a lab and Explore or Build circuit.</li><li>Enter VR and accept the headset’s request.</li><li>Grip a probe to pick it up. Bring its tip to a contact and release. Hold a dial and turn your wrist to adjust it.</li><li>Use the left stick to move and the right stick to turn. You can also walk around within your play area.</li></ol><p id="headset-status" class="headset-status" role="status"></p><p>Your circuit and readings stay when you leave VR.</p><div class="dialog-actions"><button class="button primary" id="headset-enter" hidden>Enter VR</button><button class="button subtle" id="headset-check">Check headset</button><a id="headset-fullscreen" class="button subtle" target="_blank" rel="noopener" hidden>Open lab full screen</a></div></dialog>
+  <dialog id="guide-dialog"><div class="dialog-header"><div><span class="eyebrow">ELEN 221</span><h2>Lab guide</h2></div><button class="icon-button" data-close aria-label="Close guide">×</button></div><div class="guide-body"><h3>Use the equipment</h3><p>Explore starts with a wired circuit. Build circuit starts with loose connections. Follow the experiment steps above the bench.</p><ol><li>Drag from one contact to another to add a lead. Grab an existing lead to move or remove it. Undo puts the last connection back.</li><li>Pick up a test probe and put its metal tip on a contact. The red lead runs to V and the black lead to COM on the meter. The reading is V minus COM. Swap the tips to reverse the sign.</li><li>Turn the dials on the equipment to change values. Flip the circuit switch to change its state. In the amplifier lab, use the two scope probes to compare input and output.</li><li>Drag on a graph to choose a load or inspect an acquired trace. The graph labels state what is being calculated or measured. Put your answers on paper.</li></ol><h3>In VR</h3><p id="vr-help-status"></p><p>Open the HTTPS link in your headset browser and select Enter VR. Grip a probe to pick it up, move it to a contact, and release. Hold a dial and turn your wrist. Use the left stick to move and the right stick to turn. You can also walk within your play area. Recenter brings you back to the bench.</p><h3>Keyboard and mouse</h3><p>Drag empty space to orbit and scroll to zoom. Drag equipment to use it. Keyboard controls below the bench offer the same settings without dragging. Focus the graph and use the arrow keys to move its cursor.</p><h3>Model limits</h3><p>DC resistor circuits are solved from your connections. The amplifier and transient labs support the shown circuit layouts. Disconnected or invalid circuits do not produce valid traces.</p><p>The amplifier uses ideal gain with adjustable supply rails. Its output stays 1 V inside each rail. This model does not include device bandwidth, slew rate, input common-mode limits, component tolerances or output current limits.</p><p>RC and RL models preserve capacitor voltage and inductor current at switching. New run resets stored energy. The instructor must confirm the amplifier configurations against the lab handout, which was not included in the email.</p><p><a href="./docs/module-designs.md" target="_blank" rel="noopener">Instructor guide ↗</a></p></div></dialog>
 `;
 
 const select = (name, label, values, display = (v) => v) =>
@@ -108,6 +116,10 @@ const segmented = (name, label, values) =>
 const controlBlock = (html) => `<div class="control-block">${html}</div>`;
 
 function renderControls() {
+  const focused = document.activeElement;
+  const focusKey = focused?.id || null;
+  const focusChannel = focused?.dataset.scopeChannel;
+  const focusField = focused?.dataset.scopeField;
   const p = parameters(state),
     id = state.module;
   let html = "",
@@ -191,13 +203,16 @@ function renderControls() {
       p.time / transient({ ...p, source: 5 }).tau
     }"><div class="time-shortcuts"><button data-action="one-tau">Go to 1 τ</button><button data-action="five-tau">Go to 5 τ</button><button data-action="replay">Replay</button></div></div>`;
     html += controlBlock(select("speed", "Playback speed", OPTIONS.speed, (v) => `${v}×`));
-    note = "Both graphs use circuit time. Playback keeps the same time scale when R changes. New run resets stored energy.";
+    note = "Voltage, current and energy share one clock. Changing R keeps the same playback scale. New run resets stored energy.";
   }
   document.querySelector("#controls").innerHTML = html;
   renderPartControls();
   renderActivity();
   renderScopeControls();
   document.querySelector("#model-note").textContent = note;
+  if (focusKey) document.getElementById(focusKey)?.focus({ preventScroll: true });
+  else if (focusChannel)
+    document.querySelector(`[data-scope-channel="${focusChannel}"][data-scope-field="${focusField}"]`)?.focus({ preventScroll: true });
 }
 
 function partParameters() {
@@ -288,38 +303,21 @@ function renderPartControls() {
       : `<p>Fixed part. Connect its terminals with the Connect tool.</p>`);
 }
 function renderActivity() {
-  const steps = {
-    thevenin: [
-      "Connect the original circuit and measure the load voltage, current and power.",
-      "Switch to each equivalent circuit. Set its source and resistance, then compare the same loads.",
-      "Change the load to find the highest power.",
-    ],
-    superposition: [
-      "Select A alone, B alone and Both sources to compare the signed currents.",
-      "Use a short circuit for the inactive voltage source. Try an open circuit to see the difference.",
-      "Keep both sources on and adjust source B until the load current is zero.",
-    ],
-    opamp: [
-      "Set the input and feedback resistors for the gain you need.",
-      "Put CH1 on the input and CH2 on the output, with both ground clips at GND.",
-      "Increase the input until the output clips. Change the supply rails and compare. Use Auto scale to fit the traces.",
-    ],
-    transient: [
-      "Choose RC or RL, then select New run and Run.",
-      "Pause, slow or replay the response. Compare voltage, current and stored energy.",
-      "Change resistance and start a new run. Repeat with the other circuit.",
-    ],
-  };
-  document.querySelector("#activity-controls").innerHTML = `<ol class="experiment-steps">${steps[state.module]
-    .map((step) => `<li>${step}</li>`)
-    .join("")}</ol>`;
+  const module = MODULES[state.module];
+  const steps = module.steps || [];
+  const html = `<ol class="experiment-steps">${steps.map((step) => `<li>${escape(step)}</li>`).join("")}</ol>`;
+  document.querySelector("#experiment-steps").innerHTML = html;
+  document.querySelector("#experiment-aim").textContent = module.purpose || module.challenge;
+  document.querySelector("#activity-controls").innerHTML = `<p>${escape(
+    module.principle
+  )}</p><p class="paper-note">Use the equipment to test each step. Keep readings and answers on paper.</p>`;
 }
 function renderSourceComparison() {
   const a = activity(state),
     p = parameters(state);
   document.querySelector("#source-comparison").innerHTML = `<p>Live circuit values at +${p.v1} V / −${
     p.v2
-  } V. Click a case to put it on the bench.</p><div class="source-cases">${[
+  } V. Each view uses your wiring. Select a case to switch the sources on the bench.</p><div class="source-cases">${[
     ["a", "A alone"],
     ["b", "B alone"],
     ["both", "Both sources"],
@@ -352,6 +350,7 @@ function activityLines() {
 }
 function renderScopeControls() {
   const node = document.querySelector("#scope-controls");
+  const wasOpen = node.querySelector("details")?.open || false;
   node.hidden = state.module !== "opamp";
   if (state.module !== "opamp") return;
   const p = parameters(state),
@@ -361,7 +360,9 @@ function renderScopeControls() {
     `<label>${label}<select data-scope-channel="${ch}" data-scope-field="${field}" aria-label="${label}"><option value="">Disconnected</option>${c.circuit.pins
       .map((pin) => `<option value="${escape(pin.id)}" ${c.scope[ch][field] === pin.id ? "selected" : ""}>${escape(pin.name)}</option>`)
       .join("")}</select></label>`;
-  node.innerHTML = `<div class="scope-top"><strong>Scope</strong><div><button class="button" data-action="scope-toggle">${
+  node.innerHTML = `<details class="scope-keyboard" ${
+    wasOpen ? "open" : ""
+  }><summary>Scope keyboard controls</summary><div class="scope-top"><strong>Scope</strong><div><button class="button" data-action="scope-toggle">${
     p.scopeRunning ? "Hold" : "Run scope"
   }</button><button class="button" data-action="scope-autoscale">Auto scale</button></div></div><p class="scope-status ${
     sc.error ? "warning" : ""
@@ -378,7 +379,7 @@ function renderScopeControls() {
         (ch, i) =>
           `<fieldset><legend>${ch.toUpperCase()} · ${
             i ? "output" : "input"
-          }</legend><div class="scope-probe-tools"><button class="button" data-tool="${ch}" data-action="tool:${ch}">Place tip</button><button class="button" data-action="scope-ground:${ch}">Place ground</button></div>${connection(
+          }</legend><p class="hint">Move the probe and ground clip on the bench.</p>${connection(
             ch,
             "signal",
             `${ch.toUpperCase()} tip`
@@ -394,13 +395,17 @@ function renderScopeControls() {
       select("triggerEdge", "Trigger edge", ["rising", "falling"], (v) => (v === "rising" ? "Rising" : "Falling"))
     )}<label class="control-block"><span class="control-label">Trigger level · CH1</span><div class="number-unit"><input data-param="triggerLevel" aria-label="Trigger level" type="number" step="0.1" min="-15" max="15" value="${
       p.triggerLevel
-    }"><span>V</span></div></label></div><p class="hint">Both ground clips share circuit GND. Scales change the view, not the circuit.</p>`;
+    }"><span>V</span></div></label></div><p class="hint">Both ground clips share circuit GND. Scales change the view, not the circuit.</p></details>`;
 }
 function graphForVR(g) {
+  const cursor = traceCursor.active ? graphCursor(state, traceCursor.fraction, traceCursor.panel) : null;
+  const interaction = g.interaction || { thevenin: "load", superposition: "source", opamp: "scope", transient: "time" }[state.module];
   if (g.bars) {
     const max = Math.max(...g.bars.map((b) => Math.abs(b.value ?? 0)), 1) * 1.25;
     return {
       title: g.title,
+      interaction,
+      cursor: cursor ? { x: traceCursor.fraction, label: cursor.text } : null,
       subtitle: g.subtitle,
       xLabel: "Source case",
       yLabel: "Current (mA)",
@@ -422,6 +427,8 @@ function graphForVR(g) {
   }
   return {
     title: g.title,
+    interaction,
+    cursor: cursor ? { x: traceCursor.fraction, label: cursor.text } : null,
     subtitle: g.subtitle,
     xLabel: g.xLabel,
     yLabel: g.yLabel,
@@ -437,6 +444,67 @@ function graphForVR(g) {
     series: g.series.map((line) => ({ color: line.color, points: line.points.map(([x, y]) => [x / g.xMax, (y - g.yMin) / (g.yMax - g.yMin)]) })),
   };
 }
+
+function inspectGraph(fraction, panel = 0, operate = true) {
+  const g = plot(state);
+  traceCursor = { fraction: Math.min(1, Math.max(0, fraction)), panel, active: true };
+  if (operate && state.module === "thevenin") {
+    const target = traceCursor.fraction * g.xMax;
+    const value = OPTIONS.load.reduce((best, value) => (Math.abs(value - target) < Math.abs(best - target) ? value : best));
+    change(state, "load", value);
+    traceCursor.fraction = value / g.xMax;
+  } else if (operate && state.module === "transient") {
+    action(state, `scrub:${traceCursor.fraction * g.xMax}`);
+    traceCursor.fraction = (parameters(state).time * 1000) / g.xMax;
+  } else if (operate && state.module === "superposition") {
+    change(state, "sourceMode", ["a", "b", "both"][Math.min(2, Math.floor(traceCursor.fraction * 3))]);
+  }
+  renderControls();
+  renderReference();
+  renderLive();
+}
+
+function graphPointer(event, drag = traceDrag) {
+  if (!drag) return;
+  // The trace area starts 52 units into the 640-unit SVG and is 568 units wide.
+  const svgX = ((event.clientX - drag.bounds.left) / drag.bounds.width) * 640;
+  inspectGraph((svgX - 52) / 568, drag.panel);
+}
+const chartElement = document.querySelector("#chart");
+chartElement.addEventListener("pointerdown", (event) => {
+  const svg = event.target.closest("svg[data-plot-index]");
+  if (!svg || event.button !== 0) return;
+  event.preventDefault();
+  traceDrag = { panel: Number(svg.dataset.plotIndex), bounds: svg.getBoundingClientRect(), pointerId: event.pointerId };
+  chartElement.setPointerCapture(event.pointerId);
+  chartElement.focus({ preventScroll: true });
+  graphPointer(event);
+});
+chartElement.addEventListener("pointermove", (event) => {
+  if (traceDrag?.pointerId === event.pointerId) graphPointer(event);
+});
+for (const event of ["pointerup", "pointercancel", "lostpointercapture"])
+  chartElement.addEventListener(event, () => {
+    traceDrag = null;
+  });
+chartElement.addEventListener("keydown", (event) => {
+  if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+  event.preventDefault();
+  if (state.module === "thevenin") {
+    const options = OPTIONS.load;
+    const index = options.indexOf(parameters(state).load);
+    const next =
+      event.key === "Home"
+        ? 0
+        : event.key === "End"
+          ? options.length - 1
+          : Math.max(0, Math.min(options.length - 1, index + (event.key === "ArrowRight" ? 1 : -1)));
+    inspectGraph(options[next] / plot(state).xMax, 0);
+    return;
+  }
+  const fraction = event.key === "Home" ? 0 : event.key === "End" ? 1 : traceCursor.fraction + (event.key === "ArrowRight" ? 0.02 : -0.02);
+  inspectGraph(fraction, traceCursor.panel);
+});
 
 function renderConnections() {
   const { circuit, wires, probes } = context(state);
@@ -478,7 +546,7 @@ function chartSVG(g, index = 0) {
     const max = Math.max(...g.bars.map((b) => Math.abs(b.value ?? 0)), 1) * 1.25,
       zero = T + ph / 2,
       scale = ph / (2 * max);
-    return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${escape(g.title)}">${[-max, 0, max]
+    return `<svg data-plot-index="${index}" viewBox="0 0 ${W} ${H}" role="img" aria-label="${escape(g.title)}">${[-max, 0, max]
       .map(
         (v) =>
           `<line x1="${L}" y1="${zero - v * scale}" x2="${W - R}" y2="${zero - v * scale}" class="grid-line"/><text x="${L - 9}" y="${
@@ -503,7 +571,7 @@ function chartSVG(g, index = 0) {
   }
   const x = (n) => L + (n / g.xMax) * pw,
     y = (n) => T + ph - ((n - g.yMin) / (g.yMax - g.yMin)) * ph;
-  let result = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${escape(
+  let result = `<svg data-plot-index="${index}" viewBox="0 0 ${W} ${H}" role="img" aria-label="${escape(
     g.title
   )}"><defs><clipPath id="plot-clip-${index}"><rect x="${L}" y="${T}" width="${pw}" height="${ph}"/></clipPath></defs>`;
   const xDivisions = state.module === "opamp" ? 10 : 4;
@@ -531,6 +599,12 @@ function chartSVG(g, index = 0) {
     }" stroke-width="2.6"/>`;
   if (g.marker && Number.isFinite(g.marker.y))
     result += `<circle cx="${x(g.marker.x)}" cy="${y(g.marker.y)}" r="5" fill="#fff" stroke="#b77636" stroke-width="2.5"/>`;
+  if (traceCursor.active) {
+    const cursorX = x(traceCursor.fraction * g.xMax);
+    result += `<line x1="${cursorX}" y1="${T}" x2="${cursorX}" y2="${T + ph}" class="trace-cursor"/><rect x="${
+      cursorX - 5
+    }" y="${T}" width="10" height="7" fill="#263e50"/>`;
+  }
   result += `</g><text x="${L + pw / 2}" y="${H - 3}" text-anchor="middle" class="axis-label">${escape(
     g.xLabel
   )}</text><text x="${L}" y="11" class="axis-label">${escape(g.yLabel)}</text></svg>`;
@@ -549,7 +623,9 @@ function renderLive() {
     p = parameters(state),
     c = context(state),
     g = plot(state),
-    ms = metrics(state);
+    ms = metrics(state).map((reading, index) =>
+      index === 0 && meterMode === "off" ? { ...reading, value: "—", unit: "", detail: "Meter off" } : reading
+    );
   document.querySelector("#readings").innerHTML = ms
     .map((r) => `<div class="reading"><span>${r.label}</span><div>${escape(r.value)}<small>${r.unit}</small></div><p>${escape(r.detail)}</p></div>`)
     .join("");
@@ -558,6 +634,12 @@ function renderLive() {
   status.classList.toggle("warning", !m.ok || !c.correct);
   document.querySelector("#chart-title").textContent = g.title;
   document.querySelector("#chart-subtitle").textContent = g.subtitle;
+  document.querySelector("#chart-use").textContent = {
+    thevenin: "Drag along the graph to set the load. Watch the meter and power change together.",
+    superposition: "Select a source view to switch the circuit. The signed currents show how the sources add or cancel.",
+    opamp: "Drag along the trace to read voltage at a chosen time. Turn the scope dials to change its scale.",
+    transient: "The trace grows while the circuit runs. Drag on the trace to pause and inspect voltage, current and energy at the same instant.",
+  }[state.module];
   document.querySelector("#chart-legend").innerHTML = g.series
     .map((s) => `<span><i style="background:${s.color}"></i>${escape(s.name)}</span>`)
     .join("");
@@ -571,6 +653,8 @@ function renderLive() {
         )
         .join("")
     : chartSVG(g);
+  const cursor = traceCursor.active ? graphCursor(state, traceCursor.fraction, traceCursor.panel) : null;
+  document.querySelector("#trace-reading").textContent = cursor?.text || "Use the graph to inspect a reading. Arrow keys also move the cursor.";
   document.querySelector("#feedback").textContent = !m.ok && state.mode === "explore" ? m.error : state.feedback;
   if (state.module === "transient") {
     document.querySelector("#simulation-time").textContent = `${fmt(p.time * 1000)} ms`;
@@ -582,14 +666,14 @@ function renderLive() {
   const graph = graphForVR(g);
   if (g.panels?.length) graph.panels = g.panels.map(graphForVR);
   const instructions = {
-    select: "Click a part to change its value. Drag empty space to turn the board.",
+    select: "Drag a dial to change its value. Drag a probe onto a contact to take a reading.",
     wire: state.selectedTerminal
       ? `From ${
           c.circuit.pins.find((pin) => pin.id === state.selectedTerminal)?.name || state.selectedTerminal
         } → select the next terminal. Esc cancels.`
-      : "Click the first terminal, then the second. Hover over a terminal to read its name.",
-    red: "Click a terminal for the red voltage probe.",
-    black: "Click a terminal for the black voltage probe.",
+      : "Drag from one contact to another to connect a lead. Drag a test probe onto a contact to measure voltage.",
+    red: "Keyboard placement: choose the contact for the meter’s V tip.",
+    black: "Keyboard placement: choose the contact for the meter’s COM tip.",
     remove: "Click a lead to remove it. Undo restores the last change.",
     ch1: "Click a terminal for the CH1 scope tip.",
     ch2: "Click a terminal for the CH2 scope tip.",
@@ -601,18 +685,8 @@ function renderLive() {
   if (state.module === "superposition") renderSourceComparison();
   const lines = [
     ...ms.map((r) => `${r.label}: ${r.value} ${r.unit}`),
-    `Tool: ${
-      {
-        wire: "Connect",
-        select: "Select",
-        red: "Red probe",
-        black: "Black probe",
-        remove: "Remove",
-        ch1: "CH1 tip",
-        ch2: "CH2 tip",
-        scopeGround: "Scope ground",
-      }[state.tool] || state.tool
-    } | Red: ${c.probes.red || "—"} | Black: ${c.probes.black || "—"}`,
+    "Grip a probe, bring its tip to a contact, then release. Hold and turn a dial to adjust it.",
+    "Left stick: move. Right stick: turn. Walk within your play area to inspect the bench.",
     state.module === "transient" ? `Time: ${fmt(p.time * 1000)} ms | playback ${p.speed}×` : "",
     !m.ok ? m.error : "",
     `Experiment: ${MODULES[state.module].challenge}`,
@@ -620,6 +694,13 @@ function renderLive() {
     ...activityLines(),
   ].filter(Boolean);
   bench?.update({
+    module: state.module,
+    mode: state.mode,
+    parameters: { ...p },
+    measurement: m,
+    metrics: ms,
+    options: OPTIONS,
+    experiment: { challenge: MODULES[state.module].challenge, steps: MODULES[state.module].steps || [] },
     components: c.circuit.components,
     wires: c.wires,
     probes: c.probes,
@@ -632,6 +713,7 @@ function renderLive() {
     live: { title: `Lab ${MODULES[state.module].number} · ${MODULES[state.module].name}`, lines },
     actions: vrActions(state),
     graph,
+    rawGraph: g,
   });
 }
 
@@ -667,7 +749,12 @@ function render() {
 }
 
 function doAction(id) {
-  if (id.startsWith("module:") || /set:(representation|kind|configuration):/.test(id)) selectedPart = null;
+  if (/^(module:|explore$|build$|undo$|clear$|restore$|reset-circuit$|set:(representation|kind|configuration):)/.test(id))
+    bench?.cancelInteractions?.();
+  if (id.startsWith("module:") || /set:(representation|kind|configuration):/.test(id)) {
+    selectedPart = null;
+    traceCursor.active = false;
+  }
   action(state, id);
   render();
   if (/^(tool:ch[12]|scope-ground:)/.test(id) && !xrStatus.active && !panelPreview) {
@@ -700,6 +787,7 @@ app.addEventListener("click", (e) => {
 app.addEventListener("change", (e) => {
   const el = e.target;
   if (el.dataset.param) {
+    if (["representation", "kind", "configuration"].includes(el.dataset.param)) bench?.cancelInteractions?.();
     change(state, el.dataset.param, Number.isNaN(Number(el.value)) ? el.value : Number(el.value));
     render();
   }
@@ -879,6 +967,42 @@ try {
       removeWire(state, index);
       render();
     },
+    onWireMove: (index, endpoint, terminalId) => {
+      moveWire(state, index, endpoint, terminalId);
+      render();
+    },
+    onManipulation: (phase, hold) => {
+      if (phase === "begin") beginManipulation(state, hold.input);
+      else if (phase === "end") endManipulation(state, hold.input);
+    },
+    onDisconnect: (index) => {
+      moveWire(state, index, 0, null);
+      render();
+    },
+    onConnect: (from, to) => {
+      const previousTool = state.tool;
+      state.tool = "wire";
+      state.selectedTerminal = null;
+      terminal(state, from);
+      terminal(state, to);
+      state.tool = previousTool;
+      render();
+    },
+    onProbe: (channel, terminalId) => {
+      setProbe(state, channel, terminalId);
+      render();
+    },
+    onChange: (name, value) => {
+      if (name === "meterMode") {
+        meterMode = value;
+        renderLive();
+        return;
+      }
+      if (["representation", "kind", "configuration"].includes(name)) bench?.cancelInteractions?.();
+      change(state, name, value);
+      render();
+    },
+    onGraphCursor: inspectGraph,
     onPart: (id) => {
       selectedPart = id;
       render();
@@ -886,7 +1010,7 @@ try {
     onHover: (hit) => {
       const label = document.querySelector("#hover-label");
       label.hidden = !hit;
-      label.textContent = hit ? `${hit.label}${hit.kind === "part" ? " · click to edit" : ""}` : "";
+      label.textContent = hit ? hit.label : "";
     },
     onAction: doAction,
     onXRStatus: renderVRStatus,

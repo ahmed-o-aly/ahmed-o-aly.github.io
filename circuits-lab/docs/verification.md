@@ -1,59 +1,58 @@
-# Prototype verification
+# Circuits Lab v0.5 verification
 
-Updated 30 September 2026. This report covers the local prototype, not a classroom deployment.
+Updated 30 September 2026. This report describes the current local build. It does not establish classroom readiness or physical headset performance.
 
-## Current scope
+## What students can do
 
-The student interface is an experiment bench. Students use Explore or Build circuit, operate live instruments, and write measurements, calculations and answers on paper. The current desktop and VR interfaces do not expose answer fields, prediction locks, answer submission, grading, notebook recording or export. Wiring and instrument diagnostics remain part of the experiment.
+Students operate four Electrical Circuits I experiments: equivalent circuits and maximum power, superposition, amplifier gain and clipping, and RC/RL transients. Explore starts with connected examples. Build circuit keeps the selected values and opens separate empty connections. Written measurements, calculations and answers stay on paper.
 
-Earlier automated and browser checks of saved answers, graded challenges and notebook exports are historical regression evidence. Any retained internal assessment APIs are not current student-facing features.
+The bench uses physical instruments and contacts: students drag probes, pull and replace plugs, turn dials and operate switches. The meter reads its V tip relative to its COM tip. Branch current remains a fixed sensor; the app does not pretend that voltage probes connected in parallel are an ammeter. Keyboard controls provide another way to operate the same equipment.
 
-## Current build and browser verification
+Load-power sweeps and source comparisons solve the current DC wiring. They are labelled as calculations. Invalid networks show missing readings and diagnostics. The amplifier scope acquires the chosen nodes and grounds; held traces retain their acquisition settings. RC/RL traces contain only acquired circuit time, with synchronized voltage, current and stored energy. Changing resistance or switching starts a fresh segment while preserving capacitor voltage or inductor current.
 
-The experiment-only production build succeeds. The Codex in-app browser was used to operate the production preview after removing student forms:
+## Automated checks
 
-- **Build circuit:** kept the selected 250 Ω load while opening an empty wiring context. A Thévenin circuit built with four leads and voltage probes reported 2 V, 8 mA and 16 mW. Clear circuit followed by Undo restored the readings and settings.
-- **Superposition:** the linked source cases updated live to +2 mA, −1 mA and +1 mA at +6 V/−3 V, then +2 mA, −2 mA and 0 mA at +6 V/−6 V. No capture or submission was needed. Selecting Open produced the warning that these replacements do not give additive contributions.
-- **Op-amp:** gain −3 with a 4 V peak input and Autoscale produced the expected clipped 11 V peak output. The only numeric entry in this flow was the real scope trigger-level control; no answer buttons or fields were present.
-- **RC:** 2000 Ω with Go to 1 τ showed 200 ms, 3.161 V, approximately 0.92 mA and 0.4995 mJ. No prediction answer or lock was required.
-- **Navigation:** the header had no Notebook control, and normal bench tabs were 3D bench and Schematic. The headset setup dialog and Check headset correctly reported that immersive hardware was unavailable in this browser. The desktop did not simulate successful headset entry.
+The latest Node suite passes **122 of 122 tests**. Coverage includes:
 
-Publication uses the website’s normal build and deployment workflow. The Works route is `/projects/circuits-lab/` and the direct HTTPS app route is `https://ahmed-o-aly.github.io/circuits-lab/`. The site contract checks that published app files match the tested bundle.
+- DC network solutions, signed currents, Kirchhoff balance and power; floating or inconsistent wiring; Thévenin/Norton equivalence and maximum load power; source deactivation and cancellation.
+- Amplifier gain, adjustable rails and clipping; connected scope channels, ground validation, trigger crossings, scale limits, undersampling protection and held acquisitions.
+- RC/RL continuity, time constants, stored energy, acquisition limits, graph cursors and the opposite effects of increased resistance on normalized response speed.
+- Physical tip proximity, exclusive grabs, dial detents and wrist rotation; immediate disconnection during pickup; one Undo for a completed placement; overlapping two-hand changes and bounded history.
+- Movement collision, escape when tracked position begins inside an obstacle, headset-relative movement, turning around the tracked head and input rearming after focus loss.
+- Mocked WebXR session entry and exit, permission rejection, reference-space fallback, recentering and restoration of the desktop view, using real Three.js transforms.
 
-## Automated verification
+Retained internal regression helpers are not additional student-facing features. Automated controller and session tests use simulated inputs; they do not constitute a physical headset test.
 
-The final suite passes **94 tests**: 15 electrical-model tests, 29 experiment-integration tests, 24 activity/scope protocol tests, six schematic tests, 13 VR lifecycle/placement tests and seven experiment-only interface/model tests. Internal legacy assessment tests remain regression coverage; they do not describe features exposed to students.
+## Observed desktop interactions
 
-The seven new experiment-only tests verify that all module variants and modes omit answer, recording and grading actions; Build preserves component values with separate saved connection contexts; Clear and Undo restore leads and instruments; live superposition values need no records or probes; unsolved circuits leave readings missing; solvable wiring mismatches show actual values plus a warning; and open inactive sources show their real, nonadditive results.
+The root agent operated the current local app through the Codex in-app browser using visible canvas controls. These were separate interaction checks:
 
-The relevant electrical coverage includes modified nodal analysis, Kirchhoff current balance and signed power, invalid/floating circuits, original/Thévenin/Norton equivalence, source cancellation and deactivation, clipping and adjustable rails, transient continuity and energy, and synchronized voltage/current plots. Scope coverage includes connected-node acquisition, common grounding, trigger crossings, physical scale/time behavior, rejection of windows over 20 periods, and held traces becoming stale when settings change. Connection tests cover Cancel, Remove and Undo.
+| Action                                                        | Observed result                                                                  |
+| ------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| Drag the physical load dial from 500 Ω to 2000 Ω              | 4.8 V, 2.4 mA and 11.52 mW                                                       |
+| Move the meter V tip to ground, then Undo once                | Reading changed to 0 V, then returned to 3 V                                     |
+| Pull out the R₁ B plug, then Undo                             | Branch current became 0, then returned to 6 mA                                   |
+| Turn the physical feedback-resistor dial from 20 kΩ to 30 kΩ  | Amplifier gain changed to −3                                                     |
+| Drag the physical scope screen cursor                         | At 9.275 ms, CH1 showed approximately −0.44 V and CH2 +0.88 V                    |
+| Run an RC trace to 500 ms, then drag its cursor to 235.915 ms | The acquired trace remained visible; capacitor voltage was approximately 4.527 V |
 
-The 13 VR tests use mocked WebXR APIs and real Three.js camera/vector mathematics. They verify an `immersive-vr` request and renderer attachment; local-floor tracking with local-space fallback; declined permissions; duplicate pending entry protection; device-change support refresh; absent XR and insecure origins; session-end camera/orbit/rig restoration; failed renderer attachment cleanup; initial placement and repeated recentering; upright room orientation with head pitch retained; waiting for a valid viewer pose; and disposal cleanup.
+Further canvas checks confirmed:
 
-## Earlier browser checks retained for context
+- Switching the physical meter OFF blanked both its LCD and the page's voltmeter reading; ON restored 3 V.
+- Turning the generator amplitude dial at gain −2 raised the output to 7 V, then produced clipping at 11 V. Both the status and graph indicated clipping.
+- Turning Time/div changed the scope's displayed time span from 20 ms to 50 ms.
+- Turning the source selector from Both to B alone produced −1 V and −1 mA.
+- The physical RC Run control began acquisition at 11 ms and 0.521 V; a later reading was 306 ms and 4.766 V. Switching the board to Return started a new trace with continuous voltage at the transition; current was −4.279 mA at 11 ms into the return segment.
+- At a 375 × 812 viewport, the document had no horizontal overflow; its scroll width was 360 pixels.
 
-The preceding circuit-task build succeeded and was operated through the Codex in-app browser at `localhost:4186`. These observations predate the final experiment-only interface and immersive-entry revision:
+These observations establish desktop interactions for the tested cases. They do not establish physical controller tracking or headset rendering. Older screenshots and panel-preview checks should not be treated as verification of the v0.5 headset experience.
 
-- The original and Thévenin circuits reported 2 V, 8 mA and 16 mW at 250 Ω. An empty Thévenin bench was wired and configured to 6 V/500 Ω, reporting 3 V, 6 mA and 18 mW at a 500 Ω load.
-- Superposition gave +2 mA, −1 mA and +1 mA at +6 V/−3 V, then +2 mA, −2 mA and 0 mA at +6 V/−6 V.
-- RC showed 3.161 V at one time constant and retained capacitor voltage through switching; RL showed 31.606 mA at one time constant. Baseline and half-time-constant configurations were exercised for both circuits.
-- A ten-lead amplifier with CH1 at input, CH2 at output and both grounds at GND showed clean gain −3 at 1 V peak input and clipping at ±11 V with 4 V peak input. Changing supplies to ±5 V limited the output to ±4 V. Hold followed by a settings change marked the trace stale; Run recovered it. An incorrect CH1 ground produced a diagnostic and moving it to GND recovered the acquisition.
-- Clicking the load body opened its controls. Removing a connection cleared “Circuit connected”; Undo restored it. Moving a voltage probe changed its reading, and shorting the load changed the calculated current and power.
-- At a 375 × 812 phone viewport, CSS client and scroll widths were both 360 pixels, accounting for the scrollbar, and scope controls had no horizontal document overflow.
-- The desktop world-space panel preview operated Settings, Graph and Schematic controls. Closing it restored the desktop layout. This was not a headset session.
+## VR implementation and remaining checks
 
-The earlier grading interface completed its superposition, RC/RL and op-amp checks. That interface and its answer controls have since been removed. A notebook JSON download was parsed in an earlier revision; the final app does not offer notebook/export controls. These are historical checks only.
+VR entry requests a real `immersive-vr` session. The implementation supports nearby grip pickup, probe-tip contact placement, plug movement, dial rotation, switches, left-stick movement and right-stick turning. Recenter uses tracked position and heading; exit restores the desktop camera. Input suspension and rearming prevent a held control or stick from continuing automatically across an interruption.
 
-All four procedural boards and the original, Thévenin, Norton, inverting, non-inverting, RC and RL reference schematics were visually inspected in the earlier trainer revision. Source short/open selection and the closed return path were checked. The schematics show reference wiring, with values following settings; they do not redraw from arbitrary student leads.
+Physical headset testing remains outstanding. Check permissions, tracking, reach, grip and release behavior, dial motion, movement, recentering, readable instruments, comfort and frame rate on the intended headset. Desktop canvas checks and mocked XR tests do not validate these hardware results.
 
-Current screenshots show the experiment-only interface: [desktop preview](preview.png) and [VR-panel desktop preview](vr-preview.png). The VR-panel screenshot is a desktop inspection view, not a physical headset capture.
+The actual op-amp lab handout has not been provided, so the inverting and non-inverting configurations are provisional. The instructor should reconcile all example values and procedures with the course handouts. The models use ideal components; the amplifier reserves 1 V output headroom and does not simulate bandwidth, slew rate, common-mode limits or output-current limits.
 
-## Immersive implementation and hardware boundary
-
-Normal VR entry requests a real `immersive-vr` session and attaches it to Three.js WebXR rendering. Controller rays and trigger presses operate circuit terminals, leads, instruments and settings. The app's animation loop drives transients during immersive rendering. A plain table, metal legs, floor and back wall are visible in the headset environment.
-
-Initial tracked placement and Recenter use the viewer's horizontal position and heading. The Recenter button and standard thumbstick click place the bench and side-by-side panels in front again, preserving floor-relative eye height and keeping the room upright. When floor tracking is unavailable, the fallback assumes a 1.6 m eye height. Exit restores the desktop camera, projection, orbit target and control state. Support is checked again on headset-device changes and return to the browser. The QA-only desktop panel preview is hidden unless `?inspect-vr=1` is supplied.
-
-Mocked checks establish application behavior under simulated headset responses. They do not validate the browser permission prompt, physical controller tracking, headset rendering, comfort, text readability or performance. No physical headset session has been verified. Publication and browser checks do not establish headset tracking, comfort or performance.
-
-The circuits remain proposed defaults pending the actual ELEN 221 handouts. Reconcile the paper worksheet and numerical examples with the instructor, then complete the experiments on the intended headset before classroom use.
+The detailed task mapping and numerical checks are in [experiment-checklist.md](experiment-checklist.md). Publication remains a separate step handled through the website build and deployment workflow.

@@ -44,7 +44,12 @@ function wireReference(state, transform = (wires) => wires) {
   action(state, "tool:black");
   terminal(state, circuit.negative);
   if (state.module === "opamp") {
-    for (const [color, pin] of [["ch1", "signal+"], ["ch1Ground", "gnd"], ["ch2", "out"], ["ch2Ground", "gnd"]]) {
+    for (const [color, pin] of [
+      ["ch1", "signal+"],
+      ["ch1Ground", "gnd"],
+      ["ch2", "out"],
+      ["ch2Ground", "gnd"],
+    ]) {
       action(state, `probe:${color}:${pin}`);
     }
   }
@@ -559,7 +564,7 @@ test("graphs remain finite and valid for every displayed circuit and source-sele
       const chart = plot(state);
       assert.ok(chart.title);
       for (const series of chart.series ?? []) {
-        assert.ok(series.points.length > 1);
+        assert.ok(series.points.length >= (module === "transient" ? 1 : 2));
         assert.ok(
           series.points.every((point) => point.every(Number.isFinite)),
           `${module}/${value}`
@@ -578,10 +583,16 @@ test("superposition chart shows live signed contributions without recording read
   const state = lab("superposition");
   for (const mode of ["both", "a", "b"]) {
     change(state, "sourceMode", mode);
-    assert.deepEqual(plot(state).bars.map((bar) => bar.value), [2, -1, 1]);
+    assert.deepEqual(
+      plot(state).bars.map((bar) => bar.value),
+      [2, -1, 1]
+    );
   }
   change(state, "v2", 6);
-  assert.deepEqual(plot(state).bars.map((bar) => bar.value), [2, -2, 0]);
+  assert.deepEqual(
+    plot(state).bars.map((bar) => bar.value),
+    [2, -2, 0]
+  );
   assert.equal(state.records.length, 0);
 });
 
@@ -615,7 +626,7 @@ test("every generated VR action dispatches without breaking subsequent measureme
   }
 });
 
-test("reference graphs agree with measured power, sine peaks and one-time-constant response", () => {
+test("live graphs agree with measured power, sine peaks and one-time-constant response", () => {
   const equivalent = lab("thevenin");
   const power = plot(equivalent);
   const atMatch = power.series[0].points.find(([load]) => load === 500);

@@ -19,6 +19,8 @@ interactive:
 
 I built Circuits Lab for four Electrical Circuits I experiments: Thévenin and Norton equivalents with maximum power transfer, superposition, operational amplifiers, and RC/RL transient response.
 
-Explore starts with a connected circuit. Build circuit gives you the terminals and components to wire yourself. Change the load or sources, connect scope probes, inspect clipping, or pause a switching response. Students write their readings, calculations, and answers on paper; the app is for doing the experiments.
+Explore starts with a connected circuit. Build circuit gives you components and contacts to wire yourself. Pick up a meter probe and place its tip on a contact, pull out a plug to change a connection, turn a dial, or flip a switch. Students write their readings, calculations, and answers on paper; the app is for doing the experiments.
 
-In VR, point with a controller and press the trigger to connect leads, place probes, and operate the instruments. Recenter brings the bench in front of you. This is a teaching prototype with ideal circuit models. Physical headset testing remains outstanding.
+The load-power sweep and signed source contributions are calculated from the actual connections. The scope reads the selected circuit nodes. Transient graphs grow as the circuit runs; dragging through an acquired trace lets you inspect voltage, current and stored energy at the same instant. Undo restores a probe or lead placement.
+
+In VR, grip probes and plugs, hold and turn dials, and use the left stick to move and the right stick to turn. Recenter brings you back to the bench. This is a teaching prototype with ideal circuit models. The amplifier configurations are provisional because the lab handout has not been provided. Physical headset testing remains outstanding.

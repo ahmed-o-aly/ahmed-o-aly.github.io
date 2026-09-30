@@ -24,7 +24,7 @@ export function createLab() {
     records: [],
     attempts: Object.fromEntries(Object.keys(MODULES).map((id) => [id, 0])),
     challengeStarted: {},
-    feedback: "Select two terminals to connect a lead. Use Remove to disconnect a lead.",
+    feedback: "Drag a lead between contacts; place the meter tips to measure.",
     checks: {},
     showGuide: false,
     sequence: 0,
@@ -53,11 +53,52 @@ function defaultScope(s) {
     ch2: { signal: connected ? "out" : null, ground: connected ? "gnd" : null },
   };
 }
+// Gesture bookkeeping is outside serializable lab state; concurrent hands share one undo snapshot.
+const manipulationGroups = new WeakMap();
+const wiringSnapshot = (c) => ({ wires: clone(c.wires), probes: clone(c.probes), scope: clone(c.scope) });
+function pushHistory(s, k, snapshot) {
+  (s.history[k] ||= []).push(snapshot);
+  if (s.history[k].length > 80) s.history[k].splice(0, s.history[k].length - 80);
+}
+export function beginManipulation(s, token) {
+  if (token === undefined || token === null) return false;
+  let groups = manipulationGroups.get(s);
+  if (!groups) {
+    groups = new Map();
+    manipulationGroups.set(s, groups);
+  }
+  if ([...groups.values()].some((group) => group.tokens.has(token))) return false;
+  const c = context(s),
+    k = key(s);
+  let group = groups.get(k);
+  if (!group) {
+    group = { tokens: new Set(), snapshot: wiringSnapshot(c) };
+    groups.set(k, group);
+  }
+  group.tokens.add(token);
+  return true;
+}
+export function endManipulation(s, token) {
+  const groups = manipulationGroups.get(s);
+  if (!groups) return false;
+  const entry = [...groups.entries()].find(([, group]) => group.tokens.has(token));
+  if (!entry) return false;
+  const [k, group] = entry;
+  group.tokens.delete(token);
+  if (group.tokens.size) return true;
+  groups.delete(k);
+  if (!groups.size) manipulationGroups.delete(s);
+  // Use the original context key even if the caller has already changed the selected view.
+  if (!s.wireSets[k] || !s.probeSets[k] || !s.scopeSets[k]) return true;
+  const current = { wires: s.wireSets[k], probes: s.probeSets[k], scope: s.scopeSets[k] };
+  if (JSON.stringify(group.snapshot) !== JSON.stringify(current)) pushHistory(s, k, group.snapshot);
+  return true;
+}
 function remember(s) {
   const c = context(s),
     k = key(s);
-  (s.history[k] ||= []).push({ wires: clone(c.wires), probes: clone(c.probes), scope: clone(c.scope) });
-  if (s.history[k].length > 80) s.history[k].shift();
+  if (manipulationGroups.get(s)?.has(k)) return;
+  pushHistory(s, k, wiringSnapshot(c));
 }
 const predictionKey = (s, kind = parameters(s).kind) => `${s.mode}:${s.attempts.transient}:${kind}`;
 function predictionState(s, kind = parameters(s).kind) {
@@ -142,17 +183,36 @@ function submitSum(s) {
 }
 
 function liveSourceContributions(s) {
-  const p = parameters(s), { wires, correct } = context(s);
-  const live = Object.fromEntries(["a", "b", "both"].map((sourceMode) => {
-    const circuit = circuitFor("superposition", { ...p, sourceMode });
-    const solved = solveDC({ components: circuit.electrical, wires });
-    if (!solved.ok) return [sourceMode, { valid: false, current: null, voltage: null, power: null, error: solved.error }];
-    const voltage = solved.voltages[circuit.positive] - solved.voltages.loadb;
-    const current = solved.currents.load;
-    return [sourceMode, { valid: true, current, voltage, power: voltage * current, error: null }];
-  }));
+  const p = parameters(s),
+    { wires, correct } = context(s);
+  const live = Object.fromEntries(
+    ["a", "b", "both"].map((sourceMode) => {
+      const circuit = circuitFor("superposition", { ...p, sourceMode });
+      const solved = solveDC({ components: circuit.electrical, wires });
+      if (!solved.ok) return [sourceMode, { valid: false, current: null, voltage: null, power: null, error: solved.error }];
+      const voltage = solved.voltages[circuit.positive] - solved.voltages.loadb;
+      const current = solved.currents.load;
+      return [
+        sourceMode,
+        {
+          valid: true,
+          current,
+          voltage,
+          power: voltage * current,
+          branchCurrents: { r1: solved.currents.r1, r2: solved.currents.r2, load: current },
+          error: null,
+        },
+      ];
+    })
+  );
   const valid = Object.values(live).every((entry) => entry.valid);
-  const errors = [...new Set(Object.values(live).map((entry) => entry.error).filter(Boolean))];
+  const errors = [
+    ...new Set(
+      Object.values(live)
+        .map((entry) => entry.error)
+        .filter(Boolean)
+    ),
+  ];
   if (!correct) errors.push("Current wiring differs from the circuit diagram.");
   if (p.replacement !== "short") errors.push("Open replacements do not give additive contributions. Select Short.");
   return { live, valid, topologyCorrect: correct, superpositionValid: valid && p.replacement === "short", error: errors.join(" ") || null };
@@ -199,6 +259,7 @@ export function advanceTransient(s, wallSeconds) {
   noteTrial(s);
   const baselineTau = p.kind === "RC" ? 0.1 : 0.001;
   p.time = Math.min(p.time + (wallSeconds * baselineTau * p.speed) / 2, 5 * transient({ ...p, source: 5 }).tau);
+  p.acquiredTime = Math.max(p.acquiredTime || 0, p.time);
   if (p.time >= 5 * transient({ ...p, source: 5 }).tau) p.playing = false;
   return p.time;
 }
@@ -437,10 +498,40 @@ export function setProbe(s, color, id) {
     c.scope[channel][color.endsWith("Ground") ? "ground" : "signal"] = id;
   }
   const name = c.circuit.pins.find((pin) => pin.id === id)?.name || "disconnected";
-  s.feedback = `${color}: ${name}.`;
+  s.feedback = `${color === "red" ? "Meter V tip" : color === "black" ? "Meter COM tip" : color}: ${name}.`;
   s.selectedTerminal = null;
   s.checks[s.module] = null;
   s.sequence++;
+  return true;
+}
+
+/** Reconnect one existing lead end with one undo entry; dropping off-terminal removes the lead. */
+export function moveWire(s, index, endpoint, terminalId) {
+  const c = context(s);
+  if (!Number.isInteger(index) || index < 0 || index >= c.wires.length || ![0, 1].includes(endpoint)) return false;
+  if (terminalId !== null && !c.circuit.pins.some((pin) => pin.id === terminalId)) return false;
+  const previous = c.wires[index];
+  const replacement = [...previous];
+  replacement[endpoint] = terminalId;
+  if (
+    terminalId !== null &&
+    (terminalId === previous[endpoint] ||
+      replacement[0] === replacement[1] ||
+      c.wires.some(([a, b], i) => i !== index && ((a === replacement[0] && b === replacement[1]) || (a === replacement[1] && b === replacement[0]))))
+  )
+    return false;
+  remember(s);
+  if (terminalId === null) c.wires.splice(index, 1);
+  else c.wires[index] = replacement;
+  s.selectedTerminal = null;
+  s.checks[s.module] = null;
+  if (s.module === "transient") s.params.transient.playing = false;
+  s.sequence++;
+  const name = (id) => c.circuit.pins.find((pin) => pin.id === id)?.name || id;
+  s.feedback =
+    terminalId === null
+      ? `Removed lead from ${name(previous[0])} to ${name(previous[1])}.`
+      : `Lead connected from ${name(replacement[0])} to ${name(replacement[1])}.`;
   return true;
 }
 
@@ -500,18 +591,23 @@ export function change(s, name, value) {
     s.feedback = "Prediction is locked. Use Retry prediction to start a fresh comparison.";
     return false;
   }
-  if (s.module === "transient" && name === "resistance") {
+  if (s.module === "transient" && name === "resistance" && value !== p.resistance) {
     if (value !== p.resistance) noteTrial(s);
     const before = transient({ ...p, source: 5 });
     p.initial = before.storageValue;
     p.time = 0;
+    p.acquiredTime = 0;
   }
   p[name] = value;
-  if (s.module === "transient" && name === "time" && value > 0) noteTrial(s);
+  if (s.module === "transient" && name === "time") {
+    if (value > 0) noteTrial(s);
+    if (context(s).correct) p.acquiredTime = Math.max(p.acquiredTime || 0, value);
+  }
   if (name === "kind") {
     p.resistance = value === "RC" ? 1000 : 100;
     p.initial = 0;
     p.time = 0;
+    p.acquiredTime = 0;
     p.playing = false;
     p.charging = true;
     p.predictionChoice = predictionState(s, value).choice;
@@ -753,6 +849,16 @@ export function assess(s) {
 }
 
 export function action(s, id) {
+  if (id.startsWith("scrub:") && s.module === "transient") {
+    const milliseconds = Number(id.slice(6));
+    if (!Number.isFinite(milliseconds) || !context(s).correct) return false;
+    const p = parameters(s);
+    p.time = Math.max(0, Math.min(milliseconds / 1000, p.acquiredTime || 0));
+    p.playing = false;
+    s.sequence++;
+    s.feedback = `Trace cursor at ${fmt(p.time * 1000)} ms. Run to continue the response.`;
+    return true;
+  }
   if (id.startsWith("probe:")) {
     const [, color, pin] = id.split(":");
     return setProbe(s, color, pin || null);
@@ -794,7 +900,15 @@ export function action(s, id) {
     const p = parameters(s),
       run = predictionState(s).run + 1;
     s.predictions[predictionKey(s)] = { choice: "unset", locked: false, late: false, tested: false, correct: false, run };
-    Object.assign(p, { resistance: p.kind === "RC" ? 1000 : 100, time: 0, initial: 0, charging: true, playing: false, predictionChoice: "unset" });
+    Object.assign(p, {
+      resistance: p.kind === "RC" ? 1000 : 100,
+      time: 0,
+      initial: 0,
+      acquiredTime: 0,
+      charging: true,
+      playing: false,
+      predictionChoice: "unset",
+    });
     s.checks.transient = null;
     s.sequence++;
     s.feedback = "New prediction for this circuit. Earlier readings stay in the notebook but do not count for this comparison.";
@@ -874,7 +988,9 @@ export function action(s, id) {
         ? "Select a lead to remove it."
         : s.tool === "select"
           ? "Select a component or terminal."
-          : `${s.tool === "wire" ? "Patch lead" : s.tool + " probe"} selected. Choose a terminal on the bench.`;
+          : `${
+              s.tool === "wire" ? "Patch lead" : s.tool === "red" ? "Meter V tip" : s.tool === "black" ? "Meter COM tip" : s.tool + " probe"
+            } selected. Choose a terminal on the bench.`;
     return;
   }
   if (id === "explore" || id === "build" || id === "challenge") {
@@ -950,6 +1066,7 @@ export function action(s, id) {
       noteTrial(s);
       p.initial = transient({ ...p, source: 5 }).storageValue;
       p.time = 0;
+      p.acquiredTime = 0;
       p.charging = !p.charging;
       s.feedback = p.charging
         ? "Switch connected to the 5 V source. Stored state is preserved."
@@ -958,12 +1075,14 @@ export function action(s, id) {
     if (id === "replay") {
       if (context(s).correct) noteTrial(s);
       p.time = 0;
+      p.acquiredTime = 0;
       p.playing = context(s).correct;
       s.feedback = "Replaying this switching segment from its stored initial condition.";
     }
     if (id === "reset-energy") {
       p.initial = 0;
       p.time = 0;
+      p.acquiredTime = 0;
       p.charging = true;
       p.playing = false;
       s.feedback = "New experiment: initial stored energy set to zero.";
@@ -971,11 +1090,13 @@ export function action(s, id) {
     if (id === "one-tau") {
       noteTrial(s);
       p.time = transient({ ...p, source: 5 }).tau;
+      if (context(s).correct) p.acquiredTime = Math.max(p.acquiredTime || 0, p.time);
       p.playing = false;
     }
     if (id === "five-tau") {
       noteTrial(s);
       p.time = transient({ ...p, source: 5 }).tau * 5;
+      if (context(s).correct) p.acquiredTime = Math.max(p.acquiredTime || 0, p.time);
       p.playing = false;
     }
   }
@@ -989,11 +1110,11 @@ export function metrics(s) {
     label: "Voltmeter",
     value: m.probeReady ? fmt(m.probeVoltage) : "—",
     unit: "V",
-    detail: m.probeReady ? "Red minus black probe" : "Place both probes",
+    detail: m.probeReady ? "V tip − COM tip" : "Place both probes",
   };
   if (s.module === "opamp")
     return [
-      { ...common, label: "Voltage at cursor", detail: `t = ${fmt(250 / parameters(s).frequency)} ms · red minus black` },
+      { ...common, label: "Voltage sample", detail: `At input +peak · ${fmt(250 / parameters(s).frequency)} ms · V tip − COM tip` },
       {
         label: "Linear gain",
         value: ready ? fmt(m.gain) : "—",
@@ -1020,53 +1141,66 @@ export function metrics(s) {
   ];
 }
 
+const sweepCache = new WeakMap();
+
 export function plot(s) {
   const p = parameters(s),
     m = measure(s),
     series = [];
   if (s.module === "thevenin") {
-    let v = 6,
-      r = 500;
-    if (p.representation === "thevenin") {
-      v = p.equivalentVoltage;
-      r = p.equivalentResistance;
-    }
-    if (p.representation === "norton") {
-      r = p.equivalentResistance;
-      v = (p.nortonCurrent / 1000) * r;
-    }
-    const maximum = Math.max(((v * v) / (4 * r)) * 1000, 1);
-    series.push({
-      name: "Reference load power",
-      color: "#17788d",
-      points: Array.from({ length: 101 }, (_, i) => {
-        const load = i * 20;
-        return [load, ((v * v * load) / (r + load) ** 2) * 1000];
-      }),
-    });
+    const { circuit, wires, correct } = context(s);
+    const xMax = Math.max(2000, p.load);
+    const loads = [
+      ...new Set([...Array.from({ length: 100 }, (_, i) => ((i + 1) * xMax) / 100), ...OPTIONS.load.filter((load) => load <= xMax), p.load]),
+    ].sort((a, b) => a - b);
+    // Sweep the student's exact network. No fixture or correct-equivalent shortcut.
+    const signature = JSON.stringify([circuit.electrical, wires, p.load]);
+    const cached = sweepCache.get(s);
+    const points = cached?.signature === signature ? cached.points : [];
+    if (cached?.signature !== signature && m.ok)
+      for (const load of loads) {
+        const solved = solveDC({
+          components: circuit.electrical.map((component) => (component.id === "load" ? { ...component, value: load } : component)),
+          wires,
+        });
+        if (solved.ok) points.push([load, (solved.voltages.loada - solved.voltages.loadb) * solved.currents.load * 1000]);
+      }
+    if (cached?.signature !== signature) sweepCache.set(s, { signature, points });
+    const peak = points.reduce((best, [x, y]) => (!best || y > best.y ? { x, y } : best), null);
     return {
-      title: "Power delivered to the load",
-      subtitle: "Reference curve for this circuit · marker shows the present load",
-      series,
-      xMax: 2000,
+      title: "Load power sweep",
+      subtitle: !m.ok ? m.error : `Calculated sweep · current wiring${correct ? "" : " differs from the diagram"} · select a load to test it`,
+      series: points.length ? [{ name: "Calculated load power", color: "#17788d", unit: "mW", points }] : [],
+      interaction: "load",
+      calculated: true,
+      valid: m.ok,
+      error: m.ok ? null : m.error,
+      xMax,
       yMin: 0,
-      yMax: maximum * 1.12,
+      yMax: Math.max(peak?.y || 0, 0.001) * 1.12,
       xLabel: "Load resistance (Ω)",
       yLabel: "Power (mW)",
+      xUnit: "Ω",
+      yUnit: "mW",
+      peak,
       marker: m.ok ? { x: p.load, y: m.power * 1000 } : null,
     };
   }
   if (s.module === "superposition") {
-    const comparison = liveSourceContributions(s), live = comparison.live;
+    const comparison = liveSourceContributions(s),
+      live = comparison.live;
     return {
       title: comparison.superpositionValid ? "Signed source contributions" : "Source states",
-      subtitle: comparison.error || "Live calculations from the current wiring · A alone, B alone and both",
+      interaction: "source",
+      calculated: true,
+      subtitle: comparison.error || "Calculated from current wiring · positive current flows top → ground",
       bars: [
-        { name: "A alone", value: live.a.valid ? live.a.current * 1000 : null, missing: !live.a.valid, color: "#17788d" },
-        { name: "B alone", value: live.b.valid ? live.b.current * 1000 : null, missing: !live.b.valid, color: "#b77739" },
-        { name: "Both", value: live.both.valid ? live.both.current * 1000 : null, missing: !live.both.valid, color: "#294a61" },
+        { name: "A alone", sourceMode: "a", value: live.a.valid ? live.a.current * 1000 : null, missing: !live.a.valid, color: "#17788d" },
+        { name: "B alone", sourceMode: "b", value: live.b.valid ? live.b.current * 1000 : null, missing: !live.b.valid, color: "#b77739" },
+        { name: "Both", sourceMode: "both", value: live.both.valid ? live.both.current * 1000 : null, missing: !live.both.valid, color: "#294a61" },
       ],
       yLabel: "Current (mA)",
+      yUnit: "mA",
       series: [],
     };
   }
@@ -1077,6 +1211,7 @@ export function plot(s) {
         color = index ? "#17788d" : "#b77739";
       return {
         id,
+        interaction: "scope",
         title: `${id.toUpperCase()} · ${ch.scale} V/div`,
         subtitle:
           ch.error ||
@@ -1088,11 +1223,14 @@ export function plot(s) {
         yMax: ch.scale * 4,
         xLabel: "Time (ms)",
         yLabel: "Voltage (V)",
+        xUnit: "ms",
+        yUnit: "V",
         limits: id === "ch2" && ch.correct ? acquisition.limits : [],
       };
     });
     return {
       title: "Oscilloscope",
+      interaction: "scope",
       subtitle:
         acquisition.error ||
         `${p.frequency} Hz · ${acquisition.trigger.edge} trigger at ${acquisition.trigger.level} V · ${acquisition.running ? "Run" : "Hold"}`,
@@ -1108,31 +1246,94 @@ export function plot(s) {
     };
   }
   const tau = transient({ ...p, source: 5 }).tau;
-  const samples = Array.from({ length: 121 }, (_, i) => {
-    const t = (i / 120) * 5 * tau,
-      r = transient({ ...p, source: 5, time: t });
-    return { time: t * 1000, voltage: r.voltage, current: r.current * 1000 };
-  });
-  const current = transient({ ...p, source: 5 });
-  const panels = ["voltage", "current"].map((field, index) => {
-    const points = samples.map((sample) => [sample.time, sample[field]]),
-      vals = points.map((point) => point[1]);
-    const name = field === "voltage" ? `${p.kind === "RC" ? "Capacitor" : "Inductor"} voltage` : "Storage current";
+  const acquired = m.ok ? Math.max(0, p.acquiredTime || 0) : 0;
+  const xMax = Math.max((p.kind === "RC" ? 0.1 : 0.001) * 5000, acquired * 1000);
+  const samples = m.ok
+    ? Array.from({ length: acquired > 0 ? 121 : 1 }, (_, i) => {
+        const t = acquired > 0 ? (i / 120) * acquired : 0;
+        const result = transient({ ...p, source: 5, time: t });
+        return { time: t * 1000, voltage: result.voltage, current: result.current * 1000, energy: result.energy * 1000 };
+      })
+    : [];
+  const panels = ["voltage", "current", "energy"].map((field, index) => {
+    const points = samples.map((sample) => [sample.time, sample[field]]);
+    const vals = points.map((point) => point[1]);
+    const name =
+      field === "voltage" ? `${p.kind === "RC" ? "Capacitor" : "Inductor"} voltage` : field === "current" ? "Storage current" : "Stored energy";
+    const initial = transient({ ...p, source: 5, time: 0 });
+    const bound =
+      field === "voltage"
+        ? Math.max(5, Math.abs(initial.voltage))
+        : field === "current"
+          ? Math.max(5000 / p.resistance, Math.abs(initial.current * 1000))
+          : Math.max(initial.energy * 1000, p.kind === "RC" ? 12500 * p.capacitance : (12500 * p.inductance) / p.resistance ** 2);
     return {
       id: field,
       title: name,
-      subtitle: `${p.charging ? "Source connected" : "Closed return"} · ${m.ok ? "live response" : "reference until connected"}`,
-      series: [{ name, color: index ? "#b77739" : "#17788d", points }],
-      xMax: tau * 5000,
+      subtitle: !m.ok
+        ? m.error
+        : `${p.charging ? "Source connected" : "Closed return"} · ${p.playing ? "Acquiring" : acquired ? "Paused" : "Press Run"} · ${fmt(
+            acquired * 1000
+          )} ms acquired`,
+      series: points.length ? [{ name, color: ["#17788d", "#b77739", "#735782"][index], unit: ["V", "mA", "mJ"][index], points }] : [],
+      interaction: "time",
+      valid: m.ok,
+      acquiredMax: acquired * 1000,
+      xMax,
       yMin: Math.min(0, ...vals) * 1.12,
-      yMax: Math.max(...vals, 0.001) * 1.12,
-      xLabel: "Simulation time (ms)",
-      yLabel: index ? "Current (mA)" : "Voltage (V)",
-      marker: { x: p.time * 1000, y: index ? current.current * 1000 : current.voltage },
+      yMax: Math.max(bound, ...vals, 0.001) * 1.12,
+      xLabel: "Elapsed circuit time (ms)",
+      yLabel: ["Voltage (V)", "Current (mA)", "Energy (mJ)"][index],
+      xUnit: "ms",
+      yUnit: ["V", "mA", "mJ"][index],
+      marker: m.ok ? { x: p.time * 1000, y: field === "voltage" ? m.voltage : field === "current" ? m.current * 1000 : m.energy * 1000 } : null,
       tau: tau * 1000,
     };
   });
   return { ...panels[p.kind === "RC" ? 0 : 1], panels };
+}
+
+/** Inspect drawn data only. It never fills an unacquired interval with an ideal future response. */
+export function graphCursor(s, fraction, panelIndex = 0) {
+  const graph = plot(s);
+  const panel = graph.panels?.[panelIndex] || graph;
+  const f = Number.isFinite(fraction) ? Math.max(0, Math.min(1, fraction)) : 0;
+  if (graph.bars) {
+    const bar = graph.bars[Math.min(graph.bars.length - 1, Math.floor(f * graph.bars.length))];
+    return {
+      x: null,
+      xLabel: bar.name,
+      readings: bar.missing ? [] : [{ name: bar.name, value: bar.value, unit: graph.yUnit, color: bar.color }],
+      text: bar.missing ? `${bar.name}: circuit unavailable` : `${bar.name}: ${fmt(bar.value)} ${graph.yUnit}`,
+      sourceMode: bar.sourceMode,
+    };
+  }
+  const x = f * panel.xMax;
+  const units = panel.yUnit || "V";
+  const inspectedPanels = graph.panels || [panel];
+  const readings = [];
+  if (!(panel.acquiredMax !== undefined && x > panel.acquiredMax + 1e-8)) {
+    for (const item of inspectedPanels)
+      for (const trace of item.series || []) {
+        const points = trace.points;
+        if (!points.length || x < points[0][0] - 1e-8 || x > points.at(-1)[0] + 1e-8) continue;
+        let next = points.findIndex(([time]) => time >= x);
+        if (next < 0) next = points.length - 1;
+        const [ax, ay] = points[Math.max(0, next - 1)],
+          [bx, by] = points[next];
+        const value = ax === bx ? by : ay + ((x - ax) / (bx - ax)) * (by - ay);
+        readings.push({ name: trace.name, value, unit: trace.unit || item.yUnit || units, color: trace.color });
+      }
+  }
+  const xLabel = `${fmt(x)} ${panel.xUnit || "ms"}`;
+  return {
+    x,
+    xLabel,
+    readings,
+    text: readings.length
+      ? `${xLabel} · ${readings.map((r) => `${r.name} ${fmt(r.value)} ${r.unit}`).join(" · ")}`
+      : `${xLabel} · ${panel.acquiredMax !== undefined && x > panel.acquiredMax ? "not acquired; run the circuit" : "no trace at this point"}`,
+  };
 }
 
 export function vrActions(s) {
@@ -1149,8 +1350,8 @@ export function vrActions(s) {
     ["select", "Select"],
     ["wire", "Wire"],
     ["remove", "Remove"],
-    ["red", "Red probe"],
-    ["black", "Black probe"],
+    ["red", "Meter V tip"],
+    ["black", "Meter COM tip"],
   ])
     add("Bench", `tool:${tool}`, label, s.tool === tool ? "Selected" : "");
   add("Bench", "undo", "Undo");
