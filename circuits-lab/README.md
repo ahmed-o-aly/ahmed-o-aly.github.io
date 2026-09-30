@@ -1,4 +1,4 @@
-# Circuits Lab v0.7
+# Circuits Lab v0.8
 
 Four Electrical Circuits I experiments share a desktop 3D bench and an immersive WebXR lab. Students wire circuits, use instruments, change values and inspect live traces. Readings and written answers stay on paper.
 
@@ -23,9 +23,11 @@ Vite prints the local URL. The normal dev port is 5186; pass `-- --port 5187` if
 - Use the dials and switches on the equipment. The experiment control box is on the closer front-right ledge, with larger buttons and setting labels. Optional **Keyboard controls** expose the same settings.
 - Read **Your experiment** and **Experiment steps** above the bench. The schematic is the target circuit, not an automatically redrawn diagram of the student's wiring.
 
-In VR, grip a probe to hold it and release its tip near a contact to connect. Hold and turn a dial. The left stick moves, the right stick turns, and room-scale tracking lets you walk within your play area. Use the headset system menu to exit.
+In VR, grip a probe to hold it and release its tip near a contact to connect. A picked-up probe starts with its tip down; turn your wrist to aim it. Hold and turn a dial. The left stick moves, the right stick turns, and room-scale tracking lets you walk within your play area. Use the headset system menu to exit.
 
-The right display gives three large, labelled readings. The main graph sits closer to the bench and shows one full-size plot at a time. Use its tabs to change channel or quantity, then point and hold the trigger to inspect the trace. RC/RL plots share the same time and cursor; the small recorder also has Voltage, Current and Energy buttons. Graph and Schematic buttons switch the central display. Floating labels no longer cover the equipment.
+The scope or recorder sits within reach on the left ledge, with the large graph above it. The right display gives three labelled readings. Use the graph tabs to select a channel or quantity, then point and hold the trigger to inspect the trace. RC/RL plots share the same time and cursor; the small recorder also has Voltage, Current and Energy buttons. Graph and Schematic buttons switch the left display. Floating labels do not cover the equipment.
+
+The amplifier parts and lead routes have more space. Separate GND sockets share one ground connection, and the OUT sockets share the same output. Meter and scope tips can connect without stacking on one socket.
 
 ## The four experiments
 
@@ -48,6 +50,6 @@ RC uses 100 µF and RL uses 100 mH, with a 5 V source. Switching and resistance 
 
 The email's four learning tasks are covered. The op-amp handout was not supplied; inverting and non-inverting circuits are the current examples. Exact handout circuits and component values still need confirmation.
 
-The user reported better VR readability in v0.6, with control text and resistor names still unclear. Version 0.7 moves the controls closer on the right and enlarges their labels, button faces and resistor displays. Its headset readability and frame rate still need confirmation on the intended device; the assistant has not operated a physical headset.
+User headset feedback has guided the layout changes. Version 0.8 brings the scope and graph to the left, spaces out the amplifier and wire routes, and starts probe pickup tip-down. Its headset reach, clarity and frame rate still need confirmation on the intended device; the assistant has not operated a physical headset.
 
 See [module designs](docs/module-designs.md), [experiment checks](docs/experiment-checklist.md) and [verification](docs/verification.md).

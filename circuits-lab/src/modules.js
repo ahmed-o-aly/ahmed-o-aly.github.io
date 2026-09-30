@@ -198,19 +198,28 @@ export function circuitFor(id, p) {
   }
   if (id === "opamp") {
     components = [
-      source("signal", "INPUT", `${p.amplitude} Vpk`, -1.18, -0.19),
-      horizontalR("rin", "Rin", `${p.rin / 1000} kΩ`, -0.54, -0.5),
-      part("op", "OP AMP", "opamp", `±${p.rail} V`, 0.15, -0.07, [
-        pin("op+", "+", -0.12, 0.06),
-        pin("op-", "−", -0.12, -0.22),
-        pin("out", "OUT", 0.55, -0.07),
-        pin("vp", "V+", 0.2, -0.42),
-        pin("vn", "V−", 0.2, 0.26),
+      {
+        ...part("signal", "INPUT", "V", `${p.amplitude} Vpk`, -1.38, -0.15, [pin("signal+", "+", -1.38, -0.35), pin("signal-", "−", -1.38, 0.06)]),
+        benchPosition: [-2.14, 0.19],
+      },
+      part("rin", "Rin", "R", `${p.rin / 1000} kΩ`, -0.72, 0.3, [pin("rina", "A", -1.14, 0.3), pin("rinb", "B", -0.3, 0.3)]),
+      part("op", "OP AMP", "opamp", `±${p.rail} V`, 0, -0.35, [
+        pin("op+", "+", -0.32, -0.12),
+        pin("op-", "−", -0.32, -0.42),
+        pin("out", "OUT", 0.53, -0.22),
+        pin("vp", "V+", 0.24, -0.72),
+        pin("vn", "V−", 0.24, -0.02),
       ]),
-      horizontalR("rf", "Rf", `${p.rf / 1000} kΩ`, 0.43, 0.54),
-      source("plus", "+ SUPPLY", `${p.rail} V`, 1.12, -0.41),
-      source("minus", "− SUPPLY", `${p.rail} V`, 1.12, 0.37),
-      ground(),
+      part("rf", "Rf", "R", `${p.rf / 1000} kΩ`, 0.7, 0.3, [pin("rfa", "A", 0.28, 0.3), pin("rfb", "B", 1.12, 0.3)]),
+      {
+        ...part("plus", "+ SUPPLY", "V", `${p.rail} V`, 1.38, -0.56, [pin("plus+", "+", 1.38, -0.72), pin("plus-", "−", 1.38, -0.39)]),
+        benchPosition: [2.15, -0.67],
+      },
+      {
+        ...part("minus", "− SUPPLY", "V", `${p.rail} V`, 1.38, 0.215, [pin("minus+", "+", 1.38, 0.05), pin("minus-", "−", 1.38, 0.38)]),
+        benchPosition: [2.15, 0.3],
+      },
+      part("ground", "GND", "ground", "0 V", -0.7, 0.79, [pin("gnd", "GND", -1.1, 0.79)]),
     ];
     wires = [
       ["signal-", "gnd"],

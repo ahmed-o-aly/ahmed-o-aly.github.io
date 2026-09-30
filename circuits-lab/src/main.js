@@ -67,7 +67,7 @@ app.innerHTML = `
       .join("")}</nav>
     <div class="sidebar-bottom"><div class="course-mark">ELEN <strong>221</strong></div><button class="text-button" id="guide-button">Help ${svgIcon(
       "arrow"
-    )}</button><span class="prototype-tag">Lab build · v0.7</span></div>
+    )}</button><span class="prototype-tag">Lab build · v0.8</span></div>
   </aside>
   <main class="workspace">
     <header class="topbar"><div class="breadcrumb">Lab <span id="lab-number">05</span><span class="slash">/</span><span id="topic-label"></span></div><div class="header-actions"><button class="button vr-button" id="vr-button">${svgIcon(

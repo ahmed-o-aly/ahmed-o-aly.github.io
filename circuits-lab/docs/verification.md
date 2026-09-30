@@ -1,6 +1,22 @@
-# Circuits Lab v0.7 verification
+# Circuits Lab v0.8 verification
 
 Updated 30 September 2026. The user reported improved VR handling in v0.5 and better readability in v0.6, with control text and resistor names still unclear. The assistant has not operated a physical headset.
+
+## Version 0.8 layout and cable update
+
+The scope and graph are now on the left, amplifier parts and cables have more space, and common GND/OUT sockets separate connections without changing electrical nodes. Probe pickup starts tip-down, then follows wrist rotation. The latest suite passed **139 tests**; the production build and formatting check passed.
+
+The root agent observed these desktop interactions in the production build:
+
+| Action                                                        | Observed result                                                                                      |
+| ------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| Turn Rf from 20 kΩ to 40 kΩ, then input from 1 Vpk to 3 Vpk   | Gain became −4 with 4 Vpk output; the larger input clipped at 11 Vpk                                 |
+| Move COM to a free GND socket, then off the contacts and Undo | −11 V stayed unchanged at the new socket, became unavailable off the circuit, then returned to −11 V |
+| Inspect CH2 on the left graph                                 | At 11.393 ms, CH2 read −9.21 V                                                                       |
+| Select 1000 Ω on the left Thévenin graph                      | 4 V, 4 mA and 16 mW; default superposition separately showed 1 V, 1 mA and 1 mW                      |
+| Run RC, select Energy and inspect 243.166 ms                  | 4.561 V, 0.439 mA and 1.0399 mJ, with the acquired 342.505 ms trace retained                         |
+
+Desktop inspection confirmed the revised scope ground lead clears Rin. The final build also shows the meter leads leaving the face before going around the case; the exact COM route passes a sampled cable-clearance regression. Version 0.8 headset reach, clarity and frame rate remain unverified. Earlier results below are historical evidence.
 
 ## Version 0.7 control update
 

@@ -9,6 +9,16 @@ export function signedTwistAngle(deltaQuaternion, axis) {
   return angle;
 }
 
+/** Probe models run from the metal tip at local Y=0 toward the handle along +Y. */
+export function probeGripPose(handPosition, controllerQuaternion, pickupQuaternion, probeLength = 0.168) {
+  // Calibrate away the controller's pickup pose once. Later wrist turns remain relative
+  // to that pose, so the probe starts tip-down without continually forcing it upright.
+  const quaternion = controllerQuaternion.clone().multiply(pickupQuaternion.clone().invert()).normalize();
+  const gripDistance = Math.min(probeLength * 0.6, 0.1);
+  const handleOffset = new THREE.Vector3(0, gripDistance, 0).applyQuaternion(quaternion);
+  return { position: handPosition.clone().sub(handleOffset), quaternion };
+}
+
 export function nearestTerminal(position, terminals, radius = 0.055) {
   if (!position) return null;
   let nearest = null,

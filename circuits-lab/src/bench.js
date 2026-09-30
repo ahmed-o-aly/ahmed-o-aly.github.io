@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
-import { createDirectInteraction, createLocomotion, signedTwistAngle, nearestTerminal } from "./interaction.js";
+import { createDirectInteraction, createLocomotion, signedTwistAngle, nearestTerminal, probeGripPose } from "./interaction.js";
 import {
   createMultimeter,
   createOscilloscope,
@@ -14,6 +14,8 @@ import {
   createExperimentControls,
 } from "./equipment.js";
 import { createVRSession, recenterRig, snapshotDesktopView, restoreDesktopView } from "./vr-session.js";
+import { routePatchLeads, routeInstrumentLead } from "./cable-routing.js";
+import { commonSocketPosition, createTerminalSocketAllocator, wireSocketKey } from "./terminal-sockets.js";
 
 /** A shared patch bench. Both mouse picks and XR rays call the same experiment actions. */
 export function createBench({
@@ -71,8 +73,11 @@ export function createBench({
   rig.add(camera);
   const controlPosition = new THREE.Vector3(0.8, 0.883, -0.1);
   const controlOrientation = new THREE.Quaternion().setFromEuler(new THREE.Euler(-0.62, -Math.atan2(0.8, 0.1), 0, "YXZ"));
-  const homeDirection = new THREE.Vector3(-1.2, 2.9, 3.1).normalize();
-  const homeTarget = new THREE.Vector3(0, 0.97, -1.0);
+  const scopePosition = new THREE.Vector3(-0.8, 0.895, -0.1);
+  const scopeOrientation = new THREE.Quaternion().setFromEuler(new THREE.Euler(-0.62, Math.atan2(0.8, 0.1), 0, "YXZ"));
+  const scopeScale = 1.35;
+  const homeDirection = new THREE.Vector3(-0.25, 3.0, 3.25).normalize();
+  const homeTarget = new THREE.Vector3(0, 0.97, -0.77);
   let framedAspect = 0;
   function resetView() {
     if (renderer.xr.isPresenting) return;
@@ -82,12 +87,15 @@ export function createBench({
     controls.target.copy(homeTarget);
     let distance = 4.5;
     const corners = [];
-    for (const x of [-0.97, 0.97]) for (const y of [0.81, 1.16]) for (const z of [-1.62, -0.31]) corners.push(new THREE.Vector3(x, y, z));
+    for (const x of [-0.97, 0.97]) for (const y of [0.81, 1.16]) for (const z of [-1.3, -0.31]) corners.push(new THREE.Vector3(x, y, z));
     // Fit the actual side instrument and its ledge, rather than an oversized room-wide box.
     for (const x of [-0.3, 0.3])
       for (const y of [0, 0.35])
         for (const z of [-0.1, 0.1]) corners.push(new THREE.Vector3(x, y, z).applyQuaternion(controlOrientation).add(controlPosition));
-    for (const x of [0.55, 1.22]) for (const z of [-0.46, 0.25]) corners.push(new THREE.Vector3(x, 0.82, z));
+    for (const x of [-0.32, 0.32])
+      for (const y of [0, 0.36])
+        for (const z of [-0.13, 0.13]) corners.push(new THREE.Vector3(x, y, z).applyQuaternion(scopeOrientation).add(scopePosition));
+    for (const x of [-1.22, -0.55, 0.55, 1.22]) for (const z of [-0.46, 0.25]) corners.push(new THREE.Vector3(x, 0.82, z));
     for (let iteration = 0; iteration < 7; iteration++) {
       camera.position.copy(controls.target).addScaledVector(homeDirection, distance);
       camera.lookAt(controls.target);
@@ -212,6 +220,26 @@ export function createBench({
       mesh(new THREE.CylinderGeometry(0.019, 0.019, 0.003, 20), shared.black, vrEnvironment, top.x, 0.822, top.z);
     }
 
+  // The scope sits within reach on the left, with its face tilted up toward the student.
+  mesh(rounded(0.67, 0.04, 0.71, 0.004), tableTop.material, vrEnvironment, -0.885, 0.8, -0.105);
+  for (const z of [-0.37, 0.16]) {
+    mesh(new THREE.BoxGeometry(0.045, 0.765, 0.045), shared.metal, vrEnvironment, -1.16, 0.3975, z);
+    mesh(new THREE.CylinderGeometry(0.034, 0.034, 0.027, 20), shared.black, vrEnvironment, -1.16, 0.0135, z);
+  }
+  mesh(new THREE.BoxGeometry(0.58, 0.065, 0.035), shared.metal, vrEnvironment, -0.87, 0.729, 0.16);
+  const scopeCradle = new THREE.Group();
+  scopeCradle.position.copy(scopePosition);
+  scopeCradle.quaternion.copy(scopeOrientation);
+  vrEnvironment.add(scopeCradle);
+  mesh(rounded(0.64, 0.012, 0.27, 0.006), shared.metal, scopeCradle, 0, -0.01, 0);
+  for (const x of [-0.24, 0.24])
+    for (const z of [-0.1, 0.1]) {
+      const top = new THREE.Vector3(x, -0.018, z).applyQuaternion(scopeOrientation).add(scopePosition);
+      const height = Math.max(0.01, top.y - 0.821);
+      mesh(new THREE.CylinderGeometry(0.008, 0.008, height, 16), shared.metal, vrEnvironment, top.x, 0.821 + height / 2, top.z);
+      mesh(new THREE.CylinderGeometry(0.019, 0.019, 0.003, 20), shared.black, vrEnvironment, top.x, 0.822, top.z);
+    }
+
   function canvasSurface(width, height, worldW, worldH) {
     const canvas = document.createElement("canvas");
     canvas.width = width;
@@ -287,6 +315,7 @@ export function createBench({
   board.add(componentGroup, wireGroup);
   scene.add(probeGroup);
   const pins = new Map();
+  const socketAllocator = createTerminalSocketAllocator();
   const values = new Map();
   let targets = [];
   let partTargets = [];
@@ -438,7 +467,8 @@ export function createBench({
     for (const part of components) {
       const body = new THREE.Group();
       body.position.set(part.x, 0.955, part.z);
-      if (["V", "I"].includes(part.type)) body.position.set(Math.sign(part.x || -1) * 2.15, 0.842, part.z);
+      if (["V", "I"].includes(part.type))
+        body.position.set(part.benchPosition?.[0] ?? Math.sign(part.x || -1) * 2.15, 0.842, part.benchPosition?.[1] ?? part.z);
       componentGroup.add(body);
       const partPins = part.pins || [];
       if (partPins.length === 2 && ["R", "L", "C"].includes(part.type)) {
@@ -632,15 +662,16 @@ export function createBench({
         }
       }
 
-      const valueLabel = label(partName(part), part.value, 0.5, 0.16);
+      const groundBus = current.module === "opamp" && part.type === "ground";
+      const valueLabel = label(partName(part), groundBus ? "" : part.value, groundBus ? 0.4 : 0.5, 0.16);
       const verticalPins = partPins.length === 2 && Math.abs(partPins[1].z - partPins[0].z) > Math.abs(partPins[1].x - partPins[0].x);
       const labelZ = verticalPins ? Math.max(...partPins.map((pin) => pin.z)) + 0.22 : part.z + (part.type === "switch" ? 0.4 : 0.22);
-      valueLabel.object.position.set(part.x, 0.933, labelZ);
+      valueLabel.object.position.set(groundBus ? 1.32 : part.x, 0.933, groundBus ? 0.79 : labelZ);
       componentGroup.add(valueLabel.object);
       values.set(part.id, {
         value: part.value,
         label: part.label,
-        draw: (_, value) => valueLabel.draw(partName(part), value),
+        draw: (_, value) => valueLabel.draw(partName(part), groundBus ? "" : value),
         body,
         type: part.type,
         updateHardware,
@@ -718,157 +749,100 @@ export function createBench({
           tube([new THREE.Vector3(landing.x, 0.929, landing.z), elbow, endpoint], 0.007, shared.trace, componentGroup, 12);
         }
         const red = (["V", "I", "C"].includes(part.type) && index === 0) || pin.label === "5 V" || pin.label === "V+";
-        mesh(new THREE.CylinderGeometry(0.044, 0.044, 0.006, 6), shared.metal, componentGroup, pin.x, 0.934, pin.z);
-        mesh(new THREE.CylinderGeometry(0.037, 0.041, 0.017, 32), red ? shared.red : shared.black, componentGroup, pin.x, 0.946, pin.z);
-        mesh(new THREE.CylinderGeometry(0.032, 0.032, 0.028, 32), red ? shared.red : shared.black, componentGroup, pin.x, 0.968, pin.z);
-        for (const y of [0.956, 0.964, 0.972])
-          mesh(new THREE.TorusGeometry(0.032, 0.0018, 5, 32), red ? shared.red : shared.navy, componentGroup, pin.x, y, pin.z).rotation.x =
-            -Math.PI / 2;
-        mesh(new THREE.TorusGeometry(0.018, 0.004, 8, 32), shared.metal, componentGroup, pin.x, 0.984, pin.z).rotation.x = -Math.PI / 2;
-        mesh(new THREE.CylinderGeometry(0.014, 0.014, 0.005, 24), shared.black, componentGroup, pin.x, 0.982, pin.z);
-        const ring = mesh(new THREE.TorusGeometry(0.054, 0.0035, 6, 32), mat("#ece6bd", { roughness: 0.6 }), componentGroup, pin.x, 0.928, pin.z);
-        ring.rotation.x = -Math.PI / 2;
-        ring.visible = false;
-        const hit = mesh(
-          new THREE.SphereGeometry(0.068, 12, 8),
-          new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false }),
-          componentGroup,
-          pin.x,
-          0.984,
-          pin.z
-        );
-        hit.castShadow = false;
-        hit.receiveShadow = false;
-        hit.userData = { kind: "terminal", id: pin.id, label: `${partName(part)} ${pin.label || pin.id}` };
-        hit.userData.direct = { object: hit, kind: "terminal", id: pin.id, terminal: pin.id, label: hit.userData.label };
-        targets.push(hit);
-        pins.set(pin.id, { x: pin.x, z: pin.z, ring, hit, red, label: hit.userData.label });
-        const pinLabel = label(pin.label || pin.id, "", 0.15, 0.063);
-        pinLabel.object.position.set(pin.x, 0.932, pin.z + 0.086);
-        componentGroup.add(pinLabel.object);
+        const common = current.module === "opamp" && ["gnd", "out"].includes(pin.id);
+        const record = { x: pin.x, z: pin.z, red, label: `${partName(part)} ${pin.label || pin.id}`, common, sockets: [] };
+        record.addSocket = ({ x, z }) => {
+          const socket = record.sockets.length;
+          if (common && socket > 0) {
+            const previous = record.sockets[socket - 1];
+            // These posts are one existing electrical node, joined by an exposed commoning bar.
+            tube([new THREE.Vector3(previous.x, 0.942, previous.z), new THREE.Vector3(x, 0.942, z)], 0.013, shared.brass, componentGroup, 8);
+          }
+          mesh(new THREE.CylinderGeometry(0.044, 0.044, 0.006, 6), shared.metal, componentGroup, x, 0.934, z);
+          mesh(new THREE.CylinderGeometry(0.037, 0.041, 0.017, 32), red ? shared.red : shared.black, componentGroup, x, 0.946, z);
+          mesh(new THREE.CylinderGeometry(0.032, 0.032, 0.028, 32), red ? shared.red : shared.black, componentGroup, x, 0.968, z);
+          for (const y of [0.956, 0.964, 0.972])
+            mesh(new THREE.TorusGeometry(0.032, 0.0018, 5, 32), red ? shared.red : shared.navy, componentGroup, x, y, z).rotation.x = -Math.PI / 2;
+          mesh(new THREE.TorusGeometry(0.018, 0.004, 8, 32), shared.metal, componentGroup, x, 0.984, z).rotation.x = -Math.PI / 2;
+          mesh(new THREE.CylinderGeometry(0.014, 0.014, 0.005, 24), shared.black, componentGroup, x, 0.982, z);
+          const ring = mesh(new THREE.TorusGeometry(0.054, 0.0035, 6, 32), mat("#ece6bd", { roughness: 0.6 }), componentGroup, x, 0.928, z);
+          ring.rotation.x = -Math.PI / 2;
+          ring.visible = false;
+          const hit = mesh(
+            new THREE.SphereGeometry(0.068, 12, 8),
+            new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false }),
+            componentGroup,
+            x,
+            0.984,
+            z
+          );
+          hit.castShadow = false;
+          hit.receiveShadow = false;
+          hit.userData = { kind: "terminal", id: pin.id, socket, label: record.label };
+          hit.userData.direct = { object: hit, kind: "terminal", id: pin.id, terminal: pin.id, socket, label: record.label };
+          targets.push(hit);
+          record.sockets.push({ x, z, socket, ring, hit });
+          if (!socket) Object.assign(record, { ring, hit });
+        };
+        const count = common ? (pin.id === "gnd" ? 8 : 3) : 1;
+        for (let socket = 0; socket < count; socket++) record.addSocket(common ? commonSocketPosition(pin.id, socket) : pin);
+        pins.set(pin.id, record);
+        if (!groundBus) {
+          const pinLabel = label(pin.label || pin.id, "", common ? 0.25 : 0.15, common ? 0.08 : 0.063);
+          pinLabel.object.position.set(common ? 0.8 : pin.x, 0.932, common ? -0.36 : pin.z + 0.086);
+          componentGroup.add(pinLabel.object);
+        }
       }
     }
   }
-  function routedLead(start, end) {
-    const step = 0.04,
-      minX = -1.58,
-      minZ = -0.92,
-      cols = 80,
-      rows = 47;
-    const gridPoint = (point) => ({
-      x: Math.max(0, Math.min(cols - 1, Math.round((point.x - minX) / step))),
-      z: Math.max(0, Math.min(rows - 1, Math.round((point.z - minZ) / step))),
-    });
-    const startCell = gridPoint(start),
-      endCell = gridPoint(end);
-    const key = (x, z) => z * cols + x;
-    const startKey = key(startCell.x, startCell.z),
-      endKey = key(endCell.x, endCell.z);
-    const obstacles = current.components
-      .filter((part) => part.type !== "ground")
-      .map((part) => {
-        let x = 0.1,
-          z = 0.1;
-        if (["V", "I"].includes(part.type)) {
-          x = 0.265;
-          z = 0.195;
-        } else if (part.type === "R" || part.type === "L") {
-          const vertical = part.pins?.length === 2 && Math.abs(part.pins[1].z - part.pins[0].z) > Math.abs(part.pins[1].x - part.pins[0].x);
-          x = vertical ? 0.085 : 0.19;
-          z = vertical ? 0.19 : 0.085;
-        } else if (part.type === "opamp") {
-          x = 0.16;
-          z = 0.18;
-        } else if (part.type === "switch") {
-          x = 0.12;
-          z = 0.1;
-        }
-        return { cx: part.x, cz: part.z, x, z };
-      });
-    const blocked = (x, z) => {
-      const id = key(x, z);
-      if (id === startKey || id === endKey) return false;
-      const px = minX + x * step,
-        pz = minZ + z * step;
-      return obstacles.some((o) => Math.abs(px - o.cx) < o.x && Math.abs(pz - o.cz) < o.z);
-    };
-    const open = [startKey],
-      cost = new Map([[startKey, 0]]),
-      parent = new Map(),
-      closed = new Set();
-    const estimate = (id) => Math.hypot((id % cols) - endCell.x, Math.floor(id / cols) - endCell.z);
-    for (let iteration = 0; open.length && iteration < cols * rows; iteration++) {
-      let best = 0;
-      for (let i = 1; i < open.length; i++) if (cost.get(open[i]) + estimate(open[i]) < cost.get(open[best]) + estimate(open[best])) best = i;
-      const id = open.splice(best, 1)[0];
-      if (id === endKey) break;
-      closed.add(id);
-      const x = id % cols,
-        z = Math.floor(id / cols);
-      for (const [dx, dz] of [
-        [1, 0],
-        [-1, 0],
-        [0, 1],
-        [0, -1],
-        [1, 1],
-        [1, -1],
-        [-1, 1],
-        [-1, -1],
-      ]) {
-        const nx = x + dx,
-          nz = z + dz;
-        if (nx < 0 || nx >= cols || nz < 0 || nz >= rows || blocked(nx, nz)) continue;
-        if (dx && dz && (blocked(x + dx, z) || blocked(x, z + dz))) continue;
-        const next = key(nx, nz),
-          candidate = cost.get(id) + (dx && dz ? Math.SQRT2 : 1);
-        if (closed.has(next) || (cost.has(next) && cost.get(next) <= candidate)) continue;
-        cost.set(next, candidate);
-        parent.set(next, id);
-        if (!open.includes(next)) open.push(next);
-      }
+  let cableObstacleCache = null,
+    cableLayoutRevision = 0;
+  const flexibleRouteCache = new WeakMap();
+  function cableObstacles(world = false) {
+    if (!cableObstacleCache) {
+      board.updateWorldMatrix(true, true);
+      const boxes = [...values.values()]
+        .filter((value) => value.type !== "ground")
+        .flatMap((value) => {
+          const box = new THREE.Box3().setFromObject(value.body);
+          return box.isEmpty() ? [] : [box];
+        });
+      const footprint = (min, max) => ({ minX: min.x, maxX: max.x, minZ: min.z, maxZ: max.z, top: max.y });
+      const instrumentBoxes = [meter, scope]
+        .map((unit) => {
+          unit.group.updateWorldMatrix(true, true);
+          return new THREE.Box3().setFromObject(unit.group);
+        })
+        .filter((box) => !box.isEmpty());
+      cableObstacleCache = {
+        world: [...boxes, ...instrumentBoxes].map((box) => footprint(box.min, box.max)),
+        local: boxes.map((box) => footprint(board.worldToLocal(box.min.clone()), board.worldToLocal(box.max.clone()))),
+      };
     }
-    if (!parent.has(endKey)) return [start.clone(), start.clone().lerp(end, 0.5), end.clone()];
-    const path = [];
-    let cursor = endKey;
-    while (cursor !== startKey) {
-      path.push(new THREE.Vector3(minX + (cursor % cols) * step, 0.953, minZ + Math.floor(cursor / cols) * step));
-      cursor = parent.get(cursor);
-    }
-    path.push(new THREE.Vector3(start.x, 0.953, start.z));
-    path.reverse();
-    const simple = [path[0]];
-    for (let i = 1; i < path.length - 1; i++) {
-      const a = path[i]
-          .clone()
-          .sub(path[i - 1])
-          .normalize(),
-        b = path[i + 1].clone().sub(path[i]).normalize();
-      if (a.distanceTo(b) > 0.1) simple.push(path[i]);
-    }
-    simple.push(path.at(-1));
-    simple[0] = start.clone();
-    simple[simple.length - 1] = end.clone();
-    if (simple.length === 2) {
-      const middle = start.clone().lerp(end, 0.5);
-      middle.y = 0.953;
-      simple.splice(1, 0, middle);
-    }
-    return simple;
+    return cableObstacleCache[world ? "world" : "local"];
   }
   function buildWires(wires) {
+    cableObstacleCache = null;
+    cableLayoutRevision++;
     clearGroup(wireGroup);
     wireTargets = [];
     plugTargets = [];
-    wires.forEach(([a, b], index) => {
+    board.updateWorldMatrix(true, false);
+    const connections = wires.flatMap(([a, b], index) => {
       const startPin = pins.get(a),
         endPin = pins.get(b);
-      if (!startPin || !endPin) return;
+      if (!startPin || !endPin) return [];
+      const id = [a, b].sort().join("|");
+      const startWorld = terminalPosition(a, `wire:${id}:${a}`),
+        endWorld = terminalPosition(b, `wire:${id}:${b}`);
+      if (!startWorld || !endWorld) return [];
+      return [{ id, a, b, index, startPin, endPin, start: board.worldToLocal(startWorld), end: board.worldToLocal(endWorld) }];
+    });
+    const routes = routePatchLeads(connections, { obstacles: cableObstacles() });
+    connections.forEach(({ id, a, b, index, startPin, endPin, start, end }) => {
       const grounded = a === "gnd" || b === "gnd" || a.endsWith("-") || b.endsWith("-") || a === "return" || b === "return";
       const material = mat(grounded ? "#202121" : "#8b2925", { roughness: 0.79 });
-      const start = new THREE.Vector3(startPin.x, 1.002, startPin.z),
-        end = new THREE.Vector3(endPin.x, 1.002, endPin.z);
-      const points = routedLead(start, end);
-      for (let i = 1; i < points.length - 1; i++) points[i].y = 0.948 + (index % 3) * 0.004;
+      const points = routes.get(id).map((point) => new THREE.Vector3(point.x, point.y, point.z));
       const wire = tube(points, 0.009, material, wireGroup, Math.max(32, points.length * 6));
       wire.userData = { kind: "wire", index };
       const hit = tube(
@@ -914,12 +888,32 @@ export function createBench({
     });
   }
 
+  function socketResources(id) {
+    const resources = current.wires.filter((wire) => wire.includes(id)).map(([a, b]) => wireSocketKey(a, b, id));
+    for (const channel of ["red", "black", "ch1", "ch2", "ch1Ground", "ch2Ground"])
+      if (connectedTerminal(channel) === id) resources.push(`probe:${channel}`);
+    for (const lead of looseLeads) if (lead.from === id && lead.originalPair) resources.push(wireSocketKey(...lead.originalPair, id));
+    return resources;
+  }
   function terminalPositions() {
     board.updateWorldMatrix(true, false);
-    return [...pins].map(([id, pin]) => ({ id, position: board.localToWorld(new THREE.Vector3(pin.x, 1.002, pin.z)) }));
+    return [...pins].flatMap(([id, pin]) =>
+      pin.sockets.map((socket) => ({
+        id,
+        socket: socket.socket,
+        hit: socket.hit,
+        position: board.localToWorld(new THREE.Vector3(socket.x, 1.002, socket.z)),
+      }))
+    );
   }
-  function terminalPosition(id) {
-    return terminalPositions().find((pin) => pin.id === id)?.position || null;
+  function terminalPosition(id, resourceKey) {
+    const pin = pins.get(id);
+    if (!pin) return null;
+    const index = pin.common ? socketAllocator.resolve(id, resourceKey, socketResources(id)) : 0;
+    while (pin.sockets.length <= index) pin.addSocket(commonSocketPosition(id, pin.sockets.length));
+    const socket = pin.sockets[index];
+    board.updateWorldMatrix(true, false);
+    return board.localToWorld(new THREE.Vector3(socket.x, 1.002, socket.z));
   }
   function connectedTerminal(channel) {
     if (channel === "red" || channel === "black") return current.probes?.[channel] || null;
@@ -927,12 +921,13 @@ export function createBench({
     return current.scope?.[which]?.[channel.endsWith("Ground") ? "ground" : "signal"] || null;
   }
   const meter = registerEquipment(createMultimeter());
-  meter.group.position.set(-0.68, 0.823, -1.4);
+  meter.group.position.set(-0.43, 0.823, -0.3);
   meter.group.rotation.x = -0.56;
   equipmentGroup.add(meter.group);
   let scope = registerEquipment(createRecorder({ module: "thevenin" }));
-  scope.group.position.set(0.45, 0.823, -1.42);
-  scope.group.rotation.x = -0.32;
+  scope.group.position.copy(scopePosition);
+  scope.group.quaternion.copy(scopeOrientation);
+  scope.group.scale.setScalar(scopeScale);
   equipmentGroup.add(scope.group);
   let experimentControls = null;
   const probeSpecs = [
@@ -974,9 +969,12 @@ export function createBench({
         if (index >= 0) stationaryEquipment.splice(index, 1);
         scope.dispose();
         scope = registerEquipment(current.module === "opamp" ? createOscilloscope() : createRecorder({ module: current.module || "thevenin" }));
-        scope.group.position.set(0.45, 0.823, -1.42);
-        scope.group.rotation.x = -0.32;
+        scope.group.position.copy(scopePosition);
+        scope.group.quaternion.copy(scopeOrientation);
+        scope.group.scale.setScalar(scopeScale);
         equipmentGroup.add(scope.group);
+        cableObstacleCache = null;
+        cableLayoutRevision++;
       }
       equipmentSignature = signature;
       experimentControls?.dispose();
@@ -994,7 +992,7 @@ export function createBench({
       const id = connectedTerminal(probe.channel);
       if (id !== probe.connected || rebuilt) {
         probe.connected = id;
-        const contact = terminalPosition(id);
+        const contact = terminalPosition(id, `probe:${probe.channel}`);
         if (contact) {
           probe.unit.group.position.copy(contact);
           probe.unit.group.rotation.set(-0.24, 0, probe.channel.includes("2") ? -0.28 : 0.28);
@@ -1007,36 +1005,64 @@ export function createBench({
     }
     updateFlexibleLeads();
   }
-  function cableCurve(start, end, offset = 0) {
-    // Intermediate cable points sit above the PCB/mat, never inside the solid board.
-    const points = [start.clone()];
-    for (const fraction of [0.16, 0.34, 0.56, 0.78, 0.91]) {
-      const point = start.clone().lerp(end, fraction);
-      const abovePCB = Math.abs(point.x) < 0.603 && point.z > -1.14 && point.z < -0.39;
-      point.y = Math.max(abovePCB ? 0.87 : 0.828, point.y - Math.sin(Math.PI * fraction) * 0.11);
-      point.x += Math.sin(Math.PI * fraction) * offset;
-      points.push(point);
+  function cableCurve(start, end, options = {}, cable = null) {
+    const signature = [
+      cableLayoutRevision,
+      options.lane,
+      options.branch,
+      ...start.toArray(),
+      ...end.toArray(),
+      options.exit?.x || 0,
+      options.exit?.y || 0,
+      options.exit?.z || 0,
+    ]
+      .map((value) => (typeof value === "number" ? value.toFixed(4) : value))
+      .join(":");
+    const cached = cable && flexibleRouteCache.get(cable);
+    if (cached?.signature === signature) return cached.points;
+    const now = performance.now();
+    if (
+      cached &&
+      cached.revision === cableLayoutRevision &&
+      now - cached.time < 40 &&
+      start.distanceTo(cached.start) < 0.08 &&
+      end.distanceTo(cached.end) < 0.08
+    ) {
+      const points = cached.points.map((point) => point.clone());
+      const startDelta = start.clone().sub(cached.start),
+        endDelta = end.clone().sub(cached.end);
+      for (const index of [0, 1]) points[index]?.add(startDelta);
+      for (const index of [points.length - 2, points.length - 1]) points[index]?.add(endDelta);
+      return points;
     }
-    points.push(end.clone());
+    const points = routeInstrumentLead(start, end, options).map((point) => new THREE.Vector3(point.x, point.y, point.z));
+    if (cable) flexibleRouteCache.set(cable, { signature, points, time: now, revision: cableLayoutRevision, start: start.clone(), end: end.clone() });
     return points;
   }
   function updateFlexibleLeads() {
+    const obstacles = cableObstacles(true);
     for (const probe of movableProbes.values()) {
       if (!probe.unit.group.visible) continue;
-      const channel = probe.channel;
+      const channel = probe.channel,
+        ground = channel.endsWith("Ground");
       const anchor =
         channel === "red" ? meter.anchors.V : channel === "black" ? meter.anchors.COM : scope.anchors[channel.startsWith("ch1") ? "CH1" : "CH2"];
-      const start = anchor?.getWorldPosition(new THREE.Vector3());
+      const pairedProbe = ground ? movableProbes.get(channel.slice(0, 3)) : null;
+      const start = pairedProbe ? pairedProbe.unit.group.localToWorld(new THREE.Vector3(0, 0.055, 0)) : anchor?.getWorldPosition(new THREE.Vector3());
       const end = probe.unit.anchors.cable.getWorldPosition(new THREE.Vector3());
-      if (start) probe.cable.update(cableCurve(start, end, channel === "black" ? -0.08 : 0.04));
+      const lane = { red: 0, black: 1, ch1: 2, ch2: 3, ch1Ground: 0, ch2Ground: 1 }[channel] || 0;
+      const exit = anchor
+        ? new THREE.Vector3(0, 0, 1).applyQuaternion(anchor.getWorldQuaternion(new THREE.Quaternion()))
+        : new THREE.Vector3(0, 0, 1);
+      if (start) probe.cable.update(cableCurve(start, end, { lane, exit, obstacles, branch: ground }, probe.cable));
     }
     for (const lead of looseLeads) {
-      const start = terminalPosition(lead.from);
+      const start = terminalPosition(lead.from, lead.originalPair ? `wire:${[...lead.originalPair].sort().join("|")}:${lead.from}` : undefined);
       if (!start) {
         lead.cable.group.visible = lead.plug.visible = false;
         continue;
       }
-      lead.cable.update(cableCurve(start, lead.plug.position));
+      lead.cable.update(cableCurve(start, lead.plug.position, { lane: 4, obstacles }, lead.cable));
     }
   }
   const leadPreviewGeometry = new THREE.BufferGeometry();
@@ -1052,11 +1078,13 @@ export function createBench({
   const boardPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -(0.52 + 0.36 * 1.002));
   function refreshInteractionVisuals() {
     for (const [id, pin] of pins) {
-      const selected = id === current.selectedTerminal,
-        over = hovered?.kind === "terminal" && hovered.id === id;
-      pin.ring.visible = selected || over;
-      pin.ring.material.color.set(selected ? "#f4d973" : "#e6eef5");
-      pin.ring.scale.setScalar(selected ? 1.27 : 1.12);
+      const selected = id === current.selectedTerminal;
+      for (const socket of pin.sockets) {
+        const over = hovered?.kind === "terminal" && hovered.id === id && (hovered.socket ?? 0) === socket.socket;
+        socket.ring.visible = selected || over;
+        socket.ring.material.color.set(selected ? "#f4d973" : "#e6eef5");
+        socket.ring.scale.setScalar(selected ? 1.27 : 1.12);
+      }
     }
     for (const [id, part] of values)
       if (part.outline) part.outline.visible = current.selectedPart === id || (hovered?.kind === "part" && hovered.id === id);
@@ -1117,10 +1145,10 @@ export function createBench({
   }
   const actionPanel = canvasSurface(1024, 1200, 0.9, 1.055);
   const livePanel = canvasSurface(840, 1280, 0.68, 1.036);
-  const graphPanel = canvasSurface(1600, 1008, 1.62, 1.02);
-  const actionMount = panel(actionPanel, -1.26, 1.63, -1.07, 0.85);
+  const graphPanel = canvasSurface(1600, 1008, 1.3, 0.819);
+  const actionMount = panel(actionPanel, 0, 1.72, -1.8);
   const liveMount = panel(livePanel, 1.24, 1.62, -1.02, -0.88);
-  const graphMount = panel(graphPanel, 0.0, 1.72, -1.8);
+  const graphMount = panel(graphPanel, -0.94, 1.7, -0.62, 0.99);
   const actionBoxes = [];
   const liveBoxes = [];
   const graphBoxes = [];
@@ -1665,7 +1693,16 @@ export function createBench({
         if (hold.probe) {
           const probe = hold.probe;
           probe.connected = result.terminal;
-          const contact = terminalPosition(result.terminal);
+          const resource = `probe:${probe.channel}`;
+          if (pins.get(result.terminal)?.common && hold.position) {
+            const dropped = nearestTerminal(
+              hold.position,
+              terminalPositions().filter((pin) => pin.id === result.terminal),
+              0.055
+            );
+            if (dropped) socketAllocator.prefer(result.terminal, resource, dropped.socket, socketResources(result.terminal));
+          }
+          const contact = terminalPosition(result.terminal, resource);
           if (contact) {
             probe.unit.group.position.copy(contact);
             probe.unit.group.rotation.set(-0.24, 0, 0.25);
@@ -1822,7 +1859,7 @@ export function createBench({
     const data = hit?.direct || hit?.object.userData;
     const info =
       data && ["terminal", "part", "wire", "probe", "plug", "dial", "button", "switch", "screen"].includes(data.kind)
-        ? { kind: data.kind, id: data.id ?? String(data.index), label: data.label || data.id }
+        ? { kind: data.kind, id: data.id ?? String(data.index), label: data.label || data.id, socket: data.socket }
         : null;
     const signature = JSON.stringify([info, current.tool, current.selectedTerminal]);
     hovered = info;
@@ -1885,7 +1922,7 @@ export function createBench({
       target.kind === "probe"
         ? movableProbes.get(target.channel)?.unit.group.position
         : target.kind === "terminal"
-          ? terminalPosition(target.terminal)
+          ? terminalPositions().find((pin) => pin.id === target.terminal && pin.socket === (target.socket ?? 0))?.position
           : hit.point;
     return direct.begin(input, target, { position, ...graphSample(hit, target), ...sample });
   }
@@ -1921,7 +1958,7 @@ export function createBench({
         down.lastY = event.clientY;
       }
       const contact = ["probe", "terminal", "plug"].includes(hold.target.kind) ? nearestTerminal(hold.position, terminalPositions(), 0.055) : null;
-      const snapHit = contact ? { object: pins.get(contact.id).hit, direct: pins.get(contact.id).hit.userData.direct, point: contact.position } : hit;
+      const snapHit = contact ? { object: contact.hit, direct: contact.hit.userData.direct, point: contact.position } : hit;
       setHover(snapHit, sample.position);
       updateFlexibleLeads();
     } else if (!down) {
@@ -2018,6 +2055,7 @@ export function createBench({
     obstacles: [
       { minX: -1.07, maxX: 1.07, minZ: -1.7, maxZ: -0.27 },
       { minX: 0.55, maxX: 1.22, minZ: -0.46, maxZ: 0.25 },
+      { minX: -1.22, maxX: -0.55, minZ: -0.46, maxZ: 0.25 },
     ],
     bounds: { minX: -3.1, maxX: 3.1, minZ: -4.6, maxZ: 2.4 },
   });
@@ -2064,9 +2102,10 @@ export function createBench({
     const quaternion = input.grip.getWorldQuaternion(new THREE.Quaternion());
     const hand = input.grip.getWorldPosition(new THREE.Vector3());
     const direction = new THREE.Vector3(0, 0, -1).applyQuaternion(quaternion);
-    const position = hand.addScaledVector(direction, hold?.probe?.unit.length || 0.08);
     const tipQuaternion = quaternion.clone().multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 2));
-    const sample = { position, quaternion: tipQuaternion };
+    const sample = hold?.probe
+      ? probeGripPose(hand, quaternion, hold.probePickupQuaternion, hold.probe.unit.length)
+      : { position: hand.addScaledVector(direction, 0.08), quaternion: tipQuaternion };
     if (hold?.target.kind === "dial") {
       const axis = new THREE.Vector3(...(hold.target.axis === "y" ? [0, 1, 0] : hold.target.axis === "x" ? [1, 0, 0] : [0, 0, 1])).applyQuaternion(
         hold.target.object.getWorldQuaternion(new THREE.Quaternion())
@@ -2104,6 +2143,7 @@ export function createBench({
     input.lastQuaternion = input.grip.getWorldQuaternion(new THREE.Quaternion());
     if (beginAt(input.id, hit)) {
       const hold = direct.hold(input.id);
+      if (hold?.probe) hold.probePickupQuaternion = input.lastQuaternion.clone();
       if (hold && ["probe", "plug", "terminal"].includes(hold.target.kind)) direct.move(input.id, controllerSample(input, hold));
     }
   }
@@ -2168,11 +2208,10 @@ export function createBench({
   let floorReference = true;
   function positionPanels(eyeHeight) {
     // The displays face the recentered viewer and stay fixed while students move.
-    // At the bench, graph ticks are ~1.3° high; readout digits are ~4° high.
     const eye = new THREE.Vector3(0, eyeHeight, 0);
-    graphMount.position.set(0, Math.max(1.66, eyeHeight + 0.12), -1.8);
+    graphMount.position.set(-0.94, Math.max(1.69, eyeHeight + 0.04), -0.62);
     liveMount.position.set(1.24, Math.max(1.61, eyeHeight - 0.01), -1.02);
-    actionMount.position.set(-1.26, Math.max(1.63, eyeHeight + 0.01), -1.07);
+    actionMount.position.set(0, Math.max(1.66, eyeHeight + 0.08), -1.8);
     graphMount.lookAt(eye);
     liveMount.lookAt(eye);
     actionMount.lookAt(eye);
@@ -2317,7 +2356,7 @@ export function createBench({
           input.cursor.material.color.set("#d7c98b");
         }
         if (target) {
-          activeHit = { object: pins.get(target.id).hit, direct: pins.get(target.id).hit.userData.direct, point: target.position };
+          activeHit = { object: target.hit, direct: target.hit.userData.direct, point: target.position };
           activePoint = target.position;
         } else if (hit && !activeHit) {
           activeHit = hit;
