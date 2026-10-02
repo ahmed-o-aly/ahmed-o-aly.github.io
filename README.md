@@ -10,66 +10,13 @@ This is a Jekyll site based on al-folio, customized into a personal portfolio an
 - public-policy simulations with ADSG at Khalifa University,
 - books, notes, and regular writing.
 
-## Content
+## Working on the site
 
-- Homepage: `_pages/about.md`
-- Writing: `_posts/`
-- Projects: `_projects/`
-- Books: `_books/`
-- Scheduled posts: `_scheduled/`
-- CV data: `_data/cv.yml`
-- Publications: `_bibliography/papers.bib`
-- Visual styling: `_sass/_base.scss` and `_sass/_themes.scss`
+See [AGENTS.md](AGENTS.md) for the current codebase map, content locations, local setup, verification commands, and deployment behavior. It is the single maintained source of repository-wide working instructions.
 
-Draft helpers live in `_drafts/` and are not published by default.
-Future-dated posts can live in `_scheduled/` until the scheduled-post workflow publishes them.
+## Interactive applications
 
-## Local Setup
-
-Ruby/Jekyll is required for a full local build:
-
-```bash
-bundle install
-bundle exec jekyll serve
-```
-
-On Windows, native Ruby gems may require the RubyInstaller MSYS2 toolchain. GitHub Actions builds the site on Linux through `.github/workflows/deploy.yml`.
-
-## UAE Economy Lab
-
-The simulator source lives in `apps/uae-economy-lab/`. Rebuild and test it before
-building the portfolio:
-
-```bash
-npm run build:uae-economy
-npm run test:uae-economy
-bundle exec jekyll build
-node tests/uae-economy-contract.mjs
-```
-
-Commit the generated `assets/apps/uae-economy-lab/` bundle with any source change.
-Jekyll excludes the app source and bundle from normal rendering. Its post-write
-hook copies the bundle to `/uae-economy-lab/` without rewriting Vite's worker,
-fonts or lazy-loaded modules. This uses the existing deployment workflow; the
-site contracts verify that every published asset matches the committed bundle.
-Serve `_site/` over HTTP. The project note is at `/projects/uae-economy-lab/`.
-
-## Circuits Lab
-
-The Works page is `/projects/circuits-lab/`. Open `/circuits-lab/` directly in a
-headset browser, then select **Enter VR**. Students use the circuits and instruments;
-their calculations and answers stay on paper.
-
-```bash
-npm run build:circuits-lab
-npm run test:circuits-lab
-bundle exec jekyll build
-```
-
-Commit `assets/apps/circuits-lab/` with changes to the `circuits-lab/` source.
-The Jekyll post-write hook copies that bundle unchanged to `/circuits-lab/`.
-Source files and dependencies are excluded from the published site. The existing
-site deployment serves the app over HTTPS for headset access.
+The repository includes UAE Economy Lab, Protein Structures, Circuits Lab, and Abu Dhabi Urban Dynamics. Machine Lab is linked from its separate project repository. See [AGENTS.md](AGENTS.md) for source locations, application build steps, and verification.
 
 ## Theme Credit
 

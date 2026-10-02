@@ -1,6 +1,6 @@
 # Chester-Inspired Portfolio Redesign Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> Historical implementation plan. Retained for design context; its checkboxes are not a current task list. See the root `AGENTS.md` for current working instructions.
 
 **Goal:** Rebuild Ahmed Aly's full Jekyll site as a continuous, accessible Chester-style editorial garden using the approved warm-white palette and natural-color matte media treatment.
 

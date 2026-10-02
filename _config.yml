@@ -176,6 +176,7 @@ exclude:
   - assets/apps/protein-structures/
   - apps/
   - assets/apps/uae-economy-lab/
+  - AGENTS.md
   - docs/
   - design-qa.md
   - Gemfile
