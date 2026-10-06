@@ -1,3 +1,8 @@
+import {
+  ViewGesture,
+  spherePick,
+  ComfortNavigation,
+} from "./vr-interaction.js";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import {
@@ -52,6 +57,9 @@ if (renderer) {
     initialCamera = new THREE.Vector3(1.5, 2.3, 1.1),
     center = new THREE.Vector3(0, 1.65, -2),
     radius = 0.65;
+  const rig = new THREE.Group();
+  scene.add(rig);
+  rig.add(camera);
   camera.position.copy(initialCamera);
   const controls = new OrbitControls(camera, $("#scene"));
   controls.target.copy(center);
@@ -73,6 +81,7 @@ if (renderer) {
       opacity: 0.16,
       roughness: 0.8,
       depthWrite: false,
+      side: THREE.DoubleSide,
     }),
   );
   sphereRoot.add(shell);
@@ -110,9 +119,20 @@ if (renderer) {
     const ctx = canvas.getContext("2d"),
       texture = new THREE.CanvasTexture(canvas);
     texture.colorSpace = THREE.SRGBColorSpace;
-    const sprite = new THREE.Sprite(
-      new THREE.SpriteMaterial({ map: texture, depthTest: false }),
-    );
+    const sprite = new THREE.Group();
+    for (const side of [0, Math.PI]) {
+      const face = new THREE.Mesh(
+        new THREE.PlaneGeometry(1, 1),
+        new THREE.MeshBasicMaterial({
+          map: texture,
+          transparent: true,
+          depthWrite: false,
+        }),
+      );
+      face.rotation.y = side;
+      sprite.add(face);
+    }
+    sprite.userData.label = true;
     sprite.scale.set(width, height, 1);
     sprite.renderOrder = 5;
     let last;
@@ -549,6 +569,7 @@ if (renderer) {
     sync();
   }
   function reset() {
+    cancelVRInteraction();
     transition = null;
     lesson.reset();
     $("#exploration").open = false;
@@ -621,6 +642,19 @@ if (renderer) {
     baselineArrow.visible = true;
   }
   function act(id) {
+    if (id.startsWith("palette:")) {
+      paletteMode = id.slice(8);
+      updateImmersiveLayout();
+      return;
+    }
+    if (id === "palette-toggle") {
+      togglePalette();
+      return;
+    }
+    if (id === "lesson-next" && !lesson.active) {
+      reset();
+      return;
+    }
     if (id === "lesson-restart") {
       reset();
       sync();
@@ -782,8 +816,13 @@ if (renderer) {
       (transition || trial || sequence.status === "paused") &&
       id !== "reset" &&
       id !== "guide" &&
+      !id.startsWith("view:") &&
       id !== "recenter"
     ) {
+      return;
+    }
+    if (id.startsWith("view:")) {
+      viewAction(id.slice(5));
       return;
     }
     if (id === "recenter") {
@@ -975,7 +1014,9 @@ if (renderer) {
         b.userData.disabled = busy || seqPaused;
       else
         b.userData.disabled =
-          (busy || seqPaused) && !["reset", "guide", "recenter"].includes(id);
+          (busy || seqPaused) &&
+          !id.startsWith("view:") &&
+          !["reset", "guide", "recenter"].includes(id);
     });
     $("#theta").disabled = busy || seqPaused;
     $("#phi").disabled = busy || seqPaused;
@@ -1134,6 +1175,7 @@ if (renderer) {
     if (activityPanel.visible || renderer.xr.isPresenting) {
       activityPanel.visible = lesson.active;
       vrPanel.visible = !lesson.active;
+      updatePanelMode();
       sequencePanel.visible = !lesson.active || sequence.queue.length > 0;
     }
     angleArc.visible = lesson.active;
@@ -1153,6 +1195,7 @@ if (renderer) {
         ? "Blue arrow: preparation · brown bar: observed copies"
         : "Prepare → rotate → measure fresh copies",
     );
+    updateImmersiveLayout();
     stateCaption.userData.set(
       lesson.active
         ? `Predicted chance: ${formatProbability(
@@ -1221,13 +1264,13 @@ if (renderer) {
     pointer = new THREE.Vector2();
   function pointState() {
     if (lesson.active && lesson.stage !== "tilt") return false;
-    const hit = raycaster.intersectObject(shell)[0];
-    if (!hit) return false;
+    const picked = spherePick(raycaster.ray, sphereRoot, radius);
+    if (!picked) return false;
     transition = null;
     clearTrials();
     gateAxis.visible = false;
     clearTrails();
-    const p = sphereRoot.worldToLocal(hit.point.clone()).normalize();
+    const p = sphereRoot.worldToLocal(picked.clone()).normalize();
     setVector([p.x, -p.z, p.y]);
     sequence.capture(v);
     history = [];
@@ -1275,6 +1318,495 @@ if (renderer) {
     $("#scene").addEventListener(name, endDrag);
   const controllers = [],
     rotation = new THREE.Matrix4();
+  const comfortPanel = new THREE.Group();
+  comfortPanel.visible = false;
+  comfortPanel.position.set(0, 0.68, -1.7);
+  scene.add(comfortPanel);
+  const comfortBack = new THREE.Mesh(
+    new THREE.PlaneGeometry(1.55, 0.45),
+    new THREE.MeshBasicMaterial({ color: 0xf8fafb, side: THREE.DoubleSide }),
+  );
+  comfortPanel.add(comfortBack);
+  const comfortHint = label("Grip: move / turn · two grips: size", 1.48, 0.09);
+  comfortHint.position.set(0, 0.15, 0.01);
+  comfortPanel.add(comfortHint);
+  const movementHint = label(
+    "Left stick: step · right: snap · Y: center",
+    1.48,
+    0.09,
+  );
+  movementHint.position.set(0, 0.05, 0.01);
+  comfortPanel.add(movementHint);
+  for (const [text, id, x] of [
+    ["Smaller", "view:smaller", -0.57],
+    ["Larger", "view:larger", -0.19],
+    ["Move: step", "view:movement", 0.19],
+    ["Center", "recenter", 0.57],
+  ]) {
+    const b = new THREE.Mesh(
+      new THREE.PlaneGeometry(0.36, 0.1),
+      new THREE.MeshBasicMaterial({ color: 0xe1e8ed, side: THREE.DoubleSide }),
+    );
+    b.position.set(x, -0.12, 0.005);
+    b.userData.action = id;
+    const caption = label(text, 0.35, 0.085);
+    caption.position.set(x, -0.12, 0.012);
+    b.userData.caption = caption;
+    comfortPanel.add(b, caption);
+    vrButtons.push(b);
+  }
+  const navigation = new ComfortNavigation(),
+    viewGrabs = new Map(),
+    handTargets = new Map();
+  let lastVRTime = 0,
+    lastPanelMode = lesson.active;
+  const panelOrigin = new THREE.Vector3(),
+    panelRotation = new THREE.Quaternion();
+  function updatePanelMode() {
+    if (lastPanelMode === lesson.active) return;
+    lastPanelMode = lesson.active;
+    sequencePanel.position.copy(
+      new THREE.Vector3(
+        lesson.active ? 1.45 : -1.45,
+        lesson.active ? 1.65 : 1.85,
+        -2,
+      )
+        .applyQuaternion(panelRotation)
+        .add(panelOrigin),
+    );
+  }
+  let immersiveLayout = false,
+    paletteMode = "lesson";
+  const vrPalette = new THREE.Group();
+  vrPalette.visible = false;
+  scene.add(vrPalette);
+  vrPalette.add(
+    new THREE.Mesh(
+      new THREE.BoxGeometry(1.38, 1.48, 0.025),
+      new THREE.MeshBasicMaterial({ color: 0xf8fafb }),
+    ),
+  );
+  const paletteTitle = label("Controls · X to close", 1.25, 0.1);
+  paletteTitle.position.set(0, 0.62, 0.03);
+  vrPalette.add(paletteTitle);
+  const paletteTabs = new Map(),
+    paletteButtons = [];
+  function paletteButton(parent, text, id, x, y, width = 0.3) {
+    const b = new THREE.Mesh(
+      new THREE.BoxGeometry(width, 0.115, 0.025),
+      new THREE.MeshBasicMaterial({ color: 0xe1e8ed }),
+    );
+    b.position.set(x, y, 0.026);
+    b.userData.action = id;
+    const caption = label(text, width - 0.015, 0.09);
+    caption.position.set(x, y, 0.046);
+    b.userData.caption = caption;
+    parent.add(b, caption);
+    vrButtons.push(b);
+    paletteButtons.push(b);
+    return b;
+  }
+  ["lesson", "state", "gates", "view"].forEach((mode, i) => {
+    paletteButton(
+      vrPalette,
+      { lesson: "Learn", state: "State", gates: "Gates", view: "View" }[mode],
+      "palette:" + mode,
+      (i - 1.5) * 0.325,
+      0.44,
+    );
+    const group = new THREE.Group();
+    group.name = mode;
+    vrPalette.add(group);
+    paletteTabs.set(mode, group);
+  });
+  let tab = paletteTabs.get("lesson");
+  const paletteNext = paletteButton(tab, "Next", "lesson-next", 0, 0.2, 1.2),
+    paletteHelper = paletteButton(
+      tab,
+      "Try a tilt",
+      "lesson-helper",
+      0,
+      -0.02,
+      1.2,
+    );
+  paletteButton(tab, "Restart", "lesson-restart", -0.32, -0.25, 0.58);
+  paletteButton(tab, "Explore", "lesson-explore", 0.32, -0.25, 0.58);
+  const paletteLessonNote = label(
+    "Grip moves the view. Trigger edits the arrow.",
+    1.2,
+    0.17,
+    "#202428",
+    36,
+  );
+  paletteLessonNote.position.set(0, -0.48, 0.03);
+  tab.add(paletteLessonNote);
+  tab = paletteTabs.get("state");
+  Object.keys(presets).forEach((key, i) =>
+    paletteButton(
+      tab,
+      "|" + key + "⟩",
+      "preset:" + key,
+      ((i % 3) - 1) * 0.4,
+      0.22 - Math.floor(i / 3) * 0.17,
+      0.37,
+    ),
+  );
+  ["X", "Y", "Z"].forEach((key, i) =>
+    paletteButton(
+      tab,
+      key + " basis",
+      "basis:" + key,
+      (i - 1) * 0.4,
+      -0.17,
+      0.37,
+    ),
+  );
+  paletteButton(tab, "Fresh ×100", "measure", -0.31, -0.37, 0.59);
+  paletteButton(tab, "Keep state", "pin-baseline", 0.31, -0.37, 0.59);
+  tab = paletteTabs.get("gates");
+  Object.keys(gates).forEach((key, i) =>
+    paletteButton(
+      tab,
+      key,
+      "gate:" + key,
+      ((i % 3) - 1) * 0.4,
+      0.22 - Math.floor(i / 3) * 0.17,
+      0.37,
+    ),
+  );
+  [
+    "sequence-run",
+    "sequence-step",
+    "sequence-replay",
+    "sequence-clear",
+  ].forEach((id, i) =>
+    paletteButton(
+      tab,
+      ["Run", "Step", "Replay", "Clear"][i],
+      id,
+      (i - 1.5) * 0.325,
+      -0.17,
+    ),
+  );
+  paletteButton(tab, "Queue on", "queue-mode", 0, -0.34, 1.2);
+  const paletteRemove = Array.from({ length: 8 }, (_, i) =>
+    paletteButton(
+      tab,
+      "",
+      "remove:" + i,
+      ((i % 4) - 1.5) * 0.325,
+      -0.51 - Math.floor(i / 4) * 0.15,
+    ),
+  );
+  tab = paletteTabs.get("view");
+  [
+    ["Smaller", "view:smaller"],
+    ["Larger", "view:larger"],
+    ["Move: step", "view:movement"],
+    ["Center", "recenter"],
+    ["Reset state", "reset"],
+  ].forEach(([text, id], i) =>
+    paletteButton(
+      tab,
+      text,
+      id,
+      ((i % 2) - 0.5) * 0.62,
+      0.2 - Math.floor(i / 2) * 0.2,
+      0.58,
+    ),
+  );
+  const help = label(
+    "Grip: move / turn. Two grips: size. Left stick: step. Right stick: snap. Y: center.",
+    1.2,
+    0.22,
+    "#202428",
+    36,
+  );
+  help.position.set(0, -0.5, 0.03);
+  tab.add(help);
+  const vrCue = label("", 1.85, 0.18, "#202428", 48);
+  vrCue.position.set(0, 2.78, -2);
+  vrCue.visible = false;
+  scene.add(vrCue);
+  const cues = {
+    start: "Arrow up predicts 0. Measure fresh copies.",
+    "up-observed": "All copies gave 0. Now prepare a tilted arrow.",
+    tilt: "Trigger and move the arrow. Watch chance change.",
+    chance: "Predict the number of zeros before sampling.",
+    sampled: "Brown counts are observed; blue chance is predicted.",
+    "turn-phase": "Turn sideways. Predict whether Z chance changes.",
+    "phase-shown": "Same height: same Z chance. Sideways direction is phase.",
+    "undo-first": "H is a half-turn. Watch the arrow leave the top.",
+    "undo-second": "Apply H again. Predict whether it returns.",
+    "undo-result": "HH returned to 0. Now insert Z between the turns.",
+    "phase-middle": "Z changes sideways direction, without measuring.",
+    "phase-last": "Chance stayed equal. Try the final H.",
+    "phase-result": "HZH reached 1 instead of 0: interference.",
+    "phase-measured": "Fresh copies confirm 1. Next: reverse gate order.",
+    "order-start": "First H, then Z. Watch the path.",
+    "order-reverse": "Reverse the order. Predict the final direction.",
+    "order-check": "Opposite directions need an X measurement.",
+    "order-plus": "Z then H gave +. Measure the saved other direction.",
+    "order-result": "Reversing order changed X outcomes.",
+  };
+  function buttonVisible(b) {
+    for (let o = b; o; o = o.parent) if (!o.visible) return false;
+    return true;
+  }
+  function updateImmersiveLayout() {
+    if (!immersiveLayout) return;
+    for (const panel of [
+      vrPanel,
+      activityPanel,
+      sequencePanel,
+      comfortPanel,
+      vrPrompt,
+      stateCaption,
+    ])
+      panel.visible = false;
+    vrCue.visible = true;
+    shots.visible = counts[0] + counts[1] > 0;
+    vrCue.userData.set(
+      lesson.active
+        ? cues[lesson.stage] + "  A: next · X: controls"
+        : "Grip: turn / move. Trigger: arrow. A: run / pause. X: controls.",
+    );
+    for (const [mode, group] of paletteTabs)
+      group.visible = mode === paletteMode;
+    paletteNext.userData.caption.userData.set(
+      lesson.active ? lesson.step().next : "Start guided path",
+    );
+    paletteNext.userData.disabled = lesson.active && $("#lesson-next").disabled;
+    paletteHelper.visible =
+      lesson.active && ["tilt", "sampled"].includes(lesson.stage);
+    paletteHelper.userData.caption.visible = paletteHelper.visible;
+    paletteHelper.userData.caption.userData.set(
+      lesson.stage === "tilt" ? "Try a 60° tilt" : "Sample more",
+    );
+    paletteButtons
+      .find((b) => b.userData.action === "sequence-run")
+      .userData.caption.userData.set(
+        sequence.status === "running"
+          ? "Pause"
+          : sequence.status === "paused"
+            ? "Resume"
+            : "Run",
+      );
+    paletteButtons
+      .find((b) => b.userData.action === "queue-mode")
+      .userData.caption.userData.set(queueMode ? "Queue on" : "Queue off");
+    paletteButtons
+      .find((b) => b.userData.action === "view:movement")
+      .userData.caption.userData.set(
+        navigation.smooth ? "Move: smooth" : "Move: step",
+      );
+    paletteRemove.forEach((b, i) => {
+      b.visible = i < sequence.queue.length;
+      b.userData.caption.visible = b.visible;
+      b.userData.caption.userData.set(
+        sequence.queue[i] ? "× " + sequence.queue[i] : "",
+      );
+    });
+  }
+  function togglePalette() {
+    cancelVRInteraction();
+    if (vrPalette.visible) {
+      vrPalette.visible = false;
+      return;
+    }
+    const head = renderer.xr.isPresenting ? renderer.xr.getCamera() : camera;
+    const pos = head.getWorldPosition(new THREE.Vector3()),
+      dir = head.getWorldDirection(new THREE.Vector3());
+    const q = new THREE.Quaternion().setFromAxisAngle(
+      new THREE.Vector3(0, 1, 0),
+      Math.atan2(-dir.x, -dir.z),
+    );
+    vrPalette.position.copy(
+      new THREE.Vector3(-0.8, -0.08, -1.35).applyQuaternion(q).add(pos),
+    );
+    vrPalette.quaternion.copy(q);
+    vrPalette.scale.setScalar(1);
+    vrPalette.visible = true;
+    updateImmersiveLayout();
+  }
+  function activeViewGrab() {
+    return handTargets.size > 0;
+  }
+  function poseOf(c) {
+    const object =
+      c.userData.source && c.userData.grip.visible ? c.userData.grip : c;
+    object.updateWorldMatrix(true, false);
+    return object.matrixWorld.clone();
+  }
+  function cancelVRInteraction() {
+    for (const gesture of viewGrabs.values()) gesture.clear();
+    handTargets.clear();
+    navigation.armed = false;
+    for (const c of controllers) {
+      c.userData.preparing = false;
+      c.userData.stateGrab = null;
+      c.userData.buttonsArmed = false;
+    }
+  }
+  function beginViewGrab(c, id) {
+    controllerRay(c);
+    const panels = [
+      activityPanel,
+      sequencePanel,
+      vrPanel,
+      comfortPanel,
+      vrPalette,
+    ].filter((p) => p.visible);
+    const panelHit = raycaster.intersectObjects(panels, true)[0],
+      surface = spherePick(raycaster.ray, sphereRoot, radius);
+    const near =
+      raycaster.ray.origin.distanceTo(
+        sphereRoot.getWorldPosition(new THREE.Vector3()),
+      ) <
+      radius * sphereRoot.scale.x + 0.2;
+    const heldSphere = [...handTargets.values()].includes(sphereRoot);
+    let target = heldSphere
+      ? sphereRoot
+      : panelHit &&
+          (!surface ||
+            panelHit.distance < raycaster.ray.origin.distanceTo(surface))
+        ? panels.find((p) => {
+            let child = panelHit.object;
+            while (child) {
+              if (child === p) return true;
+              child = child.parent;
+            }
+            return false;
+          })
+        : surface || near
+          ? sphereRoot
+          : null;
+    if (!target) return;
+    for (const controller of controllers) {
+      controller.userData.preparing = false;
+      controller.userData.stateGrab = null;
+    }
+    if (!viewGrabs.has(target)) viewGrabs.set(target, new ViewGesture(target));
+    handTargets.set(id, target);
+    viewGrabs.get(target).begin(id, poseOf(c));
+    shell.material.opacity = 0.25;
+  }
+  function endViewGrab(id) {
+    const target = handTargets.get(id);
+    if (target) viewGrabs.get(target).end(id);
+    handTargets.delete(id);
+    shell.material.opacity = 0.16;
+  }
+  function updateStateGrab(c) {
+    if (!c.userData.stateGrab || activeViewGrab()) return;
+    c.updateWorldMatrix(true, false);
+    const point = c.userData.stateGrab.offset
+      .clone()
+      .applyMatrix4(c.matrixWorld);
+    const local = sphereRoot.worldToLocal(point).normalize();
+    if (!local.lengthSq()) return;
+    clearTrials();
+    clearTrails();
+    gateAxis.visible = false;
+    setVector([local.x, -local.z, local.y]);
+    sequence.capture(v);
+    history = [];
+    action = "Arrow preparation";
+    sync();
+  }
+  function viewAction(id) {
+    cancelVRInteraction();
+    if (id === "smaller" || id === "larger")
+      sphereRoot.scale.setScalar(
+        THREE.MathUtils.clamp(
+          sphereRoot.scale.x * (id === "larger" ? 1.15 : 1 / 1.15),
+          0.5,
+          1.8,
+        ),
+      );
+    if (id === "movement") navigation.smooth = !navigation.smooth;
+    const button = vrButtons.find((b) => b.userData.action === "view:movement");
+    button.userData.caption.userData.set(
+      navigation.smooth ? "Move: smooth" : "Move: step",
+    );
+    movementHint.userData.set(
+      navigation.smooth
+        ? "Left stick: move · right: snap · Y: center"
+        : "Left stick: step · right: snap · Y: center",
+    );
+    sphereRoot.updateMatrixWorld(true);
+    updateImmersiveLayout();
+  }
+  function updateVRInteraction(now) {
+    const dt = Math.min(0.05, Math.max(0, (now - lastVRTime) / 1000));
+    lastVRTime = now;
+    const left = controllers.find(
+        (c) => c.userData.source?.handedness === "left",
+      ),
+      right = controllers.find(
+        (c) => c.userData.source?.handedness === "right",
+      );
+    const axes = (c) =>
+      c?.userData.source?.gamepad?.mapping === "xr-standard" &&
+      c.userData.source.gamepad.axes.length >= 4
+        ? c.userData.source.gamepad.axes
+        : null;
+    const la = axes(left),
+      ra = axes(right);
+    navigation.update(
+      rig,
+      renderer.xr.getCamera(),
+      la ? [la[2], la[3]] : [0, 0],
+      ra ? ra[2] : 0,
+      dt,
+      !activeViewGrab() && !controllers.some((c) => c.userData.preparing),
+    );
+    renderer.xr.updateCamera(camera);
+    for (const c of controllers) {
+      const source = c.userData.source,
+        pad = source?.gamepad;
+      if (pad?.mapping !== "xr-standard") continue;
+      const flags = {
+        primary: !!pad.buttons[4]?.pressed,
+        secondary: !!pad.buttons[5]?.pressed,
+        stick: !!pad.buttons[3]?.pressed,
+      };
+      if (!flags.primary && !flags.secondary && !flags.stick)
+        c.userData.buttonsArmed = true;
+      if (c.userData.buttonsArmed) {
+        if (
+          source.handedness === "left" &&
+          flags.primary &&
+          !c.userData.lastPrimary
+        )
+          togglePalette();
+        if (source.handedness === "right") {
+          if (flags.stick && !c.userData.lastStick) togglePalette();
+          if (flags.primary && !c.userData.lastPrimary)
+            act(lesson.active ? "lesson-next" : "sequence-run");
+          if (flags.secondary && !c.userData.lastSecondary)
+            act(lesson.active ? "lesson-helper" : "measure");
+        }
+      }
+      c.userData.lastPrimary = flags.primary;
+      c.userData.lastSecondary = flags.secondary;
+      c.userData.lastStick = flags.stick;
+    }
+    const y =
+      left?.userData.source?.gamepad?.mapping === "xr-standard" &&
+      left.userData.source.gamepad.buttons[5]?.pressed;
+    if (left) {
+      if (y && !left.userData.yPressed && left.userData.buttonsArmed)
+        recenter();
+      left.userData.yPressed = !!y;
+    }
+    if (controllers.some((c) => c.userData.source && !c.visible)) {
+      cancelVRInteraction();
+      return;
+    }
+    for (const gesture of viewGrabs.values())
+      gesture.update(controllers.map((c, i) => [i, poseOf(c)]));
+  }
   function controllerRay(c) {
     c.updateWorldMatrix(true, false);
     rotation.extractRotation(c.matrixWorld);
@@ -1292,7 +1824,7 @@ if (renderer) {
         new THREE.LineBasicMaterial({ color: 0x185b91 }),
       ),
     );
-    scene.add(c);
+    rig.add(c);
     const grip = renderer.xr.getControllerGrip(i);
     grip.add(
       new THREE.Mesh(
@@ -1300,24 +1832,60 @@ if (renderer) {
         new THREE.MeshStandardMaterial({ color: 0x667788 }),
       ),
     );
-    scene.add(grip);
+    rig.add(grip);
+    c.userData.grip = grip;
+    c.addEventListener("connected", (e) => {
+      c.userData.source = e.data;
+    });
     c.addEventListener("selectstart", () => {
+      if (activeViewGrab()) return;
       controllerRay(c);
       const hit = raycaster.intersectObjects(
-        vrButtons.filter((b) => b.visible && b.parent.visible),
+        vrButtons.filter(buttonVisible),
       )[0];
-      if (hit) {
-        if (!hit.object.userData.disabled) act(hit.object.userData.action);
+      const surface = spherePick(raycaster.ray, sphereRoot, radius);
+      if (
+        hit &&
+        (!surface || hit.distance < raycaster.ray.origin.distanceTo(surface))
+      ) {
+        if (!hit.object.userData.disabled) {
+          if (
+            lesson.active &&
+            ["state", "gates"].includes(hit.object.parent.name)
+          )
+            act("lesson-explore");
+          act(hit.object.userData.action);
+        }
         return;
       }
-      c.userData.preparing =
-        !(transition || trial || sequence.status === "paused") && pointState();
+      if (transition || trial || sequence.status === "paused") return;
+      const tip = endpoint.getWorldPosition(new THREE.Vector3()),
+        tipRadius = 0.12 * sphereRoot.scale.x;
+      const tipHit = raycaster.ray.intersectSphere(
+        new THREE.Sphere(tip, tipRadius),
+        new THREE.Vector3(),
+      );
+      if (!tipHit && !surface) return;
+      if (lesson.active && lesson.stage !== "tilt") act("lesson-explore");
+      if (!tipHit) pointState();
+      const target = sphereRoot.localToWorld(
+        worldVector(v).multiplyScalar(radius),
+      );
+      c.updateWorldMatrix(true, false);
+      c.userData.stateGrab = {
+        offset: target.applyMatrix4(c.matrixWorld.clone().invert()),
+      };
+      c.userData.preparing = true;
     });
     c.addEventListener("selectend", () => {
       c.userData.preparing = false;
+      c.userData.stateGrab = null;
     });
+    c.addEventListener("squeezestart", () => beginViewGrab(c, i));
+    c.addEventListener("squeezeend", () => endViewGrab(i));
     c.addEventListener("disconnected", () => {
-      c.userData.preparing = false;
+      c.userData.source = null;
+      cancelVRInteraction();
     });
     controllers.push(c);
   }
@@ -1328,22 +1896,33 @@ if (renderer) {
       yaw,
     );
     const origin = new THREE.Vector3(pos.x, pos.y - 1.65, pos.z);
+    vrPalette.visible = false;
+    panelOrigin.copy(origin);
+    panelRotation.copy(rotation);
+    lastPanelMode = lesson.active;
     for (const [object, offset] of [
       [sphereRoot, [0, 1.65, -2]],
       [stateCaption, [0, 2.75, -2]],
       [vrPrompt, [0, 2.95, -2]],
-      [vrPanel, [0, 0.72, -1.48]],
+      [vrPanel, [1.65, 1.45, -2]],
       [shots, [-1.45, 0.72, -2]],
       [activityPanel, [-1.45, 1.85, -2]],
-      [sequencePanel, [1.45, 1.65, -2]],
+      [
+        sequencePanel,
+        [lesson.active ? 1.45 : -1.45, lesson.active ? 1.65 : 1.85, -2],
+      ],
+      [comfortPanel, [0, 0.68, -1.7]],
+      [vrCue, [0, 2.78, -2]],
     ]) {
       object.position.copy(
         new THREE.Vector3(...offset).applyQuaternion(rotation).add(origin),
       );
       object.quaternion.copy(rotation);
+      if (!object.userData.label) object.scale.setScalar(1);
     }
   }
   function recenter() {
+    cancelVRInteraction();
     if (renderer.xr.isPresenting) {
       const head = renderer.xr.getCamera(),
         pos = new THREE.Vector3(),
@@ -1378,16 +1957,20 @@ if (renderer) {
       camera.position.set(0, 0, 0);
       camera.quaternion.identity();
       controls.enabled = false;
+      rig.position.set(0, 0, 0);
+      rig.quaternion.identity();
+      navigation.reset();
       await renderer.xr.setSession(session);
+      immersiveLayout = true;
+      comfortPanel.visible = true;
       vrPanel.visible = !lesson.active;
       vrPrompt.visible = true;
       sequencePanel.visible = !lesson.active || sequence.queue.length > 0;
       activityPanel.visible = lesson.active;
+      updateImmersiveLayout();
       needsXRRecenter = true;
       $("#vr").textContent = "Exit VR";
-      session.addEventListener("visibilitychange", () =>
-        controllers.forEach((c) => (c.userData.preparing = false)),
-      );
+      session.addEventListener("visibilitychange", cancelVRInteraction);
     } catch (e) {
       controls.enabled = true;
       camera.position.copy(initialCamera);
@@ -1396,6 +1979,18 @@ if (renderer) {
   };
   renderer.xr.addEventListener("sessionend", () => {
     needsXRRecenter = false;
+    cancelVRInteraction();
+    immersiveLayout = false;
+    vrPalette.visible = false;
+    vrCue.visible = false;
+    shots.visible = true;
+    stateCaption.visible = true;
+    comfortPanel.visible = false;
+    rig.position.set(0, 0, 0);
+    rig.quaternion.identity();
+    sphereRoot.scale.setScalar(1);
+    camera.fov = 42;
+    camera.updateProjectionMatrix();
     controllers.forEach((c) => (c.userData.preparing = false));
     vrPanel.visible = false;
     vrPrompt.visible = false;
@@ -1475,14 +2070,15 @@ if (renderer) {
         recenter();
         needsXRRecenter = false;
       }
+      updateVRInteraction(now);
       for (const c of controllers) {
         controllerRay(c);
         const hit = raycaster.intersectObjects(
-          vrButtons.filter((b) => b.visible && b.parent.visible),
+          vrButtons.filter(buttonVisible),
         )[0];
         if (hit && !hit.object.userData.disabled)
           hit.object.material.color.setHex(0xb4cde0);
-        if (c.userData.preparing) pointState();
+        if (c.userData.preparing) updateStateGrab(c);
       }
     }
     if (transition && transition.pausedAt === undefined) {
@@ -1599,6 +2195,24 @@ if (renderer) {
       counts: [...counts],
       touch,
       cameraPosition: camera.position.toArray(),
+      immersive: {
+        active: immersiveLayout,
+        paletteOpen: vrPalette.visible,
+        mode: paletteMode,
+        visiblePanels: [
+          vrPanel,
+          activityPanel,
+          sequencePanel,
+          comfortPanel,
+        ].filter((p) => p.visible).length,
+      },
+      view: {
+        position: sphereRoot.position.toArray(),
+        quaternion: sphereRoot.quaternion.toArray(),
+        scale: sphereRoot.scale.x,
+        rig: rig.position.toArray(),
+        grabbing: activeViewGrab(),
+      },
       animating: !!transition,
       measuring: !!trial,
       queueMode,
@@ -1639,6 +2253,42 @@ if (renderer) {
         width: b.geometry.parameters.width,
         height: b.geometry.parameters.height,
       })),
+    simulateViewGrip(id, position, quaternion = [0, 0, 0, 1], phase = "move") {
+      const c = controllers[id];
+      c.position.set(...position);
+      c.quaternion.set(...quaternion);
+      c.updateMatrix();
+      c.updateMatrixWorld(true);
+      if (phase === "start") c.dispatchEvent({ type: "squeezestart" });
+      for (const gesture of viewGrabs.values())
+        gesture.update(controllers.map((c, i) => [i, poseOf(c)]));
+      if (phase === "end") c.dispatchEvent({ type: "squeezeend" });
+    },
+    simulateArrowGrip(position, quaternion, phase) {
+      const c = controllers[0];
+      c.position.set(...position);
+      c.quaternion.set(...quaternion);
+      c.updateMatrix();
+      c.updateMatrixWorld(true);
+      if (phase === "start") c.dispatchEvent({ type: "selectstart" });
+      if (phase === "move") updateStateGrab(c);
+      if (phase === "end") c.dispatchEvent({ type: "selectend" });
+    },
+    labelTransforms() {
+      const result = [];
+      scene.traverse((o) => {
+        if (o.userData.label)
+          result.push({
+            position: o.getWorldPosition(new THREE.Vector3()).toArray(),
+            quaternion: o.getWorldQuaternion(new THREE.Quaternion()).toArray(),
+            type: o.type,
+          });
+      });
+      return result;
+    },
+    simulateNavigation(left, right, dt = 0.016, enabled = true) {
+      navigation.update(rig, camera, left, right, dt, enabled);
+    },
     simulateControllerPrepare(vector, position = [0, 1.65, 0]) {
       const controller = controllers[0],
         target = sphereRoot.localToWorld(
@@ -1663,7 +2313,17 @@ if (renderer) {
       return sphereRoot.position.toArray();
     },
     simulateControllerSelect(id, position = [0, 1.65, 0]) {
-      const target = vrButtons.find((b) => b.userData.action === id);
+      if (immersiveLayout) {
+        const b = paletteButtons.find((b) => b.userData.action === id);
+        if (b) {
+          if (!vrPalette.visible) togglePalette();
+          if (paletteTabs.has(b.parent.name)) paletteMode = b.parent.name;
+          updateImmersiveLayout();
+        }
+      }
+      const target = vrButtons.find(
+        (b) => b.userData.action === id && buttonVisible(b),
+      );
       if (!target) return false;
       const controller = controllers[0];
       const destination = new THREE.Vector3();
@@ -1679,6 +2339,12 @@ if (renderer) {
       return true;
     },
     previewVRLayout() {
+      immersiveLayout = true;
+      anchorExperience(
+        new THREE.Vector3(0, 1.65, 0),
+        new THREE.Vector3(0, 0, -1),
+      );
+      comfortPanel.visible = true;
       vrPanel.visible = !lesson.active;
       vrPrompt.visible = true;
       sequencePanel.visible = !lesson.active || sequence.queue.length > 0;
@@ -1690,8 +2356,12 @@ if (renderer) {
       camera.position.set(0, 1.65, 0);
       controls.target.set(0, 1.5, -2);
       controls.update();
+      updateImmersiveLayout();
     },
   };
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState !== "visible") cancelVRInteraction();
+  });
   window.addEventListener("beforeunload", () => {
     renderer.setAnimationLoop(null);
     controls.dispose();

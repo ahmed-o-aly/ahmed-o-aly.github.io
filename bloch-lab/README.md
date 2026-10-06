@@ -25,3 +25,19 @@ VR requires HTTPS and immersive-vr with local-floor tracking. Both controller ra
 Browser suites: `node learning-qa.mjs`, `node qa.mjs`, `node sequence-qa.mjs`, `node trajectory-qa.mjs`. Set `BLOCH_QA_URL` to the preview URL. They check the full ordered lesson, direct controller-ray preparation, phase at fixed tilt, HH/HZH endpoints, HZ/ZH and X outcomes, accumulating fresh observations, interruption/reset, queue/pause/replay, cumulative trajectories, desktop/phone, keyboard, reduced motion and WebGL failure fallback. Screenshots are in ignored `verification/`. `integration-qa.mjs` checks the local generated website launch at port 5191. These are browser simulations, not physical headset validation.
 
 Before classroom use, check headset panel/label legibility, ray aim/reach, preparation, floor height/recenter, session enter/exit, seated/standing positions and sustained frame rate. Physical headset operation remains untested. Vite warns about the approximately 545 kB raw Three.js bundle (140 kB gzip). Physical headset checks remain separate from website publication.
+
+## Quest 3 interaction preview
+
+This private revision replaces camera-facing text sprites with two-sided, world-fixed text planes. Panels remain fixed unless explicitly gripped or recentered; sphere axes and labels turn together when the sphere is handled. There is no per-frame head-following text.
+
+Adapted from the existing Protein Structures controller-relative one-grip transform and two-grip midpoint/rotation/scaling behavior. Grip the sphere (nearby or by pointing) to reposition and turn its view. Two grips resize it; releasing either grip rebases without a jump. Panels can also be gripped independently. Trigger holds the state arrow with a controller-relative offset, including from behind; analytic surface picking supports all viewing sides. VIEW transformations never write the quantum vector, counts or gate sequence.
+
+Quest Touch controls use XR-standard axes 2/3. Left stick takes a short step, right stick snap-turns 30 degrees; neutral rearming prevents held sticks from repeating steps or acting on resume. Smooth movement is an explicit option on the fixed comfort panel. Y or Center recenters; Smaller/Larger adjust only sphere size. Grip/state holds suspend locomotion. Session visibility, tracking loss, disconnect, reset and exit cancel holds. Physical room-scale viewing remains supported.
+
+`vr-qa.mjs` adds simulated grip, two-grip scaling, release/reset, fixed label transforms during viewer navigation, rear arrow dragging and view controls during gate playback. `tests/vr-interaction.test.js` checks gesture offsets, bounds, overlapping hands, all-sided picking and comfort navigation. Physical Quest 3 testing is pending; the public website retains its previously deployed revision.
+
+### Distinct immersive layout
+
+The actual VR scene defaults to the manipulable sphere and one short world-fixed cue, with measured-copy results shown only when present. All legacy desktop-derived panels are hidden in immersive mode. X (or right stick click) opens/closes a single world-anchored control palette with Learn/State/Gates/View tabs. It stays where it was opened and can be gripped; it never follows the head. A performs the next guided action or run/pause in exploration. B repeats a relevant guided sample/helper, or samples in exploration. Y recenters. Direct trigger editing outside the guided tilt step enters exploration instead of silently refusing the gesture.
+
+The same mathematical state/gate/measurement engine powers desktop and this separate VR layout. The palette is closed by default and after recentering. No wrist-following or head-following panels are used. Simulated QA explicitly checks zero legacy panels and a closed palette in the default VR scene, plus opening/gripping/closing the palette. The actual Quest 3 still needs user review.
