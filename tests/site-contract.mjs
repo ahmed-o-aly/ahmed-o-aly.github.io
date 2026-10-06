@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 const focusedContracts = [
   "./folio-contract.mjs",
   "./uae-economy-contract.mjs",
+  "./bloch-lab-contract.mjs",
   "./goodreads-sync.mjs",
   "./legacy-contract.mjs",
   "./udes-contract.mjs",

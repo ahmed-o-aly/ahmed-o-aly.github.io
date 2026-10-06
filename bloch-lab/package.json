@@ -1,0 +1,18 @@
+{
+  "name": "bloch-lab",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1 --port 5189",
+    "build": "vite build",
+    "test": "node --test tests/*.test.js",
+    "preview": "vite preview --host 127.0.0.1 --port 5189"
+  },
+  "dependencies": {
+    "three": "0.178.0"
+  },
+  "devDependencies": {
+    "vite": "7.3.6",
+    "playwright": "1.61.1"
+  }
+}

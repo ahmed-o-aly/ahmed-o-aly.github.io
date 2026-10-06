@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="theme-color" content="#eef0f1" />
+    <title>Bloch Lab • Ahmed Aly</title>
+    <script type="module" crossorigin src="./assets/index-C6cny7jX.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-CER-gH5W.css">
+  </head>
+  <body>
+    <a class="skip-link" href="#controls">Skip to experiment controls</a>
+    <header>
+      <a href="/projects/">← Ahmed Aly / Labs</a>
+      <h1>Bloch Lab</h1>
+      <div>
+        <button id="recenter">Recenter</button
+        ><button id="vr" disabled>Checking VR…</button>
+      </div>
+    </header>
+    <main>
+      <section class="stage">
+        <canvas
+          id="scene"
+          aria-label="Interactive pure-state Bloch sphere"
+        ></canvas>
+        <div class="hint">
+          Drag to look around · Select “Touch sphere” to prepare a state
+        </div>
+        <div id="error" role="alert" hidden></div>
+      </section>
+      <aside id="controls" tabindex="-1">
+        <div class="intro">
+          <p class="eyebrow">Prepare → predict → observe</p>
+          <h2>What does this arrow tell us?</h2>
+        </div>
+        <section class="lesson" id="lesson-card">
+          <p class="eyebrow" id="lesson-progress">Start with one idea</p>
+          <h3 id="lesson-title"></h3>
+          <p id="lesson-context"></p>
+          <p id="lesson-live"></p>
+          <button id="lesson-next">Measure the upright preparation</button>
+          <button id="lesson-helper" hidden>Tilt to 60° for me</button>
+          <p id="lesson-observation" aria-live="polite"></p>
+          <div class="two">
+            <button id="lesson-restart">Start over</button
+            ><button id="lesson-explore">Explore freely</button>
+          </div>
+        </section>
+        <details id="exploration">
+          <summary>Free exploration controls</summary>
+          <section>
+            <h3>Prepare</h3>
+            <div id="presets" class="six"></div>
+            <button id="touch" aria-pressed="false">Touch sphere: off</button>
+          </section>
+          <section>
+            <h3>Choose gates</h3>
+            <div id="gates" class="six"></div>
+            <button id="queue-mode" aria-pressed="true">Queue gates: on</button>
+          </section>
+          <section class="sequence">
+            <h3>Your sequence</h3>
+            <ol id="sequence-list" aria-label="Gate order"></ol>
+            <p id="sequence-status" aria-live="polite">
+              Add gates, then run. Tap a gate to remove it.
+            </p>
+            <div class="sequence-transport">
+              <button id="sequence-run">Run</button
+              ><button id="sequence-step">Step</button
+              ><button id="sequence-replay">Replay</button
+              ><button id="sequence-clear">Clear</button>
+            </div>
+            <p id="gate-history">Applied: none</p>
+            <p class="trail-key">
+              Faint paths: earlier gates · dark path: current rotation
+            </p>
+          </section>
+          <section class="readout">
+            <h3 id="action" aria-live="polite">Ready at |0⟩</h3>
+            <div class="probabilities">
+              <span
+                ><span id="positive-label">Z: 0</span> <b id="p0">100%</b></span
+              ><span
+                ><span id="negative-label">Z: 1</span> <b id="p1">0%</b></span
+              >
+            </div>
+            <p id="status">
+              Point → trigger in VR. Hold trigger on the sphere to move the
+              state.
+            </p>
+            <div
+              class="three"
+              id="bases"
+              aria-label="Fresh-copy measurement basis"
+            >
+              <button data-basis="X">X basis</button
+              ><button data-basis="Y">Y basis</button
+              ><button data-basis="Z" aria-pressed="true">Z basis</button>
+            </div>
+            <button id="measure">Measure 100 fresh qubits</button>
+            <p class="learning-note">
+              Each dot is a fresh copy. A measured copy ends on the chosen axis;
+              blue keeps the preparation. Counts fluctuate between batches.
+            </p>
+            <p id="amplitude-link"></p>
+            <button id="pin-baseline">Keep as baseline</button>
+            <p id="baseline-readout"></p>
+            <p id="counts" aria-live="polite">No trials yet</p>
+          </section>
+          <button id="reset">Reset to |0⟩</button>
+          <details>
+            <summary>Angles & state</summary>
+            <label
+              >θ
+              <input
+                id="theta"
+                type="range"
+                min="0"
+                max="180"
+                value="0" /></label
+            ><label
+              >φ
+              <input id="phi" type="range" min="0" max="360" value="0" /></label
+            ><output id="ket"></output>
+            <p>
+              The gauge follows the selected axis projection: higher means more
+              positive outcomes. The purple arrow is the measurement axis. Grey
+              marks the saved baseline. Blue is the prepared state. Brown marks
+              the gate axis or a measured trial. Pure states lie on the surface.
+              The ket is shown up to global phase; φ matters between components,
+              but has no meaning at a pole. Rounded amplitudes are approximate.
+              Gate paths show ideal unitary rotations; animation time is
+              illustrative.
+            </p>
+          </details>
+        </details>
+      </aside>
+    </main>
+  </body>
+</html>

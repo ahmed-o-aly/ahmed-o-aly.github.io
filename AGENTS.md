@@ -12,11 +12,11 @@ This is the single repository-wide guide for agents working on Ahmed Aly's perso
 
 ## What this repository does
 
-The live site is <https://ahmed-o-aly.github.io/>. The portfolio is a Jekyll site built from Markdown, YAML, Liquid templates, Sass, Ruby plugins, and browser JavaScript, based on al-folio. It also contains three independently built Vite applications: a React/TypeScript UAE Economy Lab and two Three.js/WebXR labs. Node runs their development servers, builds, maintenance scripts, and tests; Jekyll assembles the published site.
+The live site is <https://ahmed-o-aly.github.io/>. The portfolio is a Jekyll site built from Markdown, YAML, Liquid templates, Sass, Ruby plugins, and browser JavaScript, based on al-folio. It also contains five independently built Vite applications: a React/TypeScript UAE Economy Lab and four Three.js/WebXR labs. Node runs their development servers, builds, maintenance scripts, and tests; Jekyll assembles the published site.
 
 The current design uses the `garden` shell and `folio-*` components: paper/ink/rust colors, EB Garamond and IBM Plex Mono, an alternating Selected Works section, a reading library, and project write-ups. Older al-folio templates and styles remain for supporting features; trace the active layout before editing them.
 
-Applications implemented here include Abu Dhabi Urban Dynamics v2, UAE Economy Lab, Protein Structures, and Circuits Lab. Machine Lab is an external application linked and embedded by this portfolio; its machine viewer implementation belongs to the separate `ahmed-o-aly/cnc-machine-inspector` repository.
+Applications implemented here include Abu Dhabi Urban Dynamics v2, UAE Economy Lab, Protein Structures, Circuits Lab, and Bloch Lab. Machine Lab is an external application linked and embedded by this portfolio; its machine viewer implementation belongs to the separate `ahmed-o-aly/cnc-machine-inspector` repository.
 
 ## Content and routes
 
@@ -65,13 +65,14 @@ Preserve keyboard access, focus visibility, reduced-motion behavior, responsive 
 
 These apps have their own `package.json`, lockfile, Vite configuration, dependencies, development server, and tests. Installing dependencies at the repository root does not install their dependencies. Use Node 22 for shared development; consult each app's package and README for its requirements.
 
-| Application        | Source                                                                | Published bundle and routes                                                                                               |
-| ------------------ | --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| UAE Economy Lab    | `apps/uae-economy-lab/`; React/TypeScript economic scenario workbench | `assets/apps/uae-economy-lab/` publishes at `/uae-economy-lab/`; `_projects/uae-economy-lab.md` is the write-up.          |
-| Protein Structures | `molecular-vr/`; Three.js/WebXR protein and cryo-EM viewer            | `assets/apps/protein-structures/` publishes at `/protein-structures/`; `_projects/protein-structures.md` is the write-up. |
-| Circuits Lab       | `circuits-lab/`; Three.js/WebXR circuit equipment and experiments     | `assets/apps/circuits-lab/` publishes at `/circuits-lab/`; `_projects/circuits-lab.md` is the write-up.                   |
+| Application        | Source                                                                  | Published bundle and routes                                                                                               |
+| ------------------ | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| UAE Economy Lab    | `apps/uae-economy-lab/`; React/TypeScript economic scenario workbench   | `assets/apps/uae-economy-lab/` publishes at `/uae-economy-lab/`; `_projects/uae-economy-lab.md` is the write-up.          |
+| Protein Structures | `molecular-vr/`; Three.js/WebXR protein and cryo-EM viewer              | `assets/apps/protein-structures/` publishes at `/protein-structures/`; `_projects/protein-structures.md` is the write-up. |
+| Bloch Lab          | `bloch-lab/`; pure-qubit preparation, gate paths and fresh measurements | `assets/apps/bloch-lab/` publishes at `/bloch-lab/`; `_projects/bloch-lab.md` is the write-up.                            |
+| Circuits Lab       | `circuits-lab/`; Three.js/WebXR circuit equipment and experiments       | `assets/apps/circuits-lab/` publishes at `/circuits-lab/`; `_projects/circuits-lab.md` is the write-up.                   |
 
-Rebuild and commit the corresponding bundle whenever app source or prepared data changes. Do not edit compiled bundles directly. `_config.yml` excludes app source and bundle directories from normal Jekyll rendering. `_plugins/uae-economy-bundle.rb`, `_plugins/protein-structures-bundle.rb`, and `_plugins/circuits-lab-bundle.rb` copy committed bundles to their public routes after Jekyll's minifiers finish. Deployment consumes committed bundles; it does not rebuild these applications. Preserve compiled module, worker, and data bytes.
+Rebuild and commit the corresponding bundle whenever app source or prepared data changes. Do not edit compiled bundles directly. `_config.yml` excludes app source and bundle directories from normal Jekyll rendering. `_plugins/uae-economy-bundle.rb`, `_plugins/protein-structures-bundle.rb`, `_plugins/circuits-lab-bundle.rb`, and `_plugins/bloch-lab-bundle.rb` copy committed bundles to their public routes after Jekyll's minifiers finish. Deployment consumes committed bundles; it does not rebuild these applications. Preserve compiled module, worker, and data bytes.
 
 ### UAE Economy Lab locations
 
@@ -94,6 +95,10 @@ Rebuild and commit the corresponding bundle whenever app source or prepared data
 - `circuits-lab/src/modules.js`, `lab.js`, and `physics.js` define experiments, state/actions, and circuit calculations. `schematic.js` and `circuit-status.js` support diagrams and diagnostics.
 - `circuits-lab/src/cable-routing.js`, `cable-motion.js`, and `terminal-sockets.js` implement wire geometry, movement, and connections. `src/style.css` styles the interface.
 - `circuits-lab/tests/` checks activities, physics, wiring, probes, reset/history, and VR behavior. `circuits-lab/docs/module-designs.md` and `circuits-lab/docs/experiment-checklist.md` explain experiment requirements; `circuits-lab/docs/verification.md` records past verification and headset limitations.
+
+### Bloch Lab
+
+`bloch-lab/` contains the standalone pure-qubit teaching experiment. `npm run build:bloch-lab` builds `assets/apps/bloch-lab/`; `_plugins/bloch-lab-bundle.rb` copies it unchanged to `/bloch-lab/`. The project entry is `_projects/bloch-lab.md`. Run `npm run test:bloch-lab` for independent complex-matrix gate, Born-rule, and sequence state-machine checks. `bloch-lab/sequence.js` owns queued gate order, starting input and execution checkpoints; `learning.js` owns X/Y/Z fresh-copy measurement, probability formatting; `lesson.js` owns the ordered preparation-to-interference teaching path; `trajectory.js` samples the exact gate rotation paths; `main.js` animates and pauses transitions and retains completed paths until replay, edits or a new preparation. `bloch-lab/README.md` documents local browser QA, same-origin launch verification and pending physical headset checks. `tests/bloch-lab-contract.mjs` checks the generated route and byte preservation as part of `test:site`.
 
 ### App commands
 
