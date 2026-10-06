@@ -82,7 +82,7 @@ if (renderer) {
       roughness: 0.8,
       depthWrite: false,
       side: THREE.DoubleSide,
-    }),
+    })
   );
   sphereRoot.add(shell);
   const gridMaterial = new THREE.LineBasicMaterial({
@@ -102,8 +102,8 @@ if (renderer) {
     sphereRoot.add(
       new THREE.Line(
         new THREE.BufferGeometry().setFromPoints(points),
-        gridMaterial,
-      ),
+        gridMaterial
+      )
     );
   }
   function label(
@@ -111,7 +111,7 @@ if (renderer) {
     width = 0.55,
     height = 0.13,
     color = "#202428",
-    wrap = 0,
+    wrap = 0
   ) {
     const canvas = document.createElement("canvas");
     canvas.width = 1024;
@@ -127,7 +127,7 @@ if (renderer) {
           map: texture,
           transparent: true,
           depthWrite: false,
-        }),
+        })
       );
       face.rotation.y = side;
       sprite.add(face);
@@ -153,17 +153,12 @@ if (renderer) {
         if (line) lines.push(line);
       } else lines.push(t);
       ctx.font = `500 ${Math.floor(
-        canvas.height * (wrap ? 0.7 / Math.max(2, lines.length) : 0.43),
+        canvas.height * (wrap ? 0.7 / Math.max(2, lines.length) : 0.43)
       )}px Arial`;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       lines.forEach((line, i) =>
-        ctx.fillText(
-          line,
-          512,
-          (canvas.height * (i + 0.5)) / lines.length,
-          990,
-        ),
+        ctx.fillText(line, 512, (canvas.height * (i + 0.5)) / lines.length, 990)
       );
       texture.needsUpdate = true;
     };
@@ -182,8 +177,8 @@ if (renderer) {
           new THREE.Vector3(...a),
           new THREE.Vector3(...b),
         ]),
-        new THREE.LineBasicMaterial({ color: 0x879aa7 }),
-      ),
+        new THREE.LineBasicMaterial({ color: 0x879aa7 })
+      )
     );
     const l = label(text);
     l.position.set(...b).multiplyScalar(1.08);
@@ -198,12 +193,12 @@ if (renderer) {
     radius,
     0x185b91,
     0.13,
-    0.07,
+    0.07
   );
   sphereRoot.add(arrow);
   const endpoint = new THREE.Mesh(
     new THREE.SphereGeometry(0.042, 20, 12),
-    new THREE.MeshStandardMaterial({ color: 0x185b91 }),
+    new THREE.MeshStandardMaterial({ color: 0x185b91 })
   );
   sphereRoot.add(endpoint);
   const basisAxis = new THREE.ArrowHelper(
@@ -212,7 +207,7 @@ if (renderer) {
     radius * 1.15,
     0x795e95,
     0.065,
-    0.035,
+    0.035
   );
   sphereRoot.add(basisAxis);
   const baselineArrow = new THREE.ArrowHelper(
@@ -221,13 +216,13 @@ if (renderer) {
     radius * 0.94,
     0xa8a0b1,
     0.065,
-    0.035,
+    0.035
   );
   baselineArrow.visible = false;
   sphereRoot.add(baselineArrow);
   const angleArc = new THREE.Line(
     new THREE.BufferGeometry(),
-    new THREE.LineBasicMaterial({ color: 0x9a7444 }),
+    new THREE.LineBasicMaterial({ color: 0x9a7444 })
   );
   sphereRoot.add(angleArc);
   const angleCaption = label("Tilt 0°", 0.4, 0.11, "#74552f");
@@ -235,13 +230,13 @@ if (renderer) {
   // The selected axis projection maps linearly to its positive-outcome probability.
   const probabilityRail = new THREE.Mesh(
     new THREE.BoxGeometry(0.045, radius * 2, 0.035),
-    new THREE.MeshBasicMaterial({ color: 0xc9d2d9 }),
+    new THREE.MeshBasicMaterial({ color: 0xc9d2d9 })
   );
   probabilityRail.position.x = -0.76;
   sphereRoot.add(probabilityRail);
   const probabilityFill = new THREE.Mesh(
     new THREE.BoxGeometry(0.047, 1, 0.038),
-    new THREE.MeshBasicMaterial({ color: 0x185b91 }),
+    new THREE.MeshBasicMaterial({ color: 0x185b91 })
   );
   probabilityFill.position.x = -0.76;
   sphereRoot.add(probabilityFill);
@@ -256,12 +251,12 @@ if (renderer) {
       gapSize: 0.02,
       transparent: true,
       opacity: 0.7,
-    }),
+    })
   );
   sphereRoot.add(projection);
   const trail = new THREE.Line(
     new THREE.BufferGeometry(),
-    new THREE.LineBasicMaterial({ color: 0x185b91 }),
+    new THREE.LineBasicMaterial({ color: 0x185b91 })
   );
   trail.visible = false;
   sphereRoot.add(trail);
@@ -285,9 +280,9 @@ if (renderer) {
     const points = rotationPath(done.from, done.axis, done.angle);
     const segment = new THREE.Line(
       new THREE.BufferGeometry().setFromPoints(
-        points.map((p) => worldVector(p).multiplyScalar(radius * 1.005)),
+        points.map((p) => worldVector(p).multiplyScalar(radius * 1.005))
       ),
-      completedTrailMaterial,
+      completedTrailMaterial
     );
     segment.userData = { gate: done.gate, points };
     completedTrails.add(segment);
@@ -299,7 +294,7 @@ if (renderer) {
       color: 0x8e633b,
       dashSize: 0.045,
       gapSize: 0.025,
-    }),
+    })
   );
   sphereRoot.add(gateAxis);
   gateAxis.visible = false;
@@ -310,14 +305,14 @@ if (renderer) {
   vrPanel.add(
     new THREE.Mesh(
       new THREE.BoxGeometry(1.76, 1.12, 0.025),
-      new THREE.MeshBasicMaterial({ color: 0xfafbfc }),
-    ),
+      new THREE.MeshBasicMaterial({ color: 0xfafbfc })
+    )
   );
   const vrButtons = [];
   function vrButton(text, id, x, y, width = 0.24) {
     const mesh = new THREE.Mesh(
       new THREE.BoxGeometry(width, 0.12, 0.025),
-      new THREE.MeshBasicMaterial({ color: 0xe1e8ed }),
+      new THREE.MeshBasicMaterial({ color: 0xe1e8ed })
     );
     mesh.position.set(x, y, 0.025);
     mesh.userData.action = id;
@@ -328,17 +323,17 @@ if (renderer) {
     vrButtons.push(mesh);
   }
   Object.keys(presets).forEach((s, i) =>
-    vrButton("|" + s + "⟩", "preset:" + s, -0.67 + i * 0.268, 0.27),
+    vrButton("|" + s + "⟩", "preset:" + s, -0.67 + i * 0.268, 0.27)
   );
   Object.keys(gates).forEach((g, i) =>
-    vrButton(g, "gate:" + g, -0.67 + i * 0.268, 0.11),
+    vrButton(g, "gate:" + g, -0.67 + i * 0.268, 0.11)
   );
   vrButton("Fresh ×100", "measure", -0.51, -0.065, 0.62);
   vrButton("Reset", "reset", -0.02, -0.065, 0.3);
   vrButton("Guide", "guide", 0.32, -0.065, 0.3);
   vrButton("Center", "recenter", 0.67, -0.065, 0.3);
   ["X", "Y", "Z"].forEach((b, i) =>
-    vrButton(b + " basis", "basis:" + b, -0.55 + i * 0.55, -0.48, 0.48),
+    vrButton(b + " basis", "basis:" + b, -0.55 + i * 0.55, -0.48, 0.48)
   );
   const activityPanel = new THREE.Group();
   activityPanel.position.set(-1.45, 1.85, -2);
@@ -347,13 +342,13 @@ if (renderer) {
   activityPanel.add(
     new THREE.Mesh(
       new THREE.BoxGeometry(1.15, 1.65, 0.025),
-      new THREE.MeshBasicMaterial({ color: 0xfafbfc }),
-    ),
+      new THREE.MeshBasicMaterial({ color: 0xfafbfc })
+    )
   );
   function activityButton(text, id, x, y, width = 0.34) {
     const b = new THREE.Mesh(
       new THREE.BoxGeometry(width, 0.12, 0.025),
-      new THREE.MeshBasicMaterial({ color: 0xe1e8ed }),
+      new THREE.MeshBasicMaterial({ color: 0xe1e8ed })
     );
     b.position.set(x, y, 0.025);
     b.userData.action = id;
@@ -370,7 +365,7 @@ if (renderer) {
     1.06,
     0.16,
     "#202428",
-    32,
+    32
   );
   activityHeading.position.set(0, 0.63, 0.04);
   activityPanel.add(activityHeading);
@@ -382,14 +377,14 @@ if (renderer) {
     "lesson-next",
     0,
     0.02,
-    1.06,
+    1.06
   );
   const lessonHelperButton = activityButton(
     "Tilt to 60° for me",
     "lesson-helper",
     0,
     -0.16,
-    1.06,
+    1.06
   );
   const activityObservation = label("", 1.06, 0.2, "#202428", 32);
   activityObservation.position.set(0, -0.36, 0.04);
@@ -402,7 +397,7 @@ if (renderer) {
   scene.add(sequencePanel);
   const sequenceBacking = new THREE.Mesh(
     new THREE.BoxGeometry(1.1, 1.5, 0.025),
-    new THREE.MeshBasicMaterial({ color: 0xfafbfc }),
+    new THREE.MeshBasicMaterial({ color: 0xfafbfc })
   );
   sequenceBacking.position.y = -0.14;
   sequencePanel.add(sequenceBacking);
@@ -413,7 +408,7 @@ if (renderer) {
   function sequenceButton(text, id, x, y, width = 0.24) {
     const b = new THREE.Mesh(
       new THREE.BoxGeometry(width, 0.12, 0.025),
-      new THREE.MeshBasicMaterial({ color: 0xe1e8ed }),
+      new THREE.MeshBasicMaterial({ color: 0xe1e8ed })
     );
     b.position.set(x, y, 0.025);
     b.userData.action = id;
@@ -431,8 +426,8 @@ if (renderer) {
         "",
         "remove:" + i,
         -0.39 + (i % 4) * 0.26,
-        0.2 - Math.floor(i / 4) * 0.15,
-      ),
+        0.2 - Math.floor(i / 4) * 0.15
+      )
     );
   }
   sequenceButton("Run", "sequence-run", -0.39, -0.12);
@@ -482,13 +477,13 @@ if (renderer) {
   shots.add(shotTitle);
   const observedBackground = new THREE.Mesh(
     new THREE.BoxGeometry(0.72, 0.025, 0.02),
-    new THREE.MeshBasicMaterial({ color: 0xc9d2d9 }),
+    new THREE.MeshBasicMaterial({ color: 0xc9d2d9 })
   );
   observedBackground.position.y = -0.08;
   shots.add(observedBackground);
   const observedFill = new THREE.Mesh(
     new THREE.BoxGeometry(1, 0.027, 0.023),
-    new THREE.MeshBasicMaterial({ color: 0x8e633b }),
+    new THREE.MeshBasicMaterial({ color: 0x8e633b })
   );
   observedFill.position.y = -0.08;
   shots.add(observedFill);
@@ -501,7 +496,7 @@ if (renderer) {
     radius * 0.96,
     0x8e633b,
     0.12,
-    0.055,
+    0.055
   );
   sphereRoot.add(measurementArrow);
   measurementArrow.visible = false;
@@ -512,17 +507,17 @@ if (renderer) {
     angleArc.geometry.dispose();
     angleArc.geometry = new THREE.BufferGeometry().setFromPoints(
       rotationPath([0, 0, 1], tilt.axis, tilt.angle).map((p) =>
-        worldVector(p).multiplyScalar(radius * 0.84),
-      ),
+        worldVector(p).multiplyScalar(radius * 0.84)
+      )
     );
     angleCaption.userData.set(
-      "Tilt " + Math.round((tilt.angle * 180) / Math.PI) + "°",
+      "Tilt " + Math.round((tilt.angle * 180) / Math.PI) + "°"
     );
     angleCaption.position
       .copy(
         worldVector(
-          rotate([0, 0, 1], tilt.axis, tilt.angle / 2),
-        ).multiplyScalar(radius * 0.73),
+          rotate([0, 0, 1], tilt.axis, tilt.angle / 2)
+        ).multiplyScalar(radius * 0.73)
       )
       .add(new THREE.Vector3(0.12, 0.02, 0));
     angleArc.visible = lesson.active;
@@ -533,7 +528,7 @@ if (renderer) {
     probabilityFill.scale.y = height;
     probabilityFill.position.y = -radius + height / 2;
     probabilityLabel.userData.set(
-      "Chance " + formatProbability(p0) + " " + (basis === "Z" ? "0" : "+"),
+      "Chance " + formatProbability(p0) + " " + (basis === "Z" ? "0" : "+")
     );
     projection.geometry.dispose();
     projection.geometry = new THREE.BufferGeometry().setFromPoints([
@@ -550,6 +545,7 @@ if (renderer) {
     measurementArrow.visible = false;
   }
   function animateRotation(axis, angle, title) {
+    releaseStateGrabs();
     clearTrials();
     transition = {
       from: [...v],
@@ -597,6 +593,7 @@ if (renderer) {
   }
   function startSequence(single = false, replay = false) {
     if (!sequence.queue.length || trial) return;
+    releaseStateGrabs();
     if (replay || sequence.status === "complete") {
       transition = null;
       clearTrails();
@@ -621,7 +618,7 @@ if (renderer) {
     animateRotation(
       gates[g].axis,
       gates[g].angle,
-      `${sequence.cursor + 1}/${sequence.queue.length} · ${g} gate`,
+      `${sequence.cursor + 1}/${sequence.queue.length} · ${g} gate`
     );
     transition.sequence = true;
     transition.gate = g;
@@ -635,13 +632,41 @@ if (renderer) {
       counts: [...counts],
       program: [...history],
       input: [...sequence.base],
-    },
+    }
   ) {
     baseline = record;
     baselineArrow.setDirection(worldVector(record.vector));
     baselineArrow.visible = true;
   }
+  // A single writer owns quantum state: dragging interrupts at the visible
+  // state and rebases the retained queue. Run/measure/gates commit that input
+  // and release the drag before becoming the writer. View inputs stay active.
+  function releaseStateGrabs() {
+    for (const c of controllers) {
+      c.userData.preparing = false;
+      c.userData.stateGrab = null;
+    }
+  }
+  function beginStatePreparation() {
+    transition = null;
+    clearTrials();
+    clearTrails();
+    gateAxis.visible = false;
+    sequence.capture(v);
+    history = [];
+    if (lesson.active && lesson.stage !== "tilt") {
+      lesson.active = false;
+      lesson.waiting = null;
+      $("#exploration").open = true;
+    }
+    action = "Prepare state · gates restart from this arrow";
+    sync();
+  }
   function act(id) {
+    if (id === "controls-help" || id === "controls-dismiss") {
+      vrControls.visible = id === "controls-help";
+      return;
+    }
     if (id.startsWith("palette:")) {
       paletteMode = id.slice(8);
       updateImmersiveLayout();
@@ -756,7 +781,7 @@ if (renderer) {
       animateRotation(
         gates[gate].axis,
         gates[gate].angle,
-        "Watch the " + gate + " rotation",
+        "Watch the " + gate + " rotation"
       );
       transition.gate = gate;
       transition.lesson = true;
@@ -780,6 +805,7 @@ if (renderer) {
       return;
     }
     if (id === "sequence-clear") {
+      releaseStateGrabs();
       if (sequence.queue.length) {
         transition = null;
         clearTrials();
@@ -853,6 +879,7 @@ if (renderer) {
       return;
     }
     if (id === "measure") {
+      releaseStateGrabs();
       transition = null;
       clearTrials();
       gateAxis.visible = false;
@@ -871,6 +898,7 @@ if (renderer) {
       return;
     }
     if (id.startsWith("preset:")) {
+      releaseStateGrabs();
       clearTrails();
       const key = id.slice(7),
         r = preparation(v, presets[key]);
@@ -882,6 +910,7 @@ if (renderer) {
       return;
     }
     if (id.startsWith("gate:")) {
+      releaseStateGrabs();
       const g = id.slice(5);
       if (queueMode) {
         if (sequence.append(g, v)) {
@@ -939,7 +968,7 @@ if (renderer) {
       !hasQueue || !!trial || !!(transition && !transition.sequence);
     $("#sequence-clear").disabled = !hasQueue;
     const baseKey = Object.keys(presets).find((key) =>
-      presets[key].every((x, i) => Math.abs(x - sequence.base[i]) < 1e-7),
+      presets[key].every((x, i) => Math.abs(x - sequence.base[i]) < 1e-7)
     );
     const inputLabel =
       baseKey === undefined ? "saved state" : "|" + baseKey + "⟩";
@@ -988,18 +1017,18 @@ if (renderer) {
       b.userData.current = i === sequence.cursor && !!transition?.sequence;
     });
     modeButton.userData.caption.userData.set(
-      queueMode ? "Queue on" : "Apply now",
+      queueMode ? "Queue on" : "Apply now"
     );
     sequenceFeedback.userData.set(
       hasQueue
         ? `${inputLabel} → ${sequence.cursor}/${sequence.queue.length} · ${sequence.status}`
-        : "Add gates, then run",
+        : "Add gates, then run"
     );
     const runButton = vrButtons.find(
-      (b) => b.userData.action === "sequence-run",
+      (b) => b.userData.action === "sequence-run"
     );
     runButton.userData.caption.userData.set(
-      seqRunning ? "Pause" : seqPaused ? "Resume" : "Run",
+      seqRunning ? "Pause" : seqPaused ? "Resume" : "Run"
     );
     vrButtons.forEach((b) => {
       const id = b.userData.action;
@@ -1016,7 +1045,14 @@ if (renderer) {
         b.userData.disabled =
           (busy || seqPaused) &&
           !id.startsWith("view:") &&
-          !["reset", "guide", "recenter"].includes(id);
+          !id.startsWith("palette:") &&
+          ![
+            "reset",
+            "guide",
+            "recenter",
+            "controls-help",
+            "controls-dismiss",
+          ].includes(id);
     });
     $("#theta").disabled = busy || seqPaused;
     $("#phi").disabled = busy || seqPaused;
@@ -1025,8 +1061,8 @@ if (renderer) {
     $("#scene").setAttribute(
       "aria-label",
       `Pure qubit Bloch sphere. ${basis} positive outcome ${formatProbability(
-        probability(v, basis),
-      )}. ${action}.`,
+        probability(v, basis)
+      )}. ${action}.`
     );
     document
       .querySelectorAll("#gates button,#presets button,#measure")
@@ -1037,7 +1073,7 @@ if (renderer) {
             seqPaused ||
             (b.parentElement.id === "gates" &&
               queueMode &&
-              sequence.queue.length >= MAX_GATES)),
+              sequence.queue.length >= MAX_GATES))
       );
     const a = angles(v),
       p = probability(v, basis);
@@ -1050,7 +1086,7 @@ if (renderer) {
     const positive = basis === "Z" ? "0" : "+",
       negative = basis === "Z" ? "1" : "−";
     shotTitle.userData.set(
-      `Latest 100 copies: blue ${positive} / brown ${negative}`,
+      `Latest 100 copies: blue ${positive} / brown ${negative}`
     );
     $("#positive-label").textContent = basis + ": " + positive;
     $("#negative-label").textContent = basis + ": " + negative;
@@ -1062,7 +1098,7 @@ if (renderer) {
         : "No trials yet";
     const zp = probability(v, "Z");
     $("#amplitude-link").textContent = `Z: |α|² = ${formatProbability(
-      zp,
+      zp
     )} · |β|² = ${formatProbability(1 - zp)} (up to global phase)`;
     baselineCaption.userData.set(
       baseline
@@ -1074,11 +1110,11 @@ if (renderer) {
                 " copies"
               : "not sampled"
           }`
-        : "Keep a baseline to compare a changed state",
+        : "Keep a baseline to compare a changed state"
     );
     $("#baseline-readout").textContent = baseline
       ? `Baseline ${baseline.basis}: ${formatProbability(
-          baseline.p,
+          baseline.p
         )} positive; ${
           baseline.counts[0] + baseline.counts[1]
             ? baseline.counts[0] +
@@ -1088,7 +1124,7 @@ if (renderer) {
             : "not sampled"
         }. Input ${formatState(
           angles(baseline.input).theta,
-          angles(baseline.input).phi,
+          angles(baseline.input).phi
         )}; ${baseline.program.join(" → ") || "no gates"}`
       : "Keep a baseline to compare a changed run.";
     basisAxis.setDirection(worldVector(bases[basis]));
@@ -1123,11 +1159,11 @@ if (renderer) {
       (lesson.stage === "tilt" && (tilt < 10 || Math.abs(v[2]) > 0.985));
     const live = lesson.active
       ? `Tilt ${Math.round(tilt)}° → chance ${formatProbability(
-          probability(v, "Z"),
+          probability(v, "Z")
         )} of 0. ` +
         (["chance", "sampled"].includes(lesson.stage)
           ? `Expect about ${Math.round(
-              probability(v, "Z") * 100,
+              probability(v, "Z") * 100
             )} zeros per 100 copies.`
           : "")
       : "";
@@ -1158,13 +1194,13 @@ if (renderer) {
     lessonHelperButton.visible = !$("#lesson-helper").hidden;
     lessonHelperButton.userData.caption.visible = lessonHelperButton.visible;
     lessonHelperButton.userData.caption.userData.set(
-      $("#lesson-helper").textContent,
+      $("#lesson-helper").textContent
     );
     lessonHelperButton.userData.disabled = busy || seqPaused;
     activityObservation.userData.set(
       ["tilt", "chance", "turn-phase", "phase-shown"].includes(lesson.stage)
         ? live
-        : observation,
+        : observation
     );
     vrButtons.forEach((b) => {
       if (b.userData.action.startsWith("basis:")) {
@@ -1182,26 +1218,26 @@ if (renderer) {
     angleCaption.visible = lesson.active;
     vrReadout.userData.set(
       `${basis} basis: ${positive} ${formatProbability(
-        p,
-      )} · ${negative} ${formatProbability(1 - p)}`,
+        p
+      )} · ${negative} ${formatProbability(1 - p)}`
     );
     vrCounts.userData.set(
       counts[0] + counts[1]
         ? `Fresh: ${counts[0]} ${positive} · ${counts[1]} ${negative}; blue stays prepared`
-        : "Fresh copies; blue keeps the preparation",
+        : "Fresh copies; blue keeps the preparation"
     );
     vrPrompt.userData.set(
       lesson.active
         ? "Blue arrow: preparation · brown bar: observed copies"
-        : "Prepare → rotate → measure fresh copies",
+        : "Prepare → rotate → measure fresh copies"
     );
     updateImmersiveLayout();
     stateCaption.userData.set(
       lesson.active
         ? `Predicted chance: ${formatProbability(
-            p,
+            p
           )} ${positive} · ${formatProbability(1 - p)} ${negative}`
-        : action,
+        : action
     );
   }
   for (const [target, items, prefix] of [
@@ -1251,7 +1287,7 @@ if (renderer) {
       clearTrails();
       const a = blochCoordinates(
         (Number($("#theta").value) * Math.PI) / 180,
-        (Number($("#phi").value) * Math.PI) / 180,
+        (Number($("#phi").value) * Math.PI) / 180
       );
       setVector([a.x, a.y, a.z]);
       sequence.capture(v);
@@ -1283,7 +1319,7 @@ if (renderer) {
     const r = $("#scene").getBoundingClientRect();
     pointer.set(
       ((e.clientX - r.left) / r.width) * 2 - 1,
-      (-(e.clientY - r.top) / r.height) * 2 + 1,
+      (-(e.clientY - r.top) / r.height) * 2 + 1
     );
     raycaster.setFromCamera(pointer, camera);
   }
@@ -1324,28 +1360,27 @@ if (renderer) {
   scene.add(comfortPanel);
   const comfortBack = new THREE.Mesh(
     new THREE.PlaneGeometry(1.55, 0.45),
-    new THREE.MeshBasicMaterial({ color: 0xf8fafb, side: THREE.DoubleSide }),
+    new THREE.MeshBasicMaterial({ color: 0xf8fafb, side: THREE.DoubleSide })
   );
   comfortPanel.add(comfortBack);
   const comfortHint = label("Grip: move / turn · two grips: size", 1.48, 0.09);
   comfortHint.position.set(0, 0.15, 0.01);
   comfortPanel.add(comfortHint);
   const movementHint = label(
-    "Left stick: step · right: snap · Y: center",
+    "Left stick: move · right: turn · Y: center",
     1.48,
-    0.09,
+    0.09
   );
   movementHint.position.set(0, 0.05, 0.01);
   comfortPanel.add(movementHint);
   for (const [text, id, x] of [
     ["Smaller", "view:smaller", -0.57],
     ["Larger", "view:larger", -0.19],
-    ["Move: step", "view:movement", 0.19],
     ["Center", "recenter", 0.57],
   ]) {
     const b = new THREE.Mesh(
       new THREE.PlaneGeometry(0.36, 0.1),
-      new THREE.MeshBasicMaterial({ color: 0xe1e8ed, side: THREE.DoubleSide }),
+      new THREE.MeshBasicMaterial({ color: 0xe1e8ed, side: THREE.DoubleSide })
     );
     b.position.set(x, -0.12, 0.005);
     b.userData.action = id;
@@ -1369,10 +1404,10 @@ if (renderer) {
       new THREE.Vector3(
         lesson.active ? 1.45 : -1.45,
         lesson.active ? 1.65 : 1.85,
-        -2,
+        -2
       )
         .applyQuaternion(panelRotation)
-        .add(panelOrigin),
+        .add(panelOrigin)
     );
   }
   let immersiveLayout = false,
@@ -1383,8 +1418,8 @@ if (renderer) {
   vrPalette.add(
     new THREE.Mesh(
       new THREE.BoxGeometry(1.38, 1.48, 0.025),
-      new THREE.MeshBasicMaterial({ color: 0xf8fafb }),
-    ),
+      new THREE.MeshBasicMaterial({ color: 0xf8fafb })
+    )
   );
   const paletteTitle = label("Controls · X to close", 1.25, 0.1);
   paletteTitle.position.set(0, 0.62, 0.03);
@@ -1394,7 +1429,7 @@ if (renderer) {
   function paletteButton(parent, text, id, x, y, width = 0.3) {
     const b = new THREE.Mesh(
       new THREE.BoxGeometry(width, 0.115, 0.025),
-      new THREE.MeshBasicMaterial({ color: 0xe1e8ed }),
+      new THREE.MeshBasicMaterial({ color: 0xe1e8ed })
     );
     b.position.set(x, y, 0.026);
     b.userData.action = id;
@@ -1412,7 +1447,7 @@ if (renderer) {
       { lesson: "Learn", state: "State", gates: "Gates", view: "View" }[mode],
       "palette:" + mode,
       (i - 1.5) * 0.325,
-      0.44,
+      0.44
     );
     const group = new THREE.Group();
     group.name = mode;
@@ -1427,16 +1462,16 @@ if (renderer) {
       "lesson-helper",
       0,
       -0.02,
-      1.2,
+      1.2
     );
   paletteButton(tab, "Restart", "lesson-restart", -0.32, -0.25, 0.58);
   paletteButton(tab, "Explore", "lesson-explore", 0.32, -0.25, 0.58);
   const paletteLessonNote = label(
-    "Grip moves the view. Trigger edits the arrow.",
+    "Trigger: Prepare state. Gates: operations on that state.",
     1.2,
     0.17,
     "#202428",
-    36,
+    36
   );
   paletteLessonNote.position.set(0, -0.48, 0.03);
   tab.add(paletteLessonNote);
@@ -1448,8 +1483,8 @@ if (renderer) {
       "preset:" + key,
       ((i % 3) - 1) * 0.4,
       0.22 - Math.floor(i / 3) * 0.17,
-      0.37,
-    ),
+      0.37
+    )
   );
   ["X", "Y", "Z"].forEach((key, i) =>
     paletteButton(
@@ -1458,8 +1493,8 @@ if (renderer) {
       "basis:" + key,
       (i - 1) * 0.4,
       -0.17,
-      0.37,
-    ),
+      0.37
+    )
   );
   paletteButton(tab, "Fresh ×100", "measure", -0.31, -0.37, 0.59);
   paletteButton(tab, "Keep state", "pin-baseline", 0.31, -0.37, 0.59);
@@ -1471,8 +1506,8 @@ if (renderer) {
       "gate:" + key,
       ((i % 3) - 1) * 0.4,
       0.22 - Math.floor(i / 3) * 0.17,
-      0.37,
-    ),
+      0.37
+    )
   );
   [
     "sequence-run",
@@ -1485,8 +1520,8 @@ if (renderer) {
       ["Run", "Step", "Replay", "Clear"][i],
       id,
       (i - 1.5) * 0.325,
-      -0.17,
-    ),
+      -0.17
+    )
   );
   paletteButton(tab, "Queue on", "queue-mode", 0, -0.34, 1.2);
   const paletteRemove = Array.from({ length: 8 }, (_, i) =>
@@ -1495,14 +1530,14 @@ if (renderer) {
       "",
       "remove:" + i,
       ((i % 4) - 1.5) * 0.325,
-      -0.51 - Math.floor(i / 4) * 0.15,
-    ),
+      -0.51 - Math.floor(i / 4) * 0.15
+    )
   );
   tab = paletteTabs.get("view");
   [
     ["Smaller", "view:smaller"],
     ["Larger", "view:larger"],
-    ["Move: step", "view:movement"],
+    ["Controls help", "controls-help"],
     ["Center", "recenter"],
     ["Reset state", "reset"],
   ].forEach(([text, id], i) =>
@@ -1512,18 +1547,51 @@ if (renderer) {
       id,
       ((i % 2) - 0.5) * 0.62,
       0.2 - Math.floor(i / 2) * 0.2,
-      0.58,
-    ),
+      0.58
+    )
   );
   const help = label(
-    "Grip: move / turn. Two grips: size. Left stick: step. Right stick: snap. Y: center.",
+    "Grip: move / turn. Two grips: size. Sticks: move / turn. Y: center.",
     1.2,
     0.22,
     "#202428",
-    36,
+    36
   );
   help.position.set(0, -0.5, 0.03);
   tab.add(help);
+  let controlsIntroduced = false;
+  const vrControls = new THREE.Group();
+  vrControls.visible = false;
+  scene.add(vrControls);
+  vrControls.add(
+    new THREE.Mesh(
+      new THREE.BoxGeometry(1.55, 1.18, 0.025),
+      new THREE.MeshBasicMaterial({ color: 0xf8fafb })
+    )
+  );
+  [
+    "Your Quest controls",
+    "Left stick: move · right stick: turn",
+    "Trigger + arrow: Prepare state",
+    "Grip: move / turn view · two grips: size",
+    "A: next / run / pause · B: sample",
+    "X: controls · Y: recenter",
+    "Drag restarts queued gates here.",
+  ].forEach((text, i) => {
+    const row = label(text, 1.4, 0.12, "#202428");
+    row.position.set(0, 0.48 - i * 0.135, 0.03);
+    vrControls.add(row);
+  });
+  const dismissHelp = new THREE.Mesh(
+    new THREE.BoxGeometry(1.35, 0.105, 0.025),
+    new THREE.MeshBasicMaterial({ color: 0xe1e8ed })
+  );
+  dismissHelp.position.set(0, -0.49, 0.026);
+  dismissHelp.userData.action = "controls-dismiss";
+  const dismissCaption = label("Got it · reopen in View", 1.3, 0.085);
+  dismissCaption.position.set(0, -0.49, 0.046);
+  vrControls.add(dismissHelp, dismissCaption);
+  vrButtons.push(dismissHelp);
   const vrCue = label("", 1.85, 0.18, "#202428", 48);
   vrCue.position.set(0, 2.78, -2);
   vrCue.visible = false;
@@ -1531,7 +1599,7 @@ if (renderer) {
   const cues = {
     start: "Arrow up predicts 0. Measure fresh copies.",
     "up-observed": "All copies gave 0. Now prepare a tilted arrow.",
-    tilt: "Trigger and move the arrow. Watch chance change.",
+    tilt: "Trigger: prepare state by moving the arrow. Watch chance change.",
     chance: "Predict the number of zeros before sampling.",
     sampled: "Brown counts are observed; blue chance is predicted.",
     "turn-phase": "Turn sideways. Predict whether Z chance changes.",
@@ -1569,19 +1637,19 @@ if (renderer) {
     vrCue.userData.set(
       lesson.active
         ? cues[lesson.stage] + "  A: next · X: controls"
-        : "Grip: turn / move. Trigger: arrow. A: run / pause. X: controls.",
+        : "Trigger: prepare state · Gates: operations. A: run / pause · X: controls."
     );
     for (const [mode, group] of paletteTabs)
       group.visible = mode === paletteMode;
     paletteNext.userData.caption.userData.set(
-      lesson.active ? lesson.step().next : "Start guided path",
+      lesson.active ? lesson.step().next : "Start guided path"
     );
     paletteNext.userData.disabled = lesson.active && $("#lesson-next").disabled;
     paletteHelper.visible =
       lesson.active && ["tilt", "sampled"].includes(lesson.stage);
     paletteHelper.userData.caption.visible = paletteHelper.visible;
     paletteHelper.userData.caption.userData.set(
-      lesson.stage === "tilt" ? "Try a 60° tilt" : "Sample more",
+      lesson.stage === "tilt" ? "Try a 60° tilt" : "Sample more"
     );
     paletteButtons
       .find((b) => b.userData.action === "sequence-run")
@@ -1590,28 +1658,24 @@ if (renderer) {
           ? "Pause"
           : sequence.status === "paused"
             ? "Resume"
-            : "Run",
+            : "Run"
       );
     paletteButtons
       .find((b) => b.userData.action === "queue-mode")
       .userData.caption.userData.set(queueMode ? "Queue on" : "Queue off");
-    paletteButtons
-      .find((b) => b.userData.action === "view:movement")
-      .userData.caption.userData.set(
-        navigation.smooth ? "Move: smooth" : "Move: step",
-      );
     paletteRemove.forEach((b, i) => {
       b.visible = i < sequence.queue.length;
       b.userData.caption.visible = b.visible;
       b.userData.caption.userData.set(
-        sequence.queue[i] ? "× " + sequence.queue[i] : "",
+        sequence.queue[i] ? "× " + sequence.queue[i] : ""
       );
     });
   }
   function togglePalette() {
-    cancelVRInteraction();
     if (vrPalette.visible) {
       vrPalette.visible = false;
+      for (const [id, target] of handTargets)
+        if (target === vrPalette) endViewGrab(id);
       return;
     }
     const head = renderer.xr.isPresenting ? renderer.xr.getCamera() : camera;
@@ -1619,10 +1683,10 @@ if (renderer) {
       dir = head.getWorldDirection(new THREE.Vector3());
     const q = new THREE.Quaternion().setFromAxisAngle(
       new THREE.Vector3(0, 1, 0),
-      Math.atan2(-dir.x, -dir.z),
+      Math.atan2(-dir.x, -dir.z)
     );
     vrPalette.position.copy(
-      new THREE.Vector3(-0.8, -0.08, -1.35).applyQuaternion(q).add(pos),
+      new THREE.Vector3(-0.8, -0.08, -1.35).applyQuaternion(q).add(pos)
     );
     vrPalette.quaternion.copy(q);
     vrPalette.scale.setScalar(1);
@@ -1661,7 +1725,7 @@ if (renderer) {
       surface = spherePick(raycaster.ray, sphereRoot, radius);
     const near =
       raycaster.ray.origin.distanceTo(
-        sphereRoot.getWorldPosition(new THREE.Vector3()),
+        sphereRoot.getWorldPosition(new THREE.Vector3())
       ) <
       radius * sphereRoot.scale.x + 0.2;
     const heldSphere = [...handTargets.values()].includes(sphereRoot);
@@ -1682,10 +1746,6 @@ if (renderer) {
           ? sphereRoot
           : null;
     if (!target) return;
-    for (const controller of controllers) {
-      controller.userData.preparing = false;
-      controller.userData.stateGrab = null;
-    }
     if (!viewGrabs.has(target)) viewGrabs.set(target, new ViewGesture(target));
     handTargets.set(id, target);
     viewGrabs.get(target).begin(id, poseOf(c));
@@ -1698,7 +1758,7 @@ if (renderer) {
     shell.material.opacity = 0.16;
   }
   function updateStateGrab(c) {
-    if (!c.userData.stateGrab || activeViewGrab()) return;
+    if (!c.userData.stateGrab) return;
     c.updateWorldMatrix(true, false);
     const point = c.userData.stateGrab.offset
       .clone()
@@ -1711,40 +1771,30 @@ if (renderer) {
     setVector([local.x, -local.z, local.y]);
     sequence.capture(v);
     history = [];
-    action = "Arrow preparation";
+    action = "Prepare state · gates restart from this arrow";
     sync();
   }
   function viewAction(id) {
-    cancelVRInteraction();
     if (id === "smaller" || id === "larger")
       sphereRoot.scale.setScalar(
         THREE.MathUtils.clamp(
           sphereRoot.scale.x * (id === "larger" ? 1.15 : 1 / 1.15),
           0.5,
-          1.8,
-        ),
+          1.8
+        )
       );
-    if (id === "movement") navigation.smooth = !navigation.smooth;
-    const button = vrButtons.find((b) => b.userData.action === "view:movement");
-    button.userData.caption.userData.set(
-      navigation.smooth ? "Move: smooth" : "Move: step",
-    );
-    movementHint.userData.set(
-      navigation.smooth
-        ? "Left stick: move · right: snap · Y: center"
-        : "Left stick: step · right: snap · Y: center",
-    );
     sphereRoot.updateMatrixWorld(true);
+    viewGrabs.get(sphereRoot)?.capture();
     updateImmersiveLayout();
   }
   function updateVRInteraction(now) {
     const dt = Math.min(0.05, Math.max(0, (now - lastVRTime) / 1000));
     lastVRTime = now;
     const left = controllers.find(
-        (c) => c.userData.source?.handedness === "left",
+        (c) => c.userData.source?.handedness === "left"
       ),
       right = controllers.find(
-        (c) => c.userData.source?.handedness === "right",
+        (c) => c.userData.source?.handedness === "right"
       );
     const axes = (c) =>
       c?.userData.source?.gamepad?.mapping === "xr-standard" &&
@@ -1755,13 +1805,14 @@ if (renderer) {
       ra = axes(right);
     navigation.update(
       rig,
-      renderer.xr.getCamera(),
+      renderer.xr.isPresenting ? renderer.xr.getCamera() : camera,
       la ? [la[2], la[3]] : [0, 0],
       ra ? ra[2] : 0,
       dt,
-      !activeViewGrab() && !controllers.some((c) => c.userData.preparing),
+      renderer.xr.getSession()?.visibilityState !== "hidden" &&
+        !controllers.some((c) => c.userData.source && !c.visible)
     );
-    renderer.xr.updateCamera(camera);
+    if (renderer.xr.isPresenting) renderer.xr.updateCamera(camera);
     for (const c of controllers) {
       const source = c.userData.source,
         pad = source?.gamepad;
@@ -1821,16 +1872,16 @@ if (renderer) {
           new THREE.Vector3(),
           new THREE.Vector3(0, 0, -3),
         ]),
-        new THREE.LineBasicMaterial({ color: 0x185b91 }),
-      ),
+        new THREE.LineBasicMaterial({ color: 0x185b91 })
+      )
     );
     rig.add(c);
     const grip = renderer.xr.getControllerGrip(i);
     grip.add(
       new THREE.Mesh(
         new THREE.CylinderGeometry(0.018, 0.025, 0.12, 12),
-        new THREE.MeshStandardMaterial({ color: 0x667788 }),
-      ),
+        new THREE.MeshStandardMaterial({ color: 0x667788 })
+      )
     );
     rig.add(grip);
     c.userData.grip = grip;
@@ -1838,10 +1889,9 @@ if (renderer) {
       c.userData.source = e.data;
     });
     c.addEventListener("selectstart", () => {
-      if (activeViewGrab()) return;
       controllerRay(c);
       const hit = raycaster.intersectObjects(
-        vrButtons.filter(buttonVisible),
+        vrButtons.filter(buttonVisible)
       )[0];
       const surface = spherePick(raycaster.ray, sphereRoot, radius);
       if (
@@ -1858,18 +1908,19 @@ if (renderer) {
         }
         return;
       }
-      if (transition || trial || sequence.status === "paused") return;
+      if (controllers.some((other) => other !== c && other.userData.stateGrab))
+        return;
       const tip = endpoint.getWorldPosition(new THREE.Vector3()),
         tipRadius = 0.12 * sphereRoot.scale.x;
       const tipHit = raycaster.ray.intersectSphere(
         new THREE.Sphere(tip, tipRadius),
-        new THREE.Vector3(),
+        new THREE.Vector3()
       );
       if (!tipHit && !surface) return;
-      if (lesson.active && lesson.stage !== "tilt") act("lesson-explore");
+      beginStatePreparation();
       if (!tipHit) pointState();
       const target = sphereRoot.localToWorld(
-        worldVector(v).multiplyScalar(radius),
+        worldVector(v).multiplyScalar(radius)
       );
       c.updateWorldMatrix(true, false);
       c.userData.stateGrab = {
@@ -1893,7 +1944,7 @@ if (renderer) {
     const yaw = Math.atan2(-dir.x, -dir.z);
     const rotation = new THREE.Quaternion().setFromAxisAngle(
       new THREE.Vector3(0, 1, 0),
-      yaw,
+      yaw
     );
     const origin = new THREE.Vector3(pos.x, pos.y - 1.65, pos.z);
     vrPalette.visible = false;
@@ -1913,9 +1964,10 @@ if (renderer) {
       ],
       [comfortPanel, [0, 0.68, -1.7]],
       [vrCue, [0, 2.78, -2]],
+      [vrControls, [-1.65, 1.8, -2]],
     ]) {
       object.position.copy(
-        new THREE.Vector3(...offset).applyQuaternion(rotation).add(origin),
+        new THREE.Vector3(...offset).applyQuaternion(rotation).add(origin)
       );
       object.quaternion.copy(rotation);
       if (!object.userData.label) object.scale.setScalar(1);
@@ -1962,6 +2014,8 @@ if (renderer) {
       navigation.reset();
       await renderer.xr.setSession(session);
       immersiveLayout = true;
+      vrControls.visible = !controlsIntroduced;
+      controlsIntroduced = true;
       comfortPanel.visible = true;
       vrPanel.visible = !lesson.active;
       vrPrompt.visible = true;
@@ -1981,6 +2035,7 @@ if (renderer) {
     needsXRRecenter = false;
     cancelVRInteraction();
     immersiveLayout = false;
+    vrControls.visible = false;
     vrPalette.visible = false;
     vrCue.visible = false;
     shots.visible = true;
@@ -2047,8 +2102,8 @@ if (renderer) {
             ? 0xc3d8e8
             : b.userData.disabled
               ? 0xd2d5d7
-              : 0xe1e8ed,
-      ),
+              : 0xe1e8ed
+      )
     );
 
     if (!renderer.xr.isPresenting) {
@@ -2074,7 +2129,7 @@ if (renderer) {
       for (const c of controllers) {
         controllerRay(c);
         const hit = raycaster.intersectObjects(
-          vrButtons.filter(buttonVisible),
+          vrButtons.filter(buttonVisible)
         )[0];
         if (hit && !hit.object.userData.disabled)
           hit.object.material.color.setHex(0xb4cde0);
@@ -2085,18 +2140,18 @@ if (renderer) {
       const t = transition.duration
           ? Math.max(
               0,
-              Math.min(1, (now - transition.start) / transition.duration),
+              Math.min(1, (now - transition.start) / transition.duration)
             )
           : 1,
         eased = t * t * (3 - 2 * t);
       setVector(
-        rotate(transition.from, transition.axis, transition.angle * eased),
+        rotate(transition.from, transition.axis, transition.angle * eased)
       );
       const points = rotationPath(
         transition.from,
         transition.axis,
         transition.angle,
-        eased,
+        eased
       ).map((p) => worldVector(p).multiplyScalar(radius * 1.005));
       trail.geometry.dispose();
       trail.geometry = new THREE.BufferGeometry().setFromPoints(points);
@@ -2143,7 +2198,7 @@ if (renderer) {
         dots[i].visible = true;
         measurementArrow.visible = true;
         measurementArrow.setDirection(
-          worldVector(bases[trial.basis]).multiplyScalar(result === 0 ? 1 : -1),
+          worldVector(bases[trial.basis]).multiplyScalar(result === 0 ? 1 : -1)
         );
       }
       trial.shown = total;
@@ -2159,7 +2214,7 @@ if (renderer) {
       observedFill.position.x = -0.36 + 0.36 * fraction;
       observedCaption.userData.set(
         `Observed: ${allZero}/${allTotal} = ${formatProbability(fraction)} ` +
-          (basis === "Z" ? "zeros" : "+"),
+          (basis === "Z" ? "zeros" : "+")
       );
       if (total === 100) {
         const record = {
@@ -2199,6 +2254,7 @@ if (renderer) {
         active: immersiveLayout,
         paletteOpen: vrPalette.visible,
         mode: paletteMode,
+        controlsHelp: vrControls.visible,
         visiblePanels: [
           vrPanel,
           activityPanel,
@@ -2213,6 +2269,8 @@ if (renderer) {
         rig: rig.position.toArray(),
         grabbing: activeViewGrab(),
       },
+      action,
+      preparing: controllers.some((c) => !!c.userData.stateGrab),
       animating: !!transition,
       measuring: !!trial,
       queueMode,
@@ -2264,8 +2322,28 @@ if (renderer) {
         gesture.update(controllers.map((c, i) => [i, poseOf(c)]));
       if (phase === "end") c.dispatchEvent({ type: "squeezeend" });
     },
-    simulateArrowGrip(position, quaternion, phase) {
-      const c = controllers[0];
+    simulateGrabCurrentArrow(id = 0) {
+      const c = controllers[id],
+        before = [...v];
+      const origin = sphereRoot
+        .getWorldPosition(new THREE.Vector3())
+        .add(new THREE.Vector3(0, 0, 2));
+      const tip = endpoint.getWorldPosition(new THREE.Vector3());
+      c.position.copy(rig.worldToLocal(origin.clone()));
+      c.quaternion.setFromUnitVectors(
+        new THREE.Vector3(0, 0, -1),
+        tip.sub(origin).normalize()
+      );
+      c.quaternion.premultiply(
+        rig.getWorldQuaternion(new THREE.Quaternion()).invert()
+      );
+      c.updateMatrix();
+      c.updateMatrixWorld(true);
+      c.dispatchEvent({ type: "selectstart" });
+      return before;
+    },
+    simulateArrowGrip(position, quaternion, phase, id = 0) {
+      const c = controllers[id];
       c.position.set(...position);
       c.quaternion.set(...quaternion);
       c.updateMatrix();
@@ -2286,18 +2364,36 @@ if (renderer) {
       });
       return result;
     },
+    simulateVRInputs(left, right, dt = 0.016, buttons = {}) {
+      controllers.forEach((c, i) => {
+        c.visible = true;
+        c.userData.grip.visible = false;
+        c.userData.source = {
+          handedness: i ? "right" : "left",
+          gamepad: {
+            mapping: "xr-standard",
+            axes: [0, 0, ...(i ? [right, 0] : left)],
+            buttons: Array.from({ length: 6 }, (_, j) => ({
+              pressed: !!buttons[i + ":" + j],
+            })),
+          },
+        };
+      });
+      updateVRInteraction(lastVRTime + dt * 1000);
+      for (const c of controllers) updateStateGrab(c);
+    },
     simulateNavigation(left, right, dt = 0.016, enabled = true) {
       navigation.update(rig, camera, left, right, dt, enabled);
     },
     simulateControllerPrepare(vector, position = [0, 1.65, 0]) {
       const controller = controllers[0],
         target = sphereRoot.localToWorld(
-          worldVector(vector).multiplyScalar(radius),
+          worldVector(vector).multiplyScalar(radius)
         );
       controller.position.set(...position);
       controller.quaternion.setFromUnitVectors(
         new THREE.Vector3(0, 0, -1),
-        target.sub(controller.position).normalize(),
+        target.sub(controller.position).normalize()
       );
       controller.updateMatrix();
       controller.dispatchEvent({ type: "selectstart" });
@@ -2308,7 +2404,7 @@ if (renderer) {
     anchorFromPose(position, direction) {
       anchorExperience(
         new THREE.Vector3(...position),
-        new THREE.Vector3(...direction),
+        new THREE.Vector3(...direction)
       );
       return sphereRoot.position.toArray();
     },
@@ -2322,7 +2418,7 @@ if (renderer) {
         }
       }
       const target = vrButtons.find(
-        (b) => b.userData.action === id && buttonVisible(b),
+        (b) => b.userData.action === id && buttonVisible(b)
       );
       if (!target) return false;
       const controller = controllers[0];
@@ -2331,7 +2427,7 @@ if (renderer) {
       controller.position.set(...position);
       controller.quaternion.setFromUnitVectors(
         new THREE.Vector3(0, 0, -1),
-        destination.sub(controller.position).normalize(),
+        destination.sub(controller.position).normalize()
       );
       controller.updateMatrix();
       controller.dispatchEvent({ type: "selectstart" });
@@ -2340,9 +2436,11 @@ if (renderer) {
     },
     previewVRLayout() {
       immersiveLayout = true;
+      vrControls.visible = !controlsIntroduced;
+      controlsIntroduced = true;
       anchorExperience(
         new THREE.Vector3(0, 1.65, 0),
-        new THREE.Vector3(0, 0, -1),
+        new THREE.Vector3(0, 0, -1)
       );
       comfortPanel.visible = true;
       vrPanel.visible = !lesson.active;

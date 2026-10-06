@@ -58,7 +58,7 @@ export class ViewGesture {
       world.decompose(
         this.object.position,
         this.object.quaternion,
-        this.object.scale,
+        this.object.scale
       );
     } else {
       const a = new THREE.Vector3().setFromMatrixPosition(values[0]),
@@ -68,12 +68,12 @@ export class ViewGesture {
       const midpoint = a.clone().add(b).multiplyScalar(0.5),
         delta = new THREE.Quaternion().setFromUnitVectors(
           this.start.direction,
-          b.clone().sub(a).normalize(),
+          b.clone().sub(a).normalize()
         );
       const scale = THREE.MathUtils.clamp(
           (this.start.scale * distance) / this.start.distance,
           this.min,
-          this.max,
+          this.max
         ),
         ratio = scale / this.start.scale;
       this.object.position
@@ -93,56 +93,56 @@ export function spherePick(ray, object, radius) {
   object.updateWorldMatrix(true, false);
   const sphere = new THREE.Sphere(
     object.getWorldPosition(new THREE.Vector3()),
-    radius * object.getWorldScale(new THREE.Vector3()).x,
+    radius * object.getWorldScale(new THREE.Vector3()).x
   );
   return ray.intersectSphere(sphere, new THREE.Vector3());
 }
+// Navigation is an independent, view-only input channel. Neutral rearming is
+// only for tracking/session interruptions; held sticks move every frame.
 export class ComfortNavigation {
   constructor() {
     this.reset();
   }
   reset() {
     this.armed = false;
-    this.stepHeld = false;
-    this.turnHeld = false;
-    this.smooth = false;
   }
   update(rig, head, left = [0, 0], right = 0, dt = 0, enabled = true) {
     if (!enabled) {
-      this.armed = false;
+      this.reset();
       return;
     }
-    if (Math.max(...left.map(Math.abs), Math.abs(right)) < 0.2) {
+    if (Math.max(...left.map(Math.abs), Math.abs(right)) < 0.2)
       this.armed = true;
-      this.stepHeld = false;
-      this.turnHeld = false;
-    }
     if (!this.armed) return;
-    if (Math.abs(right) < 0.25) this.turnHeld = false;
-    if (Math.hypot(...left) < 0.25) this.stepHeld = false;
-    if (Math.abs(right) > 0.7 && !this.turnHeld) {
+    const seconds = Math.min(0.05, Math.max(0, dt));
+    const deadzone = 0.2;
+    const turn =
+      Math.abs(right) > deadzone
+        ? (Math.sign(right) * (Math.min(1, Math.abs(right)) - deadzone)) /
+          (1 - deadzone)
+        : 0;
+    if (turn) {
       const q = new THREE.Quaternion().setFromAxisAngle(
         new THREE.Vector3(0, 1, 0),
-        (-Math.sign(right) * Math.PI) / 6,
+        ((-turn * Math.PI) / 3) * seconds
       );
       const pivot = head.getWorldPosition(new THREE.Vector3());
       rig.position.sub(pivot).applyQuaternion(q).add(pivot);
       rig.quaternion.premultiply(q);
       rig.updateMatrixWorld(true);
-      this.turnHeld = true;
     }
     const magnitude = Math.hypot(...left);
-    if (magnitude < 0.65 || (!this.smooth && this.stepHeld)) return;
+    if (magnitude <= deadzone) return;
     const forward = head.getWorldDirection(new THREE.Vector3());
     forward.y = 0;
     if (forward.lengthSq() < 0.001) return;
     forward.normalize();
     const across = new THREE.Vector3(-forward.z, 0, forward.x);
-    const amount = this.smooth ? 0.65 * Math.min(0.05, Math.max(0, dt)) : 0.4;
+    const amount =
+      (0.65 * seconds * (Math.min(1, magnitude) - deadzone)) / (1 - deadzone);
     rig.position
       .addScaledVector(across, (left[0] / magnitude) * amount)
       .addScaledVector(forward, (-left[1] / magnitude) * amount);
     rig.updateMatrixWorld(true);
-    this.stepHeld = true;
   }
 }
