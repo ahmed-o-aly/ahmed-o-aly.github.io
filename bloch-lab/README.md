@@ -1,6 +1,6 @@
 # Bloch Lab
 
-A guided pure-qubit experiment for Ahmed Aly's personal website, listed as Works item 08. A separate owner-private Sites copy is available for review.
+A guided pure-qubit experiment for Ahmed Aly's personal website, listed as Works item 08. Bloch updates deploy through the personal website only.
 
 ## Run and build
 
@@ -26,15 +26,15 @@ Browser suites: `node learning-qa.mjs`, `node qa.mjs`, `node sequence-qa.mjs`, `
 
 Before classroom use, check headset panel/label legibility, ray aim/reach, preparation, floor height/recenter, session enter/exit, seated/standing positions and sustained frame rate. Physical headset operation remains untested. Vite warns about the approximately 545 kB raw Three.js bundle (140 kB gzip). Physical headset checks remain separate from website publication.
 
-## Quest 3 interaction preview
+## Quest 3 interaction
 
-This private revision replaces camera-facing text sprites with two-sided, world-fixed text planes. Panels remain fixed unless explicitly gripped or recentered; sphere axes and labels turn together when the sphere is handled. There is no per-frame head-following text.
+This revision replaces camera-facing text sprites with two-sided, world-fixed text planes. Panels remain fixed unless explicitly gripped or recentered; sphere axes and labels turn together when the sphere is handled. There is no per-frame head-following text.
 
 Adapted from the existing Protein Structures controller-relative one-grip transform and two-grip midpoint/rotation/scaling behavior. Grip the sphere (nearby or by pointing) to reposition and turn its view. Two grips resize it; releasing either grip rebases without a jump. Panels can also be gripped independently. Trigger holds the state arrow with a controller-relative offset, including from behind; analytic surface picking supports all viewing sides. VIEW transformations never write the quantum vector, counts or gate sequence.
 
-Quest Touch controls use XR-standard axes 2/3. Left stick takes a short step, right stick snap-turns 30 degrees; neutral rearming prevents held sticks from repeating steps or acting on resume. Smooth movement is an explicit option on the fixed comfort panel. Y or Center recenters; Smaller/Larger adjust only sphere size. Grip/state holds suspend locomotion. Session visibility, tracking loss, disconnect, reset and exit cancel holds. Physical room-scale viewing remains supported.
+Quest Touch controls use XR-standard axes 2/3. Left stick takes a short step, right stick snap-turns 30 degrees; neutral rearming prevents held sticks from repeating steps or acting on resume. Smooth movement is an explicit option in the on-demand palette’s View tab. Y or Center recenters; Smaller/Larger adjust only sphere size. Grip/state holds suspend locomotion. Session visibility, tracking loss, disconnect, reset and exit cancel holds. Physical room-scale viewing remains supported.
 
-`vr-qa.mjs` adds simulated grip, two-grip scaling, release/reset, fixed label transforms during viewer navigation, rear arrow dragging and view controls during gate playback. `tests/vr-interaction.test.js` checks gesture offsets, bounds, overlapping hands, all-sided picking and comfort navigation. Physical Quest 3 testing is pending; the public website retains its previously deployed revision.
+`vr-qa.mjs` adds simulated grip, two-grip scaling, release/reset, fixed label transforms during viewer navigation, rear arrow dragging and view controls during gate playback. `tests/vr-interaction.test.js` checks gesture offsets, bounds, overlapping hands, all-sided picking and comfort navigation. Physical Quest 3 testing remains pending.
 
 ### Distinct immersive layout
 
