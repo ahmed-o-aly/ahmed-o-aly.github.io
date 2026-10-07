@@ -1,0 +1,25 @@
+{
+  "name": "elen424-power-systems-lab",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "vite build",
+    "preview": "vite preview --host 127.0.0.1",
+    "prepare:bvh": "node scripts/prepare-bvh.mjs",
+    "test": "node --test tests/*.test.js",
+    "test:browser": "node scripts/browser-qa.mjs"
+  },
+  "dependencies": {
+    "three": "0.180.0",
+    "three-mesh-bvh": "0.9.8"
+  },
+  "devDependencies": {
+    "vite": "7.3.6",
+    "playwright": "1.61.1"
+  }
+}

@@ -1265,3 +1265,19 @@
     width: min(100%, 180px);
   }
 }
+
+// Keep code readable within the paper/ink garden shell.
+.garden-body pre,
+.garden-body code {
+  color: var(--garden-ink);
+}
+
+.garden-body .highlight .nb {
+  color: #006b86;
+}
+
+.garden-body .highlight .m,
+.garden-body .highlight .mf,
+.garden-body .highlight .mi {
+  color: #006b69;
+}

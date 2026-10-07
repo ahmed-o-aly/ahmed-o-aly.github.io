@@ -170,6 +170,8 @@ kramdown:
 # Includes & excludes
 include: ["_pages", "_scripts"]
 exclude:
+  - power-systems-lab/
+  - assets/apps/power-systems-lab/
   - bloch-lab/
   - assets/apps/bloch-lab/
   - circuits-lab/

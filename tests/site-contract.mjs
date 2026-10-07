@@ -5,6 +5,7 @@ const focusedContracts = [
   "./folio-contract.mjs",
   "./uae-economy-contract.mjs",
   "./bloch-lab-contract.mjs",
+  "./power-systems-lab-contract.mjs",
   "./goodreads-sync.mjs",
   "./legacy-contract.mjs",
   "./udes-contract.mjs",

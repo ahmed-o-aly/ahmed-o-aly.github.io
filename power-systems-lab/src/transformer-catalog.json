@@ -1,0 +1,121 @@
+[
+  [
+    "tank",
+    "Tank and radiator tubes",
+    "The oil enclosure and curved external cooling tubes are modeled together in the source Base part. The tank holds the active assembly; radiator surfaces transfer heat to the surroundings.",
+    "The source has three solids in this part. This academic model shows tubular radiators; it does not have the conservator and fan arrangement of the substation model.",
+    "Source Base, drawing items 28 and 17; dimension sheet 1/2"
+  ],
+  [
+    "lid",
+    "Main lid",
+    "The bolted lid closes the oil tank and supports the high-voltage bushings and inspection cover.",
+    "Gaskets seal the tank joint. Removing the lid here is an inspection view, not a maintenance procedure.",
+    "Source tampa; dimension sheet 1/2, VISTA SUP. TAMPA"
+  ],
+  [
+    "hv-bushings",
+    "High-voltage bushings",
+    "Three ribbed porcelain bushing bodies carry insulated terminals through the grounded enclosure.",
+    "The ribs increase surface creepage distance. Terminal fasteners remain separate source parts. No insulation rating is inferred.",
+    "Source isolador porcelana and terminal screws; drawing items 42, 1–2"
+  ],
+  [
+    "lv-terminals",
+    "Low-voltage terminal assemblies",
+    "Four external terminal fittings are represented by the xbase source parts and their fasteners.",
+    "These are the external low-voltage connection assemblies shown in the exploded drawing. Their count alone does not establish the winding connection or neutral arrangement.",
+    "Source xbase family; exploded drawing items 21–24"
+  ],
+  [
+    "lv-coils",
+    "Low-voltage coils · BT",
+    "Three inner coil bodies surround the three core limbs. The drawing calls these BOBINA BT, with diameter 26 mm and height 43 mm.",
+    "Each inner coil is nested inside a high-voltage coil. Their concentric placement is taken from the actual source assembly. Modeled ribs are not a verified electrical turns count.",
+    "Source bobina22 and bobina22_MIR; dimension sheet 1/2, BOBINA BT; exploded item 12"
+  ],
+  [
+    "hv-coils",
+    "High-voltage coils · AT",
+    "Three outer cylindrical coil bodies enclose the low-voltage coils. The drawing calls these BOBINA AT, diameter 30 mm and height 43 mm.",
+    "The outer coil is electrically insulated from the inner coil and core. The turns ratio determines voltage ratio, but this source provides no winding turns or rated ratio.",
+    "Source bobina1 and bobina1_MIR; dimension sheet 1/2, BOBINA AT; exploded item 13"
+  ],
+  [
+    "core-limbs",
+    "Magnetic core limbs",
+    "Three rectangular core limbs pass through the coil centers. The drawing specifies a 17.4 mm square profile and 86 mm length.",
+    "The limbs and yokes form the magnetic circuit that links the coils. The model shows the solid core profile rather than individual laminations.",
+    "Source bobina4 and bobina4_MIR; dimension sheet 1/2, BOBINA NUCLEO; exploded item 14"
+  ],
+  [
+    "lower-yokes",
+    "Lower core yokes",
+    "Two lower core sections join adjacent limbs at the bottom of the active assembly.",
+    "Although the source filename says bobina_interna, the rectangular geometry and drawing identify core pieces. They are not inner windings.",
+    "Source bobina_interna; exploded item 30, NÚCLEO INFERIOR"
+  ],
+  [
+    "upper-yoke",
+    "Upper core yoke",
+    "The upper rectangular core bar measures 75 × 17.4 × 5 mm in the source drawing.",
+    "It bridges the top of the three core limbs, completing the core path with the lower yokes. Nearby clamp members are separate mechanical parts.",
+    "Source peça alfa 3; dimension sheet 1/2, NÚCLEO SUP.; exploded item 34"
+  ],
+  [
+    "coil-end-rings",
+    "Coil end rings",
+    "Six annular end rings sit above and below the three coil pairs.",
+    "The rings locate the coil assembly; small spacer blocks between the rings and coils are separate geometry.",
+    "Source bobina3 family; exploded item 10, ANEL BOBINA"
+  ],
+  [
+    "coil-spacers",
+    "Coil spacers",
+    "Small repeated blocks separate and support the coil ends and end rings.",
+    "These are visible mechanical insulation supports in the source. Their material and dielectric rating are not certified by the CAD file.",
+    "Source pecinha_bobina family; exploded item 11, ISO. ANEL BOBINA"
+  ],
+  [
+    "tap-hardware",
+    "Tap-changing mechanism and supports",
+    "The source includes a selector assembly, pins, linkage and support members identified as comutador.",
+    "A tap changer changes the effective winding connection to adjust ratio. This model does not verify a live operating sequence or on-load capability.",
+    "Source comutador assembly; exploded items 35–37; dimension sheet 2/2"
+  ],
+  [
+    "internal-leads",
+    "Internal connection conductors",
+    "Four conductive solids are included in the source trifasico_bifasico part.",
+    "Their geometry can be inspected, but a schematic is required to assign a delta/star circuit or map every terminal.",
+    "Actual STEP source part; no verified electrical netlist"
+  ],
+  [
+    "core-supports",
+    "Core clamps and insulating supports",
+    "Clamp bars, studs and wooden support shapes hold the active assembly in position.",
+    "These parts carry mechanical loads and maintain spacing around the core and coils.",
+    "Source peça alfa / madeira / stud families; exploded drawing"
+  ],
+  [
+    "seals-covers",
+    "Gaskets, covers and clamps",
+    "Separate seals, inspection cover, lid clamps and mounting hardware surround the tank opening.",
+    "These provide sealing, closure and mechanical restraint. The source does not specify oil type or leakage performance.",
+    "Source vedacao, tampa_sup and presilha families"
+  ],
+  [
+    "earthing-lug",
+    "Enclosure earthing lug",
+    "The source includes grounding attachment hardware on the enclosure.",
+    "An enclosure bond is distinct from the transformer winding circuit. The model contains no complete grounding network.",
+    "Source fix_aterramento family; exploded drawing"
+  ],
+  [
+    "hardware",
+    "Other source fittings and fasteners",
+    "The remaining actual source parts include standards-named bolts, nuts, washers and several unnamed fittings.",
+    "Source names and positions are preserved. Unidentified fittings remain available for inspection without an invented electrical role.",
+    "Original STEP assembly metadata"
+  ]
+]
