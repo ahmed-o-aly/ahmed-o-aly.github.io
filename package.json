@@ -27,7 +27,8 @@
     "build:bloch-lab": "npm --prefix bloch-lab ci && npm --prefix bloch-lab run build",
     "test:bloch-lab": "npm --prefix bloch-lab test",
     "build:power-systems-lab": "npm --prefix power-systems-lab ci && npm --prefix power-systems-lab run build",
-    "test:power-systems-lab": "npm --prefix power-systems-lab test"
+    "test:power-systems-lab": "npm --prefix power-systems-lab test",
+    "test:udes-v2-foundations": "node tests/udes-v2-foundations.mjs"
   },
   "devDependencies": {
     "@shopify/prettier-plugin-liquid": "1.4.0",

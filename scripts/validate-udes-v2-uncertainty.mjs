@@ -8,7 +8,7 @@ import { summarizeEvidence } from "./udes-v2-evidence-summary.mjs";
 import { controllerModelInputs, finalizeSourceProvenance } from "./udes-v2-source-provenance.mjs";
 
 const require = createRequire(import.meta.url);
-const { UdesV2Engine } = require("../assets/js/udes-v2-worker.js");
+const { UdesV2Engine, SeededRandom } = require("../assets/js/udes-v2-worker.js");
 const { PUBLIC_PRESETS, horizonEndDayFrom } = require("../assets/js/udes-v2-app.js");
 const baseline = require("../assets/data/udes-v2/baseline.json");
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -25,8 +25,12 @@ if (!Number.isInteger(months) || months < 1 || months > 120) throw new Error("--
 const seeds = String(args.get("seeds") || "240124,70117,90421")
   .split(",")
   .map(Number);
-if (seeds.length < 2 || new Set(seeds).size !== seeds.length || seeds.some((seed) => !Number.isSafeInteger(seed) || seed < 1)) {
-  throw new Error("--seeds requires at least two distinct positive integer seeds.");
+if (
+  seeds.length < 2 ||
+  new Set(seeds.map(SeededRandom.normalizeSeed)).size !== seeds.length ||
+  seeds.some((seed) => !Number.isSafeInteger(seed) || seed < 1)
+) {
+  throw new Error("--seeds requires at least two positive integer seeds with distinct normalized uint32 states.");
 }
 const outputPath = path.resolve(ROOT, String(args.get("output") || "assets/data/udes-v2/uncertainty-report.json"));
 const sourcePaths = {
