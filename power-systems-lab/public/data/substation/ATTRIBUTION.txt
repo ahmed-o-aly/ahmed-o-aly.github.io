@@ -1,0 +1,11 @@
+Substation — One80 Solar
+Original model: https://sketchfab.com/3d-models/substation-8f4e54879b664104bece03d8e7236c15
+Licensed under Creative Commons Attribution 4.0 International:
+https://creativecommons.org/licenses/by/4.0/
+
+Adapted for Power Systems Lab by Ahmed Aly.
+Changes: source-preserving OBJ triangulation, connected-piece grouping, exact
+attribute packing, gzip transport, optional presentation normals, representative
+material finishes and teaching annotations. All 665,472 triangles are retained.
+The original diffuse image is unchanged. The archive does not declare physical
+units, operating ratings, an equipment legend or a verified electrical netlist.

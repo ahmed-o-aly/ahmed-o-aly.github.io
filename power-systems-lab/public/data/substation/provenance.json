@@ -1,0 +1,48 @@
+{
+  "source_sha256": "79fff79ab764382956febe5a39750be08103cb996f8befb7b000083d6befcf91",
+  "glb_sha256": "3ef5a736178cdfec16ddc94a714338eb2e06d1367052054d984451b1e4cfb0ec",
+  "source_vertices": 367027,
+  "source_polygons": 371272,
+  "source_polygon_sizes": {
+    "4": 216153,
+    "12": 216,
+    "3": 141706,
+    "10": 118,
+    "8": 542,
+    "18": 88,
+    "52": 12,
+    "9": 10944,
+    "6": 1200,
+    "14": 30,
+    "7": 242,
+    "16": 5,
+    "5": 16
+  },
+  "triangles": 665472,
+  "tuple_vertices": 1116979,
+  "bounds_min": [
+    -1551.018798828125,
+    -1.9686000347137451,
+    -5059.2109375
+  ],
+  "bounds_max": [
+    1551.0186767578125,
+    1046.67431640625,
+    7059.2109375
+  ],
+  "units": "Not declared in supplied OBJ",
+  "up_axis": "Y appears vertical from bounding geometry; verify rendered scene",
+  "texture_binding": "Archive contains one diffuse atlas and matching UVs, but no MTL. Binding is an inspection inference.",
+  "geometry": "No geometry reduction. Convex polygons triangulated in original winding; verified concave polygons ear-cut without crossing their boundaries. Source positions, normal and UV corner attributes preserved. Degenerate/unresolved source polygons remain in original fan form; see triangulation audit.",
+  "geometric_pieces": 15171,
+  "license": "CC BY 4.0; verified on actual Sketchfab source page",
+  "archive_licence_metadata": "No creator or licence file inside archive",
+  "creator": "One80 Solar",
+  "source_url": "https://sketchfab.com/3d-models/substation-8f4e54879b664104bece03d8e7236c15",
+  "license_url": "https://creativecommons.org/licenses/by/4.0/",
+  "reviewed_glb_sha256": "ba9ecdd6fb5142849d51f6842297be7dd8d6aa74bf923867c98b1a4ed6b1c6ad",
+  "packed_vertices": 1116979,
+  "corner_attributes_bit_identical": true,
+  "triangle_order_preserved": true,
+  "presentation": "Representative steel, ceramic and painted finishes; optional smoothed normals. Original appearance remains selectable. No electrical operating mechanism or rating inferred."
+}

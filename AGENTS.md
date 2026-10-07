@@ -16,7 +16,7 @@ The live site is <https://ahmed-o-aly.github.io/>. The portfolio is a Jekyll sit
 
 The current design uses the `garden` shell and `folio-*` components: paper/ink/rust colors, EB Garamond and IBM Plex Mono, an alternating Selected Works section, a reading library, and project write-ups. Older al-folio templates and styles remain for supporting features; trace the active layout before editing them.
 
-Applications implemented here include Abu Dhabi Urban Dynamics v2, UAE Economy Lab, Protein Structures, Circuits Lab, and Bloch Lab. Machine Lab is an external application linked and embedded by this portfolio; its machine viewer implementation belongs to the separate `ahmed-o-aly/cnc-machine-inspector` repository.
+Applications implemented here include Abu Dhabi Urban Dynamics v2, UAE Economy Lab, Protein Structures, Circuits Lab, Bloch Lab, and Power Systems Lab. Machine Lab is an external application linked and embedded by this portfolio; its machine viewer implementation belongs to the separate `ahmed-o-aly/cnc-machine-inspector` repository.
 
 ## Content and routes
 
@@ -65,14 +65,15 @@ Preserve keyboard access, focus visibility, reduced-motion behavior, responsive 
 
 These apps have their own `package.json`, lockfile, Vite configuration, dependencies, development server, and tests. Installing dependencies at the repository root does not install their dependencies. Use Node 22 for shared development; consult each app's package and README for its requirements.
 
-| Application        | Source                                                                  | Published bundle and routes                                                                                               |
-| ------------------ | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| UAE Economy Lab    | `apps/uae-economy-lab/`; React/TypeScript economic scenario workbench   | `assets/apps/uae-economy-lab/` publishes at `/uae-economy-lab/`; `_projects/uae-economy-lab.md` is the write-up.          |
-| Protein Structures | `molecular-vr/`; Three.js/WebXR protein and cryo-EM viewer              | `assets/apps/protein-structures/` publishes at `/protein-structures/`; `_projects/protein-structures.md` is the write-up. |
-| Bloch Lab          | `bloch-lab/`; pure-qubit preparation, gate paths and fresh measurements | `assets/apps/bloch-lab/` publishes at `/bloch-lab/`; `_projects/bloch-lab.md` is the write-up.                            |
-| Circuits Lab       | `circuits-lab/`; Three.js/WebXR circuit equipment and experiments       | `assets/apps/circuits-lab/` publishes at `/circuits-lab/`; `_projects/circuits-lab.md` is the write-up.                   |
+| Application        | Source                                                                      | Published bundle and routes                                                                                               |
+| ------------------ | --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| UAE Economy Lab    | `apps/uae-economy-lab/`; React/TypeScript economic scenario workbench       | `assets/apps/uae-economy-lab/` publishes at `/uae-economy-lab/`; `_projects/uae-economy-lab.md` is the write-up.          |
+| Protein Structures | `molecular-vr/`; Three.js/WebXR protein and cryo-EM viewer                  | `assets/apps/protein-structures/` publishes at `/protein-structures/`; `_projects/protein-structures.md` is the write-up. |
+| Power Systems Lab  | `power-systems-lab/`; source-backed equipment inspection and Quest controls | `assets/apps/power-systems-lab/` publishes at `/power-systems-lab/`; `_projects/power-systems-lab.md` is the write-up.    |
+| Bloch Lab          | `bloch-lab/`; pure-qubit preparation, gate paths and fresh measurements     | `assets/apps/bloch-lab/` publishes at `/bloch-lab/`; `_projects/bloch-lab.md` is the write-up.                            |
+| Circuits Lab       | `circuits-lab/`; Three.js/WebXR circuit equipment and experiments           | `assets/apps/circuits-lab/` publishes at `/circuits-lab/`; `_projects/circuits-lab.md` is the write-up.                   |
 
-Rebuild and commit the corresponding bundle whenever app source or prepared data changes. Do not edit compiled bundles directly. `_config.yml` excludes app source and bundle directories from normal Jekyll rendering. `_plugins/uae-economy-bundle.rb`, `_plugins/protein-structures-bundle.rb`, `_plugins/circuits-lab-bundle.rb`, and `_plugins/bloch-lab-bundle.rb` copy committed bundles to their public routes after Jekyll's minifiers finish. Deployment consumes committed bundles; it does not rebuild these applications. Preserve compiled module, worker, and data bytes.
+Rebuild and commit the corresponding bundle whenever app source or prepared data changes. Do not edit compiled bundles directly. `_config.yml` excludes app source and bundle directories from normal Jekyll rendering. `_plugins/uae-economy-bundle.rb`, `_plugins/protein-structures-bundle.rb`, `_plugins/circuits-lab-bundle.rb`, `_plugins/bloch-lab-bundle.rb`, and `_plugins/power-systems-lab-bundle.rb` copy committed bundles to their public routes after Jekyll's minifiers finish. Deployment consumes committed bundles; it does not rebuild these applications. Preserve compiled module, worker, and data bytes.
 
 ### UAE Economy Lab locations
 
@@ -99,6 +100,10 @@ Rebuild and commit the corresponding bundle whenever app source or prepared data
 ### Bloch Lab
 
 `bloch-lab/` contains the standalone pure-qubit teaching experiment. `npm run build:bloch-lab` builds `assets/apps/bloch-lab/`; `_plugins/bloch-lab-bundle.rb` copies it unchanged to `/bloch-lab/`. The project entry is `_projects/bloch-lab.md`. Run `npm run test:bloch-lab` for independent complex-matrix gate, Born-rule, and sequence state-machine checks. `bloch-lab/sequence.js` owns queued gate order, starting input and execution checkpoints; `learning.js` owns X/Y/Z fresh-copy measurement, probability formatting; `lesson.js` owns the ordered preparation-to-interference teaching path; `trajectory.js` samples the exact gate rotation paths; `vr-interaction.js` owns view-only grips and continuous proportional locomotion/turning, separately from quantum state; `main.js` animates and pauses transitions and retains completed paths until replay, edits or a new preparation. `bloch-lab/README.md` documents local browser QA, same-origin launch verification and pending physical headset checks. `tests/bloch-lab-contract.mjs` checks the generated route and byte preservation as part of `test:site`. Bloch changes deploy through this personal website’s existing workflow; do not use a separate ChatGPT Sites deployment.
+
+### Power Systems Lab
+
+`power-systems-lab/` contains the ELEN424 source-backed substation experience. Build and test with `npm run build:power-systems-lab` and `npm run test:power-systems-lab`. Its bundle is copied byte-for-byte to `/power-systems-lab/`; `tests/power-systems-lab-contract.mjs` verifies the route, licence and absence of private transformer data. `src/substation.js` owns immutable source geometry, BVH picking and complete-device isolation; `src/xr.js` routes independent navigation, grip and panel input; `src/navigation.js` follows the latest Bloch controls, and `src/vr-panel.js` reuses Protein Structures’ single-pointer capture. `README.md` documents source confidence and browser QA. The Patrick transformer is available only on the localhost Vite server through two exact read-only routes outside `public/`; never copy its mesh, original CAD, manifest or derived screenshots into a public bundle without explicit verified redistribution permission. Production builds remove the private adapter. The public model is CC BY 4.0 with source and modification attribution.
 
 ### App commands
 

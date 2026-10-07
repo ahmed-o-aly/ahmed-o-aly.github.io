@@ -25,7 +25,9 @@
     "build:circuits-lab": "npm --prefix circuits-lab ci && npm --prefix circuits-lab run build",
     "test:circuits-lab": "npm --prefix circuits-lab test",
     "build:bloch-lab": "npm --prefix bloch-lab ci && npm --prefix bloch-lab run build",
-    "test:bloch-lab": "npm --prefix bloch-lab test"
+    "test:bloch-lab": "npm --prefix bloch-lab test",
+    "build:power-systems-lab": "npm --prefix power-systems-lab ci && npm --prefix power-systems-lab run build",
+    "test:power-systems-lab": "npm --prefix power-systems-lab test"
   },
   "devDependencies": {
     "@shopify/prettier-plugin-liquid": "1.4.0",
