@@ -1,11 +1,11 @@
 {
   "schemaVersion": "2.0.0",
-  "generatedAt": "2026-09-12T10:55:44.039Z",
+  "generatedAt": "2026-10-07T09:42:26.611Z",
   "model": "Abu Dhabi Urban Dynamics Lab / UDES v2",
   "datasetSchemaVersion": "2.2.0",
-  "engineSchemaVersion": "2.2",
+  "engineSchemaVersion": "2.3",
   "sourceHashes": {
-    "engineSha256": "69c73ac3dbf6c904bbab49d9fce4fb7786b14b46782d1c8bfb53554f6511c661",
+    "engineSha256": "8f90638f949397eb28285d46511727b172c7abe85df67593e08f024029319755",
     "baselineSha256": "02970f782667a391da60198f3e006cdb282710ddd0d91c7ae36195a7e70461da",
     "publicControllerSha256": "f4ec3ff8fe37766fedc9f43c42349f97e91badffa4a57f1dc14095fdcd67bd57",
     "validationHarnessSha256": "2ae007f3bf41eb1fbf790afd226b8d4441e33bc7b8fd4a11cdc3480ac2c48155",
@@ -224,45 +224,45 @@
       },
       "metrics": {
         "representedPopulation": 1517500,
-        "representedEmployed": 1009000,
+        "representedEmployed": 1006500,
         "representedLaborForce": 1062250,
-        "representedUnemployed": 53250,
+        "representedUnemployed": 55750,
         "representedNonparticipants": 455250,
-        "employmentRatePercent": 66.49,
-        "unemploymentRatePercent": 5.01,
+        "employmentRatePercent": 66.33,
+        "unemploymentRatePercent": 5.25,
         "laborForceParticipationRatePercent": 70,
         "nonParticipationRatePercent": 30,
         "modeCountsRepresented": {
-          "car": 378500,
-          "pt": 457500,
-          "walk": 167250,
-          "none": 5750
+          "car": 384500,
+          "pt": 453250,
+          "walk": 161500,
+          "none": 7250
         },
         "modeSharesPercent": {
-          "car": 37.73,
-          "pt": 45.6,
-          "walk": 16.67
+          "car": 38.48,
+          "pt": 45.36,
+          "walk": 16.16
         },
-        "carOwnershipRatePercent": 50.87,
+        "carOwnershipRatePercent": 51.32,
         "carAccessAccounting": {
           "initialAgentCount": 4609,
-          "currentAgentCount": 3088,
+          "currentAgentCount": 3115,
           "acquisitions": 0,
-          "disposals": 1507,
-          "replacementExits": 14,
+          "disposals": 1481,
+          "replacementExits": 13,
           "reconciliationDifference": 0,
           "unit": "weighted resident cohorts with vehicle access"
         },
         "citizenStateSharesPercent": {
-          "Happy": 35.21,
-          "Waiting": 34.07,
-          "Extreme": 29.47,
-          "Recovery": 1.25
+          "Happy": 35.26,
+          "Waiting": 34.43,
+          "Extreme": 28.83,
+          "Recovery": 1.48
         },
-        "averageRoundTripMinutes": 44.01,
-        "averageNetIncomeAedPerMonth": 4680.45,
-        "averageBankBalanceAed": 10620.32,
-        "averageMonthlySavingOrDrawdownAed": 174.99,
+        "averageRoundTripMinutes": 45.06,
+        "averageNetIncomeAedPerMonth": 4726.98,
+        "averageBankBalanceAed": 10785.16,
+        "averageMonthlySavingOrDrawdownAed": 179.78,
         "savingsPolicy": {
           "monthlyEssentialConsumptionAed": 2500,
           "positiveResidualSavingsRate": 0.25,
@@ -270,69 +270,69 @@
         },
         "financialStatusSharesPercent": {
           "outside-labor-force": 30,
-          "unemployed": 2.7,
-          "fixed-cost-deficit": 5.54,
-          "essentials-gap": 17.38,
-          "thin-positive-buffer": 9.74,
-          "savings-capacity": 34.65
+          "unemployed": 2.95,
+          "fixed-cost-deficit": 5.57,
+          "essentials-gap": 16.75,
+          "thin-positive-buffer": 9.59,
+          "savings-capacity": 35.14
         },
         "extremeNonparticipantSharePercent": 0,
-        "meanHousingRentAedPerMonth": 2753.23,
-        "averageRoadCapacityUsagePercent": 16.07,
-        "sameZoneWorkSharePercent": 38.6,
+        "meanHousingRentAedPerMonth": 2736.74,
+        "averageRoadCapacityUsagePercent": 16.63,
+        "sameZoneWorkSharePercent": 38.45,
         "housingOccupancyRatePercent": 86.85,
         "housingCapacityRepresented": 1747250,
         "housingOvercapacityRepresented": 0,
         "enterprisePlaceCapacity": 2014,
-        "dailyCarVehicleKm": 8322011.87,
+        "dailyCarVehicleKm": 8666290.83,
         "forcedInterzoneWalkers": 0,
         "unservedCommuters": 0,
-        "capacityOverflowTrips": 11750,
+        "capacityOverflowTrips": 17250,
         "networkAssignmentDate": "2025-01-01",
         "completedMonthRepresentedEvents": {
-          "hires": 17750,
-          "fires": 1250,
-          "residentialMoves": 27500
+          "hires": 19250,
+          "fires": 500,
+          "residentialMoves": 24500
         },
         "cumulativeEvents": {
           "initialEmploymentAssignments": 4067,
-          "residentialMoves": 734,
-          "jobChanges": 119,
-          "crossDistrictJobChanges": 85,
+          "residentialMoves": 718,
+          "jobChanges": 162,
+          "crossDistrictJobChanges": 133,
           "hires": 767,
-          "fires": 23,
-          "laborSeparations": 768,
+          "fires": 20,
+          "laborSeparations": 766,
           "carAcquisitions": 0,
-          "carDisposals": 1507,
-          "carAccessReplacementExits": 14,
-          "replacements": 32,
-          "firmMoves": 50,
-          "workersAffectedByFirmMoves": 360,
+          "carDisposals": 1481,
+          "carAccessReplacementExits": 13,
+          "replacements": 36,
+          "firmMoves": 51,
+          "workersAffectedByFirmMoves": 336,
           "firmRestarts": 0,
           "enterpriseReentryPlacements": 0
         },
         "cumulativeRepresentedCitizenEvents": {
           "initialEmploymentAssignments": 1016750,
-          "residentialMoves": 183500,
-          "jobChanges": 29750,
-          "crossDistrictJobChanges": 21250,
+          "residentialMoves": 179500,
+          "jobChanges": 40500,
+          "crossDistrictJobChanges": 33250,
           "hires": 191750,
-          "fires": 5750,
+          "fires": 5000,
           "carAcquisitions": 0,
-          "carDisposals": 376750,
-          "replacements": 8000,
-          "workersAffectedByFirmMoves": 90000
+          "carDisposals": 370250,
+          "replacements": 9000,
+          "workersAffectedByFirmMoves": 84000
         },
         "mobilityEventRates": {
           "observationType": "cumulative-agent-event-rate",
           "elapsedDays": 366,
           "denominatorNote": "Events per 100 modeled actor-years; employment-based rates use accumulated employed-agent-days, and repeated events by one actor are counted separately.",
           "calibrationStatus": "Provisional sanity diagnostics, not empirical Abu Dhabi calibration.",
-          "residentialMovesPer100CitizenAgentYears": 12.07,
-          "voluntaryJobSwitchesPer100EmployedAgentYears": 2.93,
-          "crossDistrictVoluntaryJobSwitchesPer100EmployedAgentYears": 2.1,
-          "firmRelocationsPer100FirmAgentYears": 8.32,
-          "employerCarriedWorkplaceChangesPer100EmployedAgentYears": 8.87
+          "residentialMovesPer100CitizenAgentYears": 11.8,
+          "voluntaryJobSwitchesPer100EmployedAgentYears": 3.99,
+          "crossDistrictVoluntaryJobSwitchesPer100EmployedAgentYears": 3.28,
+          "firmRelocationsPer100FirmAgentYears": 8.48,
+          "employerCarriedWorkplaceChangesPer100EmployedAgentYears": 8.28
         },
         "distributions": {
           "income": {
@@ -350,17 +350,17 @@
                 "label": "Below AED 0",
                 "minInclusive": null,
                 "maxExclusive": 0,
-                "agentCount": 500,
-                "representedCount": 125000,
-                "sharePercent": 8.24
+                "agentCount": 517,
+                "representedCount": 129250,
+                "sharePercent": 8.52
               },
               {
                 "label": "AED 0–2,999",
                 "minInclusive": 0,
                 "maxExclusive": 3000,
-                "agentCount": 1293,
-                "representedCount": 323250,
-                "sharePercent": 21.3
+                "agentCount": 1244,
+                "representedCount": 311000,
+                "sharePercent": 20.49
               },
               {
                 "label": "AED 3,000–5,999",
@@ -374,33 +374,33 @@
                 "label": "AED 6,000–9,999",
                 "minInclusive": 6000,
                 "maxExclusive": 10000,
-                "agentCount": 759,
-                "representedCount": 189750,
-                "sharePercent": 12.5
+                "agentCount": 784,
+                "representedCount": 196000,
+                "sharePercent": 12.92
               },
               {
                 "label": "AED 10,000–14,999",
                 "minInclusive": 10000,
                 "maxExclusive": 15000,
-                "agentCount": 505,
-                "representedCount": 126250,
-                "sharePercent": 8.32
+                "agentCount": 503,
+                "representedCount": 125750,
+                "sharePercent": 8.29
               },
               {
                 "label": "AED 15,000–24,999",
                 "minInclusive": 15000,
                 "maxExclusive": 25000,
-                "agentCount": 195,
-                "representedCount": 48750,
-                "sharePercent": 3.21
+                "agentCount": 207,
+                "representedCount": 51750,
+                "sharePercent": 3.41
               },
               {
                 "label": "AED 25,000+",
                 "minInclusive": 25000,
                 "maxExclusive": null,
-                "agentCount": 24,
-                "representedCount": 6000,
-                "sharePercent": 0.4
+                "agentCount": 21,
+                "representedCount": 5250,
+                "sharePercent": 0.35
               }
             ]
           },
@@ -422,101 +422,101 @@
               {
                 "id": "unemployed",
                 "label": "Active job seeker",
-                "agentCount": 164,
-                "representedCount": 41000,
-                "sharePercent": 2.7
+                "agentCount": 179,
+                "representedCount": 44750,
+                "sharePercent": 2.95
               },
               {
                 "id": "fixed-cost-deficit",
                 "label": "Pay below housing + commute",
-                "agentCount": 336,
-                "representedCount": 84000,
-                "sharePercent": 5.54
+                "agentCount": 338,
+                "representedCount": 84500,
+                "sharePercent": 5.57
               },
               {
                 "id": "essentials-gap",
                 "label": "Essentials not fully covered",
-                "agentCount": 1055,
-                "representedCount": 263750,
-                "sharePercent": 17.38
+                "agentCount": 1017,
+                "representedCount": 254250,
+                "sharePercent": 16.75
               },
               {
                 "id": "thin-positive-buffer",
                 "label": "Thin positive buffer",
-                "agentCount": 591,
-                "representedCount": 147750,
-                "sharePercent": 9.74
+                "agentCount": 582,
+                "representedCount": 145500,
+                "sharePercent": 9.59
               },
               {
                 "id": "savings-capacity",
                 "label": "Savings capacity",
-                "agentCount": 2103,
-                "representedCount": 525750,
-                "sharePercent": 34.65
+                "agentCount": 2133,
+                "representedCount": 533250,
+                "sharePercent": 35.14
               }
             ]
           },
           "commute": {
             "population": "completed-employed-commuters",
             "unit": "round-trip minutes",
-            "sourceAgentCount": 4013,
-            "representedTotal": 1003250,
+            "sourceAgentCount": 3997,
+            "representedTotal": 999250,
             "bins": [
               {
                 "label": "Under 20 min",
                 "minInclusive": 0,
                 "maxExclusive": 20,
-                "agentCount": 943,
-                "representedCount": 235750,
-                "sharePercent": 23.5
+                "agentCount": 932,
+                "representedCount": 233000,
+                "sharePercent": 23.32
               },
               {
                 "label": "20–29 min",
                 "minInclusive": 20,
                 "maxExclusive": 30,
-                "agentCount": 737,
-                "representedCount": 184250,
-                "sharePercent": 18.37
+                "agentCount": 731,
+                "representedCount": 182750,
+                "sharePercent": 18.29
               },
               {
                 "label": "30–44 min",
                 "minInclusive": 30,
                 "maxExclusive": 45,
-                "agentCount": 920,
-                "representedCount": 230000,
-                "sharePercent": 22.93
+                "agentCount": 896,
+                "representedCount": 224000,
+                "sharePercent": 22.42
               },
               {
                 "label": "45–59 min",
                 "minInclusive": 45,
                 "maxExclusive": 60,
-                "agentCount": 679,
-                "representedCount": 169750,
-                "sharePercent": 16.92
+                "agentCount": 671,
+                "representedCount": 167750,
+                "sharePercent": 16.79
               },
               {
                 "label": "60–89 min",
                 "minInclusive": 60,
                 "maxExclusive": 90,
-                "agentCount": 313,
-                "representedCount": 78250,
-                "sharePercent": 7.8
+                "agentCount": 324,
+                "representedCount": 81000,
+                "sharePercent": 8.11
               },
               {
                 "label": "90–119 min",
                 "minInclusive": 90,
                 "maxExclusive": 120,
-                "agentCount": 184,
-                "representedCount": 46000,
-                "sharePercent": 4.59
+                "agentCount": 172,
+                "representedCount": 43000,
+                "sharePercent": 4.3
               },
               {
                 "label": "120+ min",
                 "minInclusive": 120,
                 "maxExclusive": null,
-                "agentCount": 237,
-                "representedCount": 59250,
-                "sharePercent": 5.91
+                "agentCount": 271,
+                "representedCount": 67750,
+                "sharePercent": 6.78
               }
             ]
           },
@@ -524,7 +524,7 @@
             "population": "all-enterprises",
             "unit": "modeled employee agents",
             "enterpriseTotal": 600,
-            "representedEmployeeTotal": 1009000,
+            "representedEmployeeTotal": 1006500,
             "bins": [
               {
                 "label": "0 workers",
@@ -538,25 +538,25 @@
                 "label": "1–4 workers",
                 "minInclusive": 1,
                 "maxExclusive": 5,
-                "enterpriseCount": 127,
-                "representedEmployees": 109000,
-                "enterpriseSharePercent": 21.17
+                "enterpriseCount": 126,
+                "representedEmployees": 108750,
+                "enterpriseSharePercent": 21
               },
               {
                 "label": "5–9 workers",
                 "minInclusive": 5,
                 "maxExclusive": 10,
-                "enterpriseCount": 382,
-                "representedEmployees": 654000,
-                "enterpriseSharePercent": 63.67
+                "enterpriseCount": 388,
+                "representedEmployees": 664500,
+                "enterpriseSharePercent": 64.67
               },
               {
                 "label": "10–19 workers",
                 "minInclusive": 10,
                 "maxExclusive": 20,
-                "enterpriseCount": 90,
-                "representedEmployees": 246000,
-                "enterpriseSharePercent": 15
+                "enterpriseCount": 85,
+                "representedEmployees": 233250,
+                "enterpriseSharePercent": 14.17
               },
               {
                 "label": "20–29 workers",
@@ -580,23 +580,23 @@
         "network": {
           "physicalEdgeCount": 1115,
           "assignmentEdgeCount": 1115,
-          "meanRoadVolumeCapacityRatio": 0.1607,
-          "p90RoadVolumeCapacityRatio": 0.3866,
-          "maximumRoadVolumeCapacityRatio": 1.1919,
-          "overloadedDirectionCount": 5,
-          "meanTransitLoadFactor": 0.0835,
-          "p90TransitLoadFactor": 0.2003,
-          "maximumTransitLoadFactor": 0.4207,
+          "meanRoadVolumeCapacityRatio": 0.1663,
+          "p90RoadVolumeCapacityRatio": 0.3906,
+          "maximumRoadVolumeCapacityRatio": 1.2587,
+          "overloadedDirectionCount": 6,
+          "meanTransitLoadFactor": 0.085,
+          "p90TransitLoadFactor": 0.2173,
+          "maximumTransitLoadFactor": 0.4257,
           "physicalRoadAccounting": {
             "passed": true,
             "assignmentDate": "2025-01-01",
             "assignmentDateMatches": true,
             "physicalEdges": 1115,
-            "assignedPhysicalEdges": 1087,
+            "assignedPhysicalEdges": 1089,
             "excludedPhysicalEdges": 0,
             "missingSnapshotEdges": 0,
-            "assignedCohorts": 2470,
-            "traversalCount": 163999,
+            "assignedCohorts": 2468,
+            "traversalCount": 166856,
             "invalidTraversalCount": 0,
             "invalidWeightCount": 0,
             "prohibitedTurnCount": 0,
@@ -614,23 +614,23 @@
           "firmAgents": 600,
           "activeFirms": 599,
           "inactiveFirms": 1,
-          "lossMakingFirms": 12,
-          "lossMakingSharePercent": 2,
+          "lossMakingFirms": 16,
+          "lossMakingSharePercent": 2.67,
           "restartMarginThresholdPercent": -20,
           "severelyDistressedFirms": 0,
           "severelyDistressedSharePercent": 0,
-          "meanOperatingMarginPercent": 26.82,
-          "medianOperatingMarginPercent": 26.87,
-          "p10OperatingMarginPercent": 9.69,
-          "p90OperatingMarginPercent": 44.04,
-          "revenueWeightedOperatingMarginPercent": 29.53,
-          "monthlyRevenueAed": 20849091925,
-          "monthlyOperatingCostAed": 14691824906,
-          "representedEmployees": 1009000,
+          "meanOperatingMarginPercent": 26.55,
+          "medianOperatingMarginPercent": 26.48,
+          "p10OperatingMarginPercent": 8.99,
+          "p90OperatingMarginPercent": 43.72,
+          "revenueWeightedOperatingMarginPercent": 29.18,
+          "monthlyRevenueAed": 20800307366,
+          "monthlyOperatingCostAed": 14731729828,
+          "representedEmployees": 1006500,
           "states": {
-            "Grow": 98,
-            "Lesser": 116,
-            "Working": 386
+            "Grow": 115,
+            "Lesser": 127,
+            "Working": 358
           }
         }
       },
@@ -658,7 +658,7 @@
         {
           "id": "vehicle-access-stock-and-flows-reconcile",
           "passed": true,
-          "detail": "Initial 4609 + acquisitions 0 - disposals 1507 - replacement exits 14 = current 3088 resident cohorts"
+          "detail": "Initial 4609 + acquisitions 0 - disposals 1481 - replacement exits 13 = current 3115 resident cohorts"
         },
         {
           "id": "population-conserved",
@@ -678,12 +678,12 @@
         {
           "id": "labor-force-stocks-reconcile",
           "passed": true,
-          "detail": "1009000 employed + 53250 active unemployed + 455250 nonparticipants = 1517500"
+          "detail": "1006500 employed + 55750 active unemployed + 455250 nonparticipants = 1517500"
         },
         {
           "id": "labor-force-rates-use-disclosed-denominators",
           "passed": true,
-          "detail": "70% participating; 5.01% unemployed within the labor force; 30% outside it"
+          "detail": "70% participating; 5.25% unemployed within the labor force; 30% outside it"
         },
         {
           "id": "outside-labor-force-financial-bin-reconciles",
@@ -703,7 +703,7 @@
         {
           "id": "commute-distribution-conserves-completed-commuters",
           "passed": true,
-          "detail": "1003250/1003250 represented completed commuters across commute bins/modes"
+          "detail": "999250/999250 represented completed commuters across commute bins/modes"
         },
         {
           "id": "enterprise-distribution-covers-all-firms",
@@ -723,7 +723,7 @@
         {
           "id": "employment-within-participating-population",
           "passed": true,
-          "detail": "1009000 employed within 1062250 participants; 66.49% of represented residents. No outcome is required to equal the initial employment assumption."
+          "detail": "1006500 employed within 1062250 participants; 66.33% of represented residents. No outcome is required to equal the initial employment assumption."
         },
         {
           "id": "no-forced-interzone-walking",
@@ -748,12 +748,12 @@
         {
           "id": "cross-district-job-switch-rate-reconciles-to-all-switches",
           "passed": true,
-          "detail": "2.1 cross-district versus 2.93 all voluntary events per 100 employed-agent-years"
+          "detail": "3.28 cross-district versus 3.99 all voluntary events per 100 employed-agent-years"
         },
         {
           "id": "finite-enterprise-portfolio",
           "passed": true,
-          "detail": "29.53% revenue-weighted margin"
+          "detail": "29.18% revenue-weighted margin"
         }
       ],
       "diagnostics": [
@@ -765,55 +765,55 @@
         },
         {
           "id": "household-finance-remains-numerically-bounded",
-          "detail": "AED 10620.32 mean stock; AED 174.99/month mean change",
+          "detail": "AED 10785.16 mean stock; AED 179.78/month mean change",
           "withinReviewBand": true,
           "status": "within-review-band"
         },
         {
           "id": "capacity-overflow-within-horizon-stress-guard",
-          "detail": "1.165% of represented employed agents; provisional 10% one-year guard",
+          "detail": "1.714% of represented employed agents; provisional 10% one-year guard",
           "withinReviewBand": true,
           "status": "within-review-band"
         },
         {
           "id": "maximum-directional-road-volume-capacity-within-horizon-stress-guard",
-          "detail": "1.1919 maximum directional work-trip load ratio; provisional <2 one-year guard",
+          "detail": "1.2587 maximum directional work-trip load ratio; provisional <2 one-year guard",
           "withinReviewBand": true,
           "status": "within-review-band"
         },
         {
           "id": "commute-time-in-plausibility-band",
-          "detail": "44.01 minutes average round trip",
+          "detail": "45.06 minutes average round trip",
           "withinReviewBand": true,
           "status": "within-review-band"
         },
         {
           "id": "residential-relocation-rate-below-provisional-churn-ceiling",
-          "detail": "12.07 events per 100 citizen-agent-years; provisional software sanity ceiling 30",
+          "detail": "11.8 events per 100 citizen-agent-years; provisional software sanity ceiling 30",
           "withinReviewBand": true,
           "status": "within-review-band"
         },
         {
           "id": "firm-relocation-rate-below-provisional-churn-ceiling",
-          "detail": "8.32 events per 100 firm-agent-years; provisional software sanity ceiling 20",
+          "detail": "8.48 events per 100 firm-agent-years; provisional software sanity ceiling 20",
           "withinReviewBand": true,
           "status": "within-review-band"
         },
         {
           "id": "voluntary-job-switch-rate-below-provisional-churn-ceiling",
-          "detail": "2.93 events per 100 employed-agent-years; provisional software sanity ceiling 50",
+          "detail": "3.99 events per 100 employed-agent-years; provisional software sanity ceiling 50",
           "withinReviewBand": true,
           "status": "within-review-band"
         },
         {
           "id": "employer-carried-workplace-change-rate-below-provisional-churn-ceiling",
-          "detail": "8.87 affected worker events per 100 employed-agent-years; provisional software sanity ceiling 30",
+          "detail": "8.28 affected worker events per 100 employed-agent-years; provisional software sanity ceiling 30",
           "withinReviewBand": true,
           "status": "within-review-band"
         },
         {
           "id": "extreme-state-below-fifty-percent",
-          "detail": "29.47% of represented citizens",
+          "detail": "28.83% of represented citizens",
           "withinReviewBand": true,
           "status": "within-review-band"
         },
@@ -825,19 +825,19 @@
         },
         {
           "id": "enterprise-margin-in-plausibility-band",
-          "detail": "29.53% revenue-weighted operating margin",
+          "detail": "29.18% revenue-weighted operating margin",
           "withinReviewBand": true,
           "status": "within-review-band"
         },
         {
           "id": "loss-making-firms-broad-distribution-guard",
-          "detail": "2% of active firm agents below break-even; broad guard <60%",
+          "detail": "2.67% of active firm agents below break-even; broad guard <60%",
           "withinReviewBand": true,
           "status": "within-review-band"
         },
         {
           "id": "enterprise-median-margin-broad-plausibility-guard",
-          "detail": "26.87% median operating margin; broad guard >-5%",
+          "detail": "26.48% median operating margin; broad guard >-5%",
           "withinReviewBand": true,
           "status": "within-review-band"
         },
@@ -849,7 +849,7 @@
         }
       ],
       "status": "passed",
-      "resultDigestSha256": "f59343fdc5e626f13372afac0cd1dfcf59c5f73909d07bad28e105f9491d5005"
+      "resultDigestSha256": "80bdad1f45b742228b7cd4f122060c6974a26dae05ccf32f366085fbf0b573ac"
     },
     {
       "id": "transit-1y",
@@ -918,45 +918,45 @@
       },
       "metrics": {
         "representedPopulation": 1517500,
-        "representedEmployed": 1009000,
+        "representedEmployed": 1006000,
         "representedLaborForce": 1062250,
-        "representedUnemployed": 53250,
+        "representedUnemployed": 56250,
         "representedNonparticipants": 455250,
-        "employmentRatePercent": 66.49,
-        "unemploymentRatePercent": 5.01,
+        "employmentRatePercent": 66.29,
+        "unemploymentRatePercent": 5.3,
         "laborForceParticipationRatePercent": 70,
         "nonParticipationRatePercent": 30,
         "modeCountsRepresented": {
-          "car": 337250,
-          "pt": 554000,
-          "walk": 110000,
-          "none": 7750
+          "car": 336500,
+          "pt": 547250,
+          "walk": 115500,
+          "none": 6750
         },
         "modeSharesPercent": {
           "car": 33.68,
-          "pt": 55.33,
-          "walk": 10.99
+          "pt": 54.77,
+          "walk": 11.56
         },
-        "carOwnershipRatePercent": 50.96,
+        "carOwnershipRatePercent": 50.56,
         "carAccessAccounting": {
           "initialAgentCount": 4609,
-          "currentAgentCount": 3093,
+          "currentAgentCount": 3069,
           "acquisitions": 0,
-          "disposals": 1504,
-          "replacementExits": 12,
+          "disposals": 1529,
+          "replacementExits": 11,
           "reconciliationDifference": 0,
           "unit": "weighted resident cohorts with vehicle access"
         },
         "citizenStateSharesPercent": {
-          "Happy": 35.11,
-          "Waiting": 36.44,
-          "Extreme": 27,
-          "Recovery": 1.45
+          "Happy": 36.26,
+          "Waiting": 35.62,
+          "Extreme": 26.82,
+          "Recovery": 1.3
         },
-        "averageRoundTripMinutes": 35.59,
-        "averageNetIncomeAedPerMonth": 4694.04,
-        "averageBankBalanceAed": 10727.43,
-        "averageMonthlySavingOrDrawdownAed": 167.91,
+        "averageRoundTripMinutes": 35.01,
+        "averageNetIncomeAedPerMonth": 4765.87,
+        "averageBankBalanceAed": 10906.4,
+        "averageMonthlySavingOrDrawdownAed": 176.95,
         "savingsPolicy": {
           "monthlyEssentialConsumptionAed": 2500,
           "positiveResidualSavingsRate": 0.25,
@@ -964,69 +964,69 @@
         },
         "financialStatusSharesPercent": {
           "outside-labor-force": 30,
-          "unemployed": 2.65,
-          "fixed-cost-deficit": 5.83,
-          "essentials-gap": 17.28,
-          "thin-positive-buffer": 9.42,
-          "savings-capacity": 34.81
+          "unemployed": 2.85,
+          "fixed-cost-deficit": 5.85,
+          "essentials-gap": 16.52,
+          "thin-positive-buffer": 9.44,
+          "savings-capacity": 35.34
         },
         "extremeNonparticipantSharePercent": 0,
-        "meanHousingRentAedPerMonth": 2785.51,
-        "averageRoadCapacityUsagePercent": 14.03,
-        "sameZoneWorkSharePercent": 33.83,
+        "meanHousingRentAedPerMonth": 2758.77,
+        "averageRoadCapacityUsagePercent": 14.02,
+        "sameZoneWorkSharePercent": 34.03,
         "housingOccupancyRatePercent": 86.85,
         "housingCapacityRepresented": 1747250,
         "housingOvercapacityRepresented": 0,
         "enterprisePlaceCapacity": 2014,
-        "dailyCarVehicleKm": 7216401.25,
+        "dailyCarVehicleKm": 7184848.12,
         "forcedInterzoneWalkers": 0,
         "unservedCommuters": 0,
         "capacityOverflowTrips": 0,
         "networkAssignmentDate": "2025-01-01",
         "completedMonthRepresentedEvents": {
-          "hires": 18500,
-          "fires": 1000,
-          "residentialMoves": 21250
+          "hires": 15500,
+          "fires": 250,
+          "residentialMoves": 17250
         },
         "cumulativeEvents": {
           "initialEmploymentAssignments": 4067,
-          "residentialMoves": 529,
-          "jobChanges": 148,
-          "crossDistrictJobChanges": 119,
-          "hires": 754,
-          "fires": 13,
-          "laborSeparations": 764,
+          "residentialMoves": 551,
+          "jobChanges": 165,
+          "crossDistrictJobChanges": 138,
+          "hires": 770,
+          "fires": 33,
+          "laborSeparations": 767,
           "carAcquisitions": 0,
-          "carDisposals": 1504,
-          "carAccessReplacementExits": 12,
-          "replacements": 31,
-          "firmMoves": 48,
-          "workersAffectedByFirmMoves": 348,
+          "carDisposals": 1529,
+          "carAccessReplacementExits": 11,
+          "replacements": 24,
+          "firmMoves": 51,
+          "workersAffectedByFirmMoves": 367,
           "firmRestarts": 0,
           "enterpriseReentryPlacements": 0
         },
         "cumulativeRepresentedCitizenEvents": {
           "initialEmploymentAssignments": 1016750,
-          "residentialMoves": 132250,
-          "jobChanges": 37000,
-          "crossDistrictJobChanges": 29750,
-          "hires": 188500,
-          "fires": 3250,
+          "residentialMoves": 137750,
+          "jobChanges": 41250,
+          "crossDistrictJobChanges": 34500,
+          "hires": 192500,
+          "fires": 8250,
           "carAcquisitions": 0,
-          "carDisposals": 376000,
-          "replacements": 7750,
-          "workersAffectedByFirmMoves": 87000
+          "carDisposals": 382250,
+          "replacements": 6000,
+          "workersAffectedByFirmMoves": 91750
         },
         "mobilityEventRates": {
           "observationType": "cumulative-agent-event-rate",
           "elapsedDays": 366,
           "denominatorNote": "Events per 100 modeled actor-years; employment-based rates use accumulated employed-agent-days, and repeated events by one actor are counted separately.",
           "calibrationStatus": "Provisional sanity diagnostics, not empirical Abu Dhabi calibration.",
-          "residentialMovesPer100CitizenAgentYears": 8.7,
-          "voluntaryJobSwitchesPer100EmployedAgentYears": 3.65,
-          "crossDistrictVoluntaryJobSwitchesPer100EmployedAgentYears": 2.93,
-          "firmRelocationsPer100FirmAgentYears": 7.98,
-          "employerCarriedWorkplaceChangesPer100EmployedAgentYears": 8.57
+          "residentialMovesPer100CitizenAgentYears": 9.06,
+          "voluntaryJobSwitchesPer100EmployedAgentYears": 4.07,
+          "crossDistrictVoluntaryJobSwitchesPer100EmployedAgentYears": 3.4,
+          "firmRelocationsPer100FirmAgentYears": 8.48,
+          "employerCarriedWorkplaceChangesPer100EmployedAgentYears": 9.04
         },
         "distributions": {
           "income": {
@@ -1044,57 +1044,57 @@
                 "label": "Below AED 0",
                 "minInclusive": null,
                 "maxExclusive": 0,
-                "agentCount": 515,
-                "representedCount": 128750,
-                "sharePercent": 8.48
+                "agentCount": 528,
+                "representedCount": 132000,
+                "sharePercent": 8.7
               },
               {
                 "label": "AED 0–2,999",
                 "minInclusive": 0,
                 "maxExclusive": 3000,
-                "agentCount": 1298,
-                "representedCount": 324500,
-                "sharePercent": 21.38
+                "agentCount": 1236,
+                "representedCount": 309000,
+                "sharePercent": 20.36
               },
               {
                 "label": "AED 3,000–5,999",
                 "minInclusive": 3000,
                 "maxExclusive": 6000,
-                "agentCount": 2748,
-                "representedCount": 687000,
-                "sharePercent": 45.27
+                "agentCount": 2758,
+                "representedCount": 689500,
+                "sharePercent": 45.44
               },
               {
                 "label": "AED 6,000–9,999",
                 "minInclusive": 6000,
                 "maxExclusive": 10000,
-                "agentCount": 779,
-                "representedCount": 194750,
-                "sharePercent": 12.83
+                "agentCount": 801,
+                "representedCount": 200250,
+                "sharePercent": 13.2
               },
               {
                 "label": "AED 10,000–14,999",
                 "minInclusive": 10000,
                 "maxExclusive": 15000,
-                "agentCount": 492,
-                "representedCount": 123000,
-                "sharePercent": 8.11
+                "agentCount": 505,
+                "representedCount": 126250,
+                "sharePercent": 8.32
               },
               {
                 "label": "AED 15,000–24,999",
                 "minInclusive": 15000,
                 "maxExclusive": 25000,
-                "agentCount": 213,
-                "representedCount": 53250,
-                "sharePercent": 3.51
+                "agentCount": 214,
+                "representedCount": 53500,
+                "sharePercent": 3.53
               },
               {
                 "label": "AED 25,000+",
                 "minInclusive": 25000,
                 "maxExclusive": null,
-                "agentCount": 25,
-                "representedCount": 6250,
-                "sharePercent": 0.41
+                "agentCount": 28,
+                "representedCount": 7000,
+                "sharePercent": 0.46
               }
             ]
           },
@@ -1116,93 +1116,93 @@
               {
                 "id": "unemployed",
                 "label": "Active job seeker",
-                "agentCount": 161,
-                "representedCount": 40250,
-                "sharePercent": 2.65
+                "agentCount": 173,
+                "representedCount": 43250,
+                "sharePercent": 2.85
               },
               {
                 "id": "fixed-cost-deficit",
                 "label": "Pay below housing + commute",
-                "agentCount": 354,
-                "representedCount": 88500,
-                "sharePercent": 5.83
+                "agentCount": 355,
+                "representedCount": 88750,
+                "sharePercent": 5.85
               },
               {
                 "id": "essentials-gap",
                 "label": "Essentials not fully covered",
-                "agentCount": 1049,
-                "representedCount": 262250,
-                "sharePercent": 17.28
+                "agentCount": 1003,
+                "representedCount": 250750,
+                "sharePercent": 16.52
               },
               {
                 "id": "thin-positive-buffer",
                 "label": "Thin positive buffer",
-                "agentCount": 572,
-                "representedCount": 143000,
-                "sharePercent": 9.42
+                "agentCount": 573,
+                "representedCount": 143250,
+                "sharePercent": 9.44
               },
               {
                 "id": "savings-capacity",
                 "label": "Savings capacity",
-                "agentCount": 2113,
-                "representedCount": 528250,
-                "sharePercent": 34.81
+                "agentCount": 2145,
+                "representedCount": 536250,
+                "sharePercent": 35.34
               }
             ]
           },
           "commute": {
             "population": "completed-employed-commuters",
             "unit": "round-trip minutes",
-            "sourceAgentCount": 4005,
-            "representedTotal": 1001250,
+            "sourceAgentCount": 3997,
+            "representedTotal": 999250,
             "bins": [
               {
                 "label": "Under 20 min",
                 "minInclusive": 0,
                 "maxExclusive": 20,
-                "agentCount": 879,
-                "representedCount": 219750,
-                "sharePercent": 21.95
+                "agentCount": 893,
+                "representedCount": 223250,
+                "sharePercent": 22.34
               },
               {
                 "label": "20–29 min",
                 "minInclusive": 20,
                 "maxExclusive": 30,
-                "agentCount": 1357,
-                "representedCount": 339250,
-                "sharePercent": 33.88
+                "agentCount": 1343,
+                "representedCount": 335750,
+                "sharePercent": 33.6
               },
               {
                 "label": "30–44 min",
                 "minInclusive": 30,
                 "maxExclusive": 45,
-                "agentCount": 579,
-                "representedCount": 144750,
-                "sharePercent": 14.46
+                "agentCount": 645,
+                "representedCount": 161250,
+                "sharePercent": 16.14
               },
               {
                 "label": "45–59 min",
                 "minInclusive": 45,
                 "maxExclusive": 60,
-                "agentCount": 528,
-                "representedCount": 132000,
-                "sharePercent": 13.18
+                "agentCount": 516,
+                "representedCount": 129000,
+                "sharePercent": 12.91
               },
               {
                 "label": "60–89 min",
                 "minInclusive": 60,
                 "maxExclusive": 90,
-                "agentCount": 553,
-                "representedCount": 138250,
-                "sharePercent": 13.81
+                "agentCount": 490,
+                "representedCount": 122500,
+                "sharePercent": 12.26
               },
               {
                 "label": "90–119 min",
                 "minInclusive": 90,
                 "maxExclusive": 120,
-                "agentCount": 109,
-                "representedCount": 27250,
-                "sharePercent": 2.72
+                "agentCount": 110,
+                "representedCount": 27500,
+                "sharePercent": 2.75
               },
               {
                 "label": "120+ min",
@@ -1218,7 +1218,7 @@
             "population": "all-enterprises",
             "unit": "modeled employee agents",
             "enterpriseTotal": 600,
-            "representedEmployeeTotal": 1009000,
+            "representedEmployeeTotal": 1006000,
             "bins": [
               {
                 "label": "0 workers",
@@ -1232,25 +1232,25 @@
                 "label": "1–4 workers",
                 "minInclusive": 1,
                 "maxExclusive": 5,
-                "enterpriseCount": 122,
-                "representedEmployees": 103000,
-                "enterpriseSharePercent": 20.33
+                "enterpriseCount": 127,
+                "representedEmployees": 107500,
+                "enterpriseSharePercent": 21.17
               },
               {
                 "label": "5–9 workers",
                 "minInclusive": 5,
                 "maxExclusive": 10,
-                "enterpriseCount": 385,
-                "representedEmployees": 654000,
-                "enterpriseSharePercent": 64.17
+                "enterpriseCount": 381,
+                "representedEmployees": 648000,
+                "enterpriseSharePercent": 63.5
               },
               {
                 "label": "10–19 workers",
                 "minInclusive": 10,
                 "maxExclusive": 20,
-                "enterpriseCount": 93,
-                "representedEmployees": 252000,
-                "enterpriseSharePercent": 15.5
+                "enterpriseCount": 92,
+                "representedEmployees": 250500,
+                "enterpriseSharePercent": 15.33
               },
               {
                 "label": "20–29 workers",
@@ -1274,23 +1274,23 @@
         "network": {
           "physicalEdgeCount": 1115,
           "assignmentEdgeCount": 1115,
-          "meanRoadVolumeCapacityRatio": 0.1403,
-          "p90RoadVolumeCapacityRatio": 0.3305,
-          "maximumRoadVolumeCapacityRatio": 0.9615,
+          "meanRoadVolumeCapacityRatio": 0.1402,
+          "p90RoadVolumeCapacityRatio": 0.3481,
+          "maximumRoadVolumeCapacityRatio": 0.8547,
           "overloadedDirectionCount": 0,
-          "meanTransitLoadFactor": 0.0572,
-          "p90TransitLoadFactor": 0.1568,
-          "maximumTransitLoadFactor": 0.309,
+          "meanTransitLoadFactor": 0.0554,
+          "p90TransitLoadFactor": 0.1447,
+          "maximumTransitLoadFactor": 0.2784,
           "physicalRoadAccounting": {
             "passed": true,
             "assignmentDate": "2025-01-01",
             "assignmentDateMatches": true,
             "physicalEdges": 1115,
-            "assignedPhysicalEdges": 1076,
+            "assignedPhysicalEdges": 1084,
             "excludedPhysicalEdges": 0,
             "missingSnapshotEdges": 0,
-            "assignedCohorts": 2660,
-            "traversalCount": 193353,
+            "assignedCohorts": 2644,
+            "traversalCount": 189059,
             "invalidTraversalCount": 0,
             "invalidWeightCount": 0,
             "prohibitedTurnCount": 0,
@@ -1308,23 +1308,23 @@
           "firmAgents": 600,
           "activeFirms": 600,
           "inactiveFirms": 0,
-          "lossMakingFirms": 10,
-          "lossMakingSharePercent": 1.67,
+          "lossMakingFirms": 17,
+          "lossMakingSharePercent": 2.83,
           "restartMarginThresholdPercent": -20,
           "severelyDistressedFirms": 0,
           "severelyDistressedSharePercent": 0,
-          "meanOperatingMarginPercent": 27.38,
-          "medianOperatingMarginPercent": 26.96,
-          "p10OperatingMarginPercent": 11.86,
-          "p90OperatingMarginPercent": 44.57,
-          "revenueWeightedOperatingMarginPercent": 29.99,
-          "monthlyRevenueAed": 21048895611,
-          "monthlyOperatingCostAed": 14736172741,
-          "representedEmployees": 1009000,
+          "meanOperatingMarginPercent": 26.59,
+          "medianOperatingMarginPercent": 26.28,
+          "p10OperatingMarginPercent": 10.38,
+          "p90OperatingMarginPercent": 43.34,
+          "revenueWeightedOperatingMarginPercent": 29.42,
+          "monthlyRevenueAed": 20980374720,
+          "monthlyOperatingCostAed": 14808948540,
+          "representedEmployees": 1006000,
           "states": {
-            "Grow": 110,
-            "Lesser": 106,
-            "Working": 384
+            "Grow": 124,
+            "Lesser": 120,
+            "Working": 356
           }
         }
       },
@@ -1352,7 +1352,7 @@
         {
           "id": "vehicle-access-stock-and-flows-reconcile",
           "passed": true,
-          "detail": "Initial 4609 + acquisitions 0 - disposals 1504 - replacement exits 12 = current 3093 resident cohorts"
+          "detail": "Initial 4609 + acquisitions 0 - disposals 1529 - replacement exits 11 = current 3069 resident cohorts"
         },
         {
           "id": "population-conserved",
@@ -1372,12 +1372,12 @@
         {
           "id": "labor-force-stocks-reconcile",
           "passed": true,
-          "detail": "1009000 employed + 53250 active unemployed + 455250 nonparticipants = 1517500"
+          "detail": "1006000 employed + 56250 active unemployed + 455250 nonparticipants = 1517500"
         },
         {
           "id": "labor-force-rates-use-disclosed-denominators",
           "passed": true,
-          "detail": "70% participating; 5.01% unemployed within the labor force; 30% outside it"
+          "detail": "70% participating; 5.3% unemployed within the labor force; 30% outside it"
         },
         {
           "id": "outside-labor-force-financial-bin-reconciles",
@@ -1397,7 +1397,7 @@
         {
           "id": "commute-distribution-conserves-completed-commuters",
           "passed": true,
-          "detail": "1001250/1001250 represented completed commuters across commute bins/modes"
+          "detail": "999250/999250 represented completed commuters across commute bins/modes"
         },
         {
           "id": "enterprise-distribution-covers-all-firms",
@@ -1407,7 +1407,7 @@
         {
           "id": "mode-shares-close",
           "passed": true,
-          "detail": "100% total"
+          "detail": "100.01% total"
         },
         {
           "id": "citizen-state-shares-close",
@@ -1417,7 +1417,7 @@
         {
           "id": "employment-within-participating-population",
           "passed": true,
-          "detail": "1009000 employed within 1062250 participants; 66.49% of represented residents. No outcome is required to equal the initial employment assumption."
+          "detail": "1006000 employed within 1062250 participants; 66.29% of represented residents. No outcome is required to equal the initial employment assumption."
         },
         {
           "id": "no-forced-interzone-walking",
@@ -1442,12 +1442,12 @@
         {
           "id": "cross-district-job-switch-rate-reconciles-to-all-switches",
           "passed": true,
-          "detail": "2.93 cross-district versus 3.65 all voluntary events per 100 employed-agent-years"
+          "detail": "3.4 cross-district versus 4.07 all voluntary events per 100 employed-agent-years"
         },
         {
           "id": "finite-enterprise-portfolio",
           "passed": true,
-          "detail": "29.99% revenue-weighted margin"
+          "detail": "29.42% revenue-weighted margin"
         }
       ],
       "diagnostics": [
@@ -1459,7 +1459,7 @@
         },
         {
           "id": "household-finance-remains-numerically-bounded",
-          "detail": "AED 10727.43 mean stock; AED 167.91/month mean change",
+          "detail": "AED 10906.4 mean stock; AED 176.95/month mean change",
           "withinReviewBand": true,
           "status": "within-review-band"
         },
@@ -1471,43 +1471,43 @@
         },
         {
           "id": "maximum-directional-road-volume-capacity-within-horizon-stress-guard",
-          "detail": "0.9615 maximum directional work-trip load ratio; provisional <2 one-year guard",
+          "detail": "0.8547 maximum directional work-trip load ratio; provisional <2 one-year guard",
           "withinReviewBand": true,
           "status": "within-review-band"
         },
         {
           "id": "commute-time-in-plausibility-band",
-          "detail": "35.59 minutes average round trip",
+          "detail": "35.01 minutes average round trip",
           "withinReviewBand": true,
           "status": "within-review-band"
         },
         {
           "id": "residential-relocation-rate-below-provisional-churn-ceiling",
-          "detail": "8.7 events per 100 citizen-agent-years; provisional software sanity ceiling 30",
+          "detail": "9.06 events per 100 citizen-agent-years; provisional software sanity ceiling 30",
           "withinReviewBand": true,
           "status": "within-review-band"
         },
         {
           "id": "firm-relocation-rate-below-provisional-churn-ceiling",
-          "detail": "7.98 events per 100 firm-agent-years; provisional software sanity ceiling 20",
+          "detail": "8.48 events per 100 firm-agent-years; provisional software sanity ceiling 20",
           "withinReviewBand": true,
           "status": "within-review-band"
         },
         {
           "id": "voluntary-job-switch-rate-below-provisional-churn-ceiling",
-          "detail": "3.65 events per 100 employed-agent-years; provisional software sanity ceiling 50",
+          "detail": "4.07 events per 100 employed-agent-years; provisional software sanity ceiling 50",
           "withinReviewBand": true,
           "status": "within-review-band"
         },
         {
           "id": "employer-carried-workplace-change-rate-below-provisional-churn-ceiling",
-          "detail": "8.57 affected worker events per 100 employed-agent-years; provisional software sanity ceiling 30",
+          "detail": "9.04 affected worker events per 100 employed-agent-years; provisional software sanity ceiling 30",
           "withinReviewBand": true,
           "status": "within-review-band"
         },
         {
           "id": "extreme-state-below-fifty-percent",
-          "detail": "27% of represented citizens",
+          "detail": "26.82% of represented citizens",
           "withinReviewBand": true,
           "status": "within-review-band"
         },
@@ -1519,19 +1519,19 @@
         },
         {
           "id": "enterprise-margin-in-plausibility-band",
-          "detail": "29.99% revenue-weighted operating margin",
+          "detail": "29.42% revenue-weighted operating margin",
           "withinReviewBand": true,
           "status": "within-review-band"
         },
         {
           "id": "loss-making-firms-broad-distribution-guard",
-          "detail": "1.67% of active firm agents below break-even; broad guard <60%",
+          "detail": "2.83% of active firm agents below break-even; broad guard <60%",
           "withinReviewBand": true,
           "status": "within-review-band"
         },
         {
           "id": "enterprise-median-margin-broad-plausibility-guard",
-          "detail": "26.96% median operating margin; broad guard >-5%",
+          "detail": "26.28% median operating margin; broad guard >-5%",
           "withinReviewBand": true,
           "status": "within-review-band"
         },
@@ -1543,7 +1543,7 @@
         }
       ],
       "status": "passed",
-      "resultDigestSha256": "a4f7e4540958963a12ed018e7ec58b268eb4b72ce00614f8c2f18d26f2fa9d47"
+      "resultDigestSha256": "570ec01ca01b4cd485e1f7d29c46f0d7dce3e3a32e8a2d51fb84ca051c670089"
     },
     {
       "id": "reference-10y",
@@ -1612,45 +1612,45 @@
       },
       "metrics": {
         "representedPopulation": 1517500,
-        "representedEmployed": 922750,
+        "representedEmployed": 946750,
         "representedLaborForce": 1062250,
-        "representedUnemployed": 139500,
+        "representedUnemployed": 115500,
         "representedNonparticipants": 455250,
-        "employmentRatePercent": 60.81,
-        "unemploymentRatePercent": 13.13,
+        "employmentRatePercent": 62.39,
+        "unemploymentRatePercent": 10.87,
         "laborForceParticipationRatePercent": 70,
         "nonParticipationRatePercent": 30,
         "modeCountsRepresented": {
-          "car": 93500,
-          "pt": 667000,
-          "walk": 153500,
-          "none": 8750
+          "car": 90750,
+          "pt": 682000,
+          "walk": 165500,
+          "none": 8500
         },
         "modeSharesPercent": {
-          "car": 10.23,
-          "pt": 72.98,
-          "walk": 16.79
+          "car": 9.67,
+          "pt": 72.69,
+          "walk": 17.64
         },
-        "carOwnershipRatePercent": 27.25,
+        "carOwnershipRatePercent": 27.17,
         "carAccessAccounting": {
           "initialAgentCount": 4609,
-          "currentAgentCount": 1654,
-          "acquisitions": 210,
-          "disposals": 3010,
-          "replacementExits": 155,
+          "currentAgentCount": 1649,
+          "acquisitions": 214,
+          "disposals": 3005,
+          "replacementExits": 169,
           "reconciliationDifference": 0,
           "unit": "weighted resident cohorts with vehicle access"
         },
         "citizenStateSharesPercent": {
-          "Happy": 35.52,
-          "Waiting": 24.17,
-          "Extreme": 39.06,
-          "Recovery": 1.25
+          "Happy": 36.92,
+          "Waiting": 24.28,
+          "Extreme": 37.56,
+          "Recovery": 1.24
         },
-        "averageRoundTripMinutes": 60.7,
-        "averageNetIncomeAedPerMonth": 5750.53,
-        "averageBankBalanceAed": 48710.36,
-        "averageMonthlySavingOrDrawdownAed": 378.96,
+        "averageRoundTripMinutes": 59.51,
+        "averageNetIncomeAedPerMonth": 6043.55,
+        "averageBankBalanceAed": 54282.75,
+        "averageMonthlySavingOrDrawdownAed": 489.32,
         "savingsPolicy": {
           "monthlyEssentialConsumptionAed": 2500,
           "positiveResidualSavingsRate": 0.25,
@@ -1658,69 +1658,69 @@
         },
         "financialStatusSharesPercent": {
           "outside-labor-force": 30,
-          "unemployed": 8.57,
-          "fixed-cost-deficit": 3.56,
-          "essentials-gap": 9.18,
-          "thin-positive-buffer": 6.21,
-          "savings-capacity": 42.49
+          "unemployed": 6.94,
+          "fixed-cost-deficit": 3.48,
+          "essentials-gap": 8.98,
+          "thin-positive-buffer": 5.75,
+          "savings-capacity": 44.86
         },
         "extremeNonparticipantSharePercent": 0,
-        "meanHousingRentAedPerMonth": 2521.18,
-        "averageRoadCapacityUsagePercent": 5.3,
-        "sameZoneWorkSharePercent": 29.02,
+        "meanHousingRentAedPerMonth": 2503.78,
+        "averageRoadCapacityUsagePercent": 5.23,
+        "sameZoneWorkSharePercent": 28.96,
         "housingOccupancyRatePercent": 86.85,
         "housingCapacityRepresented": 1747250,
         "housingOvercapacityRepresented": 0,
         "enterprisePlaceCapacity": 2014,
-        "dailyCarVehicleKm": 2938554.17,
+        "dailyCarVehicleKm": 2846264.79,
         "forcedInterzoneWalkers": 0,
         "unservedCommuters": 0,
         "capacityOverflowTrips": 0,
         "networkAssignmentDate": "2033-12-30",
         "completedMonthRepresentedEvents": {
-          "hires": 19250,
-          "fires": 500,
-          "residentialMoves": 12000
+          "hires": 16000,
+          "fires": 1750,
+          "residentialMoves": 9250
         },
         "cumulativeEvents": {
           "initialEmploymentAssignments": 4067,
-          "residentialMoves": 5135,
-          "jobChanges": 1464,
-          "crossDistrictJobChanges": 917,
-          "hires": 7193,
-          "fires": 528,
-          "laborSeparations": 7055,
-          "carAcquisitions": 210,
-          "carDisposals": 3010,
-          "carAccessReplacementExits": 155,
-          "replacements": 548,
-          "firmMoves": 943,
-          "workersAffectedByFirmMoves": 6223,
+          "residentialMoves": 5090,
+          "jobChanges": 1380,
+          "crossDistrictJobChanges": 1140,
+          "hires": 7813,
+          "fires": 509,
+          "laborSeparations": 7241,
+          "carAcquisitions": 214,
+          "carDisposals": 3005,
+          "carAccessReplacementExits": 169,
+          "replacements": 544,
+          "firmMoves": 946,
+          "workersAffectedByFirmMoves": 6155,
           "firmRestarts": 1,
           "enterpriseReentryPlacements": 0
         },
         "cumulativeRepresentedCitizenEvents": {
           "initialEmploymentAssignments": 1016750,
-          "residentialMoves": 1283750,
-          "jobChanges": 366000,
-          "crossDistrictJobChanges": 229250,
-          "hires": 1798250,
-          "fires": 132000,
-          "carAcquisitions": 52500,
-          "carDisposals": 752500,
-          "replacements": 137000,
-          "workersAffectedByFirmMoves": 1555750
+          "residentialMoves": 1272500,
+          "jobChanges": 345000,
+          "crossDistrictJobChanges": 285000,
+          "hires": 1953250,
+          "fires": 127250,
+          "carAcquisitions": 53500,
+          "carDisposals": 751250,
+          "replacements": 136000,
+          "workersAffectedByFirmMoves": 1538750
         },
         "mobilityEventRates": {
           "observationType": "cumulative-agent-event-rate",
           "elapsedDays": 3653,
           "denominatorNote": "Events per 100 modeled actor-years; employment-based rates use accumulated employed-agent-days, and repeated events by one actor are counted separately.",
           "calibrationStatus": "Provisional sanity diagnostics, not empirical Abu Dhabi calibration.",
-          "residentialMovesPer100CitizenAgentYears": 8.46,
-          "voluntaryJobSwitchesPer100EmployedAgentYears": 3.77,
-          "crossDistrictVoluntaryJobSwitchesPer100EmployedAgentYears": 2.36,
-          "firmRelocationsPer100FirmAgentYears": 15.71,
-          "employerCarriedWorkplaceChangesPer100EmployedAgentYears": 16.01
+          "residentialMovesPer100CitizenAgentYears": 8.38,
+          "voluntaryJobSwitchesPer100EmployedAgentYears": 3.54,
+          "crossDistrictVoluntaryJobSwitchesPer100EmployedAgentYears": 2.92,
+          "firmRelocationsPer100FirmAgentYears": 15.76,
+          "employerCarriedWorkplaceChangesPer100EmployedAgentYears": 15.79
         },
         "distributions": {
           "income": {
@@ -1738,57 +1738,57 @@
                 "label": "Below AED 0",
                 "minInclusive": null,
                 "maxExclusive": 0,
-                "agentCount": 736,
-                "representedCount": 184000,
-                "sharePercent": 12.13
+                "agentCount": 632,
+                "representedCount": 158000,
+                "sharePercent": 10.41
               },
               {
                 "label": "AED 0–2,999",
                 "minInclusive": 0,
                 "maxExclusive": 3000,
-                "agentCount": 955,
-                "representedCount": 238750,
-                "sharePercent": 15.73
+                "agentCount": 1001,
+                "representedCount": 250250,
+                "sharePercent": 16.49
               },
               {
                 "label": "AED 3,000–5,999",
                 "minInclusive": 3000,
                 "maxExclusive": 6000,
-                "agentCount": 2286,
-                "representedCount": 571500,
-                "sharePercent": 37.66
+                "agentCount": 2257,
+                "representedCount": 564250,
+                "sharePercent": 37.18
               },
               {
                 "label": "AED 6,000–9,999",
                 "minInclusive": 6000,
                 "maxExclusive": 10000,
-                "agentCount": 910,
-                "representedCount": 227500,
-                "sharePercent": 14.99
+                "agentCount": 932,
+                "representedCount": 233000,
+                "sharePercent": 15.35
               },
               {
                 "label": "AED 10,000–14,999",
                 "minInclusive": 10000,
                 "maxExclusive": 15000,
-                "agentCount": 740,
-                "representedCount": 185000,
-                "sharePercent": 12.19
+                "agentCount": 791,
+                "representedCount": 197750,
+                "sharePercent": 13.03
               },
               {
                 "label": "AED 15,000–24,999",
                 "minInclusive": 15000,
                 "maxExclusive": 25000,
-                "agentCount": 384,
-                "representedCount": 96000,
-                "sharePercent": 6.33
+                "agentCount": 379,
+                "representedCount": 94750,
+                "sharePercent": 6.24
               },
               {
                 "label": "AED 25,000+",
                 "minInclusive": 25000,
                 "maxExclusive": null,
-                "agentCount": 59,
-                "representedCount": 14750,
-                "sharePercent": 0.97
+                "agentCount": 78,
+                "representedCount": 19500,
+                "sharePercent": 1.29
               }
             ]
           },
@@ -1810,101 +1810,101 @@
               {
                 "id": "unemployed",
                 "label": "Active job seeker",
-                "agentCount": 520,
-                "representedCount": 130000,
-                "sharePercent": 8.57
+                "agentCount": 421,
+                "representedCount": 105250,
+                "sharePercent": 6.94
               },
               {
                 "id": "fixed-cost-deficit",
                 "label": "Pay below housing + commute",
-                "agentCount": 216,
-                "representedCount": 54000,
-                "sharePercent": 3.56
+                "agentCount": 211,
+                "representedCount": 52750,
+                "sharePercent": 3.48
               },
               {
                 "id": "essentials-gap",
                 "label": "Essentials not fully covered",
-                "agentCount": 557,
-                "representedCount": 139250,
-                "sharePercent": 9.18
+                "agentCount": 545,
+                "representedCount": 136250,
+                "sharePercent": 8.98
               },
               {
                 "id": "thin-positive-buffer",
                 "label": "Thin positive buffer",
-                "agentCount": 377,
-                "representedCount": 94250,
-                "sharePercent": 6.21
+                "agentCount": 349,
+                "representedCount": 87250,
+                "sharePercent": 5.75
               },
               {
                 "id": "savings-capacity",
                 "label": "Savings capacity",
-                "agentCount": 2579,
-                "representedCount": 644750,
-                "sharePercent": 42.49
+                "agentCount": 2723,
+                "representedCount": 680750,
+                "sharePercent": 44.86
               }
             ]
           },
           "commute": {
             "population": "completed-employed-commuters",
             "unit": "round-trip minutes",
-            "sourceAgentCount": 3656,
-            "representedTotal": 914000,
+            "sourceAgentCount": 3753,
+            "representedTotal": 938250,
             "bins": [
               {
                 "label": "Under 20 min",
                 "minInclusive": 0,
                 "maxExclusive": 20,
-                "agentCount": 668,
-                "representedCount": 167000,
-                "sharePercent": 18.27
+                "agentCount": 721,
+                "representedCount": 180250,
+                "sharePercent": 19.21
               },
               {
                 "label": "20–29 min",
                 "minInclusive": 20,
                 "maxExclusive": 30,
-                "agentCount": 180,
-                "representedCount": 45000,
-                "sharePercent": 4.92
+                "agentCount": 166,
+                "representedCount": 41500,
+                "sharePercent": 4.42
               },
               {
                 "label": "30–44 min",
                 "minInclusive": 30,
                 "maxExclusive": 45,
-                "agentCount": 829,
-                "representedCount": 207250,
-                "sharePercent": 22.68
+                "agentCount": 842,
+                "representedCount": 210500,
+                "sharePercent": 22.44
               },
               {
                 "label": "45–59 min",
                 "minInclusive": 45,
                 "maxExclusive": 60,
-                "agentCount": 561,
-                "representedCount": 140250,
-                "sharePercent": 15.34
+                "agentCount": 590,
+                "representedCount": 147500,
+                "sharePercent": 15.72
               },
               {
                 "label": "60–89 min",
                 "minInclusive": 60,
                 "maxExclusive": 90,
-                "agentCount": 482,
-                "representedCount": 120500,
-                "sharePercent": 13.18
+                "agentCount": 527,
+                "representedCount": 131750,
+                "sharePercent": 14.04
               },
               {
                 "label": "90–119 min",
                 "minInclusive": 90,
                 "maxExclusive": 120,
-                "agentCount": 535,
-                "representedCount": 133750,
-                "sharePercent": 14.63
+                "agentCount": 554,
+                "representedCount": 138500,
+                "sharePercent": 14.76
               },
               {
                 "label": "120+ min",
                 "minInclusive": 120,
                 "maxExclusive": null,
-                "agentCount": 401,
-                "representedCount": 100250,
-                "sharePercent": 10.97
+                "agentCount": 353,
+                "representedCount": 88250,
+                "sharePercent": 9.41
               }
             ]
           },
@@ -1912,7 +1912,7 @@
             "population": "all-enterprises",
             "unit": "modeled employee agents",
             "enterpriseTotal": 600,
-            "representedEmployeeTotal": 922750,
+            "representedEmployeeTotal": 946750,
             "bins": [
               {
                 "label": "0 workers",
@@ -1926,25 +1926,25 @@
                 "label": "1–4 workers",
                 "minInclusive": 1,
                 "maxExclusive": 5,
-                "enterpriseCount": 194,
-                "representedEmployees": 156750,
-                "enterpriseSharePercent": 32.33
+                "enterpriseCount": 182,
+                "representedEmployees": 149750,
+                "enterpriseSharePercent": 30.33
               },
               {
                 "label": "5–9 workers",
                 "minInclusive": 5,
                 "maxExclusive": 10,
-                "enterpriseCount": 332,
-                "representedEmployees": 562250,
-                "enterpriseSharePercent": 55.33
+                "enterpriseCount": 340,
+                "representedEmployees": 584000,
+                "enterpriseSharePercent": 56.67
               },
               {
                 "label": "10–19 workers",
                 "minInclusive": 10,
                 "maxExclusive": 20,
-                "enterpriseCount": 74,
-                "representedEmployees": 203750,
-                "enterpriseSharePercent": 12.33
+                "enterpriseCount": 78,
+                "representedEmployees": 213000,
+                "enterpriseSharePercent": 13
               },
               {
                 "label": "20–29 workers",
@@ -1968,23 +1968,23 @@
         "network": {
           "physicalEdgeCount": 1115,
           "assignmentEdgeCount": 1115,
-          "meanRoadVolumeCapacityRatio": 0.053,
-          "p90RoadVolumeCapacityRatio": 0.1377,
-          "maximumRoadVolumeCapacityRatio": 0.4207,
+          "meanRoadVolumeCapacityRatio": 0.0523,
+          "p90RoadVolumeCapacityRatio": 0.1269,
+          "maximumRoadVolumeCapacityRatio": 0.4374,
           "overloadedDirectionCount": 0,
-          "meanTransitLoadFactor": 0.1642,
-          "p90TransitLoadFactor": 0.4202,
-          "maximumTransitLoadFactor": 0.7552,
+          "meanTransitLoadFactor": 0.1652,
+          "p90TransitLoadFactor": 0.4097,
+          "maximumTransitLoadFactor": 0.7342,
           "physicalRoadAccounting": {
             "passed": true,
             "assignmentDate": "2033-12-30",
             "assignmentDateMatches": true,
             "physicalEdges": 1115,
-            "assignedPhysicalEdges": 1052,
+            "assignedPhysicalEdges": 1015,
             "excludedPhysicalEdges": 0,
             "missingSnapshotEdges": 0,
-            "assignedCohorts": 2647,
-            "traversalCount": 216892,
+            "assignedCohorts": 2699,
+            "traversalCount": 219385,
             "invalidTraversalCount": 0,
             "invalidWeightCount": 0,
             "prohibitedTurnCount": 0,
@@ -2002,23 +2002,23 @@
           "firmAgents": 600,
           "activeFirms": 600,
           "inactiveFirms": 0,
-          "lossMakingFirms": 53,
-          "lossMakingSharePercent": 8.83,
+          "lossMakingFirms": 50,
+          "lossMakingSharePercent": 8.33,
           "restartMarginThresholdPercent": -20,
-          "severelyDistressedFirms": 0,
-          "severelyDistressedSharePercent": 0,
-          "meanOperatingMarginPercent": 23.42,
-          "medianOperatingMarginPercent": 24.45,
-          "p10OperatingMarginPercent": 1.44,
-          "p90OperatingMarginPercent": 43.6,
-          "revenueWeightedOperatingMarginPercent": 27.89,
-          "monthlyRevenueAed": 21590264276,
-          "monthlyOperatingCostAed": 15568376096,
-          "representedEmployees": 922750,
+          "severelyDistressedFirms": 1,
+          "severelyDistressedSharePercent": 0.17,
+          "meanOperatingMarginPercent": 23.3,
+          "medianOperatingMarginPercent": 23.78,
+          "p10OperatingMarginPercent": 2.56,
+          "p90OperatingMarginPercent": 42.01,
+          "revenueWeightedOperatingMarginPercent": 27.06,
+          "monthlyRevenueAed": 22029922749,
+          "monthlyOperatingCostAed": 16068320001,
+          "representedEmployees": 946750,
           "states": {
-            "Grow": 142,
-            "Lesser": 81,
-            "Working": 377
+            "Grow": 126,
+            "Lesser": 86,
+            "Working": 388
           }
         }
       },
@@ -2046,7 +2046,7 @@
         {
           "id": "vehicle-access-stock-and-flows-reconcile",
           "passed": true,
-          "detail": "Initial 4609 + acquisitions 210 - disposals 3010 - replacement exits 155 = current 1654 resident cohorts"
+          "detail": "Initial 4609 + acquisitions 214 - disposals 3005 - replacement exits 169 = current 1649 resident cohorts"
         },
         {
           "id": "population-conserved",
@@ -2066,12 +2066,12 @@
         {
           "id": "labor-force-stocks-reconcile",
           "passed": true,
-          "detail": "922750 employed + 139500 active unemployed + 455250 nonparticipants = 1517500"
+          "detail": "946750 employed + 115500 active unemployed + 455250 nonparticipants = 1517500"
         },
         {
           "id": "labor-force-rates-use-disclosed-denominators",
           "passed": true,
-          "detail": "70% participating; 13.13% unemployed within the labor force; 30% outside it"
+          "detail": "70% participating; 10.87% unemployed within the labor force; 30% outside it"
         },
         {
           "id": "outside-labor-force-financial-bin-reconciles",
@@ -2091,7 +2091,7 @@
         {
           "id": "commute-distribution-conserves-completed-commuters",
           "passed": true,
-          "detail": "914000/914000 represented completed commuters across commute bins/modes"
+          "detail": "938250/938250 represented completed commuters across commute bins/modes"
         },
         {
           "id": "enterprise-distribution-covers-all-firms",
@@ -2111,7 +2111,7 @@
         {
           "id": "employment-within-participating-population",
           "passed": true,
-          "detail": "922750 employed within 1062250 participants; 60.81% of represented residents. No outcome is required to equal the initial employment assumption."
+          "detail": "946750 employed within 1062250 participants; 62.39% of represented residents. No outcome is required to equal the initial employment assumption."
         },
         {
           "id": "no-forced-interzone-walking",
@@ -2136,12 +2136,12 @@
         {
           "id": "cross-district-job-switch-rate-reconciles-to-all-switches",
           "passed": true,
-          "detail": "2.36 cross-district versus 3.77 all voluntary events per 100 employed-agent-years"
+          "detail": "2.92 cross-district versus 3.54 all voluntary events per 100 employed-agent-years"
         },
         {
           "id": "finite-enterprise-portfolio",
           "passed": true,
-          "detail": "27.89% revenue-weighted margin"
+          "detail": "27.06% revenue-weighted margin"
         }
       ],
       "diagnostics": [
@@ -2153,7 +2153,7 @@
         },
         {
           "id": "household-finance-remains-numerically-bounded",
-          "detail": "AED 48710.36 mean stock; AED 378.96/month mean change",
+          "detail": "AED 54282.75 mean stock; AED 489.32/month mean change",
           "withinReviewBand": true,
           "status": "within-review-band"
         },
@@ -2165,43 +2165,43 @@
         },
         {
           "id": "maximum-directional-road-volume-capacity-within-horizon-stress-guard",
-          "detail": "0.4207 maximum directional work-trip load ratio; provisional <3.25 ten-year stress guard",
+          "detail": "0.4374 maximum directional work-trip load ratio; provisional <3.25 ten-year stress guard",
           "withinReviewBand": true,
           "status": "within-review-band"
         },
         {
           "id": "commute-time-in-plausibility-band",
-          "detail": "60.7 minutes average round trip",
+          "detail": "59.51 minutes average round trip",
           "withinReviewBand": true,
           "status": "within-review-band"
         },
         {
           "id": "residential-relocation-rate-below-provisional-churn-ceiling",
-          "detail": "8.46 events per 100 citizen-agent-years; provisional software sanity ceiling 30",
+          "detail": "8.38 events per 100 citizen-agent-years; provisional software sanity ceiling 30",
           "withinReviewBand": true,
           "status": "within-review-band"
         },
         {
           "id": "firm-relocation-rate-below-provisional-churn-ceiling",
-          "detail": "15.71 events per 100 firm-agent-years; provisional software sanity ceiling 20",
+          "detail": "15.76 events per 100 firm-agent-years; provisional software sanity ceiling 20",
           "withinReviewBand": true,
           "status": "within-review-band"
         },
         {
           "id": "voluntary-job-switch-rate-below-provisional-churn-ceiling",
-          "detail": "3.77 events per 100 employed-agent-years; provisional software sanity ceiling 50",
+          "detail": "3.54 events per 100 employed-agent-years; provisional software sanity ceiling 50",
           "withinReviewBand": true,
           "status": "within-review-band"
         },
         {
           "id": "employer-carried-workplace-change-rate-below-provisional-churn-ceiling",
-          "detail": "16.01 affected worker events per 100 employed-agent-years; provisional software sanity ceiling 30",
+          "detail": "15.79 affected worker events per 100 employed-agent-years; provisional software sanity ceiling 30",
           "withinReviewBand": true,
           "status": "within-review-band"
         },
         {
           "id": "extreme-state-below-fifty-percent",
-          "detail": "39.06% of represented citizens",
+          "detail": "37.56% of represented citizens",
           "withinReviewBand": true,
           "status": "within-review-band"
         },
@@ -2213,31 +2213,31 @@
         },
         {
           "id": "enterprise-margin-in-plausibility-band",
-          "detail": "27.89% revenue-weighted operating margin",
+          "detail": "27.06% revenue-weighted operating margin",
           "withinReviewBand": true,
           "status": "within-review-band"
         },
         {
           "id": "loss-making-firms-broad-distribution-guard",
-          "detail": "8.83% of active firm agents below break-even; broad guard <60%",
+          "detail": "8.33% of active firm agents below break-even; broad guard <60%",
           "withinReviewBand": true,
           "status": "within-review-band"
         },
         {
           "id": "enterprise-median-margin-broad-plausibility-guard",
-          "detail": "24.45% median operating margin; broad guard >-5%",
+          "detail": "23.78% median operating margin; broad guard >-5%",
           "withinReviewBand": true,
           "status": "within-review-band"
         },
         {
           "id": "enterprise-severe-distress-below-ten-percent",
-          "detail": "0% of active firm agents at or below the configured -20% restart threshold",
+          "detail": "0.17% of active firm agents at or below the configured -20% restart threshold",
           "withinReviewBand": true,
           "status": "within-review-band"
         }
       ],
       "status": "passed",
-      "resultDigestSha256": "5db124e5207cdc2595ef24059c2a6e2df2304b8ea3b3d4020ef4682720248aa1"
+      "resultDigestSha256": "3e43e0e3833d7f2b1602bc2af7718c60005cfd117ac569ec616f1c9b2426869a"
     },
     {
       "id": "transit-10y",
@@ -2306,45 +2306,45 @@
       },
       "metrics": {
         "representedPopulation": 1517500,
-        "representedEmployed": 916500,
+        "representedEmployed": 932000,
         "representedLaborForce": 1062250,
-        "representedUnemployed": 145750,
+        "representedUnemployed": 130250,
         "representedNonparticipants": 455250,
-        "employmentRatePercent": 60.4,
-        "unemploymentRatePercent": 13.72,
+        "employmentRatePercent": 61.42,
+        "unemploymentRatePercent": 12.26,
         "laborForceParticipationRatePercent": 70,
         "nonParticipationRatePercent": 30,
         "modeCountsRepresented": {
-          "car": 58500,
-          "pt": 770250,
-          "walk": 77000,
-          "none": 10750
+          "car": 50750,
+          "pt": 780250,
+          "walk": 91250,
+          "none": 9750
         },
         "modeSharesPercent": {
-          "car": 6.46,
-          "pt": 85.04,
-          "walk": 8.5
+          "car": 5.5,
+          "pt": 84.6,
+          "walk": 9.89
         },
-        "carOwnershipRatePercent": 25.16,
+        "carOwnershipRatePercent": 24.71,
         "carAccessAccounting": {
           "initialAgentCount": 4609,
-          "currentAgentCount": 1527,
+          "currentAgentCount": 1500,
           "acquisitions": 0,
-          "disposals": 2914,
-          "replacementExits": 168,
+          "disposals": 2950,
+          "replacementExits": 159,
           "reconciliationDifference": 0,
           "unit": "weighted resident cohorts with vehicle access"
         },
         "citizenStateSharesPercent": {
-          "Happy": 39.77,
-          "Waiting": 28.73,
-          "Extreme": 30.2,
-          "Recovery": 1.3
+          "Happy": 39.42,
+          "Waiting": 28.37,
+          "Extreme": 30.87,
+          "Recovery": 1.33
         },
-        "averageRoundTripMinutes": 42.5,
-        "averageNetIncomeAedPerMonth": 6151.59,
-        "averageBankBalanceAed": 60861.29,
-        "averageMonthlySavingOrDrawdownAed": 488.68,
+        "averageRoundTripMinutes": 42.55,
+        "averageNetIncomeAedPerMonth": 6086.85,
+        "averageBankBalanceAed": 55755.31,
+        "averageMonthlySavingOrDrawdownAed": 488.05,
         "savingsPolicy": {
           "monthlyEssentialConsumptionAed": 2500,
           "positiveResidualSavingsRate": 0.25,
@@ -2352,69 +2352,69 @@
         },
         "financialStatusSharesPercent": {
           "outside-labor-force": 30,
-          "unemployed": 8.81,
-          "fixed-cost-deficit": 2.65,
-          "essentials-gap": 8.95,
-          "thin-positive-buffer": 5.17,
-          "savings-capacity": 44.42
+          "unemployed": 7.99,
+          "fixed-cost-deficit": 2.92,
+          "essentials-gap": 9.04,
+          "thin-positive-buffer": 5.73,
+          "savings-capacity": 44.32
         },
         "extremeNonparticipantSharePercent": 0,
-        "meanHousingRentAedPerMonth": 2500.05,
-        "averageRoadCapacityUsagePercent": 3.26,
-        "sameZoneWorkSharePercent": 17.89,
+        "meanHousingRentAedPerMonth": 2496.41,
+        "averageRoadCapacityUsagePercent": 2.77,
+        "sameZoneWorkSharePercent": 20.68,
         "housingOccupancyRatePercent": 86.85,
         "housingCapacityRepresented": 1747250,
         "housingOvercapacityRepresented": 0,
         "enterprisePlaceCapacity": 2014,
-        "dailyCarVehicleKm": 1666009.79,
+        "dailyCarVehicleKm": 1519677.29,
         "forcedInterzoneWalkers": 0,
         "unservedCommuters": 0,
         "capacityOverflowTrips": 0,
         "networkAssignmentDate": "2033-12-30",
         "completedMonthRepresentedEvents": {
-          "hires": 16000,
-          "fires": 1000,
-          "residentialMoves": 12000
+          "hires": 13750,
+          "fires": 1250,
+          "residentialMoves": 13250
         },
         "cumulativeEvents": {
           "initialEmploymentAssignments": 4067,
-          "residentialMoves": 4723,
-          "jobChanges": 1876,
-          "crossDistrictJobChanges": 1391,
-          "hires": 7315,
-          "fires": 579,
-          "laborSeparations": 7070,
+          "residentialMoves": 4640,
+          "jobChanges": 1715,
+          "crossDistrictJobChanges": 1495,
+          "hires": 7760,
+          "fires": 528,
+          "laborSeparations": 7228,
           "carAcquisitions": 0,
-          "carDisposals": 2914,
-          "carAccessReplacementExits": 168,
-          "replacements": 579,
-          "firmMoves": 941,
-          "workersAffectedByFirmMoves": 6192,
+          "carDisposals": 2950,
+          "carAccessReplacementExits": 159,
+          "replacements": 557,
+          "firmMoves": 945,
+          "workersAffectedByFirmMoves": 6221,
           "firmRestarts": 0,
           "enterpriseReentryPlacements": 0
         },
         "cumulativeRepresentedCitizenEvents": {
           "initialEmploymentAssignments": 1016750,
-          "residentialMoves": 1180750,
-          "jobChanges": 469000,
-          "crossDistrictJobChanges": 347750,
-          "hires": 1828750,
-          "fires": 144750,
+          "residentialMoves": 1160000,
+          "jobChanges": 428750,
+          "crossDistrictJobChanges": 373750,
+          "hires": 1940000,
+          "fires": 132000,
           "carAcquisitions": 0,
-          "carDisposals": 728500,
-          "replacements": 144750,
-          "workersAffectedByFirmMoves": 1548000
+          "carDisposals": 737500,
+          "replacements": 139250,
+          "workersAffectedByFirmMoves": 1555250
         },
         "mobilityEventRates": {
           "observationType": "cumulative-agent-event-rate",
           "elapsedDays": 3653,
           "denominatorNote": "Events per 100 modeled actor-years; employment-based rates use accumulated employed-agent-days, and repeated events by one actor are counted separately.",
           "calibrationStatus": "Provisional sanity diagnostics, not empirical Abu Dhabi calibration.",
-          "residentialMovesPer100CitizenAgentYears": 7.78,
-          "voluntaryJobSwitchesPer100EmployedAgentYears": 4.81,
-          "crossDistrictVoluntaryJobSwitchesPer100EmployedAgentYears": 3.57,
-          "firmRelocationsPer100FirmAgentYears": 15.68,
-          "employerCarriedWorkplaceChangesPer100EmployedAgentYears": 15.87
+          "residentialMovesPer100CitizenAgentYears": 7.64,
+          "voluntaryJobSwitchesPer100EmployedAgentYears": 4.41,
+          "crossDistrictVoluntaryJobSwitchesPer100EmployedAgentYears": 3.85,
+          "firmRelocationsPer100FirmAgentYears": 15.75,
+          "employerCarriedWorkplaceChangesPer100EmployedAgentYears": 16.01
         },
         "distributions": {
           "income": {
@@ -2432,57 +2432,57 @@
                 "label": "Below AED 0",
                 "minInclusive": null,
                 "maxExclusive": 0,
-                "agentCount": 696,
-                "representedCount": 174000,
-                "sharePercent": 11.47
+                "agentCount": 662,
+                "representedCount": 165500,
+                "sharePercent": 10.91
               },
               {
                 "label": "AED 0–2,999",
                 "minInclusive": 0,
                 "maxExclusive": 3000,
-                "agentCount": 924,
-                "representedCount": 231000,
-                "sharePercent": 15.22
+                "agentCount": 908,
+                "representedCount": 227000,
+                "sharePercent": 14.96
               },
               {
                 "label": "AED 3,000–5,999",
                 "minInclusive": 3000,
                 "maxExclusive": 6000,
-                "agentCount": 2251,
-                "representedCount": 562750,
-                "sharePercent": 37.08
+                "agentCount": 2327,
+                "representedCount": 581750,
+                "sharePercent": 38.34
               },
               {
                 "label": "AED 6,000–9,999",
                 "minInclusive": 6000,
                 "maxExclusive": 10000,
-                "agentCount": 865,
-                "representedCount": 216250,
-                "sharePercent": 14.25
+                "agentCount": 883,
+                "representedCount": 220750,
+                "sharePercent": 14.55
               },
               {
                 "label": "AED 10,000–14,999",
                 "minInclusive": 10000,
                 "maxExclusive": 15000,
-                "agentCount": 770,
-                "representedCount": 192500,
-                "sharePercent": 12.69
+                "agentCount": 777,
+                "representedCount": 194250,
+                "sharePercent": 12.8
               },
               {
                 "label": "AED 15,000–24,999",
                 "minInclusive": 15000,
                 "maxExclusive": 25000,
-                "agentCount": 480,
-                "representedCount": 120000,
-                "sharePercent": 7.91
+                "agentCount": 433,
+                "representedCount": 108250,
+                "sharePercent": 7.13
               },
               {
                 "label": "AED 25,000+",
                 "minInclusive": 25000,
                 "maxExclusive": null,
-                "agentCount": 84,
-                "representedCount": 21000,
-                "sharePercent": 1.38
+                "agentCount": 80,
+                "representedCount": 20000,
+                "sharePercent": 1.32
               }
             ]
           },
@@ -2504,93 +2504,93 @@
               {
                 "id": "unemployed",
                 "label": "Active job seeker",
-                "agentCount": 535,
-                "representedCount": 133750,
-                "sharePercent": 8.81
+                "agentCount": 485,
+                "representedCount": 121250,
+                "sharePercent": 7.99
               },
               {
                 "id": "fixed-cost-deficit",
                 "label": "Pay below housing + commute",
-                "agentCount": 161,
-                "representedCount": 40250,
-                "sharePercent": 2.65
+                "agentCount": 177,
+                "representedCount": 44250,
+                "sharePercent": 2.92
               },
               {
                 "id": "essentials-gap",
                 "label": "Essentials not fully covered",
-                "agentCount": 543,
-                "representedCount": 135750,
-                "sharePercent": 8.95
+                "agentCount": 549,
+                "representedCount": 137250,
+                "sharePercent": 9.04
               },
               {
                 "id": "thin-positive-buffer",
                 "label": "Thin positive buffer",
-                "agentCount": 314,
-                "representedCount": 78500,
-                "sharePercent": 5.17
+                "agentCount": 348,
+                "representedCount": 87000,
+                "sharePercent": 5.73
               },
               {
                 "id": "savings-capacity",
                 "label": "Savings capacity",
-                "agentCount": 2696,
-                "representedCount": 674000,
-                "sharePercent": 44.42
+                "agentCount": 2690,
+                "representedCount": 672500,
+                "sharePercent": 44.32
               }
             ]
           },
           "commute": {
             "population": "completed-employed-commuters",
             "unit": "round-trip minutes",
-            "sourceAgentCount": 3623,
-            "representedTotal": 905750,
+            "sourceAgentCount": 3689,
+            "representedTotal": 922250,
             "bins": [
               {
                 "label": "Under 20 min",
                 "minInclusive": 0,
                 "maxExclusive": 20,
-                "agentCount": 559,
-                "representedCount": 139750,
-                "sharePercent": 15.43
+                "agentCount": 538,
+                "representedCount": 134500,
+                "sharePercent": 14.58
               },
               {
                 "label": "20–29 min",
                 "minInclusive": 20,
                 "maxExclusive": 30,
-                "agentCount": 850,
-                "representedCount": 212500,
-                "sharePercent": 23.46
+                "agentCount": 919,
+                "representedCount": 229750,
+                "sharePercent": 24.91
               },
               {
                 "label": "30–44 min",
                 "minInclusive": 30,
                 "maxExclusive": 45,
-                "agentCount": 804,
-                "representedCount": 201000,
-                "sharePercent": 22.19
+                "agentCount": 822,
+                "representedCount": 205500,
+                "sharePercent": 22.28
               },
               {
                 "label": "45–59 min",
                 "minInclusive": 45,
                 "maxExclusive": 60,
-                "agentCount": 367,
-                "representedCount": 91750,
-                "sharePercent": 10.13
+                "agentCount": 349,
+                "representedCount": 87250,
+                "sharePercent": 9.46
               },
               {
                 "label": "60–89 min",
                 "minInclusive": 60,
                 "maxExclusive": 90,
-                "agentCount": 920,
-                "representedCount": 230000,
-                "sharePercent": 25.39
+                "agentCount": 918,
+                "representedCount": 229500,
+                "sharePercent": 24.88
               },
               {
                 "label": "90–119 min",
                 "minInclusive": 90,
                 "maxExclusive": 120,
-                "agentCount": 123,
-                "representedCount": 30750,
-                "sharePercent": 3.39
+                "agentCount": 143,
+                "representedCount": 35750,
+                "sharePercent": 3.88
               },
               {
                 "label": "120+ min",
@@ -2606,7 +2606,7 @@
             "population": "all-enterprises",
             "unit": "modeled employee agents",
             "enterpriseTotal": 600,
-            "representedEmployeeTotal": 916500,
+            "representedEmployeeTotal": 932000,
             "bins": [
               {
                 "label": "0 workers",
@@ -2620,25 +2620,25 @@
                 "label": "1–4 workers",
                 "minInclusive": 1,
                 "maxExclusive": 5,
-                "enterpriseCount": 203,
-                "representedEmployees": 162500,
-                "enterpriseSharePercent": 33.83
+                "enterpriseCount": 181,
+                "representedEmployees": 146250,
+                "enterpriseSharePercent": 30.17
               },
               {
                 "label": "5–9 workers",
                 "minInclusive": 5,
                 "maxExclusive": 10,
-                "enterpriseCount": 323,
-                "representedEmployees": 552250,
-                "enterpriseSharePercent": 53.83
+                "enterpriseCount": 349,
+                "representedEmployees": 592750,
+                "enterpriseSharePercent": 58.17
               },
               {
                 "label": "10–19 workers",
                 "minInclusive": 10,
                 "maxExclusive": 20,
-                "enterpriseCount": 74,
-                "representedEmployees": 201750,
-                "enterpriseSharePercent": 12.33
+                "enterpriseCount": 70,
+                "representedEmployees": 193000,
+                "enterpriseSharePercent": 11.67
               },
               {
                 "label": "20–29 workers",
@@ -2662,23 +2662,23 @@
         "network": {
           "physicalEdgeCount": 1115,
           "assignmentEdgeCount": 1115,
-          "meanRoadVolumeCapacityRatio": 0.0326,
-          "p90RoadVolumeCapacityRatio": 0.0801,
-          "maximumRoadVolumeCapacityRatio": 0.2771,
+          "meanRoadVolumeCapacityRatio": 0.0277,
+          "p90RoadVolumeCapacityRatio": 0.0668,
+          "maximumRoadVolumeCapacityRatio": 0.2237,
           "overloadedDirectionCount": 0,
-          "meanTransitLoadFactor": 0.0964,
-          "p90TransitLoadFactor": 0.2461,
-          "maximumTransitLoadFactor": 0.4477,
+          "meanTransitLoadFactor": 0.0976,
+          "p90TransitLoadFactor": 0.2628,
+          "maximumTransitLoadFactor": 0.4778,
           "physicalRoadAccounting": {
             "passed": true,
             "assignmentDate": "2033-12-30",
             "assignmentDateMatches": true,
             "physicalEdges": 1115,
-            "assignedPhysicalEdges": 1001,
+            "assignedPhysicalEdges": 963,
             "excludedPhysicalEdges": 0,
             "missingSnapshotEdges": 0,
-            "assignedCohorts": 3044,
-            "traversalCount": 244530,
+            "assignedCohorts": 2977,
+            "traversalCount": 245567,
             "invalidTraversalCount": 0,
             "invalidWeightCount": 0,
             "prohibitedTurnCount": 0,
@@ -2696,23 +2696,23 @@
           "firmAgents": 600,
           "activeFirms": 600,
           "inactiveFirms": 0,
-          "lossMakingFirms": 59,
-          "lossMakingSharePercent": 9.83,
+          "lossMakingFirms": 50,
+          "lossMakingSharePercent": 8.33,
           "restartMarginThresholdPercent": -20,
           "severelyDistressedFirms": 0,
           "severelyDistressedSharePercent": 0,
-          "meanOperatingMarginPercent": 21.49,
-          "medianOperatingMarginPercent": 22.29,
-          "p10OperatingMarginPercent": 0,
-          "p90OperatingMarginPercent": 40.8,
-          "revenueWeightedOperatingMarginPercent": 25.87,
-          "monthlyRevenueAed": 21699728180,
-          "monthlyOperatingCostAed": 16085153962,
-          "representedEmployees": 916500,
+          "meanOperatingMarginPercent": 23.26,
+          "medianOperatingMarginPercent": 24.64,
+          "p10OperatingMarginPercent": 2.22,
+          "p90OperatingMarginPercent": 40.93,
+          "revenueWeightedOperatingMarginPercent": 27.14,
+          "monthlyRevenueAed": 22053660416,
+          "monthlyOperatingCostAed": 16067688672,
+          "representedEmployees": 932000,
           "states": {
-            "Grow": 123,
-            "Lesser": 77,
-            "Working": 400
+            "Grow": 132,
+            "Lesser": 93,
+            "Working": 375
           }
         }
       },
@@ -2740,7 +2740,7 @@
         {
           "id": "vehicle-access-stock-and-flows-reconcile",
           "passed": true,
-          "detail": "Initial 4609 + acquisitions 0 - disposals 2914 - replacement exits 168 = current 1527 resident cohorts"
+          "detail": "Initial 4609 + acquisitions 0 - disposals 2950 - replacement exits 159 = current 1500 resident cohorts"
         },
         {
           "id": "population-conserved",
@@ -2760,12 +2760,12 @@
         {
           "id": "labor-force-stocks-reconcile",
           "passed": true,
-          "detail": "916500 employed + 145750 active unemployed + 455250 nonparticipants = 1517500"
+          "detail": "932000 employed + 130250 active unemployed + 455250 nonparticipants = 1517500"
         },
         {
           "id": "labor-force-rates-use-disclosed-denominators",
           "passed": true,
-          "detail": "70% participating; 13.72% unemployed within the labor force; 30% outside it"
+          "detail": "70% participating; 12.26% unemployed within the labor force; 30% outside it"
         },
         {
           "id": "outside-labor-force-financial-bin-reconciles",
@@ -2785,7 +2785,7 @@
         {
           "id": "commute-distribution-conserves-completed-commuters",
           "passed": true,
-          "detail": "905750/905750 represented completed commuters across commute bins/modes"
+          "detail": "922250/922250 represented completed commuters across commute bins/modes"
         },
         {
           "id": "enterprise-distribution-covers-all-firms",
@@ -2795,17 +2795,17 @@
         {
           "id": "mode-shares-close",
           "passed": true,
-          "detail": "100% total"
+          "detail": "99.99% total"
         },
         {
           "id": "citizen-state-shares-close",
           "passed": true,
-          "detail": "100% total"
+          "detail": "99.99% total"
         },
         {
           "id": "employment-within-participating-population",
           "passed": true,
-          "detail": "916500 employed within 1062250 participants; 60.4% of represented residents. No outcome is required to equal the initial employment assumption."
+          "detail": "932000 employed within 1062250 participants; 61.42% of represented residents. No outcome is required to equal the initial employment assumption."
         },
         {
           "id": "no-forced-interzone-walking",
@@ -2830,12 +2830,12 @@
         {
           "id": "cross-district-job-switch-rate-reconciles-to-all-switches",
           "passed": true,
-          "detail": "3.57 cross-district versus 4.81 all voluntary events per 100 employed-agent-years"
+          "detail": "3.85 cross-district versus 4.41 all voluntary events per 100 employed-agent-years"
         },
         {
           "id": "finite-enterprise-portfolio",
           "passed": true,
-          "detail": "25.87% revenue-weighted margin"
+          "detail": "27.14% revenue-weighted margin"
         }
       ],
       "diagnostics": [
@@ -2847,7 +2847,7 @@
         },
         {
           "id": "household-finance-remains-numerically-bounded",
-          "detail": "AED 60861.29 mean stock; AED 488.68/month mean change",
+          "detail": "AED 55755.31 mean stock; AED 488.05/month mean change",
           "withinReviewBand": true,
           "status": "within-review-band"
         },
@@ -2859,43 +2859,43 @@
         },
         {
           "id": "maximum-directional-road-volume-capacity-within-horizon-stress-guard",
-          "detail": "0.2771 maximum directional work-trip load ratio; provisional <3.25 ten-year stress guard",
+          "detail": "0.2237 maximum directional work-trip load ratio; provisional <3.25 ten-year stress guard",
           "withinReviewBand": true,
           "status": "within-review-band"
         },
         {
           "id": "commute-time-in-plausibility-band",
-          "detail": "42.5 minutes average round trip",
+          "detail": "42.55 minutes average round trip",
           "withinReviewBand": true,
           "status": "within-review-band"
         },
         {
           "id": "residential-relocation-rate-below-provisional-churn-ceiling",
-          "detail": "7.78 events per 100 citizen-agent-years; provisional software sanity ceiling 30",
+          "detail": "7.64 events per 100 citizen-agent-years; provisional software sanity ceiling 30",
           "withinReviewBand": true,
           "status": "within-review-band"
         },
         {
           "id": "firm-relocation-rate-below-provisional-churn-ceiling",
-          "detail": "15.68 events per 100 firm-agent-years; provisional software sanity ceiling 20",
+          "detail": "15.75 events per 100 firm-agent-years; provisional software sanity ceiling 20",
           "withinReviewBand": true,
           "status": "within-review-band"
         },
         {
           "id": "voluntary-job-switch-rate-below-provisional-churn-ceiling",
-          "detail": "4.81 events per 100 employed-agent-years; provisional software sanity ceiling 50",
+          "detail": "4.41 events per 100 employed-agent-years; provisional software sanity ceiling 50",
           "withinReviewBand": true,
           "status": "within-review-band"
         },
         {
           "id": "employer-carried-workplace-change-rate-below-provisional-churn-ceiling",
-          "detail": "15.87 affected worker events per 100 employed-agent-years; provisional software sanity ceiling 30",
+          "detail": "16.01 affected worker events per 100 employed-agent-years; provisional software sanity ceiling 30",
           "withinReviewBand": true,
           "status": "within-review-band"
         },
         {
           "id": "extreme-state-below-fifty-percent",
-          "detail": "30.2% of represented citizens",
+          "detail": "30.87% of represented citizens",
           "withinReviewBand": true,
           "status": "within-review-band"
         },
@@ -2907,19 +2907,19 @@
         },
         {
           "id": "enterprise-margin-in-plausibility-band",
-          "detail": "25.87% revenue-weighted operating margin",
+          "detail": "27.14% revenue-weighted operating margin",
           "withinReviewBand": true,
           "status": "within-review-band"
         },
         {
           "id": "loss-making-firms-broad-distribution-guard",
-          "detail": "9.83% of active firm agents below break-even; broad guard <60%",
+          "detail": "8.33% of active firm agents below break-even; broad guard <60%",
           "withinReviewBand": true,
           "status": "within-review-band"
         },
         {
           "id": "enterprise-median-margin-broad-plausibility-guard",
-          "detail": "22.29% median operating margin; broad guard >-5%",
+          "detail": "24.64% median operating margin; broad guard >-5%",
           "withinReviewBand": true,
           "status": "within-review-band"
         },
@@ -2931,7 +2931,7 @@
         }
       ],
       "status": "passed",
-      "resultDigestSha256": "4ffb01d959025481e7530a170e3f538ac2b2d0b217821c949a5a5ffcc19e28e6"
+      "resultDigestSha256": "80f238157d73c25802ad0c7ae06ed3e03a50e75e25b770b2ea6e9f1de25e2640"
     },
     {
       "id": "housing-10y",
@@ -3000,45 +3000,45 @@
       },
       "metrics": {
         "representedPopulation": 1517500,
-        "representedEmployed": 923000,
+        "representedEmployed": 922750,
         "representedLaborForce": 1062250,
-        "representedUnemployed": 139250,
+        "representedUnemployed": 139500,
         "representedNonparticipants": 455250,
-        "employmentRatePercent": 60.82,
-        "unemploymentRatePercent": 13.11,
+        "employmentRatePercent": 60.81,
+        "unemploymentRatePercent": 13.13,
         "laborForceParticipationRatePercent": 70,
         "nonParticipationRatePercent": 30,
         "modeCountsRepresented": {
-          "car": 88500,
-          "pt": 672250,
-          "walk": 150000,
-          "none": 12250
+          "car": 85500,
+          "pt": 679250,
+          "walk": 149750,
+          "none": 8250
         },
         "modeSharesPercent": {
-          "car": 9.72,
-          "pt": 73.81,
-          "walk": 16.47
+          "car": 9.35,
+          "pt": 74.28,
+          "walk": 16.38
         },
-        "carOwnershipRatePercent": 26.99,
+        "carOwnershipRatePercent": 26.59,
         "carAccessAccounting": {
           "initialAgentCount": 4609,
-          "currentAgentCount": 1638,
-          "acquisitions": 213,
-          "disposals": 3024,
-          "replacementExits": 160,
+          "currentAgentCount": 1614,
+          "acquisitions": 232,
+          "disposals": 3070,
+          "replacementExits": 157,
           "reconciliationDifference": 0,
           "unit": "weighted resident cohorts with vehicle access"
         },
         "citizenStateSharesPercent": {
-          "Happy": 38.53,
-          "Waiting": 20.36,
-          "Extreme": 39.42,
-          "Recovery": 1.68
+          "Happy": 40.21,
+          "Waiting": 20.02,
+          "Extreme": 38.6,
+          "Recovery": 1.17
         },
-        "averageRoundTripMinutes": 65.16,
-        "averageNetIncomeAedPerMonth": 5999.71,
-        "averageBankBalanceAed": 56286.47,
-        "averageMonthlySavingOrDrawdownAed": 462.01,
+        "averageRoundTripMinutes": 64.44,
+        "averageNetIncomeAedPerMonth": 6110.95,
+        "averageBankBalanceAed": 57831.31,
+        "averageMonthlySavingOrDrawdownAed": 518.59,
         "savingsPolicy": {
           "monthlyEssentialConsumptionAed": 2500,
           "positiveResidualSavingsRate": 0.25,
@@ -3046,69 +3046,69 @@
         },
         "financialStatusSharesPercent": {
           "outside-labor-force": 30,
-          "unemployed": 8.57,
-          "fixed-cost-deficit": 2.45,
-          "essentials-gap": 9.03,
-          "thin-positive-buffer": 6.71,
-          "savings-capacity": 43.25
+          "unemployed": 8.67,
+          "fixed-cost-deficit": 2.26,
+          "essentials-gap": 8.95,
+          "thin-positive-buffer": 6.47,
+          "savings-capacity": 43.66
         },
         "extremeNonparticipantSharePercent": 0,
-        "meanHousingRentAedPerMonth": 2219.9,
-        "averageRoadCapacityUsagePercent": 4.95,
-        "sameZoneWorkSharePercent": 27.72,
+        "meanHousingRentAedPerMonth": 2153.82,
+        "averageRoadCapacityUsagePercent": 5.11,
+        "sameZoneWorkSharePercent": 27.86,
         "housingOccupancyRatePercent": 66.75,
         "housingCapacityRepresented": 2273250,
         "housingOvercapacityRepresented": 0,
         "enterprisePlaceCapacity": 2014,
-        "dailyCarVehicleKm": 2757431.25,
+        "dailyCarVehicleKm": 2938659.38,
         "forcedInterzoneWalkers": 0,
         "unservedCommuters": 0,
-        "capacityOverflowTrips": 20250,
+        "capacityOverflowTrips": 0,
         "networkAssignmentDate": "2033-12-30",
         "completedMonthRepresentedEvents": {
-          "hires": 14500,
-          "fires": 2500,
-          "residentialMoves": 7250
+          "hires": 14000,
+          "fires": 750,
+          "residentialMoves": 10250
         },
         "cumulativeEvents": {
           "initialEmploymentAssignments": 4067,
-          "residentialMoves": 4208,
-          "jobChanges": 1381,
-          "crossDistrictJobChanges": 838,
-          "hires": 7169,
-          "fires": 562,
-          "laborSeparations": 7001,
-          "carAcquisitions": 213,
-          "carDisposals": 3024,
-          "carAccessReplacementExits": 160,
+          "residentialMoves": 4461,
+          "jobChanges": 1281,
+          "crossDistrictJobChanges": 1043,
+          "hires": 7724,
+          "fires": 572,
+          "laborSeparations": 7192,
+          "carAcquisitions": 232,
+          "carDisposals": 3070,
+          "carAccessReplacementExits": 157,
           "replacements": 549,
-          "firmMoves": 969,
-          "workersAffectedByFirmMoves": 6317,
+          "firmMoves": 941,
+          "workersAffectedByFirmMoves": 6187,
           "firmRestarts": 1,
-          "enterpriseReentryPlacements": 0
+          "enterpriseReentryPlacements": 1
         },
         "cumulativeRepresentedCitizenEvents": {
           "initialEmploymentAssignments": 1016750,
-          "residentialMoves": 1052000,
-          "jobChanges": 345250,
-          "crossDistrictJobChanges": 209500,
-          "hires": 1792250,
-          "fires": 140500,
-          "carAcquisitions": 53250,
-          "carDisposals": 756000,
+          "residentialMoves": 1115250,
+          "jobChanges": 320250,
+          "crossDistrictJobChanges": 260750,
+          "hires": 1931000,
+          "fires": 143000,
+          "carAcquisitions": 58000,
+          "carDisposals": 767500,
           "replacements": 137250,
-          "workersAffectedByFirmMoves": 1579250
+          "workersAffectedByFirmMoves": 1546750
         },
         "mobilityEventRates": {
           "observationType": "cumulative-agent-event-rate",
           "elapsedDays": 3653,
           "denominatorNote": "Events per 100 modeled actor-years; employment-based rates use accumulated employed-agent-days, and repeated events by one actor are counted separately.",
           "calibrationStatus": "Provisional sanity diagnostics, not empirical Abu Dhabi calibration.",
-          "residentialMovesPer100CitizenAgentYears": 6.93,
-          "voluntaryJobSwitchesPer100EmployedAgentYears": 3.57,
-          "crossDistrictVoluntaryJobSwitchesPer100EmployedAgentYears": 2.17,
-          "firmRelocationsPer100FirmAgentYears": 16.15,
-          "employerCarriedWorkplaceChangesPer100EmployedAgentYears": 16.34
+          "residentialMovesPer100CitizenAgentYears": 7.35,
+          "voluntaryJobSwitchesPer100EmployedAgentYears": 3.31,
+          "crossDistrictVoluntaryJobSwitchesPer100EmployedAgentYears": 2.7,
+          "firmRelocationsPer100FirmAgentYears": 15.68,
+          "employerCarriedWorkplaceChangesPer100EmployedAgentYears": 16
         },
         "distributions": {
           "income": {
@@ -3126,57 +3126,57 @@
                 "label": "Below AED 0",
                 "minInclusive": null,
                 "maxExclusive": 0,
-                "agentCount": 669,
-                "representedCount": 167250,
-                "sharePercent": 11.02
+                "agentCount": 663,
+                "representedCount": 165750,
+                "sharePercent": 10.92
               },
               {
                 "label": "AED 0–2,999",
                 "minInclusive": 0,
                 "maxExclusive": 3000,
-                "agentCount": 941,
-                "representedCount": 235250,
-                "sharePercent": 15.5
+                "agentCount": 888,
+                "representedCount": 222000,
+                "sharePercent": 14.63
               },
               {
                 "label": "AED 3,000–5,999",
                 "minInclusive": 3000,
                 "maxExclusive": 6000,
-                "agentCount": 2328,
-                "representedCount": 582000,
-                "sharePercent": 38.35
+                "agentCount": 2360,
+                "representedCount": 590000,
+                "sharePercent": 38.88
               },
               {
                 "label": "AED 6,000–9,999",
                 "minInclusive": 6000,
                 "maxExclusive": 10000,
-                "agentCount": 892,
-                "representedCount": 223000,
-                "sharePercent": 14.7
+                "agentCount": 913,
+                "representedCount": 228250,
+                "sharePercent": 15.04
               },
               {
                 "label": "AED 10,000–14,999",
                 "minInclusive": 10000,
                 "maxExclusive": 15000,
-                "agentCount": 789,
-                "representedCount": 197250,
-                "sharePercent": 13
+                "agentCount": 759,
+                "representedCount": 189750,
+                "sharePercent": 12.5
               },
               {
                 "label": "AED 15,000–24,999",
                 "minInclusive": 15000,
                 "maxExclusive": 25000,
-                "agentCount": 387,
-                "representedCount": 96750,
-                "sharePercent": 6.38
+                "agentCount": 406,
+                "representedCount": 101500,
+                "sharePercent": 6.69
               },
               {
                 "label": "AED 25,000+",
                 "minInclusive": 25000,
                 "maxExclusive": null,
-                "agentCount": 64,
-                "representedCount": 16000,
-                "sharePercent": 1.05
+                "agentCount": 81,
+                "representedCount": 20250,
+                "sharePercent": 1.33
               }
             ]
           },
@@ -3198,101 +3198,101 @@
               {
                 "id": "unemployed",
                 "label": "Active job seeker",
-                "agentCount": 520,
-                "representedCount": 130000,
-                "sharePercent": 8.57
+                "agentCount": 526,
+                "representedCount": 131500,
+                "sharePercent": 8.67
               },
               {
                 "id": "fixed-cost-deficit",
                 "label": "Pay below housing + commute",
-                "agentCount": 149,
-                "representedCount": 37250,
-                "sharePercent": 2.45
+                "agentCount": 137,
+                "representedCount": 34250,
+                "sharePercent": 2.26
               },
               {
                 "id": "essentials-gap",
                 "label": "Essentials not fully covered",
-                "agentCount": 548,
-                "representedCount": 137000,
-                "sharePercent": 9.03
+                "agentCount": 543,
+                "representedCount": 135750,
+                "sharePercent": 8.95
               },
               {
                 "id": "thin-positive-buffer",
                 "label": "Thin positive buffer",
-                "agentCount": 407,
-                "representedCount": 101750,
-                "sharePercent": 6.71
+                "agentCount": 393,
+                "representedCount": 98250,
+                "sharePercent": 6.47
               },
               {
                 "id": "savings-capacity",
                 "label": "Savings capacity",
-                "agentCount": 2625,
-                "representedCount": 656250,
-                "sharePercent": 43.25
+                "agentCount": 2650,
+                "representedCount": 662500,
+                "sharePercent": 43.66
               }
             ]
           },
           "commute": {
             "population": "completed-employed-commuters",
             "unit": "round-trip minutes",
-            "sourceAgentCount": 3643,
-            "representedTotal": 910750,
+            "sourceAgentCount": 3658,
+            "representedTotal": 914500,
             "bins": [
               {
                 "label": "Under 20 min",
                 "minInclusive": 0,
                 "maxExclusive": 20,
-                "agentCount": 648,
-                "representedCount": 162000,
-                "sharePercent": 17.79
+                "agentCount": 643,
+                "representedCount": 160750,
+                "sharePercent": 17.58
               },
               {
                 "label": "20–29 min",
                 "minInclusive": 20,
                 "maxExclusive": 30,
-                "agentCount": 154,
-                "representedCount": 38500,
-                "sharePercent": 4.23
+                "agentCount": 124,
+                "representedCount": 31000,
+                "sharePercent": 3.39
               },
               {
                 "label": "30–44 min",
                 "minInclusive": 30,
                 "maxExclusive": 45,
-                "agentCount": 672,
-                "representedCount": 168000,
-                "sharePercent": 18.45
+                "agentCount": 714,
+                "representedCount": 178500,
+                "sharePercent": 19.52
               },
               {
                 "label": "45–59 min",
                 "minInclusive": 45,
                 "maxExclusive": 60,
-                "agentCount": 493,
-                "representedCount": 123250,
-                "sharePercent": 13.53
+                "agentCount": 553,
+                "representedCount": 138250,
+                "sharePercent": 15.12
               },
               {
                 "label": "60–89 min",
                 "minInclusive": 60,
                 "maxExclusive": 90,
-                "agentCount": 595,
-                "representedCount": 148750,
-                "sharePercent": 16.33
+                "agentCount": 579,
+                "representedCount": 144750,
+                "sharePercent": 15.83
               },
               {
                 "label": "90–119 min",
                 "minInclusive": 90,
                 "maxExclusive": 120,
-                "agentCount": 651,
-                "representedCount": 162750,
-                "sharePercent": 17.87
+                "agentCount": 622,
+                "representedCount": 155500,
+                "sharePercent": 17
               },
               {
                 "label": "120+ min",
                 "minInclusive": 120,
                 "maxExclusive": null,
-                "agentCount": 430,
-                "representedCount": 107500,
-                "sharePercent": 11.8
+                "agentCount": 423,
+                "representedCount": 105750,
+                "sharePercent": 11.56
               }
             ]
           },
@@ -3300,7 +3300,7 @@
             "population": "all-enterprises",
             "unit": "modeled employee agents",
             "enterpriseTotal": 600,
-            "representedEmployeeTotal": 923000,
+            "representedEmployeeTotal": 922750,
             "bins": [
               {
                 "label": "0 workers",
@@ -3314,25 +3314,25 @@
                 "label": "1–4 workers",
                 "minInclusive": 1,
                 "maxExclusive": 5,
-                "enterpriseCount": 198,
-                "representedEmployees": 162250,
-                "enterpriseSharePercent": 33
+                "enterpriseCount": 197,
+                "representedEmployees": 161500,
+                "enterpriseSharePercent": 32.83
               },
               {
                 "label": "5–9 workers",
                 "minInclusive": 5,
                 "maxExclusive": 10,
-                "enterpriseCount": 327,
-                "representedEmployees": 558500,
-                "enterpriseSharePercent": 54.5
+                "enterpriseCount": 331,
+                "representedEmployees": 564750,
+                "enterpriseSharePercent": 55.17
               },
               {
                 "label": "10–19 workers",
                 "minInclusive": 10,
                 "maxExclusive": 20,
-                "enterpriseCount": 75,
-                "representedEmployees": 202250,
-                "enterpriseSharePercent": 12.5
+                "enterpriseCount": 72,
+                "representedEmployees": 196500,
+                "enterpriseSharePercent": 12
               },
               {
                 "label": "20–29 workers",
@@ -3356,23 +3356,23 @@
         "network": {
           "physicalEdgeCount": 1115,
           "assignmentEdgeCount": 1115,
-          "meanRoadVolumeCapacityRatio": 0.0495,
-          "p90RoadVolumeCapacityRatio": 0.1182,
-          "maximumRoadVolumeCapacityRatio": 0.4641,
+          "meanRoadVolumeCapacityRatio": 0.0511,
+          "p90RoadVolumeCapacityRatio": 0.1282,
+          "maximumRoadVolumeCapacityRatio": 0.4507,
           "overloadedDirectionCount": 0,
-          "meanTransitLoadFactor": 0.1755,
-          "p90TransitLoadFactor": 0.5075,
-          "maximumTransitLoadFactor": 1.0807,
+          "meanTransitLoadFactor": 0.1692,
+          "p90TransitLoadFactor": 0.4627,
+          "maximumTransitLoadFactor": 0.8764,
           "physicalRoadAccounting": {
             "passed": true,
             "assignmentDate": "2033-12-30",
             "assignmentDateMatches": true,
             "physicalEdges": 1115,
-            "assignedPhysicalEdges": 1041,
+            "assignedPhysicalEdges": 1051,
             "excludedPhysicalEdges": 0,
             "missingSnapshotEdges": 0,
-            "assignedCohorts": 2691,
-            "traversalCount": 227176,
+            "assignedCohorts": 2693,
+            "traversalCount": 223568,
             "invalidTraversalCount": 0,
             "invalidWeightCount": 0,
             "prohibitedTurnCount": 0,
@@ -3390,22 +3390,22 @@
           "firmAgents": 600,
           "activeFirms": 600,
           "inactiveFirms": 0,
-          "lossMakingFirms": 58,
-          "lossMakingSharePercent": 9.67,
+          "lossMakingFirms": 59,
+          "lossMakingSharePercent": 9.83,
           "restartMarginThresholdPercent": -20,
-          "severelyDistressedFirms": 0,
-          "severelyDistressedSharePercent": 0,
-          "meanOperatingMarginPercent": 23.94,
-          "medianOperatingMarginPercent": 24.25,
-          "p10OperatingMarginPercent": 0.48,
-          "p90OperatingMarginPercent": 43.45,
-          "revenueWeightedOperatingMarginPercent": 28.06,
-          "monthlyRevenueAed": 21424183919,
-          "monthlyOperatingCostAed": 15413269354,
-          "representedEmployees": 923000,
+          "severelyDistressedFirms": 1,
+          "severelyDistressedSharePercent": 0.17,
+          "meanOperatingMarginPercent": 23.47,
+          "medianOperatingMarginPercent": 24.47,
+          "p10OperatingMarginPercent": 0.01,
+          "p90OperatingMarginPercent": 42.52,
+          "revenueWeightedOperatingMarginPercent": 27.46,
+          "monthlyRevenueAed": 21516294389,
+          "monthlyOperatingCostAed": 15608615887,
+          "representedEmployees": 922750,
           "states": {
-            "Grow": 120,
-            "Lesser": 86,
+            "Grow": 128,
+            "Lesser": 78,
             "Working": 394
           }
         }
@@ -3434,7 +3434,7 @@
         {
           "id": "vehicle-access-stock-and-flows-reconcile",
           "passed": true,
-          "detail": "Initial 4609 + acquisitions 213 - disposals 3024 - replacement exits 160 = current 1638 resident cohorts"
+          "detail": "Initial 4609 + acquisitions 232 - disposals 3070 - replacement exits 157 = current 1614 resident cohorts"
         },
         {
           "id": "population-conserved",
@@ -3454,12 +3454,12 @@
         {
           "id": "labor-force-stocks-reconcile",
           "passed": true,
-          "detail": "923000 employed + 139250 active unemployed + 455250 nonparticipants = 1517500"
+          "detail": "922750 employed + 139500 active unemployed + 455250 nonparticipants = 1517500"
         },
         {
           "id": "labor-force-rates-use-disclosed-denominators",
           "passed": true,
-          "detail": "70% participating; 13.11% unemployed within the labor force; 30% outside it"
+          "detail": "70% participating; 13.13% unemployed within the labor force; 30% outside it"
         },
         {
           "id": "outside-labor-force-financial-bin-reconciles",
@@ -3479,7 +3479,7 @@
         {
           "id": "commute-distribution-conserves-completed-commuters",
           "passed": true,
-          "detail": "910750/910750 represented completed commuters across commute bins/modes"
+          "detail": "914500/914500 represented completed commuters across commute bins/modes"
         },
         {
           "id": "enterprise-distribution-covers-all-firms",
@@ -3489,17 +3489,17 @@
         {
           "id": "mode-shares-close",
           "passed": true,
-          "detail": "100% total"
+          "detail": "100.01% total"
         },
         {
           "id": "citizen-state-shares-close",
           "passed": true,
-          "detail": "99.99% total"
+          "detail": "100% total"
         },
         {
           "id": "employment-within-participating-population",
           "passed": true,
-          "detail": "923000 employed within 1062250 participants; 60.82% of represented residents. No outcome is required to equal the initial employment assumption."
+          "detail": "922750 employed within 1062250 participants; 60.81% of represented residents. No outcome is required to equal the initial employment assumption."
         },
         {
           "id": "no-forced-interzone-walking",
@@ -3524,12 +3524,12 @@
         {
           "id": "cross-district-job-switch-rate-reconciles-to-all-switches",
           "passed": true,
-          "detail": "2.17 cross-district versus 3.57 all voluntary events per 100 employed-agent-years"
+          "detail": "2.7 cross-district versus 3.31 all voluntary events per 100 employed-agent-years"
         },
         {
           "id": "finite-enterprise-portfolio",
           "passed": true,
-          "detail": "28.06% revenue-weighted margin"
+          "detail": "27.46% revenue-weighted margin"
         }
       ],
       "diagnostics": [
@@ -3541,55 +3541,55 @@
         },
         {
           "id": "household-finance-remains-numerically-bounded",
-          "detail": "AED 56286.47 mean stock; AED 462.01/month mean change",
+          "detail": "AED 57831.31 mean stock; AED 518.59/month mean change",
           "withinReviewBand": true,
           "status": "within-review-band"
         },
         {
           "id": "capacity-overflow-within-horizon-stress-guard",
-          "detail": "2.194% of represented employed agents; provisional 30% ten-year stress guard",
+          "detail": "0% of represented employed agents; provisional 30% ten-year stress guard",
           "withinReviewBand": true,
           "status": "within-review-band"
         },
         {
           "id": "maximum-directional-road-volume-capacity-within-horizon-stress-guard",
-          "detail": "0.4641 maximum directional work-trip load ratio; provisional <3.25 ten-year stress guard",
+          "detail": "0.4507 maximum directional work-trip load ratio; provisional <3.25 ten-year stress guard",
           "withinReviewBand": true,
           "status": "within-review-band"
         },
         {
           "id": "commute-time-in-plausibility-band",
-          "detail": "65.16 minutes average round trip",
+          "detail": "64.44 minutes average round trip",
           "withinReviewBand": true,
           "status": "within-review-band"
         },
         {
           "id": "residential-relocation-rate-below-provisional-churn-ceiling",
-          "detail": "6.93 events per 100 citizen-agent-years; provisional software sanity ceiling 30",
+          "detail": "7.35 events per 100 citizen-agent-years; provisional software sanity ceiling 30",
           "withinReviewBand": true,
           "status": "within-review-band"
         },
         {
           "id": "firm-relocation-rate-below-provisional-churn-ceiling",
-          "detail": "16.15 events per 100 firm-agent-years; provisional software sanity ceiling 20",
+          "detail": "15.68 events per 100 firm-agent-years; provisional software sanity ceiling 20",
           "withinReviewBand": true,
           "status": "within-review-band"
         },
         {
           "id": "voluntary-job-switch-rate-below-provisional-churn-ceiling",
-          "detail": "3.57 events per 100 employed-agent-years; provisional software sanity ceiling 50",
+          "detail": "3.31 events per 100 employed-agent-years; provisional software sanity ceiling 50",
           "withinReviewBand": true,
           "status": "within-review-band"
         },
         {
           "id": "employer-carried-workplace-change-rate-below-provisional-churn-ceiling",
-          "detail": "16.34 affected worker events per 100 employed-agent-years; provisional software sanity ceiling 30",
+          "detail": "16 affected worker events per 100 employed-agent-years; provisional software sanity ceiling 30",
           "withinReviewBand": true,
           "status": "within-review-band"
         },
         {
           "id": "extreme-state-below-fifty-percent",
-          "detail": "39.42% of represented citizens",
+          "detail": "38.6% of represented citizens",
           "withinReviewBand": true,
           "status": "within-review-band"
         },
@@ -3601,31 +3601,31 @@
         },
         {
           "id": "enterprise-margin-in-plausibility-band",
-          "detail": "28.06% revenue-weighted operating margin",
+          "detail": "27.46% revenue-weighted operating margin",
           "withinReviewBand": true,
           "status": "within-review-band"
         },
         {
           "id": "loss-making-firms-broad-distribution-guard",
-          "detail": "9.67% of active firm agents below break-even; broad guard <60%",
+          "detail": "9.83% of active firm agents below break-even; broad guard <60%",
           "withinReviewBand": true,
           "status": "within-review-band"
         },
         {
           "id": "enterprise-median-margin-broad-plausibility-guard",
-          "detail": "24.25% median operating margin; broad guard >-5%",
+          "detail": "24.47% median operating margin; broad guard >-5%",
           "withinReviewBand": true,
           "status": "within-review-band"
         },
         {
           "id": "enterprise-severe-distress-below-ten-percent",
-          "detail": "0% of active firm agents at or below the configured -20% restart threshold",
+          "detail": "0.17% of active firm agents at or below the configured -20% restart threshold",
           "withinReviewBand": true,
           "status": "within-review-band"
         }
       ],
       "status": "passed",
-      "resultDigestSha256": "8cf79910644295b098e29f1a77fd574a2eee89b7bbc5209b157f3ee6f622bece"
+      "resultDigestSha256": "54c040493746db811bc9966dfce0b78ec01b1ddf809bd7bee85c2b878d014438"
     },
     {
       "id": "balanced-10y",
@@ -3694,45 +3694,45 @@
       },
       "metrics": {
         "representedPopulation": 1517500,
-        "representedEmployed": 932000,
+        "representedEmployed": 944750,
         "representedLaborForce": 1062250,
-        "representedUnemployed": 130250,
+        "representedUnemployed": 117500,
         "representedNonparticipants": 455250,
-        "employmentRatePercent": 61.42,
-        "unemploymentRatePercent": 12.26,
+        "employmentRatePercent": 62.26,
+        "unemploymentRatePercent": 11.06,
         "laborForceParticipationRatePercent": 70,
         "nonParticipationRatePercent": 30,
         "modeCountsRepresented": {
-          "car": 101500,
-          "pt": 652750,
-          "walk": 168500,
-          "none": 9250
+          "car": 96750,
+          "pt": 670500,
+          "walk": 169000,
+          "none": 8500
         },
         "modeSharesPercent": {
-          "car": 11,
-          "pt": 70.74,
-          "walk": 18.26
+          "car": 10.33,
+          "pt": 71.62,
+          "walk": 18.05
         },
-        "carOwnershipRatePercent": 27.89,
+        "carOwnershipRatePercent": 27.15,
         "carAccessAccounting": {
           "initialAgentCount": 4609,
-          "currentAgentCount": 1693,
-          "acquisitions": 264,
+          "currentAgentCount": 1648,
+          "acquisitions": 239,
           "disposals": 3027,
-          "replacementExits": 153,
+          "replacementExits": 173,
           "reconciliationDifference": 0,
           "unit": "weighted resident cohorts with vehicle access"
         },
         "citizenStateSharesPercent": {
-          "Happy": 40.23,
-          "Waiting": 21.6,
-          "Extreme": 36.97,
-          "Recovery": 1.2
+          "Happy": 40.33,
+          "Waiting": 21.99,
+          "Extreme": 36.51,
+          "Recovery": 1.17
         },
-        "averageRoundTripMinutes": 60.34,
-        "averageNetIncomeAedPerMonth": 6286.96,
-        "averageBankBalanceAed": 58889.83,
-        "averageMonthlySavingOrDrawdownAed": 569.96,
+        "averageRoundTripMinutes": 60.67,
+        "averageNetIncomeAedPerMonth": 6185.51,
+        "averageBankBalanceAed": 62788.9,
+        "averageMonthlySavingOrDrawdownAed": 563.03,
         "savingsPolicy": {
           "monthlyEssentialConsumptionAed": 2500,
           "positiveResidualSavingsRate": 0.25,
@@ -3740,69 +3740,69 @@
         },
         "financialStatusSharesPercent": {
           "outside-labor-force": 30,
-          "unemployed": 7.92,
-          "fixed-cost-deficit": 2.59,
-          "essentials-gap": 8.6,
-          "thin-positive-buffer": 6.39,
-          "savings-capacity": 44.5
+          "unemployed": 7.03,
+          "fixed-cost-deficit": 2.73,
+          "essentials-gap": 9.34,
+          "thin-positive-buffer": 6.31,
+          "savings-capacity": 44.58
         },
         "extremeNonparticipantSharePercent": 0,
-        "meanHousingRentAedPerMonth": 2318.58,
-        "averageRoadCapacityUsagePercent": 6.32,
-        "sameZoneWorkSharePercent": 30.26,
+        "meanHousingRentAedPerMonth": 2302.53,
+        "averageRoadCapacityUsagePercent": 5.62,
+        "sameZoneWorkSharePercent": 30.28,
         "housingOccupancyRatePercent": 72.31,
         "housingCapacityRepresented": 2098500,
         "housingOvercapacityRepresented": 0,
         "enterprisePlaceCapacity": 2316,
-        "dailyCarVehicleKm": 3559539.79,
+        "dailyCarVehicleKm": 3191713.13,
         "forcedInterzoneWalkers": 0,
         "unservedCommuters": 0,
         "capacityOverflowTrips": 0,
         "networkAssignmentDate": "2033-12-30",
         "completedMonthRepresentedEvents": {
-          "hires": 17000,
-          "fires": 2750,
-          "residentialMoves": 11000
+          "hires": 16250,
+          "fires": 1500,
+          "residentialMoves": 15250
         },
         "cumulativeEvents": {
           "initialEmploymentAssignments": 4067,
-          "residentialMoves": 4935,
-          "jobChanges": 1568,
-          "crossDistrictJobChanges": 1007,
-          "hires": 7147,
-          "fires": 531,
-          "laborSeparations": 7000,
-          "carAcquisitions": 264,
+          "residentialMoves": 4846,
+          "jobChanges": 1358,
+          "crossDistrictJobChanges": 1133,
+          "hires": 7781,
+          "fires": 457,
+          "laborSeparations": 7272,
+          "carAcquisitions": 239,
           "carDisposals": 3027,
-          "carAccessReplacementExits": 153,
-          "replacements": 532,
-          "firmMoves": 929,
-          "workersAffectedByFirmMoves": 6127,
+          "carAccessReplacementExits": 173,
+          "replacements": 554,
+          "firmMoves": 944,
+          "workersAffectedByFirmMoves": 6241,
           "firmRestarts": 0,
           "enterpriseReentryPlacements": 0
         },
         "cumulativeRepresentedCitizenEvents": {
           "initialEmploymentAssignments": 1016750,
-          "residentialMoves": 1233750,
-          "jobChanges": 392000,
-          "crossDistrictJobChanges": 251750,
-          "hires": 1786750,
-          "fires": 132750,
-          "carAcquisitions": 66000,
+          "residentialMoves": 1211500,
+          "jobChanges": 339500,
+          "crossDistrictJobChanges": 283250,
+          "hires": 1945250,
+          "fires": 114250,
+          "carAcquisitions": 59750,
           "carDisposals": 756750,
-          "replacements": 133000,
-          "workersAffectedByFirmMoves": 1531750
+          "replacements": 138500,
+          "workersAffectedByFirmMoves": 1560250
         },
         "mobilityEventRates": {
           "observationType": "cumulative-agent-event-rate",
           "elapsedDays": 3653,
           "denominatorNote": "Events per 100 modeled actor-years; employment-based rates use accumulated employed-agent-days, and repeated events by one actor are counted separately.",
           "calibrationStatus": "Provisional sanity diagnostics, not empirical Abu Dhabi calibration.",
-          "residentialMovesPer100CitizenAgentYears": 8.13,
-          "voluntaryJobSwitchesPer100EmployedAgentYears": 4.05,
-          "crossDistrictVoluntaryJobSwitchesPer100EmployedAgentYears": 2.6,
-          "firmRelocationsPer100FirmAgentYears": 15.48,
-          "employerCarriedWorkplaceChangesPer100EmployedAgentYears": 15.81
+          "residentialMovesPer100CitizenAgentYears": 7.98,
+          "voluntaryJobSwitchesPer100EmployedAgentYears": 3.47,
+          "crossDistrictVoluntaryJobSwitchesPer100EmployedAgentYears": 2.89,
+          "firmRelocationsPer100FirmAgentYears": 15.73,
+          "employerCarriedWorkplaceChangesPer100EmployedAgentYears": 15.93
         },
         "distributions": {
           "income": {
@@ -3820,57 +3820,57 @@
                 "label": "Below AED 0",
                 "minInclusive": null,
                 "maxExclusive": 0,
-                "agentCount": 638,
-                "representedCount": 159500,
-                "sharePercent": 10.51
+                "agentCount": 593,
+                "representedCount": 148250,
+                "sharePercent": 9.77
               },
               {
                 "label": "AED 0–2,999",
                 "minInclusive": 0,
                 "maxExclusive": 3000,
-                "agentCount": 830,
-                "representedCount": 207500,
-                "sharePercent": 13.67
+                "agentCount": 908,
+                "representedCount": 227000,
+                "sharePercent": 14.96
               },
               {
                 "label": "AED 3,000–5,999",
                 "minInclusive": 3000,
                 "maxExclusive": 6000,
-                "agentCount": 2402,
-                "representedCount": 600500,
-                "sharePercent": 39.57
+                "agentCount": 2417,
+                "representedCount": 604250,
+                "sharePercent": 39.82
               },
               {
                 "label": "AED 6,000–9,999",
                 "minInclusive": 6000,
                 "maxExclusive": 10000,
-                "agentCount": 874,
-                "representedCount": 218500,
-                "sharePercent": 14.4
+                "agentCount": 896,
+                "representedCount": 224000,
+                "sharePercent": 14.76
               },
               {
                 "label": "AED 10,000–14,999",
                 "minInclusive": 10000,
                 "maxExclusive": 15000,
-                "agentCount": 774,
-                "representedCount": 193500,
-                "sharePercent": 12.75
+                "agentCount": 739,
+                "representedCount": 184750,
+                "sharePercent": 12.17
               },
               {
                 "label": "AED 15,000–24,999",
                 "minInclusive": 15000,
                 "maxExclusive": 25000,
-                "agentCount": 466,
-                "representedCount": 116500,
-                "sharePercent": 7.68
+                "agentCount": 446,
+                "representedCount": 111500,
+                "sharePercent": 7.35
               },
               {
                 "label": "AED 25,000+",
                 "minInclusive": 25000,
                 "maxExclusive": null,
-                "agentCount": 86,
-                "representedCount": 21500,
-                "sharePercent": 1.42
+                "agentCount": 71,
+                "representedCount": 17750,
+                "sharePercent": 1.17
               }
             ]
           },
@@ -3892,101 +3892,101 @@
               {
                 "id": "unemployed",
                 "label": "Active job seeker",
-                "agentCount": 481,
-                "representedCount": 120250,
-                "sharePercent": 7.92
+                "agentCount": 427,
+                "representedCount": 106750,
+                "sharePercent": 7.03
               },
               {
                 "id": "fixed-cost-deficit",
                 "label": "Pay below housing + commute",
-                "agentCount": 157,
-                "representedCount": 39250,
-                "sharePercent": 2.59
+                "agentCount": 166,
+                "representedCount": 41500,
+                "sharePercent": 2.73
               },
               {
                 "id": "essentials-gap",
                 "label": "Essentials not fully covered",
-                "agentCount": 522,
-                "representedCount": 130500,
-                "sharePercent": 8.6
+                "agentCount": 567,
+                "representedCount": 141750,
+                "sharePercent": 9.34
               },
               {
                 "id": "thin-positive-buffer",
                 "label": "Thin positive buffer",
-                "agentCount": 388,
-                "representedCount": 97000,
-                "sharePercent": 6.39
+                "agentCount": 383,
+                "representedCount": 95750,
+                "sharePercent": 6.31
               },
               {
                 "id": "savings-capacity",
                 "label": "Savings capacity",
-                "agentCount": 2701,
-                "representedCount": 675250,
-                "sharePercent": 44.5
+                "agentCount": 2706,
+                "representedCount": 676500,
+                "sharePercent": 44.58
               }
             ]
           },
           "commute": {
             "population": "completed-employed-commuters",
             "unit": "round-trip minutes",
-            "sourceAgentCount": 3691,
-            "representedTotal": 922750,
+            "sourceAgentCount": 3745,
+            "representedTotal": 936250,
             "bins": [
               {
                 "label": "Under 20 min",
                 "minInclusive": 0,
                 "maxExclusive": 20,
-                "agentCount": 722,
-                "representedCount": 180500,
-                "sharePercent": 19.56
+                "agentCount": 720,
+                "representedCount": 180000,
+                "sharePercent": 19.23
               },
               {
                 "label": "20–29 min",
                 "minInclusive": 20,
                 "maxExclusive": 30,
-                "agentCount": 152,
-                "representedCount": 38000,
-                "sharePercent": 4.12
+                "agentCount": 158,
+                "representedCount": 39500,
+                "sharePercent": 4.22
               },
               {
                 "label": "30–44 min",
                 "minInclusive": 30,
                 "maxExclusive": 45,
-                "agentCount": 805,
-                "representedCount": 201250,
-                "sharePercent": 21.81
+                "agentCount": 807,
+                "representedCount": 201750,
+                "sharePercent": 21.55
               },
               {
                 "label": "45–59 min",
                 "minInclusive": 45,
                 "maxExclusive": 60,
-                "agentCount": 596,
-                "representedCount": 149000,
-                "sharePercent": 16.15
+                "agentCount": 578,
+                "representedCount": 144500,
+                "sharePercent": 15.43
               },
               {
                 "label": "60–89 min",
                 "minInclusive": 60,
                 "maxExclusive": 90,
-                "agentCount": 531,
-                "representedCount": 132750,
-                "sharePercent": 14.39
+                "agentCount": 557,
+                "representedCount": 139250,
+                "sharePercent": 14.87
               },
               {
                 "label": "90–119 min",
                 "minInclusive": 90,
                 "maxExclusive": 120,
-                "agentCount": 448,
-                "representedCount": 112000,
-                "sharePercent": 12.14
+                "agentCount": 458,
+                "representedCount": 114500,
+                "sharePercent": 12.23
               },
               {
                 "label": "120+ min",
                 "minInclusive": 120,
                 "maxExclusive": null,
-                "agentCount": 437,
-                "representedCount": 109250,
-                "sharePercent": 11.84
+                "agentCount": 467,
+                "representedCount": 116750,
+                "sharePercent": 12.47
               }
             ]
           },
@@ -3994,7 +3994,7 @@
             "population": "all-enterprises",
             "unit": "modeled employee agents",
             "enterpriseTotal": 600,
-            "representedEmployeeTotal": 932000,
+            "representedEmployeeTotal": 944750,
             "bins": [
               {
                 "label": "0 workers",
@@ -4008,25 +4008,25 @@
                 "label": "1–4 workers",
                 "minInclusive": 1,
                 "maxExclusive": 5,
-                "enterpriseCount": 185,
-                "representedEmployees": 148500,
-                "enterpriseSharePercent": 30.83
+                "enterpriseCount": 176,
+                "representedEmployees": 143000,
+                "enterpriseSharePercent": 29.33
               },
               {
                 "label": "5–9 workers",
                 "minInclusive": 5,
                 "maxExclusive": 10,
-                "enterpriseCount": 339,
-                "representedEmployees": 578250,
-                "enterpriseSharePercent": 56.5
+                "enterpriseCount": 337,
+                "representedEmployees": 570500,
+                "enterpriseSharePercent": 56.17
               },
               {
                 "label": "10–19 workers",
                 "minInclusive": 10,
                 "maxExclusive": 20,
-                "enterpriseCount": 76,
-                "representedEmployees": 205250,
-                "enterpriseSharePercent": 12.67
+                "enterpriseCount": 87,
+                "representedEmployees": 231250,
+                "enterpriseSharePercent": 14.5
               },
               {
                 "label": "20–29 workers",
@@ -4050,23 +4050,23 @@
         "network": {
           "physicalEdgeCount": 1115,
           "assignmentEdgeCount": 1115,
-          "meanRoadVolumeCapacityRatio": 0.0632,
-          "p90RoadVolumeCapacityRatio": 0.1703,
-          "maximumRoadVolumeCapacityRatio": 0.5342,
+          "meanRoadVolumeCapacityRatio": 0.0562,
+          "p90RoadVolumeCapacityRatio": 0.1536,
+          "maximumRoadVolumeCapacityRatio": 0.4841,
           "overloadedDirectionCount": 0,
-          "meanTransitLoadFactor": 0.1626,
-          "p90TransitLoadFactor": 0.4502,
-          "maximumTransitLoadFactor": 0.8043,
+          "meanTransitLoadFactor": 0.167,
+          "p90TransitLoadFactor": 0.4913,
+          "maximumTransitLoadFactor": 0.9165,
           "physicalRoadAccounting": {
             "passed": true,
             "assignmentDate": "2033-12-30",
             "assignmentDateMatches": true,
             "physicalEdges": 1115,
-            "assignedPhysicalEdges": 994,
+            "assignedPhysicalEdges": 1024,
             "excludedPhysicalEdges": 0,
             "missingSnapshotEdges": 0,
-            "assignedCohorts": 2626,
-            "traversalCount": 219346,
+            "assignedCohorts": 2661,
+            "traversalCount": 224131,
             "invalidTraversalCount": 0,
             "invalidWeightCount": 0,
             "prohibitedTurnCount": 0,
@@ -4084,23 +4084,23 @@
           "firmAgents": 600,
           "activeFirms": 600,
           "inactiveFirms": 0,
-          "lossMakingFirms": 55,
-          "lossMakingSharePercent": 9.17,
+          "lossMakingFirms": 47,
+          "lossMakingSharePercent": 7.83,
           "restartMarginThresholdPercent": -20,
           "severelyDistressedFirms": 0,
           "severelyDistressedSharePercent": 0,
-          "meanOperatingMarginPercent": 23.22,
-          "medianOperatingMarginPercent": 24.03,
-          "p10OperatingMarginPercent": 1.1,
-          "p90OperatingMarginPercent": 42.98,
-          "revenueWeightedOperatingMarginPercent": 27.13,
-          "monthlyRevenueAed": 22260205167,
-          "monthlyOperatingCostAed": 16220784867,
-          "representedEmployees": 932000,
+          "meanOperatingMarginPercent": 24.98,
+          "medianOperatingMarginPercent": 26,
+          "p10OperatingMarginPercent": 3.79,
+          "p90OperatingMarginPercent": 43,
+          "revenueWeightedOperatingMarginPercent": 28.6,
+          "monthlyRevenueAed": 22650644078,
+          "monthlyOperatingCostAed": 16172618106,
+          "representedEmployees": 944750,
           "states": {
-            "Grow": 119,
-            "Lesser": 82,
-            "Working": 399
+            "Grow": 126,
+            "Lesser": 77,
+            "Working": 397
           }
         }
       },
@@ -4128,7 +4128,7 @@
         {
           "id": "vehicle-access-stock-and-flows-reconcile",
           "passed": true,
-          "detail": "Initial 4609 + acquisitions 264 - disposals 3027 - replacement exits 153 = current 1693 resident cohorts"
+          "detail": "Initial 4609 + acquisitions 239 - disposals 3027 - replacement exits 173 = current 1648 resident cohorts"
         },
         {
           "id": "population-conserved",
@@ -4148,12 +4148,12 @@
         {
           "id": "labor-force-stocks-reconcile",
           "passed": true,
-          "detail": "932000 employed + 130250 active unemployed + 455250 nonparticipants = 1517500"
+          "detail": "944750 employed + 117500 active unemployed + 455250 nonparticipants = 1517500"
         },
         {
           "id": "labor-force-rates-use-disclosed-denominators",
           "passed": true,
-          "detail": "70% participating; 12.26% unemployed within the labor force; 30% outside it"
+          "detail": "70% participating; 11.06% unemployed within the labor force; 30% outside it"
         },
         {
           "id": "outside-labor-force-financial-bin-reconciles",
@@ -4173,7 +4173,7 @@
         {
           "id": "commute-distribution-conserves-completed-commuters",
           "passed": true,
-          "detail": "922750/922750 represented completed commuters across commute bins/modes"
+          "detail": "936250/936250 represented completed commuters across commute bins/modes"
         },
         {
           "id": "enterprise-distribution-covers-all-firms",
@@ -4193,7 +4193,7 @@
         {
           "id": "employment-within-participating-population",
           "passed": true,
-          "detail": "932000 employed within 1062250 participants; 61.42% of represented residents. No outcome is required to equal the initial employment assumption."
+          "detail": "944750 employed within 1062250 participants; 62.26% of represented residents. No outcome is required to equal the initial employment assumption."
         },
         {
           "id": "no-forced-interzone-walking",
@@ -4218,12 +4218,12 @@
         {
           "id": "cross-district-job-switch-rate-reconciles-to-all-switches",
           "passed": true,
-          "detail": "2.6 cross-district versus 4.05 all voluntary events per 100 employed-agent-years"
+          "detail": "2.89 cross-district versus 3.47 all voluntary events per 100 employed-agent-years"
         },
         {
           "id": "finite-enterprise-portfolio",
           "passed": true,
-          "detail": "27.13% revenue-weighted margin"
+          "detail": "28.6% revenue-weighted margin"
         }
       ],
       "diagnostics": [
@@ -4235,7 +4235,7 @@
         },
         {
           "id": "household-finance-remains-numerically-bounded",
-          "detail": "AED 58889.83 mean stock; AED 569.96/month mean change",
+          "detail": "AED 62788.9 mean stock; AED 563.03/month mean change",
           "withinReviewBand": true,
           "status": "within-review-band"
         },
@@ -4247,43 +4247,43 @@
         },
         {
           "id": "maximum-directional-road-volume-capacity-within-horizon-stress-guard",
-          "detail": "0.5342 maximum directional work-trip load ratio; provisional <3.25 ten-year stress guard",
+          "detail": "0.4841 maximum directional work-trip load ratio; provisional <3.25 ten-year stress guard",
           "withinReviewBand": true,
           "status": "within-review-band"
         },
         {
           "id": "commute-time-in-plausibility-band",
-          "detail": "60.34 minutes average round trip",
+          "detail": "60.67 minutes average round trip",
           "withinReviewBand": true,
           "status": "within-review-band"
         },
         {
           "id": "residential-relocation-rate-below-provisional-churn-ceiling",
-          "detail": "8.13 events per 100 citizen-agent-years; provisional software sanity ceiling 30",
+          "detail": "7.98 events per 100 citizen-agent-years; provisional software sanity ceiling 30",
           "withinReviewBand": true,
           "status": "within-review-band"
         },
         {
           "id": "firm-relocation-rate-below-provisional-churn-ceiling",
-          "detail": "15.48 events per 100 firm-agent-years; provisional software sanity ceiling 20",
+          "detail": "15.73 events per 100 firm-agent-years; provisional software sanity ceiling 20",
           "withinReviewBand": true,
           "status": "within-review-band"
         },
         {
           "id": "voluntary-job-switch-rate-below-provisional-churn-ceiling",
-          "detail": "4.05 events per 100 employed-agent-years; provisional software sanity ceiling 50",
+          "detail": "3.47 events per 100 employed-agent-years; provisional software sanity ceiling 50",
           "withinReviewBand": true,
           "status": "within-review-band"
         },
         {
           "id": "employer-carried-workplace-change-rate-below-provisional-churn-ceiling",
-          "detail": "15.81 affected worker events per 100 employed-agent-years; provisional software sanity ceiling 30",
+          "detail": "15.93 affected worker events per 100 employed-agent-years; provisional software sanity ceiling 30",
           "withinReviewBand": true,
           "status": "within-review-band"
         },
         {
           "id": "extreme-state-below-fifty-percent",
-          "detail": "36.97% of represented citizens",
+          "detail": "36.51% of represented citizens",
           "withinReviewBand": true,
           "status": "within-review-band"
         },
@@ -4295,19 +4295,19 @@
         },
         {
           "id": "enterprise-margin-in-plausibility-band",
-          "detail": "27.13% revenue-weighted operating margin",
+          "detail": "28.6% revenue-weighted operating margin",
           "withinReviewBand": true,
           "status": "within-review-band"
         },
         {
           "id": "loss-making-firms-broad-distribution-guard",
-          "detail": "9.17% of active firm agents below break-even; broad guard <60%",
+          "detail": "7.83% of active firm agents below break-even; broad guard <60%",
           "withinReviewBand": true,
           "status": "within-review-band"
         },
         {
           "id": "enterprise-median-margin-broad-plausibility-guard",
-          "detail": "24.03% median operating margin; broad guard >-5%",
+          "detail": "26% median operating margin; broad guard >-5%",
           "withinReviewBand": true,
           "status": "within-review-band"
         },
@@ -4319,7 +4319,7 @@
         }
       ],
       "status": "passed",
-      "resultDigestSha256": "aa75b3bfacfafe176fa4667b41be37f8f8daced415333d52d91ed5bc5ec6a3e2"
+      "resultDigestSha256": "b9dc689dde9587d0a51d7203a34ffc1da726a1c5988b3673f86e38058eff641a"
     }
   ],
   "crossScenarioChecks": [
@@ -4341,7 +4341,7 @@
     {
       "id": "ten-year-reference-enterprise-margin-remains-finite",
       "passed": true,
-      "detail": "27.89% revenue-weighted operating margin"
+      "detail": "27.06% revenue-weighted operating margin"
     },
     {
       "id": "ten-year-reference-reaches-exact-calendar-date",
@@ -4366,7 +4366,7 @@
     {
       "id": "ten-year-transit-ownership-stock-reconciles-with-agent-flows",
       "passed": true,
-      "detail": "-2.09 percentage-point stock difference versus -2.0923 from opening stocks, acquisitions, disposals and replacement exits"
+      "detail": "-2.460000000000001 percentage-point stock difference versus -2.4547 from opening stocks, acquisitions, disposals and replacement exits"
     },
     {
       "id": "ten-year-balanced-increases-housing-capacity",
@@ -4382,49 +4382,49 @@
   "crossScenarioDiagnostics": [
     {
       "id": "transit-preset-reduces-car-share",
-      "detail": "37.73% reference → 33.68% transit",
+      "detail": "38.48% reference → 33.68% transit",
       "expectedDirection": true,
       "status": "expected-direction",
       "interpretation": "Single-seed model outcome; this direction is not an empirical validation target."
     },
     {
       "id": "transit-preset-increases-public-transport-share",
-      "detail": "45.6% reference → 55.33% transit",
+      "detail": "45.36% reference → 54.77% transit",
       "expectedDirection": true,
       "status": "expected-direction",
       "interpretation": "Single-seed model outcome; this direction is not an empirical validation target."
     },
     {
       "id": "transit-preset-reduces-average-commute-time",
-      "detail": "44.01 minutes reference → 35.59 minutes transit",
+      "detail": "45.06 minutes reference → 35.01 minutes transit",
       "expectedDirection": true,
       "status": "expected-direction",
       "interpretation": "Single-seed model outcome; this direction is not an empirical validation target."
     },
     {
       "id": "transit-preset-reduces-average-road-capacity-use",
-      "detail": "16.07% reference → 14.03% transit",
+      "detail": "16.63% reference → 14.02% transit",
       "expectedDirection": true,
       "status": "expected-direction",
       "interpretation": "Single-seed model outcome; this direction is not an empirical validation target."
     },
     {
       "id": "ten-year-transit-reduces-car-share",
-      "detail": "10.23% reference → 6.46% transit",
+      "detail": "9.67% reference → 5.5% transit",
       "expectedDirection": true,
       "status": "expected-direction",
       "interpretation": "Single-seed model outcome; this direction is not an empirical validation target."
     },
     {
       "id": "ten-year-transit-increases-public-transport-share",
-      "detail": "72.98% reference → 85.04% transit",
+      "detail": "72.69% reference → 84.6% transit",
       "expectedDirection": true,
       "status": "expected-direction",
       "interpretation": "Single-seed model outcome; this direction is not an empirical validation target."
     },
     {
       "id": "ten-year-transit-reduces-average-commute",
-      "detail": "60.7 minutes reference → 42.5 minutes transit",
+      "detail": "59.51 minutes reference → 42.55 minutes transit",
       "expectedDirection": true,
       "status": "expected-direction",
       "interpretation": "Single-seed model outcome; this direction is not an empirical validation target."
@@ -4445,28 +4445,28 @@
     },
     {
       "id": "ten-year-housing-satisfaction-change-remains-bounded",
-      "detail": "35.52% reference → 38.53% housing happy",
+      "detail": "36.92% reference → 40.21% housing happy",
       "expectedDirection": true,
       "status": "expected-direction",
       "interpretation": "Single-seed model outcome; this direction is not an empirical validation target."
     },
     {
       "id": "ten-year-housing-lowers-mean-housing-rent",
-      "detail": "AED 2521.18 reference → AED 2219.9 housing",
+      "detail": "AED 2503.78 reference → AED 2153.82 housing",
       "expectedDirection": true,
       "status": "expected-direction",
       "interpretation": "Single-seed model outcome; this direction is not an empirical validation target."
     },
     {
       "id": "ten-year-housing-financial-tradeoff-remains-bounded",
-      "detail": "AED 5750.53 reference → AED 5999.71 housing after housing and commute",
+      "detail": "AED 6043.55 reference → AED 6110.95 housing after housing and commute",
       "expectedDirection": true,
       "status": "expected-direction",
       "interpretation": "Single-seed model outcome; this direction is not an empirical validation target."
     },
     {
       "id": "ten-year-housing-network-tradeoff-remains-served",
-      "detail": "0 reference → 20250 housing represented overflow trips; 0 unserved",
+      "detail": "0 reference → 0 housing represented overflow trips; 0 unserved",
       "expectedDirection": true,
       "status": "expected-direction",
       "interpretation": "Single-seed model outcome; this direction is not an empirical validation target."
@@ -4480,7 +4480,7 @@
     },
     {
       "id": "ten-year-balanced-satisfaction-change-remains-bounded",
-      "detail": "35.52% reference → 40.23% balanced happy",
+      "detail": "36.92% reference → 40.33% balanced happy",
       "expectedDirection": true,
       "status": "expected-direction",
       "interpretation": "Single-seed model outcome; this direction is not an empirical validation target."
@@ -4497,9 +4497,9 @@
     "total": 149
   },
   "executionSourceHashesAtStart": {
-    "engineSha256": "69c73ac3dbf6c904bbab49d9fce4fb7786b14b46782d1c8bfb53554f6511c661",
+    "engineSha256": "8f90638f949397eb28285d46511727b172c7abe85df67593e08f024029319755",
     "baselineSha256": "02970f782667a391da60198f3e006cdb282710ddd0d91c7ae36195a7e70461da",
-    "publicControllerSha256": "a4a2930d4663e6adf8d899c9d1a4054af2292a64257bc70ea0e31856e58fd76d",
+    "publicControllerSha256": "f4ec3ff8fe37766fedc9f43c42349f97e91badffa4a57f1dc14095fdcd67bd57",
     "validationHarnessSha256": "2ae007f3bf41eb1fbf790afd226b8d4441e33bc7b8fd4a11cdc3480ac2c48155",
     "evidenceSummarySha256": "c8dda8c1d0bbe9c902d47883381b19d99ab786172ec804549b09bcb4be6b886a",
     "sourceProvenanceSha256": "11f05e2a818198848fe80a370e8d13f9644ec27bc1f97962c43784f64e154b50"
@@ -4507,7 +4507,7 @@
   "controllerCompatibility": {
     "status": "identical-simulation-inputs",
     "simulationInputSha256": "92cbc67fdb1aa4f5d7f5182c474e455ed262b523a31e4753eedbacb71e73e380",
-    "controllerChangedDuringRun": true,
+    "controllerChangedDuringRun": false,
     "checkedExports": [
       "PUBLIC_PRESETS",
       "parseUtcDate",
