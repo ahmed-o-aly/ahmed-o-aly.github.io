@@ -397,8 +397,8 @@ const ventureNote = block(routes.works, "folio-venture-note");
 assertContains(ventureNote, /Current venture/, "Works distinguishes Sila from the numbered research and software work");
 assertContains(ventureNote, /href="\/projects\/sila\/"[\s\S]*?>[\s\S]*?Sila/, "Works links the current venture to its full write-up");
 const worksIndex = block(routes.works, "folio-work-index", "ol");
-assert.equal((worksIndex.match(/class="folio-work-entry"/g) || []).length, 8, "Works renders the eight selected projects");
-assert.equal((worksIndex.match(/class="folio-work-entry__description"/g) || []).length, 8, "each Works entry has one plain-language sentence");
+assert.equal((worksIndex.match(/class="folio-work-entry"/g) || []).length, 9, "Works renders the nine selected projects");
+assert.equal((worksIndex.match(/class="folio-work-entry__description"/g) || []).length, 9, "each Works entry has one plain-language sentence");
 assert.doesNotMatch(
   worksIndex,
   /<img\b|<picture\b|<figure\b|folio-work-plate|machine-lab-interface\.png|urban-dynamics-console\.png|folio-tags|>\s*(?:Role|Status|Methods)\s*</i,
@@ -413,6 +413,7 @@ for (const title of [
   "Protein Structures",
   "Circuits Lab",
   "Bloch Lab",
+  "Power Systems Lab",
 ]) {
   assertContains(worksIndex, new RegExp(title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i"), `Works includes ${title}`);
 }
@@ -421,8 +422,8 @@ for (const title of ["KU MetaHub AI/XR Lab", "ADSG Public Policy Simulations", "
 }
 assert.deepEqual(
   [...worksIndex.matchAll(/class="folio-work-entry__number"[^>]*>(\d{2})<\/span>/g)].map((match) => match[1]),
-  ["01", "02", "03", "04", "05", "06", "07", "08"],
-  "Works numbers the eight selected projects consecutively"
+  ["01", "02", "03", "04", "05", "06", "07", "08", "09"],
+  "Works numbers the nine selected projects consecutively"
 );
 assert.doesNotMatch(worksIndex, /href="\/projects\/sila\/"/, "Sila stays outside the numbered sequence");
 assertContains(worksIndex, /href="\/projects\/uae-economy-lab\/"/, "Works opens the UAE Economy Lab write-up");

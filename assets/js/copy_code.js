@@ -11,6 +11,9 @@ codeBlocks.forEach(function (codeBlock) {
     codeBlock.querySelector("code:not(.language-plotly)") &&
     codeBlock.querySelector("code:not(.language-vega_lite)")
   ) {
+    // The code region itself scrolls independently of its copy button.
+    codeBlock.tabIndex = 0;
+
     // create copy button
     var copyButton = document.createElement("button");
     copyButton.className = "copy";

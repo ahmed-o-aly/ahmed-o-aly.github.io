@@ -125,7 +125,7 @@ nav_order: 2
             data-book-status="{{ book_status | escape }}{% if book.read_at != blank %} &middot; {{ book.read_at | date: '%Y' }}{% endif %}"
             data-book-review="{{ book.review | default: '' | newline_to_br | strip_newlines | escape }}"
             data-book-url="{{ book.url | escape }}"
-            aria-label="Open details for {{ book.title | escape }} by {{ book.author | escape }}{% if book.rating != blank %}, rated {{ book.rating }} out of 5{% endif %}"
+            aria-haspopup="dialog"
           >
             <span class="folio-cover-card__jacket">
               <span class="folio-cover-card__fallback" aria-hidden="true">{{ display_title }}</span>
