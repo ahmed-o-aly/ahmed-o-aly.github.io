@@ -12,6 +12,7 @@ let s = await call("start");
 assert.equal(s.active, true);
 assert.equal(s.panel, false);
 assert.deepEqual(s.armed, [true, true]);
+assert.equal(s.cameraFov, 95, "mock XR manager changes the camera projection as Three.js does");
 await call("aim");
 s = await call("step", { buttons: { "0:1": true } });
 
@@ -39,6 +40,9 @@ s = await call("step", { left: [0.5, -1], right: 0.5, buttons: { "0:1": true, "1
 assert.equal(s.panel, true);
 assert.equal(s.held, 2);
 const panelOpen = s;
+const [dx, , dz] = s.headDirection;
+assert.ok(Math.abs(s.panelPosition[0] - (s.head[0] + 1.1 * dx - 0.27 * dz)) < 0.025);
+assert.ok(Math.abs(s.panelPosition[2] - (s.head[2] + 1.1 * dz + 0.27 * dx)) < 0.025);
 s = await call("step", { left: [0.5, -1], right: 0.5, buttons: { "0:1": true, "1:1": true, "0:4": true } });
 assert.equal(s.panel, true, "held face button does not repeat");
 assert.notDeepEqual(s.rig, panelOpen.rig);
@@ -64,7 +68,13 @@ assert.deepEqual(s.rig, pausedRig);
 await call("visibility", "visible");
 s = await call("step", {});
 assert.deepEqual(s.armed, [true, true]);
+s = await call("step", { buttons: { "0:5": true }, dt: 0 });
+assert.ok(Math.abs(s.position[0] - (s.head[0] + 2.2 * s.headDirection[0])) < 1e-8, "recenter follows the translated and rotated headset");
+assert.ok(Math.abs(s.position[2] - (s.head[2] + 2.2 * s.headDirection[2])) < 1e-8);
 await call("stop");
+s = await call("state");
+assert.equal(s.cameraFov, 37, "exit restores desktop field of view");
+assert.equal(s.cameraZoom, 1);
 assert.equal(await page.evaluate(() => document.body.classList.contains("xr")), false);
 assert.equal(await page.locator("#view").getAttribute("data-model"), "substation");
 await page.evaluate(() =>
@@ -91,6 +101,9 @@ const report = {
   neutralRearm: true,
   sessionVisibilityCancellation: true,
   desktopRestored: true,
+  unparentedXRArrayCameraWithNavigationRig: true,
+  panelAndRecenterFollowWorldHead: true,
+  desktopProjectionRestored: true,
   sessionRequestFailureHandled: true,
   errors,
   physicalQuestTested: false,

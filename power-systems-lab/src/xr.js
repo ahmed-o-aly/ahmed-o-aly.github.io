@@ -111,11 +111,19 @@ export function createXR({ renderer, scene, camera, controls, getModel, getState
     );
     return model.pick(raycaster);
   }
+  function trackedCamera() {
+    // WebXR's unparented ArrayCamera stores a rig-composed matrixWorld, but
+    // getWorldPosition/getWorldDirection overwrite it with its local pose.
+    // The user camera is updated by Three.js and keeps the navigation parent.
+    rig.updateMatrixWorld(true);
+    renderer.xr.updateCamera(camera);
+    return camera;
+  }
   function resetView(mode = "tabletop") {
     const model = getModel();
     if (!active || !model) return;
     gesture?.clear();
-    const head = renderer.xr.getCamera();
+    const head = trackedCamera();
     head.getWorldPosition(headPosition);
     head.getWorldDirection(headDirection);
     headDirection.y = 0;
@@ -140,7 +148,7 @@ export function createXR({ renderer, scene, camera, controls, getModel, getState
     model.root.updateMatrixWorld(true);
     box = model.getBounds();
     const center = box.getCenter(new THREE.Vector3());
-    const head = renderer.xr.getCamera();
+    const head = trackedCamera();
     head.getWorldPosition(headPosition);
     head.getWorldDirection(headDirection);
     const target = headPosition.clone().addScaledVector(headDirection, 1.35);
@@ -163,6 +171,8 @@ export function createXR({ renderer, scene, camera, controls, getModel, getState
     if (saved) {
       camera.near = saved.near;
       camera.far = saved.far;
+      camera.fov = saved.fov;
+      camera.zoom = saved.zoom;
       camera.updateProjectionMatrix();
       camera.position.copy(saved.cameraPosition);
       camera.quaternion.copy(saved.cameraQuaternion);
@@ -199,6 +209,8 @@ export function createXR({ renderer, scene, camera, controls, getModel, getState
         cameraPosition: camera.position.clone(),
         near: camera.near,
         far: camera.far,
+        fov: camera.fov,
+        zoom: camera.zoom,
         cameraQuaternion: camera.quaternion.clone(),
         target: controls.target.clone(),
         position: model.root.position.clone(),
@@ -268,18 +280,18 @@ export function createXR({ renderer, scene, camera, controls, getModel, getState
       rightAxes = right?.source.gamepad?.axes || [];
     navigation.update(
       rig,
-      renderer.xr.getCamera(),
+      trackedCamera(),
       left?.armed ? [leftAxes[2] || 0, leftAxes[3] || 0] : [0, 0],
       right?.armed ? rightAxes[2] || 0 : 0,
       dt,
       visible
     );
     // Refresh headset/controller transforms after navigation, before grip poses.
-    renderer.xr.updateCamera(camera);
     rig.updateMatrixWorld(true);
+    renderer.xr.updateCamera(camera);
     if (recenterPending) {
       resetView();
-      const head = renderer.xr.getCamera();
+      const head = trackedCamera();
       head.getWorldPosition(headPosition);
       head.getWorldDirection(headDirection);
       headDirection.y = 0;
@@ -297,7 +309,7 @@ export function createXR({ renderer, scene, camera, controls, getModel, getState
       if (!state.tracked) continue;
       const buttons = state.source.gamepad?.buttons || [];
       const edge = (i) => state.armed && Boolean(buttons[i]?.pressed) && !state.last[i];
-      if ((state.source.handedness === "left" && edge(4)) || (state.source.handedness === "right" && edge(3))) panel.toggle(renderer.xr.getCamera());
+      if ((state.source.handedness === "left" && edge(4)) || (state.source.handedness === "right" && edge(3))) panel.toggle(trackedCamera());
       if (state.source.handedness === "left" && edge(5)) onAction("recenter");
       state.last = buttons.map((b) => b.pressed);
       panel.pointerMove(state.id, panel.intersect(state.controller));
@@ -327,14 +339,20 @@ export function createXR({ renderer, scene, camera, controls, getModel, getState
               updateCamera: renderer.xr.updateCamera,
               setSession: renderer.xr.setSession,
             };
-          const head = new THREE.PerspectiveCamera();
+          const head = new THREE.ArrayCamera();
           head.position.set(0, 1.65, 0);
-          rig.add(head);
+          head.updateMatrix();
           Object.defineProperty(navigator, "xr", { configurable: true, value: { requestSession: async () => fake } });
           renderer.xr.getCamera = () => head;
           renderer.xr.getReferenceSpace = () => ({});
           renderer.xr.updateCamera = () => {
             rig.updateMatrixWorld(true);
+            head.matrixWorld.multiplyMatrices(rig.matrixWorld, head.matrix);
+            camera.position.copy(head.position);
+            camera.quaternion.copy(head.quaternion);
+            camera.fov = 95;
+            camera.zoom = 1;
+            camera.updateMatrixWorld(true);
           };
           renderer.xr.setSession = async () => {};
           qaRestore = () => {
@@ -431,6 +449,11 @@ export function createXR({ renderer, scene, camera, controls, getModel, getState
             held: gesture?.hands.size || 0,
             rig: rig.position.toArray(),
             yaw: rig.quaternion.toArray(),
+            head: camera.getWorldPosition(new THREE.Vector3()).toArray(),
+            headDirection: camera.getWorldDirection(new THREE.Vector3()).toArray(),
+            panelPosition: panel.group.position.toArray(),
+            cameraFov: camera.fov,
+            cameraZoom: camera.zoom,
             position: getModel().root.position.toArray(),
             scale: getModel().root.scale.x,
             panel: panel.visible,

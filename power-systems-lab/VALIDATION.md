@@ -16,7 +16,9 @@ The app requires Node >=22.12.0; the site’s CI uses Node 22.
 - Simulated actual XR controller-routing loop: one/two grips, scaling,
   simultaneous movement and turning while gripping, panel toggle while gripping,
   face-button edges, tracking loss, neutral rearm, session invisibility,
-  desktop restoration and handled session-request failure. Mocked poses update
+  desktop restoration and handled session-request failure. The fixture uses an
+  unparented XR ArrayCamera, verifies panel/reset positions after movement and
+  turning, and checks that exit restores the desktop field of view. Mocked poses update
   controller matrices as tracked WebXR poses do; they do not constitute a
   physical headset test.
 - Private transformer: 248 source occurrences and 838,253 placed triangles;

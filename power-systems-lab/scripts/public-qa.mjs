@@ -28,7 +28,8 @@ await page.keyboard.press("Escape");
 await page.getByRole("button", { name: "Reset view", exact: true }).click();
 assert.equal(await page.locator("#view").getAttribute("data-source-triangles"), "665472");
 await page.screenshot({ path: "output/public-desktop.png" });
-await page.locator("#view canvas").screenshot({ path: "../assets/img/power-systems-lab.jpg", type: "jpeg", quality: 88 });
+if (process.env.POWER_CAPTURE_PREVIEW === "1")
+  await page.locator("#view canvas").screenshot({ path: "../assets/img/power-systems-lab.jpg", type: "jpeg", quality: 88 });
 await page.setViewportSize({ width: 390, height: 844 });
 assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
 await page.getByRole("button", { name: "Details", exact: true }).click();

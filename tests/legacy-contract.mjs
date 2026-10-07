@@ -7,7 +7,10 @@ import { assertContains, readRoute } from "./helpers/site.mjs";
 
 const projectRoot = fileURLToPath(new URL("../", import.meta.url));
 const legacyHooks =
-  /portfolio-home(?:\.js)?|\bii-|portfolio-body|data-route(?:-[A-Za-z0-9_-]+)?|data-portfolio-app|data-menu(?:-[A-Za-z0-9_-]+)?|data-scramble|data-flicker/;
+  /portfolio-home(?:\.js)?|\bii-[A-Za-z_]|portfolio-body|data-route(?:-[A-Za-z0-9_-]+)?|data-portfolio-app|data-menu(?:-[A-Za-z0-9_-]+)?|data-scramble|data-flicker/;
+
+assert.equal(legacyHooks.test("for(let x=ii-2;x>=0;x--)"), false, "minified numeric subtraction is not a legacy CSS hook");
+assert.equal(legacyHooks.test('class="ii-shell"'), true, "legacy CSS hooks remain rejected");
 
 for (const directory of ["docs", "tests"]) {
   assert.equal(existsSync(join(projectRoot, "_site", directory)), false, `internal ${directory}/ sources are not published`);
