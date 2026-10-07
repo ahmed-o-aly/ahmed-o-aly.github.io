@@ -79,3 +79,26 @@ test("BVH preserves source triangle order and has exactly one indirect slot per 
   assert.equal(Math.min(...list.subarray(0, 1000)) >= 0, true);
   assert.ok(list.every((x) => x < 665472));
 });
+test("approved transformer retains the reviewed GLB, source occurrences and placed triangles", () => {
+  const root = new URL("../public/data/transformer/", import.meta.url);
+  const blob = readFileSync(new URL("transformer.glb", root));
+  const provenance = JSON.parse(readFileSync(new URL("provenance.json", root), "utf8"));
+  assert.equal(createHash("sha256").update(blob).digest("hex"), "8f9978d7266a19c06845a7c3f86b54e066ead091166a2a7226d4b3c5e93585a2");
+  assert.equal(provenance.glb_sha256, createHash("sha256").update(blob).digest("hex"));
+  const doc = JSON.parse(blob.toString("utf8", 20, 20 + blob.readUInt32LE(12)));
+  assert.equal(doc.nodes.length, 248);
+  const triangles = doc.nodes.reduce(
+    (sum, node) => sum + (node.mesh === undefined ? 0 : doc.meshes[node.mesh].primitives.reduce((n, p) => n + doc.accessors[p.indices].count / 3, 0)),
+    0
+  );
+  assert.equal(triangles, 838253);
+  assert.equal(provenance.placed_triangles, triangles);
+});
+test("transformer public metadata has attribution and permission without local paths or a reassigned licence", () => {
+  const text = readFileSync(new URL("../public/data/transformer/provenance.json", import.meta.url), "utf8");
+  const p = JSON.parse(text);
+  assert.equal(p.creator, "Patrick Kayter");
+  assert.match(p.drawing_credit, /Jonathan Lucas/);
+  assert.match(p.permission, /creator permission confirmed/);
+  assert.doesNotMatch(text, /\/Users\/|__private__|source_file|CC BY/);
+});

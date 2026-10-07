@@ -1,8 +1,9 @@
 # Power Systems Lab
 
 An ELEN424 equipment field study for desktop, touch and Meta Quest controllers.
-The public experience uses One80 Solar’s CC BY 4.0 substation. The optional
-academic transformer is a private local inspection and is excluded from builds.
+The public experience uses One80 Solar’s CC BY 4.0 substation and Patrick Kayter’s
+academic three-phase transformer, published with creator permission. Drawings are
+credited to Patrick Kayter and Jonathan Lucas. Use `?model=transformer` to open it.
 
 ## Develop and build
 
@@ -111,19 +112,17 @@ to neutral before rearming. Session exit restores the desktop camera/view.
 `src/vr-panel.js` adapts Protein Structures’ tested canvas panel and single-pointer
 capture. No external controller-profile download is required.
 
-## Private transformer boundary
+## Transformer provenance
 
-The localhost Vite middleware serves exactly two read-only files from the
-existing reviewed transformer directory outside this checkout: its GLB and
-manifest. No private directory is mounted, and no other private URL is accepted.
-The development-only adapter preserves the source assembly and representative
-finishes, with enclosure opening, core/coil isolation and illustrative separation.
-The source has 248 occurrences and 838,253 placed triangles. Its drawings identify
-inner BT and outer AT coils, limbs and yokes; winding turns and connections are
-not inferred. Separation is a placement view, not a maintenance procedure.
+The reviewed GLB preserves 248 source occurrences and 838,253 placed triangles.
+Its drawings identify inner BT and outer AT coils, limbs and yokes; winding turns,
+connection diagram and rated ratio are not inferred. Enclosure opening and
+separation illustrate placement rather than a maintenance procedure.
 
-Production sets `__TRANSFORMER_AVAILABLE__` to false, eliminating the private
-loader and metadata. The build contains no transformer mesh, source CAD, source
-manifest or derivative screenshot. Do not publish those materials unless explicit
-verified redistribution permission is obtained. The generated-site contract also
-checks that no private routes or paths entered the public bundle.
+Patrick Kayter’s 2013 academic model is from
+<https://grabcad.com/library/transformador-trifasico>. Drawing credits are Patrick
+Kayter and Jonathan Lucas. The site owner confirmed creator permission for this
+personal website on 7 October 2026. This permission is not represented as a
+Creative Commons licence. Attribution is in the interface, Works page and asset
+folder. Only the approved GLB and sanitized provenance are published; original
+CAD, drawings, local paths, original manifest and verification captures remain local.
