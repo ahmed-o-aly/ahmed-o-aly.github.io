@@ -1,0 +1,7 @@
+Three-phase transformer / Transformador trifásico
+Creator: Patrick Kayter (2013 academic project)
+Drawing credits: Patrick Kayter and Jonathan Lucas
+Source: https://grabcad.com/library/transformador-trifasico
+Published on Ahmed Aly’s personal website with creator permission confirmed by the site owner on 7 October 2026.
+Modifications: STEP conversion to GLB, source-part grouping, display normalization, representative finishes, learning annotations and illustrative inspection views.
+248 source occurrences; 838,253 placed triangles retained.

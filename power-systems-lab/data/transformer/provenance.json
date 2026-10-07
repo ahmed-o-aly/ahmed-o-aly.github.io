@@ -1,0 +1,23 @@
+{
+  "source_sha256": "e2284cbaf2d79431b45e7b02aebe2caa55eaa11ea4ee9feb9dcfbea97b8d8fef",
+  "source_units": "millimetres; STEP SI_UNIT(.MILLI.,.METRE.)",
+  "preview_units": "metres; vertex and location translations divided by 1000",
+  "converter": "Existing task-local Open CASCADE 7.7.2",
+  "tessellation_mm": 0.06,
+  "angular_deflection_radians": 0.16,
+  "leaf_occurrences": 248,
+  "unique_prototypes": 86,
+  "unique_geometry_triangles": 449379,
+  "placed_triangles": 838253,
+  "missing_face_triangulations": [],
+  "material_count": 10,
+  "glb_bytes": 13287380,
+  "glb_sha256": "8f9978d7266a19c06845a7c3f86b54e066ead091166a2a7226d4b3c5e93585a2",
+  "mapping_evidence": "PRANCHA2_COTAS.pdf visually inspected: BOBINA BT diameter26 height43 matches bobina22; BOBINA AT diameter30 height43 matches bobina1; core limb17.4 square/86 length matches bobina4; upper core75x17.4x5 matches peça alfa 3. Source filenames remain preserved.",
+  "creator": "Patrick Kayter",
+  "drawing_credit": "Patrick Kayter and Jonathan Lucas",
+  "source_url": "https://grabcad.com/library/transformador-trifasico",
+  "source_year": 2013,
+  "permission": "Published on Ahmed Aly’s personal website with creator permission confirmed by the site owner on 7 October 2026.",
+  "modifications": "STEP tessellation to GLB, source-part grouping, axis and display-scale normalization, representative material finishes, teaching annotations, illustrative enclosure and separation views. All 248 source occurrences and 838,253 placed triangles retained."
+}
