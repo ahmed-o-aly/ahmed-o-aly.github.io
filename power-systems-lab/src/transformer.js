@@ -20,10 +20,10 @@ function finish(cat, name, color) {
   return f;
 }
 export async function loadTransformer() {
-  const response = await fetch("/__private__/transformer/manifest.json");
-  if (!response.ok) throw new Error("Local transformer unavailable.");
+  const response = await fetch("./data/transformer/provenance.json");
+  if (!response.ok) throw new Error("Transformer provenance could not load.");
   const provenance = await response.json();
-  const source = (await new GLTFLoader().loadAsync("/__private__/transformer/transformador.glb")).scene;
+  const source = (await new GLTFLoader().loadAsync("./data/transformer/transformer.glb")).scene;
   const groups = [
     {
       id: "assembly",
@@ -139,7 +139,7 @@ export async function loadTransformer() {
   apply();
   return {
     id: "transformer",
-    title: "Three-phase transformer · local",
+    title: "Three-phase transformer",
     root,
     groups,
     allGroups: groups,

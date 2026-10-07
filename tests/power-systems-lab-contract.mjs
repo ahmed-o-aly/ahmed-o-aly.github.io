@@ -23,17 +23,25 @@ assert.equal(provenance.creator, "One80 Solar");
 assert.equal(provenance.triangles, 665472);
 assert.match(provenance.license, /CC BY 4.0/);
 for (const file of walk(app)) {
-  assert.doesNotMatch(file, /transformador|transformer|private/i, "no private mesh or derivative");
+  assert.doesNotMatch(file, /private|\.stp$|\.step$|\.pdf$/i, "original CAD, drawings and private files remain excluded");
   if (/\.(js|json|html)$/.test(file))
     assert.doesNotMatch(
       readFileSync(resolve(app, file), "utf8"),
-      /__private__|Patrick Kayter|source_file.*Users\/aly/,
-      "private adapter and manifest are absent"
+      /__private__|\/Users\/aly|source_file|Private local inspection only/,
+      "local file paths and private metadata are absent"
     );
 }
+const transformer = JSON.parse(readFileSync(resolve(app, "data/transformer/provenance.json"), "utf8"));
+assert.equal(transformer.creator, "Patrick Kayter");
+assert.equal(transformer.leaf_occurrences, 248);
+assert.equal(transformer.placed_triangles, 838253);
+assert.match(transformer.permission, /creator permission confirmed/);
+assert.ok(existsSync(resolve(app, "data/transformer/transformer.glb")));
 const project = readFileSync(resolve(root, "_site/projects/power-systems-lab/index.html"), "utf8");
 assert.match(project, /href="\/power-systems-lab\/"/);
 assert.match(project, /One80 Solar/);
 assert.match(project, /creativecommons.org\/licenses\/by\/4.0/);
+assert.match(project, /Patrick Kayter/);
+assert.match(project, /href="\/power-systems-lab\/\?model=transformer"/);
 assert.match(readFileSync(resolve(root, "_site/projects/index.html"), "utf8"), /href="\/projects\/power-systems-lab\/"/);
 console.log("Power Systems Lab generated-site route, exact bundle, attribution and private-data exclusion passed");

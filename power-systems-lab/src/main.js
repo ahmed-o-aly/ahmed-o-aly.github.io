@@ -15,7 +15,7 @@ app.innerHTML = `<div class="shell">
 </main><footer><span id="status" role="status" aria-live="polite">Preparing the model…</span><a class="credit-inline" href="https://sketchfab.com/3d-models/substation-8f4e54879b664104bece03d8e7236c15" target="_blank" rel="noopener noreferrer">Substation · One80 Solar · CC BY 4.0</a></footer>
 </div>
 <dialog id="help-dialog" aria-labelledby="help-title"><button class="close-dialog" aria-label="Close help">×</button><p class="eyebrow">Controls</p><h2 id="help-title">Explore with your hands.</h2><p>On a computer, drag to orbit, scroll to zoom, and click a device. On a phone, use one finger to orbit and two fingers to zoom or pan. Choose a device to read its role, focus on it or isolate it.</p><p>In Meta Quest Browser, open this page over HTTPS and select <strong>Enter VR</strong>.</p><dl><dt>Left stick</dt><dd>Move in the direction you face.</dd><dt>Right stick</dt><dd>Turn smoothly.</dd><dt>Trigger</dt><dd>Select a device or a panel control.</dd><dt>One grip</dt><dd>Point at the model, then hold to move and rotate it.</dd><dt>Two grips</dt><dd>Rotate together; move your hands apart to scale. Navigation continues while gripping.</dd><dt>X / right stick click</dt><dd>Summon or dismiss the panel.</dd><dt>Y</dt><dd>Reset the view in front of you.</dd></dl><p>The panel stays where you placed it. Summon it again after moving. Use <strong>Bring closer</strong> for an isolated device, or <strong>Room size</strong> to walk around the arrangement.</p></dialog>
-<dialog id="source-dialog" aria-labelledby="source-title"><button class="close-dialog" aria-label="Close source details">×</button><p class="eyebrow">Materials & provenance</p><h2 id="source-title">A source model, carefully read.</h2><p id="source-description"></p><p>The learning guide follows Dr Tarek El Fouly’s ELEN424 Substation Equipment notes and supplied videos. Device labels are based on the visible geometry; candidates remain provisional.</p><p>Representative steel, painted metal and ceramic finishes aid inspection. Select <strong>Source appearance</strong> to compare the original diffuse atlas and authored normals. The archive supplies UVs and a diffuse image but no material binding file, so their pairing is an inspection inference.</p><p>No voltage, winding connection, fault-interruption medium or operating sequence is assigned where the source does not establish one. Inspection scale is a view setting; the substation OBJ declares no physical units.</p><p class="source-stat" id="source-stat"></p><p><a href="https://www.youtube.com/watch?v=QC0t_9Z_9hg" target="_blank" rel="noopener noreferrer">Substation reference video ↗</a> · <a href="https://www.youtube.com/watch?v=Vz5x6ZtHdgY" target="_blank" rel="noopener noreferrer">Transformer reference video ↗</a></p><p class="source-stat">Physical Quest headset verification remains pending.</p></dialog>`;
+<dialog id="source-dialog" aria-labelledby="source-title"><button class="close-dialog" aria-label="Close source details">×</button><p class="eyebrow">Materials & provenance</p><h2 id="source-title">A source model, carefully read.</h2><p id="source-description"></p><p>The learning guide follows Dr Tarek El Fouly’s ELEN424 Substation Equipment notes and supplied videos. Device labels are based on the visible geometry; candidates remain provisional.</p><p id="appearance-description">Representative steel, painted metal and ceramic finishes aid inspection. Select <strong>Source appearance</strong> to compare the original diffuse atlas and authored normals. The archive supplies UVs and a diffuse image but no material binding file, so their pairing is an inspection inference.</p><p id="model-limits">No voltage, winding connection, fault-interruption medium or operating sequence is assigned where the source does not establish one. Inspection scale is a view setting; the substation OBJ declares no physical units.</p><p class="source-stat" id="source-stat"></p><p><a href="https://www.youtube.com/watch?v=QC0t_9Z_9hg" target="_blank" rel="noopener noreferrer">Substation reference video ↗</a> · <a href="https://www.youtube.com/watch?v=Vz5x6ZtHdgY" target="_blank" rel="noopener noreferrer">Transformer reference video ↗</a></p><p class="source-stat">Physical Quest headset verification remains pending.</p></dialog>`;
 const $ = (id) => document.getElementById(id),
   host = $("view");
 let renderer;
@@ -181,8 +181,19 @@ function renderNavigation() {
     $("source-stat").textContent =
       `${model.provenance.triangles.toLocaleString()} source triangles · ${model.provenance.geometric_pieces.toLocaleString()} connected source pieces. Triangle order and all packed corner attributes are preserved. No geometry decimation.`;
   } else if (__TRANSFORMER_AVAILABLE__) {
-    $("source-description").textContent =
-      "Patrick Kayter / Jonathan Lucas academic transformer, 2013. Private local inspection only; redistribution permission remains unresolved. The STEP assembly and source drawings establish the concentric coil and core placement.";
+    const paragraph = $("source-description"),
+      source = document.createElement("a");
+    source.href = model.provenance.source_url;
+    source.target = "_blank";
+    source.rel = "noopener noreferrer";
+    source.textContent = "original GrabCAD model";
+    paragraph.append(
+      document.createTextNode("Academic three-phase transformer by Patrick Kayter, 2013; drawings credited to Patrick Kayter and Jonathan Lucas. "),
+      source,
+      document.createTextNode(
+        ". Published with creator permission. Changes: STEP conversion to GLB, source-part grouping, display normalization, representative finishes and illustrative inspection views. The source drawings establish the concentric coil and core placement."
+      )
+    );
     $("source-stat").textContent = `${
       model.provenance.leaf_occurrences
     } source occurrences · ${model.provenance.placed_triangles.toLocaleString()} placed triangles. Enclosure opening and separation are illustrative views.`;
@@ -191,11 +202,23 @@ function renderNavigation() {
   if (__TRANSFORMER_AVAILABLE__ && !$("model-picker").children.length) {
     const select = document.createElement("select");
     select.className = "local-model";
-    select.setAttribute("aria-label", "Choose local equipment experience");
-    select.innerHTML = '<option value="substation">Substation</option><option value="transformer">Transformer · local only</option>';
+    select.setAttribute("aria-label", "Choose equipment experience");
+    select.innerHTML = '<option value="substation">Substation</option><option value="transformer">Three-phase transformer</option>';
     select.onchange = () => load(select.value);
     $("model-picker").append(select);
   }
+  if (__TRANSFORMER_AVAILABLE__) $("model-picker").querySelector("select").value = model.id;
+  const credit = document.querySelector(".credit-inline");
+  credit.href = model.provenance.source_url;
+  credit.textContent = model.id === "substation" ? "Substation · One80 Solar · CC BY 4.0" : "Transformer · Patrick Kayter · Used with permission";
+  $("appearance-description").textContent =
+    model.id === "substation"
+      ? "Representative steel, painted metal and ceramic finishes aid inspection. Source appearance compares the original diffuse atlas and authored normals. The archive has UVs and a diffuse image but no material binding file, so their pairing is an inspection inference."
+      : "Representative steel, painted metal, copper and ceramic finishes aid inspection. Source appearance compares the original CAD colors. Axis and display-scale normalization preserve the assembly and all source occurrences.";
+  $("model-limits").textContent =
+    model.id === "substation"
+      ? "Voltage, winding connection, fault-interruption medium and operating sequence are not assigned where the source does not establish them. Inspection scale is a view setting; the substation OBJ declares no physical units."
+      : "The source drawings identify the concentric BT/AT coils and magnetic core. Winding turns, rated ratio and electrical connections are not supplied. Enclosure opening and separation illustrate placement rather than a verified maintenance sequence.";
   document.querySelector(".model-name").textContent = model.title;
 }
 function sync() {
