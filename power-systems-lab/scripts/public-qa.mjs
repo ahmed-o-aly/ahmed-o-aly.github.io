@@ -21,6 +21,7 @@ assert.equal(await page.locator("#view").getAttribute("data-selected"), "breaker
 assert.equal(await page.locator("#view").getAttribute("data-isolated"), "true");
 await page.selectOption("#appearance", "source");
 assert.equal(await page.locator("#view").getAttribute("data-appearance"), "source");
+assert.match(await page.locator("#status").textContent(), /diffuse atlas/);
 await page.selectOption("#appearance", "presentation");
 await page.getByRole("button", { name: "Source", exact: true }).click();
 assert.equal(await page.locator('#source-dialog a[href="https://creativecommons.org/licenses/by/4.0/"]').count(), 1);
@@ -61,6 +62,7 @@ assert.equal(await page.locator("#view").getAttribute("data-isolated"), "true");
 await page.locator("#separation").fill("65");
 assert.equal(await page.locator("#separation-value").textContent(), "65%");
 await page.selectOption("#appearance", "source");
+assert.equal(await page.locator("#status").textContent(), "Original CAD colors.");
 await page.getByRole("button", { name: "Reset view", exact: true }).click();
 assert.equal(await page.locator("#view").getAttribute("data-visible-triangles"), "838253");
 assert.equal(await page.locator("#view").getAttribute("data-opened"), "false");
@@ -76,6 +78,26 @@ await page.waitForFunction(
   () => document.querySelector("#view").dataset.loaded === "true" && document.querySelector("#view").dataset.model === "substation"
 );
 assert.equal(await page.locator("#equipment-list button").count(), 11);
+assert.equal(new URL(page.url()).searchParams.has("model"), false);
+await page.reload();
+await page.waitForFunction(
+  () => document.querySelector("#view").dataset.loaded === "true" && document.querySelector("#view").dataset.model === "substation",
+  null,
+  { timeout: 60000 }
+);
+await page.getByRole("combobox", { name: "Choose equipment experience" }).selectOption("transformer");
+await page.waitForFunction(
+  () => document.querySelector("#view").dataset.loaded === "true" && document.querySelector("#view").dataset.model === "transformer",
+  null,
+  { timeout: 60000 }
+);
+assert.equal(new URL(page.url()).searchParams.get("model"), "transformer");
+await page.reload();
+await page.waitForFunction(
+  () => document.querySelector("#view").dataset.loaded === "true" && document.querySelector("#view").dataset.model === "transformer",
+  null,
+  { timeout: 60000 }
+);
 assert.deepEqual(privateRequests, []);
 assert.deepEqual(errors, []);
 await writeFile(
@@ -90,6 +112,8 @@ await writeFile(
       transformerTriangles: 838253,
       transformerControls: true,
       modelSwitching: true,
+      selectedModelSurvivesReload: true,
+      modelSpecificSourceStatus: true,
       privateRequests,
       errors,
       physicalQuestTested: false,
