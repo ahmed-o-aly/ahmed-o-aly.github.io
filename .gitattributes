@@ -22,3 +22,6 @@ assets/apps/protein-structures/data/*.bin binary
 assets/apps/protein-structures/data/motion/*.cif.gz binary
 # Bundled Three.js shaders retain upstream spacing inside template literals.
 assets/apps/protein-structures/assets/* -whitespace
+
+# Three.js shader template strings retain their upstream trailing whitespace.
+assets/apps/power-systems-lab/assets/* -whitespace
