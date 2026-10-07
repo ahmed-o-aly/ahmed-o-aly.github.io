@@ -12,7 +12,7 @@ This is the single repository-wide guide for agents working on Ahmed Aly's perso
 
 ## What this repository does
 
-The live site is <https://ahmed-o-aly.github.io/>. The portfolio is a Jekyll site built from Markdown, YAML, Liquid templates, Sass, Ruby plugins, and browser JavaScript, based on al-folio. It also contains six independently built Vite applications: a React/TypeScript UAE Economy Lab and five Three.js/WebXR labs. Node runs their development servers, builds, maintenance scripts, and tests; Jekyll assembles the published site.
+The live site is <https://ahmed-o-aly.github.io/>. The portfolio is a Jekyll site built from Markdown, YAML, Liquid templates, Sass, Ruby plugins, and browser JavaScript, based on al-folio. It also contains five independently built Vite applications: a React/TypeScript UAE Economy Lab and four Three.js/WebXR labs. Node runs their development servers, builds, maintenance scripts, and tests; Jekyll assembles the published site.
 
 The current design uses the `garden` shell and `folio-*` components: paper/ink/rust colors, EB Garamond and IBM Plex Mono, an alternating Selected Works section, a reading library, and project write-ups. Older al-folio templates and styles remain for supporting features; trace the active layout before editing them.
 

@@ -277,7 +277,13 @@ function change(key, value) {
     appearance = value;
     model.appearance(value);
     scene.environmentIntensity = value === "source" ? 0.45 : 0.65;
-    status(value === "source" ? "Original diffuse atlas and authored normals." : "Representative material finishes.");
+    status(
+      value === "source"
+        ? model.id === "transformer"
+          ? "Original CAD colors."
+          : "Original diffuse atlas and authored normals."
+        : "Representative material finishes."
+    );
   } else if (key === "explosion") {
     model.separate?.(value);
     if (!xr.active) frame(model.getBounds());
@@ -372,6 +378,10 @@ async function load(id) {
     sync();
     $("loading").hidden = true;
     $("enter-vr").disabled = false;
+    const modelURL = new URL(location.href);
+    if (model.id === "transformer") modelURL.searchParams.set("model", "transformer");
+    else modelURL.searchParams.delete("model");
+    history.replaceState(history.state, "", modelURL);
     status("Choose a device, or follow the guided tour.");
   } catch (error) {
     if (generation !== loadGeneration) return;
