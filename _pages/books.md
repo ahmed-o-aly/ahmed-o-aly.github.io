@@ -70,7 +70,7 @@ nav_order: 2
               data-book-url="{{ book.url | escape }}"
               data-book-progress="{{ book.progress_percent | escape }}"
               data-book-progress-label="{{ book.progress_label | escape }}"
-              aria-label="Open details for {{ book.title | escape }} by {{ book.author | escape }}{% if book.progress_label != blank %}, {{ book.progress_label | escape }}{% endif %}"
+              aria-haspopup="dialog"
             >
               <span class="folio-reading-banner__jacket">
                 <span class="folio-reading-banner__fallback" aria-hidden="true">{{ display_title }}</span>
