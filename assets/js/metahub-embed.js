@@ -1,0 +1,1 @@
+document.querySelectorAll("[data-metahub-load]").forEach(e=>{e.hidden=!1,e.addEventListener("click",()=>{const t=e.closest(".folio-case-interactive__viewport"),a=t.querySelector("[data-metahub-src]");a.src=a.dataset.metahubSrc,a.hidden=!1,t.querySelector("[data-metahub-preview]").hidden=!0,a.focus()},{once:!0})});
