@@ -12,6 +12,12 @@ export function mountLabShell({
   panelWidth = "314px",
 }) {
   if (!host) throw new Error("A MetaHub shell needs a header host");
+  document.body.dataset.metahubLab = title.toLowerCase().replaceAll(" ", "-");
+  // Opt-in review version; the published default stays available during design review.
+  if (new URLSearchParams(location.search).get("theme") === "folio") {
+    document.body.classList.add("metahub-folio");
+    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", labCanvasColor("#f6f0e3"));
+  }
   if (workspace) {
     workspace.classList.add("metahub-viewer-layout");
     workspace.style.setProperty("--metahub-panel-width", panelWidth);
@@ -62,6 +68,11 @@ export function mountLabShell({
   tools.append(fullscreen);
   host.replaceChildren(trail, tools);
   return () => document.removeEventListener("fullscreenchange", sync);
+}
+
+/** Only the neutral scene backdrop changes; scientific and equipment colours stay intact. */
+export function labCanvasColor(fallback) {
+  return document.body.classList.contains("metahub-folio") ? getComputedStyle(document.body).getPropertyValue("--garden-canvas").trim() : fallback;
 }
 
 /** Skip desktop frame work while a tab is hidden. Immersive sessions keep

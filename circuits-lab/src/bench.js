@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { visibleFrame } from "../../assets/js/metahub-app-shell.js";
+import { visibleFrame, labCanvasColor } from "../../assets/js/metahub-app-shell.js";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
 import { createDirectInteraction, createLocomotion, signedTwistAngle, nearestTerminal, probeGripPose } from "./interaction.js";
@@ -39,12 +39,12 @@ export function createBench({
   onManipulation = () => {},
 }) {
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color("#c6c9c9");
-  scene.fog = new THREE.Fog("#c6c9c9", 14, 30);
+  scene.background = new THREE.Color(labCanvasColor("#c6c9c9"));
+  scene.fog = new THREE.Fog(labCanvasColor("#c6c9c9"), 14, 30);
   const camera = new THREE.PerspectiveCamera(39, 1, 0.05, 35);
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-  renderer.setClearColor("#c6c9c9");
+  renderer.setClearColor(labCanvasColor("#c6c9c9"));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1;

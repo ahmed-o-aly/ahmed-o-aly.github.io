@@ -1,5 +1,6 @@
 import "./style.css";
 import "../../assets/css/metahub-app-shell.css";
+import "../../assets/css/metahub-lab-theme.css";
 import { mountLabShell } from "../../assets/js/metahub-app-shell.js";
 import { MODULES, OPTIONS, circuitFor } from "./modules.js";
 import {

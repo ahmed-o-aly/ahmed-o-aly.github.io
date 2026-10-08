@@ -21,7 +21,8 @@ import { GuidedLesson } from "./lesson.js";
 import { blochCoordinates, formatState } from "./quantum-state.js";
 import "./style.css";
 import "../assets/css/metahub-app-shell.css";
-import { mountLabShell, visibleFrame } from "../assets/js/metahub-app-shell.js";
+import "../assets/css/metahub-lab-theme.css";
+import { mountLabShell, visibleFrame, labCanvasColor } from "../assets/js/metahub-app-shell.js";
 mountLabShell({
   host: document.querySelector("body > header"),
   title: "Bloch Lab",
@@ -61,7 +62,7 @@ try {
 if (renderer) {
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
   renderer.xr.enabled = true;
-  renderer.setClearColor(0xeef0f1);
+  renderer.setClearColor(labCanvasColor(0xeef0f1));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   const scene = new THREE.Scene(),
     camera = new THREE.PerspectiveCamera(42, 1, 0.05, 40),

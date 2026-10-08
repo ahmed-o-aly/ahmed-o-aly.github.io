@@ -1,0 +1,474 @@
+@import "./garden-tokens.css";
+@import url("https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap");
+
+/* Review via ?theme=folio. Shared surfaces and controls; subject layouts remain usable. */
+body.metahub-folio {
+  --ink: var(--garden-ink);
+  --muted: var(--garden-muted);
+  --line: var(--garden-line);
+  --border: var(--garden-line-soft);
+  --accent: var(--garden-accent);
+  --rust: var(--garden-accent);
+  --paper: var(--garden-surface);
+  --mono: var(--garden-mono);
+  color: var(--garden-ink);
+  background: var(--garden-canvas);
+  font: 15px/1.5 var(--garden-ui);
+}
+.metahub-folio :is(h1, h2, h3, .model-name, .brand > span) {
+  color: var(--garden-ink);
+  font-family: var(--garden-serif);
+  font-weight: 400;
+  letter-spacing: -0.025em;
+}
+.metahub-folio h1 {
+  font-size: 36px;
+}
+.metahub-folio h2 {
+  font-size: 25px;
+  line-height: 1.15;
+}
+.metahub-folio h3 {
+  font-size: 21px;
+  line-height: 1.25;
+}
+.metahub-folio :is(.eyebrow, .small-label, .sidebar-caption, .panel-heading, .source-label, .range-labels, .count-badge, .stage-tag) {
+  font-family: var(--garden-mono);
+  color: var(--garden-quiet);
+  font-size: 10px;
+  letter-spacing: 0.07em;
+  line-height: 1.6;
+}
+.metahub-folio :is(.eyebrow, .small-label, .sidebar-caption) {
+  text-transform: uppercase;
+}
+.metahub-folio :is(button, select, input, textarea) {
+  font-family: var(--garden-mono);
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--garden-ink);
+  accent-color: var(--garden-accent);
+}
+.metahub-folio :is(button, select, textarea, input[type="number"], input[type="text"]) {
+  min-height: 44px;
+  border: 1px solid var(--garden-line);
+  border-radius: 0;
+  background: var(--garden-surface);
+  box-shadow: none;
+}
+.metahub-folio button {
+  padding: 9px 11px;
+}
+.metahub-folio button:hover:not(:disabled) {
+  color: var(--garden-accent-hover);
+  background: var(--garden-surface-hover);
+}
+.metahub-folio :is(button[aria-pressed="true"], button.active, .button.primary),
+.metahub-folio #lesson-next,
+.metahub-folio #guided,
+.metahub-folio #motion-play {
+  color: var(--garden-surface);
+  background: var(--garden-accent);
+  border-color: var(--garden-accent);
+}
+.metahub-folio :is(button[aria-pressed="true"], button.active, .button.primary):hover:not(:disabled),
+.metahub-folio #lesson-next:hover:not(:disabled),
+.metahub-folio #guided:hover:not(:disabled),
+.metahub-folio #motion-play:hover:not(:disabled) {
+  color: var(--garden-surface);
+  background: var(--garden-accent-hover);
+}
+.metahub-folio button:disabled {
+  color: var(--garden-muted);
+}
+.metahub-folio :is(a, .inline-link, .text-button) {
+  color: var(--garden-accent);
+}
+.metahub-folio :is(a:hover, .inline-link:hover, .text-button:hover) {
+  color: var(--garden-accent-hover);
+}
+.metahub-folio :is(a, button, input, select, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--garden-focus);
+  outline-offset: 4px;
+}
+.metahub-folio
+  :is(
+    .microcopy,
+    .model-note,
+    .learning-note,
+    .hint,
+    .prototype-tag,
+    .brand-sub,
+    .intro p,
+    .motion-heading p,
+    .motion-description p,
+    .science-details p,
+    .vr-section > p,
+    .panel-footer a
+  ) {
+  font-family: var(--garden-ui);
+  color: var(--garden-muted);
+  font-size: 12px;
+  line-height: 1.65;
+}
+.metahub-folio
+  :is(
+    .panel,
+    .sidebar,
+    aside,
+    .bench-panel,
+    .controls-panel,
+    .chart-panel,
+    .challenge-panel,
+    .connection-panel,
+    .readings,
+    .experiment-brief,
+    #schematic
+  ) {
+  background: var(--garden-surface);
+  border-color: var(--garden-line);
+  border-radius: 0;
+}
+.metahub-folio :is(.control-section, .panel-footer, .motion-description, .model-note, .lesson, .guide, .sequence, .reading + .reading, .number-unit) {
+  border-color: var(--garden-line-soft);
+}
+.metahub-folio :is(.stage, .view, .stage-wrap, .loading) {
+  background: var(--garden-canvas);
+}
+.metahub-folio :is(.view-tools, .view-controls, .selection, .stage-top #bench-caption, .stage-bottom span) {
+  border-color: var(--garden-line);
+  border-radius: 0;
+  background: var(--garden-surface);
+  color: var(--garden-muted);
+  box-shadow: none;
+}
+.metahub-folio :is(.segmented, .view-mode, .mode-switch, .patch-toolbar, .bench-strip, .bench-help) {
+  border-color: var(--garden-line);
+  border-radius: 0;
+  background: var(--garden-canvas);
+}
+.metahub-folio :is(.segmented button, .view-mode button, .mode-switch button, .view-tools button, .view-controls button) {
+  border-color: transparent;
+  padding: 8px;
+  font-size: 10px;
+}
+.metahub-folio
+  :is(
+    .control-label,
+    .color-row,
+    .fixed-values,
+    .reading > span,
+    .reading p,
+    .breadcrumb,
+    .stage-footer,
+    .scene-label,
+    .scene-label .hint,
+    .stage-title p,
+    .motion-legend,
+    .motion-metrics,
+    .check-row,
+    .science-details
+  ) {
+  color: var(--garden-muted);
+}
+.metahub-folio
+  :is(.control-label output, .motion-metrics strong, .color-value, .fixed-values strong, .reading > div, .probabilities b, #counts, output) {
+  font-family: var(--garden-mono);
+  color: var(--garden-ink);
+  font-variant-numeric: tabular-nums;
+}
+.metahub-folio :is(.control-label, .check-row, .color-row) {
+  font-size: 12px;
+}
+.metahub-folio input[type="range"] {
+  background: var(--garden-line);
+}
+.metahub-folio input[type="range"]::-webkit-slider-thumb {
+  background: var(--garden-accent);
+  border-color: var(--garden-surface);
+  box-shadow: 0 0 0 1px var(--garden-accent);
+}
+.metahub-folio input[type="range"]::-moz-range-thumb {
+  background: var(--garden-accent);
+  border-color: var(--garden-surface);
+  box-shadow: 0 0 0 1px var(--garden-accent);
+}
+.metahub-folio .switch input:checked + span {
+  background: var(--garden-accent);
+}
+.metahub-folio .switch input:focus-visible + span {
+  outline-color: var(--garden-focus);
+}
+.metahub-folio :is(.loader, .spinner) {
+  border-top-color: var(--garden-accent);
+}
+.metahub-folio dialog {
+  background: var(--garden-surface);
+  color: var(--garden-ink);
+  border: 1px solid var(--garden-line);
+  border-radius: 0;
+  box-shadow: 0 24px 80px #372b1f33;
+}
+.metahub-folio dialog::backdrop {
+  background: #2b211877;
+}
+.metahub-folio dialog :is(p, li, dd) {
+  color: var(--garden-muted);
+  font: 15px/1.65 var(--garden-ui);
+}
+.metahub-folio dialog h2 {
+  font-size: 34px;
+}
+.metahub-folio .metahub-app-bar.metahub-app-bar {
+  background: var(--garden-surface);
+  color: var(--garden-ink);
+  border-color: var(--garden-line);
+}
+.metahub-folio .metahub-app-bar .metahub-app-name {
+  font: 400 26px/1.15 var(--garden-serif);
+  color: var(--garden-ink);
+}
+.metahub-folio .metahub-app-bar .metahub-app-trail > a {
+  color: var(--garden-accent);
+  font: 11px/1.4 var(--garden-mono);
+}
+.metahub-folio .metahub-app-bar .metahub-app-actions > :is(button, a) {
+  font: 10px/1.4 var(--garden-mono);
+  border-radius: 0;
+  border-color: var(--garden-line);
+  background: transparent;
+  color: var(--garden-ink);
+}
+.metahub-folio .metahub-app-bar .metahub-app-actions > :is(button, a):hover:not(:disabled) {
+  background: var(--garden-surface-hover);
+}
+.metahub-folio .metahub-app-bar .metahub-app-context {
+  font: 10px/1.4 var(--garden-mono);
+  color: var(--garden-muted);
+}
+
+/* Density and chain swatches, wire colours and quantum axes keep their semantic colours. */
+.metahub-folio[data-metahub-lab="protein-structures"] .panel {
+  padding: 26px;
+}
+.metahub-folio[data-metahub-lab="protein-structures"] .workspace {
+  --metahub-panel-width: 340px;
+}
+.metahub-folio[data-metahub-lab="protein-structures"] .stage-title h1 {
+  font-family: var(--garden-serif);
+  font-size: 76px;
+  letter-spacing: -0.04em;
+}
+.metahub-folio[data-metahub-lab="protein-structures"] .stage-title h1 span {
+  color: var(--garden-sepia);
+}
+.metahub-folio[data-metahub-lab="protein-structures"] .section-title h2 {
+  font-size: 23px;
+}
+.metahub-folio[data-metahub-lab="protein-structures"] .state-grid button small {
+  color: inherit;
+  font-family: var(--garden-mono);
+}
+.metahub-folio[data-metahub-lab="protein-structures"] .vr-section #vr-button button {
+  background: var(--garden-accent);
+  color: var(--garden-surface);
+  border-radius: 0;
+}
+.metahub-folio[data-metahub-lab="protein-structures"] .vr-section #vr-button button:disabled {
+  background: var(--garden-canvas);
+  color: var(--garden-muted);
+}
+.metahub-folio[data-metahub-lab="protein-structures"] .view-tools {
+  max-width: calc(100% - 24px);
+}
+.metahub-folio[data-metahub-lab="protein-structures"] .motion-active .stage-title h1 {
+  font-size: 54px;
+}
+.metahub-folio[data-metahub-lab="protein-structures"] .motion-active .stage-title h1.interpolated-title {
+  font-size: 32px;
+}
+
+.metahub-folio[data-metahub-lab="circuits-lab"] .sidebar .brand {
+  color: var(--garden-ink);
+}
+.metahub-folio[data-metahub-lab="circuits-lab"] .sidebar .brand svg {
+  display: none;
+}
+.metahub-folio[data-metahub-lab="circuits-lab"] .brand > span {
+  font-size: 28px;
+}
+.metahub-folio[data-metahub-lab="circuits-lab"] .module-link strong {
+  font: 500 17px/1.2 var(--garden-serif);
+}
+.metahub-folio[data-metahub-lab="circuits-lab"] .module-link small {
+  color: var(--garden-muted);
+  font: 10px/1.5 var(--garden-mono);
+}
+.metahub-folio[data-metahub-lab="circuits-lab"] .module-link {
+  border-color: transparent;
+  background: transparent;
+}
+.metahub-folio[data-metahub-lab="circuits-lab"] .module-link.active {
+  color: var(--garden-ink);
+  background: var(--garden-surface-hover);
+  box-shadow: inset 2px 0 var(--garden-accent);
+}
+.metahub-folio[data-metahub-lab="circuits-lab"] .module-link .lab-number {
+  color: var(--garden-quiet);
+}
+.metahub-folio[data-metahub-lab="circuits-lab"] :is(.bench-tabs button, .nav-tabs button) {
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+}
+.metahub-folio[data-metahub-lab="circuits-lab"] .bench-tabs button.active {
+  color: var(--garden-accent);
+  border-bottom-color: var(--garden-accent);
+}
+.metahub-folio[data-metahub-lab="circuits-lab"] .experiment-brief {
+  border-left-color: var(--garden-accent);
+}
+.metahub-folio[data-metahub-lab="circuits-lab"] :is(.vr-status-row, .experiment-brief p, .bench-strip p, .bench-help, .workspace-footer) {
+  color: var(--garden-muted);
+}
+.metahub-folio[data-metahub-lab="circuits-lab"] .experiment-brief > span {
+  font: 10px/1.5 var(--garden-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--garden-quiet);
+}
+.metahub-folio[data-metahub-lab="circuits-lab"] .number-unit input {
+  background: var(--garden-surface);
+}
+.metahub-folio[data-metahub-lab="circuits-lab"] #chart text {
+  fill: var(--garden-muted);
+  font-family: var(--garden-mono);
+}
+.metahub-folio[data-metahub-lab="circuits-lab"]
+  :is(.chart-panel > p, #chart-subtitle, .challenge-panel > p, .experiment-brief summary, .chart-use, .paper-note, .trace-reading) {
+  color: var(--garden-muted);
+}
+.metahub-folio[data-metahub-lab="circuits-lab"] :is(.trace-reading, .challenge-panel .feedback, .scope-time, .scope-channels fieldset, .source-case) {
+  background: var(--garden-canvas);
+  border-color: var(--garden-line);
+}
+
+.metahub-folio[data-metahub-lab="bloch-lab"]
+  :is(
+    .hint,
+    #status,
+    #sequence-status,
+    #gate-history,
+    #lesson-context,
+    #lesson-observation,
+    #activity-feedback,
+    #activity-comparison,
+    #variant-label,
+    #baseline-readout,
+    #amplitude-link,
+    details p
+  ) {
+  color: var(--garden-muted);
+}
+.metahub-folio[data-metahub-lab="bloch-lab"] #lesson-live {
+  color: var(--garden-accent);
+}
+.metahub-folio[data-metahub-lab="bloch-lab"] .intro h2 {
+  font-size: 34px;
+  font-style: italic;
+}
+.metahub-folio[data-metahub-lab="bloch-lab"] #sequence-list .completed {
+  background: var(--garden-surface-hover);
+  border-color: var(--garden-line);
+}
+.metahub-folio[data-metahub-lab="bloch-lab"] #sequence-list .current {
+  background: var(--garden-accent);
+  color: var(--garden-surface);
+}
+
+.metahub-folio[data-metahub-lab="power-systems-lab"] .nav-tabs button {
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+}
+.metahub-folio[data-metahub-lab="power-systems-lab"] .nav-tabs button.active {
+  color: var(--garden-accent);
+  border-bottom-color: var(--garden-accent);
+}
+.metahub-folio[data-metahub-lab="power-systems-lab"] .equipment-list button {
+  background: transparent;
+  border-color: transparent;
+  font: 400 20px/1.15 var(--garden-serif);
+}
+.metahub-folio[data-metahub-lab="power-systems-lab"] .equipment-list button.active {
+  background: var(--garden-surface-hover);
+  color: var(--garden-ink);
+  border-color: var(--garden-line);
+}
+.metahub-folio[data-metahub-lab="power-systems-lab"] .details h2 {
+  font-size: 34px;
+  font-style: italic;
+}
+.metahub-folio[data-metahub-lab="power-systems-lab"] .details p {
+  font: 400 18px/1.55 var(--garden-serif);
+}
+.metahub-folio[data-metahub-lab="power-systems-lab"] footer {
+  background: var(--garden-surface);
+}
+
+@media (max-width: 700px) {
+  .metahub-folio .metahub-app-bar .metahub-app-name {
+    font-size: 23px;
+  }
+  .metahub-folio .metahub-app-bar .metahub-app-actions > :is(button, a) {
+    font-size: 9px;
+    padding: 8px;
+  }
+  .metahub-folio h1 {
+    font-size: 30px;
+  }
+  .metahub-folio[data-metahub-lab="protein-structures"] .stage-title h1 {
+    font-size: 60px;
+  }
+  .metahub-folio[data-metahub-lab="protein-structures"] .view-tools {
+    width: calc(100% - 24px);
+    gap: 0;
+    justify-content: center;
+  }
+  .metahub-folio[data-metahub-lab="protein-structures"] .view-tools button {
+    padding: 7px;
+    font-size: 9px;
+  }
+  .metahub-folio[data-metahub-lab="circuits-lab"] .sidebar nav {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+    padding-bottom: 12px;
+  }
+  .metahub-folio[data-metahub-lab="circuits-lab"] .module-link {
+    display: flex;
+    gap: 9px;
+    padding: 10px;
+    border: 1px solid var(--garden-line-soft);
+  }
+  .metahub-folio[data-metahub-lab="circuits-lab"] .module-link strong {
+    font-size: 18px;
+    margin: 0;
+    overflow-wrap: anywhere;
+  }
+  .metahub-folio[data-metahub-lab="power-systems-lab"] .view-controls button {
+    padding: 6px;
+    font-size: 9px;
+  }
+  .metahub-folio[data-metahub-lab="power-systems-lab"] .view-controls select {
+    min-height: 44px;
+    font-size: 9px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .metahub-folio *,
+  .metahub-folio *::before,
+  .metahub-folio *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}

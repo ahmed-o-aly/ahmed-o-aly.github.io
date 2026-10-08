@@ -5,7 +5,8 @@ import { loadSubstation } from "./substation.js";
 import { createXR } from "./xr.js";
 import "./style.css";
 import "../../assets/css/metahub-app-shell.css";
-import { mountLabShell, visibleFrame } from "../../assets/js/metahub-app-shell.js";
+import "../../assets/css/metahub-lab-theme.css";
+import { mountLabShell, visibleFrame, labCanvasColor } from "../../assets/js/metahub-app-shell.js";
 
 const app = document.querySelector("#app");
 app.innerHTML = `<div class="shell">
@@ -35,7 +36,7 @@ try {
   throw error;
 }
 renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
-renderer.setClearColor(0xe9e8e3);
+renderer.setClearColor(labCanvasColor(0xe9e8e3));
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 0.78;
 renderer.xr.enabled = true;

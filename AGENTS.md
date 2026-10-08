@@ -51,7 +51,7 @@ Use explicit front-matter permalinks as the route authority. Preserve existing p
 | `_includes/garden-*.liquid`, `project-visual.liquid`                   | Reusable content, media, related items, and legacy garden cards.                                                       |
 | `_includes/head.liquid`, `metadata.liquid`, `scripts.liquid`           | Styles, SEO/social metadata, and conditional scripts. Front-matter feature flags control map/chart/simulation loading. |
 | `assets/css/garden.scss`                                               | Active custom Sass entry point; imports `_sass/garden/` partials. Import order matters, with `folio-v2` last.          |
-| `_sass/garden/_tokens.scss`, `_shell.scss`, `_folio-v2.scss`           | Design tokens, shared shell, and current portfolio presentation.                                                       |
+| `_sass/garden/_tokens.scss`, `_shell.scss`, `_folio-v2.scss`           | Token import, shared shell, and current portfolio presentation.                                                        |
 | `_sass/garden/_content.scss`, `_cards.scss`, `_responsive.scss`        | Content, reusable cards, and responsive rules.                                                                         |
 | `_sass/garden/_simulation.scss`, `_simulation-v2.scss`                 | Simulation presentation.                                                                                               |
 | `assets/css/main.scss`, `_sass/_*.scss`                                | Base al-folio stylesheet and supporting theme styles; also loaded by the site.                                         |
@@ -62,6 +62,10 @@ Use explicit front-matter permalinks as the route authority. Preserve existing p
 | `_plugins/`                                                            | Ruby build extensions: cache busting, asset handling, citations, and external content.                                 |
 
 `_includes/project-interactive.liquid` owns the reusable project launch/embed frame. MetaHub project notes show a static preview and start the iframe only after an explicit load action, via `assets/js/metahub-embed.js`; the full-screen launch link remains available without JavaScript. Other projects retain their current embed behavior.
+
+`assets/css/garden-tokens.css` is the shared palette and font-token source, imported by `_sass/garden/_tokens.scss` and the lab theme. The four native labs offer a website identity review with `?theme=folio`; `assets/css/metahub-lab-theme.css` owns its surfaces, typography, controls and lab-specific responsive adjustments. `mountLabShell` enables the review class; `labCanvasColor` changes only the neutral scene backdrop. The ordinary app URLs retain their existing theme during review.
+
+Build and serve Jekyll, then run `node scripts/preview-metahub-layouts.mjs` (Edge by default; `METAHUB_QA_URL` and `METAHUB_QA_BROWSER_CHANNEL` override the environment). It writes desktop/phone captures and a comparison page to `output/metahub-layouts/`, including a static Machine Lab prototype because that viewer is external. Serve that directory separately for local review; `output/` is ignored and excluded from publication.
 
 Preserve keyboard access, focus visibility, reduced-motion behavior, responsive layout, and image attribution. For presentation changes, inspect the affected route at desktop and phone sizes as well as checking generated markup.
 

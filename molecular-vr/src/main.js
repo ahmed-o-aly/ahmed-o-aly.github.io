@@ -6,13 +6,14 @@ import { createVRPanel } from './vr-panel.js';
 import { createMotionComparison } from './motion.js';
 import './style.css';
 import '../../assets/css/metahub-app-shell.css';
-import { mountLabShell, visibleFrame } from '../../assets/js/metahub-app-shell.js';
+import '../../assets/css/metahub-lab-theme.css';
+import { mountLabShell, visibleFrame, labCanvasColor } from '../../assets/js/metahub-app-shell.js';
 mountLabShell({ host: document.querySelector('.topbar'), title: 'Protein Structures', notes: '/projects/protein-structures/', context: document.querySelector('.top-meta'), actions: [document.querySelector('#header-vr'), document.querySelector('#help-open')], workspace: document.querySelector('.workspace'), panelWidth: '314px' });
 
 const $ = (id) => document.getElementById(id);
 const container = $('viewport');
 const scene = new THREE.Scene();
-scene.background = new THREE.Color('#eaf0f5');
+scene.background = new THREE.Color(labCanvasColor('#eaf0f5'));
 const camera = new THREE.PerspectiveCamera(36, 1, 0.01, 100);
 camera.position.set(0, 0.1, 4.3);
 let renderer;

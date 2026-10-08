@@ -15,7 +15,7 @@ const gardenLayout = readFileSync(new URL("../_layouts/garden.liquid", import.me
 const bibTemplate = readFileSync(new URL("../_layouts/bib.liquid", import.meta.url), "utf8");
 const cvPageSource = readFileSync(new URL("../_pages/cv.md", import.meta.url), "utf8");
 const contentStyles = readFileSync(new URL("../_sass/garden/_content.scss", import.meta.url), "utf8");
-const tokenStyles = readFileSync(new URL("../_sass/garden/_tokens.scss", import.meta.url), "utf8");
+const tokenStyles = readFileSync(new URL("../assets/css/garden-tokens.css", import.meta.url), "utf8");
 const utilitySources = ["about.md", "publications.md", "repositories.md", "404.md"].map((file) =>
   readFileSync(new URL(`../_pages/${file}`, import.meta.url), "utf8")
 );
