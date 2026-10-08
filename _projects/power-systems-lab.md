@@ -14,12 +14,12 @@ interactive:
   embed_mobile: false
   title: ELEN424 interactive substation and transformer inspection
   heading: Inspect the equipment
-  description: Follow the substation equipment or open a three-phase transformer to inspect its concentric coils and magnetic core, then compare with the teaching references.
+  description: Follow the substation equipment or open a three-phase transformer to inspect its concentric coils and magnetic core.
   launch_label: Open Power Systems Lab full screen
   note: For VR, open the full-screen lab in Meta Quest Browser over HTTPS and select Enter VR.
 ---
 
-Inspect complete devices in the arrangement, then isolate them to see their construction. A six-step guide connects the visible equipment with Dr Tarek El Fouly’s ELEN424 notes and reference video. The circuit breaker includes its three enclosed tanks, angled bushings and common frame; the transformer includes its tank, cooling banks and insulated terminals.
+Inspect complete devices in the arrangement, then isolate them to see their construction. A six-step guide connects the visible equipment with Dr Tarek El Fouly’s ELEN424 notes. The circuit breaker includes its three enclosed tanks, angled bushings and common frame; the transformer includes its tank, cooling banks and insulated terminals.
 
 In VR, one grip moves and rotates the model, while two grips rotate and scale it. Left-stick movement and right-stick turning remain available while gripping. A compact panel appears on demand with equipment selection, the guide, source appearance, isolation and view controls. Use **Bring closer** for a device or **Room size** to walk around the arrangement. Physical Quest headset verification remains pending.
 

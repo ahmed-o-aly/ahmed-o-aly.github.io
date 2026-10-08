@@ -144,7 +144,6 @@ export async function loadTransformer() {
     groups,
     allGroups: groups,
     provenance,
-    video: "https://www.youtube.com/watch?v=Vz5x6ZtHdgY",
     tour: [
       {
         id: "tank",
