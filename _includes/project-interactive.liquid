@@ -1,0 +1,42 @@
+<section class="folio-case-interactive" aria-labelledby="project-interactive-title">
+  <div class="folio-case-interactive__intro">
+    <div>
+      {% if page.interactive.eyebrow %}
+        <p class="folio-kicker">{{ page.interactive.eyebrow }}</p>
+      {% endif %}
+      <h2 id="project-interactive-title">{{ page.interactive.heading | default: 'Use the project' }}</h2>
+      {% if page.interactive.description %}
+        <p>{{ page.interactive.description }}</p>
+      {% endif %}
+    </div>
+    <a class="folio-case-interactive__launch" href="{{ page.interactive.url | relative_url | escape }}">
+      {{ page.interactive.launch_label | default: 'Open full screen' }} &rarr;
+    </a>
+  </div>
+  {% if page.interactive.embed != false %}
+    <div class="folio-case-interactive__viewport{% if page.interactive.embed_mobile == false %} folio-case-interactive__viewport--desktop{% endif %}">
+      {% if page.metahub %}
+        {% assign lab = site.data.metahub | where: 'id', page.metahub | first %}
+        <div class="metahub-preview" data-metahub-preview>
+          <img src="{{ lab.image | relative_url }}" alt="" width="1200" height="750" loading="lazy">
+          <button type="button" data-metahub-load hidden aria-controls="metahub-embed">Load {{ page.title }} here</button>
+        </div>
+      {% endif %}
+      <iframe
+        {% if page.metahub %}
+          id="metahub-embed" data-metahub-src="{{ page.interactive.url | relative_url | escape }}" hidden
+        {% else %}
+          src="{{ page.interactive.url | relative_url | escape }}"
+        {% endif %}
+        title="{{ page.interactive.title | escape }}"
+        loading="lazy"
+        allow="fullscreen; xr-spatial-tracking"
+        allowfullscreen
+        referrerpolicy="strict-origin-when-cross-origin"
+      ></iframe>
+    </div>
+  {% endif %}
+  {% if page.interactive.note %}
+    <p class="folio-case-interactive__note">{{ page.interactive.note }}</p>
+  {% endif %}
+</section>

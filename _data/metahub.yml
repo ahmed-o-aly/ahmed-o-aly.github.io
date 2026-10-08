@@ -1,0 +1,55 @@
+- id: machine-lab
+  title: Machine Lab
+  subject: Engineering
+  description: Take apart eight workshop machines and inspect how their components fit together.
+  collection: Eight machine assemblies
+  project: /projects/cnc-machine-inspector/
+  launch: https://ahmed-o-aly.github.io/cnc-machine-inspector/
+  image: /assets/img/projects/selected-works/vmc855.webp
+  image_alt: VMC855 assembly with its enclosure, worktable and spindle visible.
+  controls: Orbit, isolate, explode, section and measure machine assemblies. Open the full viewer on a compatible headset for WebXR.
+  limits: An assembly viewer; it does not simulate machining or provide CAD-level measurement.
+- id: protein-structures
+  title: Protein Structures
+  subject: Biology
+  description: Explore a human proteasome, experimental density and six observed molecular states.
+  collection: Structure, density and state comparison
+  project: /projects/protein-structures/
+  launch: /protein-structures/
+  image: /assets/img/projects/metahub/protein-structures.webp
+  image_alt: Colored protein backbone inside experimental cryo-EM density in the molecular viewer.
+  controls: Orbit, isolate chains, adjust density and cutaway, or compare experimental snapshots. In VR, grip to move and scale the structure.
+  limits: Sampled density and Cα coordinates support structural overview. Optional interpolation is illustrative, not measured motion. Physical headset verification remains pending.
+- id: circuits-lab
+  title: Circuits Lab
+  subject: Engineering
+  description: Wire circuits, place probes and read instruments across four electrical experiments.
+  collection: Four Electrical Circuits I experiments
+  project: /projects/circuits-lab/
+  launch: /circuits-lab/
+  image: /assets/img/projects/metahub/circuits-lab.webp
+  image_alt: Circuit bench with power supply, resistance boxes, meter and connected patch leads.
+  controls: Choose an experiment, explore its connected circuit or build your own. Drag leads and probes, turn dials and inspect measurement graphs.
+  limits: Ideal circuit models; amplifier configurations are provisional pending the lab handout. Physical headset verification remains pending.
+- id: bloch-lab
+  title: Bloch Lab
+  subject: Physics
+  description: Prepare a qubit, predict measurement outcomes and explore phase and gate order.
+  collection: Guided lessons and free exploration
+  project: /projects/bloch-lab/
+  launch: /bloch-lab/
+  image: /assets/img/projects/metahub/bloch-lab.webp
+  image_alt: Bloch sphere with a prepared qubit arrow beside the guided experiment controls.
+  controls: Follow the guided preparation and measurement sequence, then explore gates and measurement axes. The same experiments are available in VR.
+  limits: An ideal pure-state teaching model. Animation timing is illustrative. Physical headset verification remains pending.
+- id: power-systems-lab
+  title: Power Systems Lab
+  subject: Engineering
+  description: Inspect a substation and a three-phase transformer, from complete devices to core and coils.
+  collection: Substation and transformer inspection
+  project: /projects/power-systems-lab/
+  launch: /power-systems-lab/
+  image: /assets/img/power-systems-lab.jpg
+  image_alt: Three-dimensional substation arrangement used for equipment inspection.
+  controls: Select equipment, follow the field guide, isolate devices or open the transformer enclosure. In VR, grip to move, rotate and scale the model.
+  limits: Some equipment roles remain provisional. Unspecified ratings and electrical connections are not inferred. Physical Quest verification remains pending.

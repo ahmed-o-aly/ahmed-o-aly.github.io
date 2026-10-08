@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { visibleFrame } from "../../assets/js/metahub-app-shell.js";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
 import { createDirectInteraction, createLocomotion, signedTwistAngle, nearestTerminal, probeGripPose } from "./interaction.js";
@@ -2101,79 +2102,81 @@ export function createBench({
   observer.observe(container);
   resize();
   update(current);
-  renderer.setAnimationLoop((now) => {
-    if (disposed) return;
-    onFrame(now);
-    if (disposed) return;
-    if (renderer.xr.isPresenting) {
-      if (needsRecenter) {
-        const frame = renderer.xr.getFrame(),
-          space = renderer.xr.getReferenceSpace();
-        const pose = frame && space ? frame.getViewerPose(space) : null;
-        if (pose) {
-          if (recenterRig(rig, pose, { floorReference, eyeHeight: 1.6 })) {
-            positionPanels(floorReference ? pose.transform.position.y : 1.6);
-            needsRecenter = false;
+  renderer.setAnimationLoop(
+    visibleFrame(renderer, (now) => {
+      if (disposed) return;
+      onFrame(now);
+      if (disposed) return;
+      if (renderer.xr.isPresenting) {
+        if (needsRecenter) {
+          const frame = renderer.xr.getFrame(),
+            space = renderer.xr.getReferenceSpace();
+          const pose = frame && space ? frame.getViewerPose(space) : null;
+          if (pose) {
+            if (recenterRig(rig, pose, { floorReference, eyeHeight: 1.6 })) {
+              positionPanels(floorReference ? pose.transform.position.y : 1.6);
+              needsRecenter = false;
+            }
           }
         }
-      }
-      const xrCamera = renderer.xr.getCamera();
-      const headPosition = xrCamera.getWorldPosition(new THREE.Vector3()),
-        headQuaternion = xrCamera.getWorldQuaternion(new THREE.Quaternion());
-      const left = controllers.find((input) => input.source?.handedness === "left")?.source?.gamepad;
-      const right = controllers.find((input) => input.source?.handedness === "right")?.source?.gamepad;
-      const axes = (gamepad) =>
-        gamepad?.axes?.length >= 4 ? [gamepad.axes[2], gamepad.axes[3]] : [gamepad?.axes?.[0] || 0, gamepad?.axes?.[1] || 0];
-      locomotion.update({
-        rig,
-        headPosition,
-        headQuaternion,
-        left: axes(left),
-        right: axes(right)[0],
-        dt: lastFrameTime ? (now - lastFrameTime) / 1000 : 0,
-        enabled: !suspended,
-      });
-      let activeHit = null,
-        activePoint = null;
-      for (const input of controllers) {
-        const gamepad = input.source?.gamepad;
-        if (!suspended && !input.armed && gamepad && !gamepad.buttons[0]?.pressed && !gamepad.buttons[1]?.pressed) {
-          input.armed = true;
-          direct.release(input.id);
+        const xrCamera = renderer.xr.getCamera();
+        const headPosition = xrCamera.getWorldPosition(new THREE.Vector3()),
+          headQuaternion = xrCamera.getWorldQuaternion(new THREE.Quaternion());
+        const left = controllers.find((input) => input.source?.handedness === "left")?.source?.gamepad;
+        const right = controllers.find((input) => input.source?.handedness === "right")?.source?.gamepad;
+        const axes = (gamepad) =>
+          gamepad?.axes?.length >= 4 ? [gamepad.axes[2], gamepad.axes[3]] : [gamepad?.axes?.[0] || 0, gamepad?.axes?.[1] || 0];
+        locomotion.update({
+          rig,
+          headPosition,
+          headQuaternion,
+          left: axes(left),
+          right: axes(right)[0],
+          dt: lastFrameTime ? (now - lastFrameTime) / 1000 : 0,
+          enabled: !suspended,
+        });
+        let activeHit = null,
+          activePoint = null;
+        for (const input of controllers) {
+          const gamepad = input.source?.gamepad;
+          if (!suspended && !input.armed && gamepad && !gamepad.buttons[0]?.pressed && !gamepad.buttons[1]?.pressed) {
+            input.armed = true;
+            direct.release(input.id);
+          }
+          const stickPressed = input.armed && !!gamepad?.buttons[3]?.pressed;
+          if (stickPressed && !input.stickPressed) recenterVR();
+          input.stickPressed = stickPressed;
+          controllerRay(input);
+          const hit = !suspended && input.controller.visible ? pick() : null;
+          input.ray.visible = !suspended;
+          input.ray.scale.z = hit ? hit.distance : 2;
+          const hold = direct.hold(input.id);
+          if (hold && !suspended) direct.move(input.id, controllerSample(input, hold));
+          const target =
+            hold && ["probe", "terminal", "plug"].includes(hold.target.kind) ? nearestTerminal(hold.position, terminalPositions(), 0.055) : null;
+          input.cursor.visible = !!hit || !!target;
+          if (target) {
+            input.cursor.position.copy(target.position);
+            input.cursor.material.color.set("#88c39e");
+          } else if (hit) {
+            input.cursor.position.copy(hit.point);
+            input.cursor.material.color.set("#d7c98b");
+          }
+          if (target) {
+            activeHit = { object: target.hit, direct: target.hit.userData.direct, point: target.position };
+            activePoint = target.position;
+          } else if (hit && !activeHit) {
+            activeHit = hit;
+            activePoint = hit.point;
+          }
         }
-        const stickPressed = input.armed && !!gamepad?.buttons[3]?.pressed;
-        if (stickPressed && !input.stickPressed) recenterVR();
-        input.stickPressed = stickPressed;
-        controllerRay(input);
-        const hit = !suspended && input.controller.visible ? pick() : null;
-        input.ray.visible = !suspended;
-        input.ray.scale.z = hit ? hit.distance : 2;
-        const hold = direct.hold(input.id);
-        if (hold && !suspended) direct.move(input.id, controllerSample(input, hold));
-        const target =
-          hold && ["probe", "terminal", "plug"].includes(hold.target.kind) ? nearestTerminal(hold.position, terminalPositions(), 0.055) : null;
-        input.cursor.visible = !!hit || !!target;
-        if (target) {
-          input.cursor.position.copy(target.position);
-          input.cursor.material.color.set("#88c39e");
-        } else if (hit) {
-          input.cursor.position.copy(hit.point);
-          input.cursor.material.color.set("#d7c98b");
-        }
-        if (target) {
-          activeHit = { object: target.hit, direct: target.hit.userData.direct, point: target.position };
-          activePoint = target.position;
-        } else if (hit && !activeHit) {
-          activeHit = hit;
-          activePoint = hit.point;
-        }
-      }
-      setHover(activeHit, activePoint);
-    } else controls.update();
-    lastFrameTime = now;
-    updateFlexibleLeads();
-    renderer.render(scene, camera);
-  });
+        setHover(activeHit, activePoint);
+      } else controls.update();
+      lastFrameTime = now;
+      updateFlexibleLeads();
+      renderer.render(scene, camera);
+    })
+  );
 
   function dispose() {
     suspendInput();

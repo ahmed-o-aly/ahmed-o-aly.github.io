@@ -1,0 +1,43 @@
+---
+layout: default
+---
+<article class="folio-page folio-metahub" data-metahub-catalogue>
+  <a class="folio-back-link" href="{{ '/projects/' | relative_url }}">&larr; Back to all works</a>
+  <header class="folio-page__header">
+    <p class="folio-kicker">3D &amp; VR laboratories</p>
+    <h1>{{ page.title }}</h1>
+    <div class="folio-prose">{{ content }}</div>
+  </header>
+  <form class="metahub-filters" role="search" aria-label="Find a MetaHub experience" hidden>
+    <div>
+      <label for="metahub-search">Search the collection</label>
+      <input id="metahub-search" type="search" placeholder="Machines, proteins, circuits…" autocomplete="off">
+    </div>
+    <div>
+      <label for="metahub-subject">Subject</label>
+      <select id="metahub-subject">
+        <option value="">All subjects</option>
+        {% assign subjects = site.data.metahub | map: 'subject' | uniq | sort %}
+        {% for subject in subjects %}
+          <option value="{{ subject | escape }}">{{ subject }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <button type="reset">Clear filters</button>
+  </form>
+  <div class="folio-section__heading metahub-heading">
+    <h2>The collection</h2>
+    <p data-metahub-count role="status" aria-live="polite">{{ site.data.metahub.size }} experiences &middot; browser &amp; VR</p>
+  </div>
+  <ul class="metahub-shelf" aria-label="MetaHub experiences">
+    {% for lab in site.data.metahub -%}
+      {%- include metahub-card.liquid lab=lab -%}
+    {%- endfor %}
+  </ul>
+  <p class="metahub-empty" data-metahub-empty hidden>No experiences match. Try another search or clear the filters.</p>
+  <dialog class="metahub-dialog" aria-labelledby="metahub-dialog-title">
+    <button type="button" data-metahub-close>Close &times;</button>
+    <div data-metahub-details></div>
+  </dialog>
+</article>
+<script defer src="{{ '/assets/js/metahub-catalogue.js' | relative_url | bust_file_cache }}"></script>

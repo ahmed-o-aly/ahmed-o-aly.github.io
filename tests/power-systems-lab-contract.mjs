@@ -43,5 +43,5 @@ assert.match(project, /One80 Solar/);
 assert.match(project, /creativecommons.org\/licenses\/by\/4.0/);
 assert.match(project, /Patrick Kayter/);
 assert.match(project, /href="\/power-systems-lab\/\?model=transformer"/);
-assert.match(readFileSync(resolve(root, "_site/projects/index.html"), "utf8"), /href="\/projects\/power-systems-lab\/"/);
+assert.match(readFileSync(resolve(root, "_site/projects/index.html"), "utf8"), /href="\/projects\/metahub\/"/);
 console.log("Power Systems Lab generated-site route, exact bundle, attribution and private-data exclusion passed");

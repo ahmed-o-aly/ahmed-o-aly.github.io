@@ -25,3 +25,14 @@ assets/apps/protein-structures/assets/* -whitespace
 
 # Three.js shader template strings retain their upstream trailing whitespace.
 assets/apps/power-systems-lab/assets/* -whitespace
+
+# Committed application bundles are copied verbatim by Jekyll. Never translate
+# their module, shader, worker, archive or data bytes during Git checkout.
+assets/apps/** -text -whitespace
+molecular-vr/public/data/** -text
+power-systems-lab/public/data/** -text
+circuits-lab/docs/module-designs.md text eol=lf
+molecular-vr/index.html text eol=lf
+circuits-lab/index.html text eol=lf
+bloch-lab/index.html text eol=lf
+power-systems-lab/index.html text eol=lf

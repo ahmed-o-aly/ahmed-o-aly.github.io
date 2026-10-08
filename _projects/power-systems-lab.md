@@ -1,5 +1,6 @@
 ---
 layout: page
+metahub: power-systems-lab
 title: Power Systems Lab
 permalink: /projects/power-systems-lab/
 description: Inspect a substation or three-phase transformer, identify components, and follow a guided field study in your browser or a VR headset.

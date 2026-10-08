@@ -41,7 +41,7 @@ description: Decision-support systems for labs, public policy, and complex opera
     <h2 id="works-title">Selected Works</h2>
     <a class="folio-ink-link" href="{{ '/projects/' | relative_url }}">all works &rarr;</a>
   </div>
-  {% assign selected_projects = site.projects | where_exp: 'project', 'project.work_number' | sort: 'work_number' %}
+  {% assign selected_projects = site.projects | where_exp: 'project', 'project.work_number and project.metahub == nil' | sort: 'work_number' %}
   <ol class="folio-work-index folio-work-index--home" role="list">
     {% for project in selected_projects limit: 2 %}{% include folio-work-feature.liquid project=project %}{% endfor %}
   </ol>

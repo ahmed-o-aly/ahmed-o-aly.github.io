@@ -4,7 +4,11 @@ layout: default
 {% if page.collection == 'projects' %}
   <article class="folio-page folio-case-page">
     <div class="folio-case-page__masthead">
-      <a class="folio-back-link" href="{{ '/projects/' | relative_url }}">&larr; Back to all works</a>
+      {% if page.metahub %}
+        <a class="folio-back-link" href="{{ '/projects/metahub/' | relative_url }}#{{ page.metahub }}">&larr; Back to MetaHub</a>
+      {% else %}
+        <a class="folio-back-link" href="{{ '/projects/' | relative_url }}">&larr; Back to all works</a>
+      {% endif %}
       <header class="folio-page__header folio-case-page__header">
         <p class="folio-kicker">{{ page.category | default: 'Project' }}</p>
         <h1>{{ page.title }}</h1>
@@ -14,37 +18,7 @@ layout: default
       </header>
     </div>
     {% if page.interactive %}
-      <section class="folio-case-interactive" aria-labelledby="project-interactive-title">
-        <div class="folio-case-interactive__intro">
-          <div>
-            {% if page.interactive.eyebrow %}
-              <p class="folio-kicker">{{ page.interactive.eyebrow }}</p>
-            {% endif %}
-            <h2 id="project-interactive-title">{{ page.interactive.heading | default: 'Use the project' }}</h2>
-            {% if page.interactive.description %}
-              <p>{{ page.interactive.description }}</p>
-            {% endif %}
-          </div>
-          <a class="folio-case-interactive__launch" href="{{ page.interactive.url | escape }}">
-            {{ page.interactive.launch_label | default: 'Open full screen' }} &rarr;
-          </a>
-        </div>
-        {% if page.interactive.embed != false %}
-          <div class="folio-case-interactive__viewport{% if page.interactive.embed_mobile == false %} folio-case-interactive__viewport--desktop{% endif %}">
-            <iframe
-              src="{{ page.interactive.url | escape }}"
-              title="{{ page.interactive.title | escape }}"
-              loading="lazy"
-              allow="fullscreen; xr-spatial-tracking"
-              allowfullscreen
-              referrerpolicy="strict-origin-when-cross-origin"
-            ></iframe>
-          </div>
-        {% endif %}
-        {% if page.interactive.note %}
-          <p class="folio-case-interactive__note">{{ page.interactive.note }}</p>
-        {% endif %}
-      </section>
+      {% include project-interactive.liquid %}
     {% elsif page.role or page.methods or page.status %}
       <dl class="folio-case-meta">
         <div>
@@ -61,6 +35,7 @@ layout: default
         </div>
       </dl>
     {% endif %}
+    {% if page.metahub %}<script defer src="{{ '/assets/js/metahub-embed.js' | relative_url | bust_file_cache }}"></script>{% endif %}
     {% if page.gallery %}
       <section class="folio-case-gallery" aria-labelledby="project-gallery-title">
         <h2 id="project-gallery-title">Inside the experience</h2>

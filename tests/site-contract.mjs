@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 
 const focusedContracts = [
   "./folio-contract.mjs",
+  "./metahub-contract.mjs",
   "./uae-economy-contract.mjs",
   "./bloch-lab-contract.mjs",
   "./power-systems-lab-contract.mjs",
@@ -21,19 +22,19 @@ const deployWorkflow = projectFile(".github/workflows/deploy.yml");
 const axeWorkflow = projectFile(".github/workflows/axe.yml");
 
 const formatTargets = [
-  "tests/{folio-contract,goodreads-sync,site-contract,uae-economy-contract,udes-contract,udes-v2-contract,udes-v2-engine,udes-v2-history,udes-v2-job-capacity,udes-v2-scenarios}.mjs",
+  "tests/{folio-contract,metahub-contract,metahub-browser,goodreads-sync,site-contract,uae-economy-contract,udes-contract,udes-v2-contract,udes-v2-engine,udes-v2-history,udes-v2-job-capacity,udes-v2-scenarios}.mjs",
   "tests/{udes-v2-mechanics,udes-v2-network,udes-v2-turns,udes-v2-road-flow,udes-v2-analysis,udes-v2-comparison,udes-v2-evidence,udes-v2-presentation-provenance}.mjs",
-  "assets/js/{garden,udes-v2-app,udes-v2-worker,udes-v2-road-flow,udes-v2-analysis}.js",
-  "assets/css/garden.scss",
+  "assets/js/{garden,metahub-app-shell,metahub-catalogue,metahub-embed,udes-v2-app,udes-v2-worker,udes-v2-road-flow,udes-v2-analysis}.js",
+  "assets/css/{garden.scss,metahub-app-shell.css}",
   "assets/data/cnc-machine-inspector/portfolio-evidence.json",
   "assets/data/udes-v2/README.md",
-  "_data/{currently_reading,read_books}.yml",
+  "_data/{currently_reading,read_books,metahub}.yml",
   "scripts/{build-project-previews,sync-goodreads,validate-udes-v2-full,validate-udes-v2-uncertainty,udes-v2-experiment-statistics,udes-v2-evidence-summary,udes-v2-source-provenance,refresh-udes-v2-presentation-provenance}.mjs",
-  "_sass/garden/{_cards,_content,_folio-v2,_shell,_simulation-v2,_tokens}.scss",
-  "_includes/{folio-work-card,folio-work-feature,garden-card,garden-footer,garden-media,garden-nav,garden-project-card,garden-related,head,metadata}.liquid",
-  "_layouts/{cv,garden,page,post}.liquid",
+  "_sass/garden/{_cards,_content,_metahub,_folio-v2,_shell,_simulation-v2,_tokens}.scss",
+  "_includes/{metahub-card,project-interactive,folio-work-card,folio-work-feature,garden-card,garden-footer,garden-media,garden-nav,garden-project-card,garden-related,head,metadata}.liquid",
+  "_layouts/{cv,garden,metahub,page,post}.liquid",
   "_pages/{about,blog,books,home,marginalia,projects}.md",
-  "_projects/{abu-dhabi-urban-dynamics,abu-dhabi-urban-dynamics-v2,cnc-machine-inspector,circuits-lab,dewa-energy-optimization,protein-structures,sila,territory-design-probvns,uae-economy-lab}.md",
+  "_projects/{abu-dhabi-urban-dynamics,abu-dhabi-urban-dynamics-v2,cnc-machine-inspector,circuits-lab,metahub,dewa-energy-optimization,protein-structures,sila,territory-design-probvns,uae-economy-lab}.md",
   "package.json",
   ".github/workflows/{axe,deploy}.yml",
   "scripts/lib/udes-v2-turn-restrictions.mjs",
@@ -93,6 +94,7 @@ assert.doesNotMatch(
 const expectedAxePaths = [
   "",
   "projects/",
+  "projects/metahub/",
   "projects/cnc-machine-inspector/",
   "projects/abu-dhabi-urban-dynamics/",
   "projects/abu-dhabi-urban-dynamics-v2/",

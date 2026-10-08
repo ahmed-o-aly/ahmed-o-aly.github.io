@@ -4,6 +4,8 @@ import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 import { loadSubstation } from "./substation.js";
 import { createXR } from "./xr.js";
 import "./style.css";
+import "../../assets/css/metahub-app-shell.css";
+import { mountLabShell, visibleFrame } from "../../assets/js/metahub-app-shell.js";
 
 const app = document.querySelector("#app");
 app.innerHTML = `<div class="shell">
@@ -16,6 +18,12 @@ app.innerHTML = `<div class="shell">
 </div>
 <dialog id="help-dialog" aria-labelledby="help-title"><button class="close-dialog" aria-label="Close help">×</button><p class="eyebrow">Controls</p><h2 id="help-title">Explore with your hands.</h2><p>On a computer, drag to orbit, scroll to zoom, and click a device. On a phone, use one finger to orbit and two fingers to zoom or pan. Choose a device to read its role, focus on it or isolate it.</p><p>In Meta Quest Browser, open this page over HTTPS and select <strong>Enter VR</strong>.</p><dl><dt>Left stick</dt><dd>Move in the direction you face.</dd><dt>Right stick</dt><dd>Turn smoothly.</dd><dt>Trigger</dt><dd>Select a device or a panel control.</dd><dt>One grip</dt><dd>Point at the model, then hold to move and rotate it.</dd><dt>Two grips</dt><dd>Rotate together; move your hands apart to scale. Navigation continues while gripping.</dd><dt>X / right stick click</dt><dd>Summon or dismiss the panel.</dd><dt>Y</dt><dd>Reset the view in front of you.</dd></dl><p>The panel stays where you placed it. Summon it again after moving. Use <strong>Bring closer</strong> for an isolated device, or <strong>Room size</strong> to walk around the arrangement.</p></dialog>
 <dialog id="source-dialog" aria-labelledby="source-title"><button class="close-dialog" aria-label="Close source details">×</button><p class="eyebrow">Materials & provenance</p><h2 id="source-title">A source model, carefully read.</h2><p id="source-description"></p><p>The learning guide follows Dr Tarek El Fouly’s ELEN424 Substation Equipment notes and supplied videos. Device labels are based on the visible geometry; candidates remain provisional.</p><p id="appearance-description">Representative steel, painted metal and ceramic finishes aid inspection. Select <strong>Source appearance</strong> to compare the original diffuse atlas and authored normals. The archive supplies UVs and a diffuse image but no material binding file, so their pairing is an inspection inference.</p><p id="model-limits">No voltage, winding connection, fault-interruption medium or operating sequence is assigned where the source does not establish one. Inspection scale is a view setting; the substation OBJ declares no physical units.</p><p class="source-stat" id="source-stat"></p><p><a href="https://www.youtube.com/watch?v=QC0t_9Z_9hg" target="_blank" rel="noopener noreferrer">Substation reference video ↗</a> · <a href="https://www.youtube.com/watch?v=Vz5x6ZtHdgY" target="_blank" rel="noopener noreferrer">Transformer reference video ↗</a></p><p class="source-stat">Physical Quest headset verification remains pending.</p></dialog>`;
+mountLabShell({
+  host: document.querySelector(".shell > header"),
+  title: "Power Systems Lab",
+  heading: document.querySelector(".brand h1"),
+  actions: [...document.querySelectorAll(".header-actions > button")],
+});
 const $ = (id) => document.getElementById(id),
   host = $("view");
 let renderer;
@@ -471,13 +479,15 @@ window.addEventListener("keydown", (event) => {
   if (event.key.toLowerCase() === "r" && !event.target.matches("input,select,textarea") && !document.querySelector("dialog[open]"))
     action("recenter");
 });
-renderer.setAnimationLoop((time, frame) => {
-  const dt = frameStart ? Math.min(0.05, (time - frameStart) / 1000) : 0;
-  frameStart = time;
-  if (xr.active) xr.update(dt, frame);
-  else controls.update();
-  renderer.render(scene, camera);
-});
+renderer.setAnimationLoop(
+  visibleFrame(renderer, (time, frame) => {
+    const dt = frameStart ? Math.min(0.05, (time - frameStart) / 1000) : 0;
+    frameStart = time;
+    if (xr.active) xr.update(dt, frame);
+    else controls.update();
+    renderer.render(scene, camera);
+  })
+);
 if (import.meta.env.DEV && new URLSearchParams(location.search).has("qa")) {
   window.__POWER_LAB_QA__ = {
     state: () => ({

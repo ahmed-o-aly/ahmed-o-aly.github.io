@@ -32,6 +32,7 @@ jobs:
         path:
           - ""
           - "projects/"
+          - "projects/metahub/"
           - "projects/cnc-machine-inspector/"
           - "projects/abu-dhabi-urban-dynamics/"
           - "projects/abu-dhabi-urban-dynamics-v2/"
