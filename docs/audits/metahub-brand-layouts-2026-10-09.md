@@ -24,3 +24,11 @@ Verification on 2026-10-09:
 - Changed curated files passed Prettier and `git diff --check`. The repository's existing formatting deviations and native-app source formatting were not broadly rewritten.
 
 Nothing was pushed or published during this review.
+
+## Approved styling adopted
+
+The user approved the layouts and allowed the Machine Lab rebuild to be left aside. The four native labs now enable the shared theme on their normal URLs, including project embeds; `?theme=folio` is no longer required. The comparison links open those normal URLs. Protein, Circuits and Bloch catalogue covers were refreshed from their real branded applications.
+
+Machine Lab's public repository was fetched and checked: it contains only the published HTML, bundles and model packages, with no original application source in its available history. Its bundle and public entry remain unchanged. The comparison continues to label its layout as a visual prototype.
+
+All four app bundles were rebuilt. The freshly built site contracts, default-route browser checks and the comparison generator's real-control checks passed. No app/model data changed, and nothing was pushed or published.

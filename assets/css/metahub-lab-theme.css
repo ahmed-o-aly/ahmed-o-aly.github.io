@@ -1,7 +1,7 @@
 @import "./garden-tokens.css";
 @import url("https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap");
 
-/* Review via ?theme=folio. Shared surfaces and controls; subject layouts remain usable. */
+/* Shared website identity for the native labs; subject layouts remain usable. */
 body.metahub-folio {
   --ink: var(--garden-ink);
   --muted: var(--garden-muted);

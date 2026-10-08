@@ -74,6 +74,16 @@ try {
   for (const id of ["protein-structures", "circuits-lab", "bloch-lab", "power-systems-lab"]) {
     await page.goto(`${base}/${id}/`);
     await page.locator(".metahub-app-bar").waitFor();
+    assert.equal(
+      await page.evaluate(() => getComputedStyle(document.body).color),
+      "rgb(55, 43, 31)",
+      `${id} uses website ink without a preview parameter`
+    );
+    assert.match(
+      await page.locator(".metahub-app-name").evaluate((element) => getComputedStyle(element).fontFamily),
+      /EB Garamond/,
+      `${id} uses website headings by default`
+    );
     assert.equal(await page.locator(".metahub-app-trail a").getAttribute("href"), "/projects/metahub/");
     assert.equal(await page.locator("canvas").count(), 1, `${id} retains one renderer`);
     await page.setViewportSize({ width: 390, height: 844 });

@@ -13,11 +13,8 @@ export function mountLabShell({
 }) {
   if (!host) throw new Error("A MetaHub shell needs a header host");
   document.body.dataset.metahubLab = title.toLowerCase().replaceAll(" ", "-");
-  // Opt-in review version; the published default stays available during design review.
-  if (new URLSearchParams(location.search).get("theme") === "folio") {
-    document.body.classList.add("metahub-folio");
-    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", labCanvasColor("#f6f0e3"));
-  }
+  document.body.classList.add("metahub-folio");
+  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", labCanvasColor("#f6f0e3"));
   if (workspace) {
     workspace.classList.add("metahub-viewer-layout");
     workspace.style.setProperty("--metahub-panel-width", panelWidth);

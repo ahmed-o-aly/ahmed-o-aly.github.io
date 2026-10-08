@@ -1,4 +1,4 @@
-// Local design review: captures real opt-in lab layouts, plus the external Machine Lab prototype.
+// Local design review: captures the real lab layouts, plus the external Machine Lab prototype.
 // Build Jekyll and serve _site first. Run: node scripts/preview-metahub-layouts.mjs
 import { chromium } from "../power-systems-lab/node_modules/playwright/index.mjs";
 import { mkdir, writeFile } from "node:fs/promises";
@@ -29,7 +29,7 @@ const labs = [
     note: "Equipment on the left, a field view in the centre and explanations on the right.",
   },
 ];
-const url = (lab) => (lab.prototype ? "./machine-lab.html" : `${base}/${lab.id}/?theme=folio`);
+const url = (lab) => (lab.prototype ? "./machine-lab.html" : `${base}/${lab.id}/`);
 const head = (title) =>
   `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title}</title><link rel="stylesheet" href="${base}/assets/css/metahub-app-shell.css"><link rel="stylesheet" href="${base}/assets/css/metahub-lab-theme.css">`;
 await mkdir(directory, { recursive: true });
@@ -125,7 +125,7 @@ await writeFile(
         } ↗</a></article>`
     )
     .join("")}</div>
-<p class="note">Four previews run the actual labs with <code>?theme=folio</code>. Machine Lab is a visual prototype using a real assembly capture; its controls are illustrative because the application lives in a separate repository. Model colours retain their scientific meaning. This review is local and has not been published.</p></main>
+<p class="note">Four previews run the actual labs with their default website styling. Machine Lab is a visual prototype using a real assembly capture; its controls are illustrative because the application lives in a separate repository. Model colours retain their scientific meaning. This review is local and has not been published.</p></main>
 <script>document.querySelectorAll('[data-size]').forEach(button=>button.addEventListener('click',()=>{const phone=button.dataset.size==='phone';document.querySelector('.gallery').classList.toggle('phone',phone);document.querySelectorAll('[data-size]').forEach(item=>item.setAttribute('aria-pressed',String(item===button)));document.querySelectorAll('[data-lab]').forEach(img=>{img.src='./'+img.dataset.lab+(phone?'-phone':'')+'.png';img.removeAttribute('width');img.removeAttribute('height');});}));</script></body></html>`
 );
 console.log(`Review ready: ${directory}/index.html`);
