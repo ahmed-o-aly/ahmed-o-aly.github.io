@@ -47,6 +47,20 @@ Budgets accrue calendar-day salary, rent, support, essentials and fixed vehicle 
 
 Positive residual resources after essentials contribute 25% to savings; deficits reduce savings in full. Stress categories refer to budget/commute rules, not measured happiness. Rents, wage updates and demographic replacement operate annually. Housing capacity is a soft resident-stock constraint, not a dwelling count; above-capacity occupancy remains visible.
 
+## Engine 2.3 correctness changes
+
+Engine 2.3 wraps the Mulberry32 state to uint32 on every draw. Seed normalization is unchanged, but the old stream lost integer precision after approximately 4.9 million draws; old long-run results are not interchangeable with 2.3 results. Experiment seed lists must have distinct normalized states.
+
+Monthly economics refreshes preserve firm events already due on the displayed boundary date. Grow wins an exact Grow/Lesser tie, and the daily statechart processes one transition per firm. Future Working hazards retain their existing monthly redraw rule; this correction does not replace that rule with a new continuous-time process. Applying an unchanged configuration leaves stochastic state untouched; toggling endogenous firm dynamics recomputes economics without advancing demand shocks.
+
+Active unemployed cohorts enter employment through the daily matcher, including residents in Recovery. Their search probability and successful-hire budget apply once per model day. Voluntary job switching remains a separate employed-cohort decision; event counters distinguish hires from switches by prior employment status.
+
+Configuration validates district policies before applying any, and reset configuration constructs a replacement engine before committing it. Seeds require reset. Numeric policy values, probabilities, fares, capacities and dates have explicit validation. Aliases normalize to canonical fields, with canonical fields taking precedence when both are supplied. Explicit zero shares, quality and housing rent are preserved. A supplied zero job capacity is rejected because current employer cohorts require positive job slots; absent capacity retains the documented unlimited-space fallback.
+
+Current city rent is weighted from current district prices. Settled household ledgers remain historical. Same-district car commute and acquisition decisions share the speed-adjusted travel-time quote; distance costs and the fixed vehicle-access commitment retain their original definitions.
+
+`npm run test:udes-v2-foundations` verifies these corrections, atomic rejection, RNG vectors and precision boundaries, calendar event order, labor caps, and batching/observation independence. These software corrections do not establish empirical predictive validity.
+
 ## Verification and uncertainty
 
 Run from the repository root with Node.js 20.9 or newer:

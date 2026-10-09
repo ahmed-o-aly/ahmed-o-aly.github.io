@@ -20,7 +20,7 @@
 (function attachUdesV2(globalScope) {
   "use strict";
 
-  const SCHEMA_VERSION = "2.2";
+  const SCHEMA_VERSION = "2.3";
   const DAY_MS = 86400000;
   const EPSILON = 1e-9;
   const MAP_FRAME_NONE = 255;
@@ -471,7 +471,11 @@
   }
 
   function normalizeConfigPatch(patch) {
-    const output = deepClone(patch || {});
+    if (!isPlainObject(patch)) throw new Error("Configuration must be an object");
+    for (const [key, value] of Object.entries(patch)) {
+      if (typeof value === "number" && !Number.isFinite(value)) throw new Error(`Invalid finite configuration value: ${key}`);
+    }
+    const output = deepClone(patch);
     const aliases = {
       transitFareAed: "ptFareOneWayAed",
       transitSpeedKmh: "ptAverageSpeedKmh",
@@ -482,6 +486,58 @@
     for (const [alias, canonical] of Object.entries(aliases)) {
       if (output[alias] !== undefined && output[canonical] === undefined) output[canonical] = output[alias];
     }
+    for (const alias of Object.keys(aliases)) delete output[alias];
+    for (const [key, value] of Object.entries(output)) {
+      const exemplar = DEFAULT_CONFIG[key];
+      if (typeof exemplar === "number" && (typeof value !== "number" || !Number.isFinite(value))) {
+        throw new Error(`Invalid numeric configuration: ${key}`);
+      }
+      if (typeof exemplar === "boolean" && typeof value !== "boolean") throw new Error(`Invalid boolean configuration: ${key}`);
+      if (
+        typeof exemplar === "number" &&
+        (/Probability|Rate$/.test(key) || key === "placeQuality" || key === "enterpriseDemandShockPersistence") &&
+        (value < 0 || value > 1)
+      ) {
+        throw new Error(`Configuration must be between zero and one: ${key}`);
+      }
+      if (
+        /^(housingCapacityMultiplier|businessCapacityMultiplier|assignmentPeakHours|costScaleAed|carOccupancy|walkSpeedKmh|ptAverageSpeedKmh|roadSpeedMultiplier|roadCapacityMultiplier|ptCapacityMultiplier|citizenWeight)$/.test(
+          key
+        ) &&
+        value <= 0
+      ) {
+        throw new Error(`Configuration must be positive: ${key}`);
+      }
+      if (
+        /^(citizenCount|enterpriseCount|maxDailyLaborMatches)$/.test(key) &&
+        (!Number.isInteger(value) || value < (key === "maxDailyLaborMatches" ? 0 : 1))
+      ) {
+        throw new Error(`Invalid count configuration: ${key}`);
+      }
+    }
+    for (const key of [
+      "ptFareOneWayAed",
+      "ptFarePerPassengerKmAed",
+      "ptFareMaximumOneWayAed",
+      "ptAverageWaitMin",
+      "carFuelAndRunningCostAedPerKm",
+      "carFixedDailyCostAed",
+      "rentPressureMultiplier",
+    ]) {
+      if (output[key] !== undefined && output[key] < 0) throw new Error(`Configuration must be nonnegative: ${key}`);
+    }
+    if (
+      output.startDate !== undefined &&
+      (typeof output.startDate !== "string" ||
+        !/^\d{4}-\d{2}-\d{2}$/.test(output.startDate) ||
+        !Number.isFinite(Date.parse(`${output.startDate}T00:00:00Z`)) ||
+        new Date(`${output.startDate}T00:00:00Z`).toISOString().slice(0, 10) !== output.startDate)
+    ) {
+      throw new Error("config.startDate must be a valid YYYY-MM-DD date");
+    }
+    if (output.zonePolicies !== undefined && !Array.isArray(output.zonePolicies)) throw new Error("zonePolicies must be an array");
+    if (output.employmentClosure !== undefined && !["endogenous", "fixed-target"].includes(output.employmentClosure))
+      throw new Error("Invalid employment closure");
     return output;
   }
 
@@ -534,7 +590,8 @@
     }
 
     next() {
-      let value = (this.state += 0x6d2b79f5);
+      this.state = (this.state + 0x6d2b79f5) >>> 0;
+      let value = this.state;
       value = Math.imul(value ^ (value >>> 15), value | 1);
       value ^= value + Math.imul(value ^ (value >>> 7), value | 61);
       return ((value ^ (value >>> 14)) >>> 0) / 4294967296;
@@ -658,6 +715,9 @@
         zonePolicies: deepClone(options.zonePolicies || []),
       };
       this.day = 0;
+      this.laborMatchDay = 0;
+      this.laborMatchesToday = 0;
+      this.laborSearchReviewedIds = new Set();
       this.monthCounter = 0;
       this.yearCounter = 0;
       this.startEpoch = Date.parse(`${this.config.startDate}T00:00:00Z`);
@@ -748,22 +808,43 @@
       delete normalizedPatch.zonePolicies;
       if (reset) {
         const resetZonePolicies = explicitZonePolicies || this.initialOptions.zonePolicies;
-        this.initialOptions.config = mergeConfig(this.initialOptions.config, normalizedPatch);
-        this.initialize({
+        const replacement = new UdesV2Engine({
           seed: normalizedPatch.seed ?? this.seed,
-          config: this.initialOptions.config,
+          config: mergeConfig(this.initialOptions.config, normalizedPatch),
           data: this.initialOptions.data,
           zonePolicies: resetZonePolicies,
         });
+        Object.assign(this, replacement);
         return this.snapshot();
       }
-      const structuralKeys = ["citizenCount", "enterpriseCount", "citizenWeight", "startDate", "salaryDistribution", "sectorDistribution"];
+      const structuralKeys = ["seed", "citizenCount", "enterpriseCount", "citizenWeight", "startDate", "salaryDistribution", "sectorDistribution"];
       if (structuralKeys.some((key) => Object.prototype.hasOwnProperty.call(normalizedPatch, key))) {
         throw new Error(`Structural configuration (${structuralKeys.join(", ")}) requires reset:true`);
       }
       const policyScopeZoneId = this.normalizePolicyScopeZoneId(
         Object.prototype.hasOwnProperty.call(normalizedPatch, "policyScopeZoneId") ? normalizedPatch.policyScopeZoneId : this.config.policyScopeZoneId
       );
+      if (explicitZonePolicies) this.validateExplicitZonePolicies(explicitZonePolicies);
+      const scopedZones = policyScopeZoneId ? [this.zoneById.get(policyScopeZoneId)] : this.zones;
+      const policyFields = {
+        housingCapacityMultiplier: "housingCapacityMultiplier",
+        businessCapacityMultiplier: "businessCapacityMultiplier",
+        placeQuality: "placeQualityPolicy",
+      };
+      const sameConfiguration = Object.entries(normalizedPatch).every(([key, value]) => JSON.stringify(value) === JSON.stringify(this.config[key]));
+      const sameLandUse = Object.entries(policyFields).every(
+        ([key, field]) => normalizedPatch[key] === undefined || scopedZones.every((zone) => zone[field] === normalizedPatch[key])
+      );
+      const sameExplicitPolicies =
+        !explicitZonePolicies ||
+        explicitZonePolicies.every((entry) => {
+          const zone = this.zoneById.get(String(entry.id ?? entry.zoneId));
+          return Object.entries(policyFields).every(([key, field]) => zone[field] === Number(entry[key]));
+        });
+      if (sameConfiguration && sameLandUse && sameExplicitPolicies) return this.snapshot();
+      const economicsChanged =
+        normalizedPatch.endogenousEnterpriseDynamics !== undefined &&
+        normalizedPatch.endogenousEnterpriseDynamics !== this.config.endogenousEnterpriseDynamics;
       normalizedPatch.policyScopeZoneId = policyScopeZoneId;
       this.config = mergeConfig(this.config, normalizedPatch);
       this.laborAccessMinutesCache.clear();
@@ -791,7 +872,7 @@
       }
       if (explicitZonePolicies) this.applyExplicitZonePolicies(explicitZonePolicies);
       this.initialOptions.zonePolicies = this.serializeZonePolicies();
-      if (normalizedPatch.endogenousEnterpriseDynamics !== undefined) this.updateEnterpriseEconomics(true);
+      if (economicsChanged) this.updateEnterpriseEconomics(true, false, this.clock, false);
       this.lastSnapshotCache = null;
       return this.snapshot();
     }
@@ -1121,20 +1202,30 @@
 
     createZones(zoneDefinitions) {
       if (!Array.isArray(zoneDefinitions) || zoneDefinitions.length < 2) throw new Error("At least two zones are required");
-      const populationBases = zoneDefinitions.map((zone) => Number(zone.populationShare ?? zone.population2024) || 1);
-      const firmBases = zoneDefinitions.map((zone) => Number(zone.firmShare ?? zone.jobs2024) || 1);
+      const populationBases = zoneDefinitions.map((zone) => Number(zone.populationShare ?? zone.population2024 ?? 1));
+      const firmBases = zoneDefinitions.map((zone) => Number(zone.firmShare ?? zone.jobs2024 ?? 1));
       const normalizedShares = populationBases.reduce((sum, value) => sum + value, 0);
       const normalizedFirmShares = firmBases.reduce((sum, value) => sum + value, 0);
+      if (
+        normalizedShares <= 0 ||
+        normalizedFirmShares <= 0 ||
+        [...populationBases, ...firmBases].some((value) => !Number.isFinite(value) || value < 0)
+      ) {
+        throw new Error("Zone shares must be finite nonnegative values with positive totals");
+      }
       return zoneDefinitions.map((source, index) => {
         const centroid = Array.isArray(source.centroid) ? source.centroid : [];
         const populationShare = populationBases[index] / normalizedShares;
         const firmShare = firmBases[index] / normalizedFirmShares;
-        const quality = clamp(Number(source.quality) || 0.7, 0, 1);
+        const quality = clamp(Number(source.quality ?? 0.7), 0, 1);
         const housingRentIndex = Number(source.housingRentIndex);
         const residentialRentAed = Math.max(
           0,
-          Number(source.residentialRentAed ?? source.housingRentAed) ||
-            (Number.isFinite(housingRentIndex) ? housingRentIndex * this.config.housingRentBaseAed : this.config.housingRentBaseAed)
+          Number(
+            source.residentialRentAed ??
+              source.housingRentAed ??
+              (Number.isFinite(housingRentIndex) ? housingRentIndex * this.config.housingRentBaseAed : this.config.housingRentBaseAed)
+          )
         );
         const suppliedCapacityPeople = Number(source.housingCapacityPersons);
         const suppliedCapacityAgents = Number(source.housingCapacityAgents);
@@ -1150,9 +1241,14 @@
           1,
           Math.round(Number(source.enterprisePlaceCapacity) || this.config.enterpriseCount * 1.35 * firmShare)
         );
-        const suppliedJobCapacityRepresented = Math.max(0, Number(source.jobCapacityPersons) || 0);
+        // Zero job capacity cannot host the current positive-size employer
+        // cohorts. Reject it explicitly instead of turning it into unlimited space.
+        if (source.jobCapacityPersons != null && (!Number.isFinite(Number(source.jobCapacityPersons)) || Number(source.jobCapacityPersons) <= 0)) {
+          throw new Error(`Job capacity must be positive when supplied: ${source.id}`);
+        }
+        const suppliedJobCapacityRepresented = Number(source.jobCapacityPersons ?? 0);
         const baseJobCapacityAgents =
-          suppliedJobCapacityRepresented > 0 ? Math.max(1, Math.ceil(suppliedJobCapacityRepresented / this.config.citizenWeight)) : Infinity;
+          source.jobCapacityPersons == null ? Infinity : Math.max(1, Math.ceil(Number(source.jobCapacityPersons) / this.config.citizenWeight));
         return {
           id: String(source.id),
           index,
@@ -1172,7 +1268,7 @@
           baseEnterprisePlaceCapacity,
           businessCapacityMultiplier: 1,
           enterprisePlaceCapacity: baseEnterprisePlaceCapacity,
-          baseJobCapacityRepresented: suppliedJobCapacityRepresented,
+          baseJobCapacityRepresented: Number(source.jobCapacityPersons ?? 0),
           baseJobCapacityAgents,
           requestedJobCapacityAgents: baseJobCapacityAgents,
           jobCapacityAgents: baseJobCapacityAgents,
@@ -1231,7 +1327,8 @@
       }));
     }
 
-    applyExplicitZonePolicies(entries) {
+    validateExplicitZonePolicies(entries) {
+      if (!Array.isArray(entries)) throw new Error("zonePolicies must be an array");
       const seen = new Set();
       for (const entry of entries) {
         if (!isPlainObject(entry)) throw new Error("Each zone policy must be an object");
@@ -1239,6 +1336,9 @@
         if (!zoneId || seen.has(zoneId)) throw new Error(`Invalid or duplicate zone policy: ${zoneId || "(missing id)"}`);
         const zone = this.zoneById.get(zoneId);
         if (!zone) throw new Error(`Unknown zone policy target: ${zoneId}`);
+        for (const key of ["housingCapacityMultiplier", "businessCapacityMultiplier", "placeQuality"]) {
+          if (typeof entry[key] !== "number") throw new Error(`Invalid numeric zone policy: ${key}`);
+        }
         const housingCapacityMultiplier = Number(entry.housingCapacityMultiplier);
         const businessCapacityMultiplier = Number(entry.businessCapacityMultiplier);
         const placeQuality = Number(entry.placeQuality);
@@ -1252,6 +1352,16 @@
           throw new Error(`Invalid place quality for ${zoneId}`);
         }
         seen.add(zoneId);
+      }
+    }
+
+    applyExplicitZonePolicies(entries) {
+      this.validateExplicitZonePolicies(entries);
+      for (const entry of entries) {
+        const zone = this.zoneById.get(String(entry.id ?? entry.zoneId));
+        const housingCapacityMultiplier = Number(entry.housingCapacityMultiplier);
+        const businessCapacityMultiplier = Number(entry.businessCapacityMultiplier);
+        const placeQuality = Number(entry.placeQuality);
         zone.housingCapacityMultiplier = housingCapacityMultiplier;
         zone.housingCapacityAgents = Math.max(1, Math.ceil(zone.baseHousingCapacityAgents * housingCapacityMultiplier));
         zone.businessCapacityMultiplier = businessCapacityMultiplier;
@@ -2000,7 +2110,7 @@
       this.nonParticipantIds.delete(citizen.id);
       this.refreshCitizenExpectedCommute(citizen);
       if (reason === "initial-hire") this.eventsTotal.initialEmploymentAssignments += 1;
-      else if (reason === "better-job") {
+      else if (formerEnterpriseId) {
         this.eventsTotal.jobChanges += 1;
         if (formerWorkZoneId && formerWorkZoneId !== enterprise.zoneId) this.eventsTotal.crossDistrictJobChanges += 1;
         this.recordDailyFlow("jobMoves", {
@@ -2354,6 +2464,10 @@
       );
     }
 
+    localCarRoundTripMinutes() {
+      return this.config.localCarCommuteMin / Math.max(0.1, this.config.roadSpeedMultiplier);
+    }
+
     sameZoneCommuteOptions(citizen) {
       if (!this.config.useCalibratedSameZoneModeChoice) {
         return [{ mode: "walk", probability: 1, minutes: this.config.localWalkCommuteMin, distanceKm: this.config.localWalkDistanceKm, cashAed: 0 }];
@@ -2368,12 +2482,11 @@
         {
           mode: "car",
           prior: carPrior,
-          minutes: this.config.localCarCommuteMin / Math.max(0.1, this.config.roadSpeedMultiplier),
+          minutes: this.localCarRoundTripMinutes(),
           distanceKm: carDistance,
           cashAed: carDistance * this.config.carFuelAndRunningCostAedPerKm + this.config.carFixedDailyCostAed,
           utilityChange:
-            this.config.carTimeCoefficient *
-              (this.config.localCarCommuteMin / Math.max(0.1, this.config.roadSpeedMultiplier) - this.config.localCarCommuteMin) +
+            this.config.carTimeCoefficient * (this.localCarRoundTripMinutes() - this.config.localCarCommuteMin) +
             this.config.modeCostCoefficient *
               ((carDistance * (this.config.carFuelAndRunningCostAedPerKm - 0.35) + this.config.carFixedDailyCostAed - 15) / this.config.costScaleAed),
         },
@@ -3066,7 +3179,7 @@
       let ptCashCostAed;
       let walkMinutes = Infinity;
       if (home.id === work.id) {
-        carMinutes = this.config.localCarCommuteMin;
+        carMinutes = this.localCarRoundTripMinutes();
         carDistanceKm = this.config.localCarDistanceKm;
         ptMinutes = this.localPtRoundTripMinutes();
         ptCashCostAed = this.ptRoundTripFareAed(Math.max(0, Number(this.config.localPtDistanceKm) || 0) / 2);
@@ -3160,7 +3273,9 @@
     searchBetterJob(citizen) {
       // Nonparticipants are deliberately outside active job search. They can
       // still make housing/quality decisions through the other state branches.
-      if (!citizen || citizen.laborForceParticipant === false) return false;
+      if (!citizen || citizen.laborForceParticipant === false || !citizen.enterpriseId) return false;
+      // Active unemployed cohorts search once through the shared daily labor
+      // matcher, which applies search probability and successful-hire capacity.
       const cooldownDays = Math.max(0, Number(this.config.voluntaryJobSwitchCooldownDays) || 0);
       if (this.day - Number(citizen.lastJobChangeDay ?? -Infinity) < cooldownDays) return false;
       const home = this.zoneById.get(citizen.homeZoneId);
@@ -3614,10 +3729,16 @@
       const employed = this.employedCitizenAgentCount();
       const gap = this.config.employmentClosure === "fixed-target" ? Math.max(0, targetEmployed - employed) : this.jobSeekerIds.size;
       if (!gap) return;
-      const unemployed = this.rng.shuffle([...this.jobSeekerIds]);
-      const limit = Math.min(gap, unemployed.length, this.config.maxDailyLaborMatches);
+      if (this.laborMatchDay !== this.day) {
+        this.laborMatchDay = this.day;
+        this.laborMatchesToday = 0;
+        this.laborSearchReviewedIds = new Set();
+      }
+      const unemployed = this.rng.shuffle([...this.jobSeekerIds].filter((id) => !this.laborSearchReviewedIds.has(id)));
+      const limit = Math.min(gap, unemployed.length, Math.max(0, this.config.maxDailyLaborMatches - this.laborMatchesToday));
       let matched = 0;
       for (let index = 0; index < unemployed.length && matched < limit; index += 1) {
+        this.laborSearchReviewedIds.add(unemployed[index]);
         if (
           this.config.employmentClosure !== "fixed-target" &&
           this.laborMatchingRng.next() >= clamp(Number(this.config.dailyJobSearchProbability) || 0, 0, 1)
@@ -3626,7 +3747,10 @@
         const citizen = this.citizenById.get(unemployed[index]);
         const enterprise = this.findHiringEnterprise(citizen.homeZoneId);
         if (!enterprise) break;
-        if (this.employ(citizen, enterprise, this.sampleSalary(enterprise, citizen.age), "hire")) matched += 1;
+        if (this.employ(citizen, enterprise, this.sampleSalary(enterprise, citizen.age), "hire")) {
+          matched += 1;
+          this.laborMatchesToday += 1;
+        }
       }
     }
 
@@ -3903,13 +4027,15 @@
       }
     }
 
-    updateEnterpriseEconomics(rescheduleWorkingHazards = false, recordCompletedMonth = false, accountingClock = this.clock) {
+    updateEnterpriseEconomics(rescheduleWorkingHazards = false, recordCompletedMonth = false, accountingClock = this.clock, advanceShocks = true) {
       this.computeZoneLaborAccessScores();
       const monthAngle = ((accountingClock.month - 1) / 12) * Math.PI * 2;
       for (const enterprise of this.enterprises) {
         const zone = this.zoneById.get(enterprise.zoneId);
-        const shockInnovation = (this.rng.next() * 2 - 1) * this.config.enterpriseDemandShockAmplitude;
-        enterprise.demandShock = enterprise.demandShock * this.config.enterpriseDemandShockPersistence + shockInnovation;
+        if (advanceShocks) {
+          const shockInnovation = (this.rng.next() * 2 - 1) * this.config.enterpriseDemandShockAmplitude;
+          enterprise.demandShock = enterprise.demandShock * this.config.enterpriseDemandShockPersistence + shockInnovation;
+        }
         const seasonal = Math.sin(monthAngle + (enterprise.index % 6) * (Math.PI / 3)) * 0.015;
         enterprise.demandIndex = round(clamp(enterprise.sectorDemandBase * (1 + enterprise.demandShock + seasonal), 0.72, 1.32), 4);
         const marketDemandSlots =
@@ -3983,7 +4109,9 @@
           enterprise.growHazardMultiplier = 1;
           enterprise.lesserHazardMultiplier = 1;
         }
-        if (rescheduleWorkingHazards && enterprise.state === "Working") this.scheduleEnterpriseWorkingHazards(enterprise);
+        if (rescheduleWorkingHazards && enterprise.state === "Working" && enterprise.nextGrowDay > this.day && enterprise.nextLesserDay > this.day) {
+          this.scheduleEnterpriseWorkingHazards(enterprise);
+        }
       }
     }
 
@@ -4286,7 +4414,7 @@
         cityFinancialStatus[financial.status] += weight;
         bankTotal += citizen.bankBalanceAed * weight;
         monthlyBankBalanceDeltaTotal += citizen.lastMonthlyBankBalanceDeltaAed * weight;
-        rentTotal += citizen.residentialRentAed * weight;
+        rentTotal += this.zoneById.get(citizen.homeZoneId).residentialRentAed * weight;
         accumulator.netIncome += financial.cashAfterHousingAndCommuteAed * weight;
         accumulator.grossSalary += financial.grossSalaryAed * weight;
         accumulator.nonLaborSupport += financial.nonLaborSupportAed * weight;

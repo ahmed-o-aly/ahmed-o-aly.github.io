@@ -28,6 +28,7 @@
     "test:bloch-lab": "npm --prefix bloch-lab test",
     "build:power-systems-lab": "npm --prefix power-systems-lab ci && npm --prefix power-systems-lab run build",
     "test:power-systems-lab": "npm --prefix power-systems-lab test",
+    "test:udes-v2-foundations": "node tests/udes-v2-foundations.mjs",
     "test:metahub-browser": "node tests/metahub-browser.mjs"
   },
   "devDependencies": {

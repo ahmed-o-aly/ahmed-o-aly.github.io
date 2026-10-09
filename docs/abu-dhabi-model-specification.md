@@ -1,6 +1,8 @@
 # Abu Dhabi Urban Dynamics: model specification
 
-Version reviewed: 11 September 2026. The executable specification is the committed baseline, the worker engine and the public scenario presets together. Validation reports record their SHA-256 hashes, so a result can be matched to its actual inputs.
+Version reviewed: 7 October 2026 (engine 2.3 correctness changes). The executable specification is the committed baseline, the worker engine and the public scenario presets together. Validation reports record their SHA-256 hashes, so a result can be matched to its actual inputs.
+
+Engine 2.3 correctness contracts and compatibility changes are documented in `assets/data/udes-v2/README.md` and exercised by `tests/udes-v2-foundations.mjs`. Old long-run evidence must be regenerated: RNG wrapping, boundary events and unemployed recovery matching intentionally change trajectories.
 
 ## Purpose and boundary
 
