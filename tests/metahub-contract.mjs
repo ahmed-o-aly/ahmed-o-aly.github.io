@@ -12,7 +12,9 @@ assert.match(catalogue, /role="search"/);
 assert.match(catalogue, /<dialog[^>]*aria-labelledby="metahub-dialog-title"/);
 const works = readRoute("/projects/");
 for (const [index, id] of ids.entries()) {
-  assert.match(catalogue, new RegExp(`data-metahub-open="${id}"`));
+  const cover = catalogue.match(new RegExp(`<a\\b[^>]*data-metahub-open="${id}"[^>]*>`))?.[0];
+  assert.ok(cover, `${id} has a catalogue link`);
+  assert.doesNotMatch(cover, /aria-label=/, "card links derive accessible names from their visible contents");
   const html = readRoute(`/projects/${projects[index]}/`);
   assert.match(html, /Back to MetaHub/);
   const frame = html.match(/<iframe\b[^>]*>/)?.[0];
