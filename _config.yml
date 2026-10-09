@@ -196,6 +196,7 @@ exclude:
   - README.md
   - tests/
   - tmp/
+  - output/
   - vendor
 keep_files:
   - CNAME

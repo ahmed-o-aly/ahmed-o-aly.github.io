@@ -38,7 +38,7 @@ for (let i = 0; i < 6; i++) {
   await page.locator(`[data-tour="${i}"]`).click();
   assert.equal((await state()).selected.id, ids[i]);
   assert.equal(await page.locator("#tour-prompt").isVisible(), true);
-  assert.match(await page.locator("#video-link").getAttribute("href"), /&t=\d+s$/);
+  assert.equal(await page.locator("#video-link").count(), 0);
 }
 await page.getByRole("button", { name: "Reset view", exact: true }).click();
 await page.getByRole("button", { name: "Source", exact: true }).click();

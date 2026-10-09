@@ -1,5 +1,6 @@
 ---
 layout: page
+metahub: machine-lab
 title: Machine Lab
 permalink: /projects/cnc-machine-inspector/
 description: A browser tool for exploring eight workshop machines and seeing how their components fit together.

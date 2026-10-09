@@ -5,11 +5,15 @@ import { setupVR } from './vr.js';
 import { createVRPanel } from './vr-panel.js';
 import { createMotionComparison } from './motion.js';
 import './style.css';
+import '../../assets/css/metahub-app-shell.css';
+import '../../assets/css/metahub-lab-theme.css';
+import { mountLabShell, visibleFrame, labCanvasColor } from '../../assets/js/metahub-app-shell.js';
+mountLabShell({ host: document.querySelector('.topbar'), title: 'Protein Structures', notes: '/projects/protein-structures/', context: document.querySelector('.top-meta'), actions: [document.querySelector('#header-vr'), document.querySelector('#help-open')], workspace: document.querySelector('.workspace'), panelWidth: '314px' });
 
 const $ = (id) => document.getElementById(id);
 const container = $('viewport');
 const scene = new THREE.Scene();
-scene.background = new THREE.Color('#eaf0f5');
+scene.background = new THREE.Color(labCanvasColor('#eaf0f5'));
 const camera = new THREE.PerspectiveCamera(36, 1, 0.01, 100);
 camera.position.set(0, 0.1, 4.3);
 let renderer;
@@ -416,7 +420,7 @@ renderer.domElement.addEventListener('pointerup', (event) => {
 });
 
 const clock = new THREE.Clock();
-renderer.setAnimationLoop(() => {
+renderer.setAnimationLoop(visibleFrame(renderer, () => {
   const delta = Math.min(clock.getDelta(), 0.05);
   if (vr?.active) vr.update(delta); else controls.update();
   motion?.update(delta, vr?.active ? camera : null);
@@ -435,7 +439,7 @@ renderer.setAnimationLoop(() => {
     $('render-stats').textContent = `${motion.active ? motion.chainCount : structure.chains.length} chains · ${fps} fps`;
     fpsTime = now; frameCounter = 0;
   }
-});
+}));
 
 async function init() {
   try {

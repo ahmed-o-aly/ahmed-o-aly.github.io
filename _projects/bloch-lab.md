@@ -1,5 +1,6 @@
 ---
 layout: page
+metahub: bloch-lab
 title: Bloch Lab
 permalink: /projects/bloch-lab/
 description: Prepare a qubit, rotate its state, and compare predicted probabilities with fresh measurements in a browser or VR headset.

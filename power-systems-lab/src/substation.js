@@ -24,41 +24,33 @@ export const SUBSTATION_TOUR = [
     id: "line",
     title: "01 · Follow the incoming line",
     prompt: "Trace the suspended conductors to their support structures. Which parts carry current, and which carry mechanical load?",
-    seconds: 18,
   },
   {
     id: "bus",
     title: "02 · Find the shared bus",
     prompt:
       "Follow the long conductors through their repeated support frames. A bus provides a common connection; this model does not establish a switching diagram.",
-    seconds: 82,
   },
   {
     id: "disconnect",
     title: "03 · Inspect an isolation candidate",
-    prompt:
-      "Compare the paired posts with the disconnect in the video. Look for a visible opening contact. That mechanism is not established in this mesh.",
-    seconds: 60,
+    prompt: "Inspect the paired posts for a visible opening contact. That mechanism is not established in this mesh.",
   },
   {
     id: "breaker",
     title: "04 · Distinguish the circuit breaker",
     prompt:
       "Find the three enclosed tanks, six angled bushings and operating box. A breaker interrupts current. Its medium and ratings are not supplied here.",
-    seconds: 131,
   },
   {
     id: "transformer",
     title: "05 · Trace the transformer exterior",
     prompt: "Locate the main tank, cooling banks and insulated terminals. Identify their roles before isolating the cooling banks or bushings.",
-    seconds: 208,
   },
   {
     id: "arrester",
     title: "06 · Compare surge protection",
-    prompt:
-      "Compare these ribbed columns with the arresters in the video. A verified connection to earth is needed to confirm this candidate’s role.",
-    seconds: 241,
+    prompt: "Inspect these ribbed columns and their connections. A verified connection to earth is needed to confirm this candidate’s role.",
   },
 ];
 
@@ -229,7 +221,6 @@ export async function loadSubstation() {
     allGroups: all,
     tour: SUBSTATION_TOUR,
     provenance,
-    video: "https://www.youtube.com/watch?v=QC0t_9Z_9hg",
     select,
     isolate,
     pick,

@@ -1,0 +1,35 @@
+{% assign lab = include.lab %}
+<li class="metahub-card" id="{{ lab.id }}" data-metahub-card data-subject="{{ lab.subject | escape }}">
+  <a
+    class="metahub-card__cover"
+    href="{{ lab.project | relative_url }}"
+    data-metahub-open="{{ lab.id }}"
+    aria-label="Explore {{ lab.title | escape }}"
+  >
+    <figure>
+      <img src="{{ lab.image | relative_url }}" alt="{{ lab.image_alt | escape }}" width="1200" height="750" loading="lazy" decoding="async">
+      <figcaption>
+        {{ lab.subject }}
+        <span>3D / VR</span>
+      </figcaption>
+    </figure>
+    <h3>{{ lab.title }}</h3>
+    <p>{{ lab.description }}</p>
+    <span class="metahub-card__open">Explore the lab &rarr;</span>
+  </a>
+  <template data-metahub-detail="{{ lab.id }}">
+    <img class="metahub-dialog__image" src="{{ lab.image | relative_url }}" alt="{{ lab.image_alt | escape }}" width="1200" height="750">
+    <p class="folio-kicker">{{ lab.subject }} &middot; Browser &amp; VR</p>
+    <h2 id="metahub-dialog-title">{{ lab.title }}</h2>
+    <p class="metahub-dialog__description">{{ lab.description }}</p>
+    <p class="metahub-dialog__collection">{{ lab.collection }}</p>
+    <h3>What you can do</h3>
+    <p>{{ lab.controls }}</p>
+    <div class="metahub-dialog__links">
+      <a class="metahub-launch" href="{{ lab.launch | relative_url }}">Open {{ lab.title }} &rarr;</a>
+      <a href="{{ lab.project | relative_url }}">Project notes &amp; sources &rarr;</a>
+    </div>
+    <p class="metahub-dialog__limits">{{ lab.limits }}</p>
+    <p class="metahub-dialog__headset">For VR, open the lab's HTTPS address in a compatible headset browser, then use its VR button.</p>
+  </template>
+</li>

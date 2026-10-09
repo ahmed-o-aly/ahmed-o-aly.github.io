@@ -18,3 +18,4 @@ circuits-lab/.env.local
 .superpowers/
 .worktrees/
 tmp/
+output/

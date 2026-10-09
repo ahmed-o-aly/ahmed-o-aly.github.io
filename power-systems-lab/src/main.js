@@ -4,6 +4,9 @@ import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 import { loadSubstation } from "./substation.js";
 import { createXR } from "./xr.js";
 import "./style.css";
+import "../../assets/css/metahub-app-shell.css";
+import "../../assets/css/metahub-lab-theme.css";
+import { mountLabShell, visibleFrame, labCanvasColor } from "../../assets/js/metahub-app-shell.js";
 
 const app = document.querySelector("#app");
 app.innerHTML = `<div class="shell">
@@ -11,11 +14,17 @@ app.innerHTML = `<div class="shell">
 <main class="workspace">
 <aside class="navigator" id="equipment" aria-label="Equipment navigator" tabindex="-1"><p class="eyebrow">ELEN424 · Field study</p><h2 class="model-name">Distribution<br>substation</h2><div id="model-picker" hidden></div><div class="nav-tabs" role="group" aria-label="Explore equipment or guided tour"><button class="active" data-tab="equipment" aria-pressed="true">Equipment</button><button data-tab="tour" aria-pressed="false">Guided tour</button></div><nav class="equipment-list" id="equipment-list" aria-label="Choose equipment"></nav><nav class="equipment-list tour-list" id="tour-list" aria-label="Guided chapters" hidden></nav></aside>
 <section class="view" id="view" aria-label="Interactive 3D equipment view"><div class="scene-label"><p class="eyebrow" id="view-label">The equipment yard</p><span class="hint">Drag to orbit · scroll to zoom<br>Click a device to inspect</span></div><div class="mobile-tools"><button id="toggle-equipment" aria-expanded="false" aria-controls="equipment">Explore</button><button id="toggle-details" aria-expanded="false" aria-controls="details">Details</button></div><div class="loading" id="loading" role="status"><p>Preparing the field study</p><span id="load-message">Loading the complete source model and equipment guide.</span><div class="spinner"></div></div><div class="view-controls" role="group" aria-label="View controls"><button id="reset">Reset view</button><button id="side">Side view</button><label class="sr-only" for="appearance">Appearance</label><select id="appearance"><option value="presentation">Material finishes</option><option value="source">Source appearance</option></select></div></section>
-<aside class="details" id="details" aria-label="Selected equipment"><p class="eyebrow" id="detail-eyebrow">Explore the arrangement</p><h2 id="detail-title">Equipment yard</h2><div class="confidence" id="confidence">Full source arrangement</div><p class="prompt" id="tour-prompt" hidden></p><p id="description"></p><p class="evidence"><span class="small-label">What the model establishes</span><span id="evidence"></span></p><div class="details-actions"><button id="focus">Focus device</button><button id="isolate" aria-pressed="false">Isolate device</button></div><a class="video-link" id="video-link" href="https://www.youtube.com/watch?v=QC0t_9Z_9hg" target="_blank" rel="noopener noreferrer">Compare with Tarek’s reference video ↗</a><div class="transformer-controls" id="transformer-controls" hidden><button id="open-enclosure" aria-pressed="false">Open enclosure</button><button id="core">Core and coils</button><label for="separation">Illustrative separation <output id="separation-value">0%</output></label><input id="separation" type="range" min="0" max="100" step="1" value="0"><p>Placement study; no verified maintenance sequence.</p></div></aside>
+<aside class="details" id="details" aria-label="Selected equipment"><p class="eyebrow" id="detail-eyebrow">Explore the arrangement</p><h2 id="detail-title">Equipment yard</h2><div class="confidence" id="confidence">Full source arrangement</div><p class="prompt" id="tour-prompt" hidden></p><p id="description"></p><p class="evidence"><span class="small-label">What the model establishes</span><span id="evidence"></span></p><div class="details-actions"><button id="focus">Focus device</button><button id="isolate" aria-pressed="false">Isolate device</button></div><div class="transformer-controls" id="transformer-controls" hidden><button id="open-enclosure" aria-pressed="false">Open enclosure</button><button id="core">Core and coils</button><label for="separation">Illustrative separation <output id="separation-value">0%</output></label><input id="separation" type="range" min="0" max="100" step="1" value="0"><p>Placement study; no verified maintenance sequence.</p></div></aside>
 </main><footer><span id="status" role="status" aria-live="polite">Preparing the model…</span><a class="credit-inline" href="https://sketchfab.com/3d-models/substation-8f4e54879b664104bece03d8e7236c15" target="_blank" rel="noopener noreferrer">Substation · One80 Solar · CC BY 4.0</a></footer>
 </div>
 <dialog id="help-dialog" aria-labelledby="help-title"><button class="close-dialog" aria-label="Close help">×</button><p class="eyebrow">Controls</p><h2 id="help-title">Explore with your hands.</h2><p>On a computer, drag to orbit, scroll to zoom, and click a device. On a phone, use one finger to orbit and two fingers to zoom or pan. Choose a device to read its role, focus on it or isolate it.</p><p>In Meta Quest Browser, open this page over HTTPS and select <strong>Enter VR</strong>.</p><dl><dt>Left stick</dt><dd>Move in the direction you face.</dd><dt>Right stick</dt><dd>Turn smoothly.</dd><dt>Trigger</dt><dd>Select a device or a panel control.</dd><dt>One grip</dt><dd>Point at the model, then hold to move and rotate it.</dd><dt>Two grips</dt><dd>Rotate together; move your hands apart to scale. Navigation continues while gripping.</dd><dt>X / right stick click</dt><dd>Summon or dismiss the panel.</dd><dt>Y</dt><dd>Reset the view in front of you.</dd></dl><p>The panel stays where you placed it. Summon it again after moving. Use <strong>Bring closer</strong> for an isolated device, or <strong>Room size</strong> to walk around the arrangement.</p></dialog>
-<dialog id="source-dialog" aria-labelledby="source-title"><button class="close-dialog" aria-label="Close source details">×</button><p class="eyebrow">Materials & provenance</p><h2 id="source-title">A source model, carefully read.</h2><p id="source-description"></p><p>The learning guide follows Dr Tarek El Fouly’s ELEN424 Substation Equipment notes and supplied videos. Device labels are based on the visible geometry; candidates remain provisional.</p><p id="appearance-description">Representative steel, painted metal and ceramic finishes aid inspection. Select <strong>Source appearance</strong> to compare the original diffuse atlas and authored normals. The archive supplies UVs and a diffuse image but no material binding file, so their pairing is an inspection inference.</p><p id="model-limits">No voltage, winding connection, fault-interruption medium or operating sequence is assigned where the source does not establish one. Inspection scale is a view setting; the substation OBJ declares no physical units.</p><p class="source-stat" id="source-stat"></p><p><a href="https://www.youtube.com/watch?v=QC0t_9Z_9hg" target="_blank" rel="noopener noreferrer">Substation reference video ↗</a> · <a href="https://www.youtube.com/watch?v=Vz5x6ZtHdgY" target="_blank" rel="noopener noreferrer">Transformer reference video ↗</a></p><p class="source-stat">Physical Quest headset verification remains pending.</p></dialog>`;
+<dialog id="source-dialog" aria-labelledby="source-title"><button class="close-dialog" aria-label="Close source details">×</button><p class="eyebrow">Materials & provenance</p><h2 id="source-title">A source model, carefully read.</h2><p id="source-description"></p><p>The learning guide follows Dr Tarek El Fouly’s ELEN424 Substation Equipment notes. Device labels are based on the visible geometry; candidates remain provisional.</p><p id="appearance-description">Representative steel, painted metal and ceramic finishes aid inspection. Select <strong>Source appearance</strong> to compare the original diffuse atlas and authored normals. The archive supplies UVs and a diffuse image but no material binding file, so their pairing is an inspection inference.</p><p id="model-limits">No voltage, winding connection, fault-interruption medium or operating sequence is assigned where the source does not establish one. Inspection scale is a view setting; the substation OBJ declares no physical units.</p><p class="source-stat" id="source-stat"></p><p class="source-stat">Physical Quest headset verification remains pending.</p></dialog>`;
+mountLabShell({
+  host: document.querySelector(".shell > header"),
+  title: "Power Systems Lab",
+  heading: document.querySelector(".brand h1"),
+  actions: [...document.querySelectorAll(".header-actions > button")],
+});
 const $ = (id) => document.getElementById(id),
   host = $("view");
 let renderer;
@@ -27,7 +36,7 @@ try {
   throw error;
 }
 renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
-renderer.setClearColor(0xe9e8e3);
+renderer.setClearColor(labCanvasColor(0xe9e8e3));
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 0.78;
 renderer.xr.enabled = true;
@@ -248,8 +257,6 @@ function sync() {
   $("isolate").textContent = model.isolated ? "Show context" : "Isolate device";
   $("isolate").setAttribute("aria-pressed", String(model.isolated));
   $("appearance").value = appearance;
-  const seconds = guided ? model.tour[tourIndex].seconds : group.video_seconds;
-  $("video-link").href = model.video + (seconds !== undefined ? `&t=${seconds}s` : "");
   $("open-enclosure").setAttribute("aria-pressed", String(Boolean(model.opened)));
   $("open-enclosure").textContent = model.opened ? "Close enclosure" : "Open enclosure";
   $("separation").value = String(Math.round((model.explosion || 0) * 100));
@@ -471,13 +478,15 @@ window.addEventListener("keydown", (event) => {
   if (event.key.toLowerCase() === "r" && !event.target.matches("input,select,textarea") && !document.querySelector("dialog[open]"))
     action("recenter");
 });
-renderer.setAnimationLoop((time, frame) => {
-  const dt = frameStart ? Math.min(0.05, (time - frameStart) / 1000) : 0;
-  frameStart = time;
-  if (xr.active) xr.update(dt, frame);
-  else controls.update();
-  renderer.render(scene, camera);
-});
+renderer.setAnimationLoop(
+  visibleFrame(renderer, (time, frame) => {
+    const dt = frameStart ? Math.min(0.05, (time - frameStart) / 1000) : 0;
+    frameStart = time;
+    if (xr.active) xr.update(dt, frame);
+    else controls.update();
+    renderer.render(scene, camera);
+  })
+);
 if (import.meta.env.DEV && new URLSearchParams(location.search).has("qa")) {
   window.__POWER_LAB_QA__ = {
     state: () => ({

@@ -1,0 +1,124 @@
+/* Scoped so each lab keeps its own workspace and subject controls. */
+.metahub-viewer-layout.metahub-viewer-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--metahub-panel-width, 314px);
+}
+.metahub-app-bar.metahub-app-bar {
+  box-sizing: border-box;
+  height: 76px;
+  min-height: 76px;
+  width: 100%;
+  padding: 10px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  color: #282b27;
+  background: #f7f4ed;
+  border-bottom: 1px solid #d6d1c5;
+  font:
+    13px/1.4 Arial,
+    Helvetica,
+    sans-serif;
+}
+.metahub-app-bar .metahub-app-trail,
+.metahub-app-bar .metahub-app-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 0;
+  min-width: 0;
+}
+.metahub-app-bar .metahub-app-trail {
+  flex-wrap: wrap;
+  gap: 4px 18px;
+}
+.metahub-app-bar .metahub-app-trail > a {
+  width: auto;
+  color: #88452f;
+  text-decoration: none;
+  white-space: nowrap;
+  font-size: 13px;
+}
+.metahub-app-bar .metahub-app-name {
+  font:
+    500 18px/1.2 Georgia,
+    serif;
+  letter-spacing: 0;
+  margin: 0;
+  color: #282b27;
+}
+.metahub-app-bar .metahub-app-actions > button,
+.metahub-app-bar .metahub-app-actions > a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  border: 1px solid #b8b2a7;
+  border-radius: 3px;
+  background: #f7f4ed;
+  color: #282b27;
+  padding: 8px 12px;
+  font:
+    12px/1.3 Arial,
+    Helvetica,
+    sans-serif;
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+  margin: 0;
+  width: auto;
+}
+.metahub-app-bar .metahub-app-actions > button:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+.metahub-app-bar .metahub-app-actions > button:hover:not(:disabled),
+.metahub-app-bar .metahub-app-actions > a:hover {
+  background: #eee9df;
+  color: #282b27;
+}
+.metahub-app-bar :focus-visible {
+  outline: 3px solid #88452f;
+  outline-offset: 3px;
+}
+.metahub-app-bar .metahub-app-context {
+  font:
+    11px/1.4 Arial,
+    Helvetica,
+    sans-serif;
+  margin: 0;
+}
+.metahub-app-bar [hidden] {
+  display: none !important;
+}
+@media (max-width: 700px) {
+  .metahub-viewer-layout.metahub-viewer-layout {
+    display: flex;
+    flex-direction: column;
+    height: auto;
+  }
+  .metahub-app-bar.metahub-app-bar {
+    height: auto;
+    min-height: 76px;
+    padding: 10px 12px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .metahub-app-bar .metahub-app-actions {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .metahub-app-bar .metahub-app-context {
+    display: none;
+  }
+  .metahub-app-bar .metahub-app-actions > .metahub-app-notes {
+    display: none;
+  }
+  .metahub-app-bar .metahub-app-actions > button,
+  .metahub-app-bar .metahub-app-actions > a {
+    font-size: 11px;
+    padding: 8px;
+  }
+}

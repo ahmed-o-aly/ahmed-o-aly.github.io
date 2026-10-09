@@ -20,6 +20,18 @@ import { bases, probability, sample, formatProbability } from "./learning.js";
 import { GuidedLesson } from "./lesson.js";
 import { blochCoordinates, formatState } from "./quantum-state.js";
 import "./style.css";
+import "../assets/css/metahub-app-shell.css";
+import "../assets/css/metahub-lab-theme.css";
+import { mountLabShell, visibleFrame, labCanvasColor } from "../assets/js/metahub-app-shell.js";
+mountLabShell({
+  host: document.querySelector("body > header"),
+  title: "Bloch Lab",
+  heading: document.querySelector("header h1"),
+  actions: [document.querySelector("#recenter"), document.querySelector("#vr")],
+  notes: "/projects/bloch-lab/",
+  workspace: document.querySelector("main"),
+  panelWidth: "350px",
+});
 const $ = (s) => document.querySelector(s),
   reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
 let v = [0, 0, 1],
@@ -50,7 +62,7 @@ try {
 if (renderer) {
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
   renderer.xr.enabled = true;
-  renderer.setClearColor(0xeef0f1);
+  renderer.setClearColor(labCanvasColor(0xeef0f1));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   const scene = new THREE.Scene(),
     camera = new THREE.PerspectiveCamera(42, 1, 0.05, 40),
@@ -2093,154 +2105,158 @@ if (renderer) {
   let width = 0,
     height = 0,
     lastSync = 0;
-  renderer.setAnimationLoop((now) => {
-    vrButtons.forEach((b) =>
-      b.material.color.setHex(
-        b.userData.current
-          ? 0x93b8d3
-          : b.userData.completed
-            ? 0xc3d8e8
-            : b.userData.disabled
-              ? 0xd2d5d7
-              : 0xe1e8ed
-      )
-    );
+  renderer.setAnimationLoop(
+    visibleFrame(renderer, (now) => {
+      vrButtons.forEach((b) =>
+        b.material.color.setHex(
+          b.userData.current
+            ? 0x93b8d3
+            : b.userData.completed
+              ? 0xc3d8e8
+              : b.userData.disabled
+                ? 0xd2d5d7
+                : 0xe1e8ed
+        )
+      );
 
-    if (!renderer.xr.isPresenting) {
-      const w = $("#scene").clientWidth,
-        h = $("#scene").clientHeight;
-      if (width !== w || height !== h) {
-        width = w;
-        height = h;
-        renderer.setSize(w, h, false);
-        camera.aspect = w / Math.max(h, 1);
-        camera.updateProjectionMatrix();
-        if (w < 760) shots.position.set(0, 0.6, -2);
-        else shots.position.set(0, 0.55, -2);
-      }
-      controls.update();
-    } else {
-      if (needsXRRecenter) {
-        renderer.xr.updateCamera(camera);
-        recenter();
-        needsXRRecenter = false;
-      }
-      updateVRInteraction(now);
-      for (const c of controllers) {
-        controllerRay(c);
-        const hit = raycaster.intersectObjects(
-          vrButtons.filter(buttonVisible)
-        )[0];
-        if (hit && !hit.object.userData.disabled)
-          hit.object.material.color.setHex(0xb4cde0);
-        if (c.userData.preparing) updateStateGrab(c);
-      }
-    }
-    if (transition && transition.pausedAt === undefined) {
-      const t = transition.duration
-          ? Math.max(
-              0,
-              Math.min(1, (now - transition.start) / transition.duration)
-            )
-          : 1,
-        eased = t * t * (3 - 2 * t);
-      setVector(
-        rotate(transition.from, transition.axis, transition.angle * eased)
-      );
-      const points = rotationPath(
-        transition.from,
-        transition.axis,
-        transition.angle,
-        eased
-      ).map((p) => worldVector(p).multiplyScalar(radius * 1.005));
-      trail.geometry.dispose();
-      trail.geometry = new THREE.BufferGeometry().setFromPoints(points);
-      trail.visible = true;
-      if (t === 1) {
-        const done = transition;
-        if (done.gate) {
-          history.push(done.gate);
-          retainGatePath(done);
-        } else trail.visible = false;
-        transition = null;
-        if (done.preparation) sequence.capture(v);
-        if (done.sequence) {
-          sequence.finish(v);
-          action =
-            sequence.status === "complete"
-              ? "Sequence complete"
-              : `Step ${sequence.cursor} complete`;
-          if (sequence.status === "running") startSequence(false);
-          else if (
-            sequence.status === "complete" &&
-            lesson.active &&
-            lesson.waiting
-          ) {
-            lesson.finish();
-            sync();
-          }
-        } else {
-          action = action.replace(" · rotating", " · complete");
-          if (done.gate) sequence.capture(v);
-          if (done.lesson) lesson.finish();
+      if (!renderer.xr.isPresenting) {
+        const w = $("#scene").clientWidth,
+          h = $("#scene").clientHeight;
+        if (width !== w || height !== h) {
+          width = w;
+          height = h;
+          renderer.setSize(w, h, false);
+          camera.aspect = w / Math.max(h, 1);
+          camera.updateProjectionMatrix();
+          if (w < 760) shots.position.set(0, 0.6, -2);
+          else shots.position.set(0, 0.55, -2);
         }
-        sync();
+        controls.update();
+      } else {
+        if (needsXRRecenter) {
+          renderer.xr.updateCamera(camera);
+          recenter();
+          needsXRRecenter = false;
+        }
+        updateVRInteraction(now);
+        for (const c of controllers) {
+          controllerRay(c);
+          const hit = raycaster.intersectObjects(
+            vrButtons.filter(buttonVisible)
+          )[0];
+          if (hit && !hit.object.userData.disabled)
+            hit.object.material.color.setHex(0xb4cde0);
+          if (c.userData.preparing) updateStateGrab(c);
+        }
       }
-    }
-    if (trial) {
-      const total = reduced
-        ? 100
-        : Math.floor(100 * progress(now, trial.start, 3000));
-      for (let i = trial.shown; i < total; i++) {
-        const result = trial.outcomes[i];
-        counts[result]++;
-        dots[i].material = dotMaterials[result];
-        dots[i].visible = true;
-        measurementArrow.visible = true;
-        measurementArrow.setDirection(
-          worldVector(bases[trial.basis]).multiplyScalar(result === 0 ? 1 : -1)
+      if (transition && transition.pausedAt === undefined) {
+        const t = transition.duration
+            ? Math.max(
+                0,
+                Math.min(1, (now - transition.start) / transition.duration)
+              )
+            : 1,
+          eased = t * t * (3 - 2 * t);
+        setVector(
+          rotate(transition.from, transition.axis, transition.angle * eased)
         );
-      }
-      trial.shown = total;
-      const samePreparation =
-        lesson.active &&
-        lesson.prepared?.basis === basis &&
-        lesson.prepared.vector.every((x, i) => Math.abs(x - v[i]) < 1e-7);
-      const prior = samePreparation ? lesson.totals : [0, 0],
-        allZero = prior[0] + counts[0],
-        allTotal = prior[0] + prior[1] + total;
-      const fraction = allTotal ? allZero / allTotal : 0;
-      observedFill.scale.x = 0.72 * fraction;
-      observedFill.position.x = -0.36 + 0.36 * fraction;
-      observedCaption.userData.set(
-        `Observed: ${allZero}/${allTotal} = ${formatProbability(fraction)} ` +
-          (basis === "Z" ? "zeros" : "+")
-      );
-      if (total === 100) {
-        const record = {
-          vector: [...trial.prepared],
-          basis: trial.basis,
-          p: probability(trial.prepared, trial.basis),
-          counts: [...counts],
-          input: [...trial.input],
-          program: [...trial.program],
-        };
-        if (lesson.active) {
-          lesson.record(record.vector, record.basis, record.counts);
-          lesson.finish();
+        const points = rotationPath(
+          transition.from,
+          transition.axis,
+          transition.angle,
+          eased
+        ).map((p) => worldVector(p).multiplyScalar(radius * 1.005));
+        trail.geometry.dispose();
+        trail.geometry = new THREE.BufferGeometry().setFromPoints(points);
+        trail.visible = true;
+        if (t === 1) {
+          const done = transition;
+          if (done.gate) {
+            history.push(done.gate);
+            retainGatePath(done);
+          } else trail.visible = false;
+          transition = null;
+          if (done.preparation) sequence.capture(v);
+          if (done.sequence) {
+            sequence.finish(v);
+            action =
+              sequence.status === "complete"
+                ? "Sequence complete"
+                : `Step ${sequence.cursor} complete`;
+            if (sequence.status === "running") startSequence(false);
+            else if (
+              sequence.status === "complete" &&
+              lesson.active &&
+              lesson.waiting
+            ) {
+              lesson.finish();
+              sync();
+            }
+          } else {
+            action = action.replace(" · rotating", " · complete");
+            if (done.gate) sequence.capture(v);
+            if (done.lesson) lesson.finish();
+          }
+          sync();
         }
-        trial = null;
-        measurementArrow.visible = false;
-        action = "100 fresh qubits measured in " + record.basis;
-        sync();
       }
-    }
-    if (now - lastSync > 100 && (transition || trial)) {
-      sync();
-      lastSync = now;
-    }
-    renderer.render(scene, camera);
-  });
+      if (trial) {
+        const total = reduced
+          ? 100
+          : Math.floor(100 * progress(now, trial.start, 3000));
+        for (let i = trial.shown; i < total; i++) {
+          const result = trial.outcomes[i];
+          counts[result]++;
+          dots[i].material = dotMaterials[result];
+          dots[i].visible = true;
+          measurementArrow.visible = true;
+          measurementArrow.setDirection(
+            worldVector(bases[trial.basis]).multiplyScalar(
+              result === 0 ? 1 : -1
+            )
+          );
+        }
+        trial.shown = total;
+        const samePreparation =
+          lesson.active &&
+          lesson.prepared?.basis === basis &&
+          lesson.prepared.vector.every((x, i) => Math.abs(x - v[i]) < 1e-7);
+        const prior = samePreparation ? lesson.totals : [0, 0],
+          allZero = prior[0] + counts[0],
+          allTotal = prior[0] + prior[1] + total;
+        const fraction = allTotal ? allZero / allTotal : 0;
+        observedFill.scale.x = 0.72 * fraction;
+        observedFill.position.x = -0.36 + 0.36 * fraction;
+        observedCaption.userData.set(
+          `Observed: ${allZero}/${allTotal} = ${formatProbability(fraction)} ` +
+            (basis === "Z" ? "zeros" : "+")
+        );
+        if (total === 100) {
+          const record = {
+            vector: [...trial.prepared],
+            basis: trial.basis,
+            p: probability(trial.prepared, trial.basis),
+            counts: [...counts],
+            input: [...trial.input],
+            program: [...trial.program],
+          };
+          if (lesson.active) {
+            lesson.record(record.vector, record.basis, record.counts);
+            lesson.finish();
+          }
+          trial = null;
+          measurementArrow.visible = false;
+          action = "100 fresh qubits measured in " + record.basis;
+          sync();
+        }
+      }
+      if (now - lastSync > 100 && (transition || trial)) {
+        sync();
+        lastSync = now;
+      }
+      renderer.render(scene, camera);
+    })
+  );
   setVector(v);
   sync();
   window.__BLOCH_API__ = {

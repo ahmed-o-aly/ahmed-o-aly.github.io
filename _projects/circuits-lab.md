@@ -1,5 +1,6 @@
 ---
 layout: page
+metahub: circuits-lab
 title: Circuits Lab
 permalink: /projects/circuits-lab/
 description: A browser and VR bench for wiring circuits, using instruments, and exploring four Electrical Circuits I experiments.

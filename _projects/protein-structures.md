@@ -1,5 +1,6 @@
 ---
 layout: page
+metahub: protein-structures
 title: Protein Structures
 permalink: /projects/protein-structures/
 description: A browser and VR viewer for inspecting protein structures, experimental density, and observed changes between molecular states.

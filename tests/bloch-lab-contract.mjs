@@ -16,5 +16,5 @@ assert.ok(!existsSync(resolve(app, "main.js")), "source is not exposed at the pu
 assert.ok(!existsSync(resolve(root, "_site/assets/apps/bloch-lab")), "no duplicate public bundle");
 const project = readFileSync(resolve(root, "_site/projects/bloch-lab/index.html"), "utf8");
 assert.match(project, /href="\/bloch-lab\/"/, "project launches the app on the same origin");
-assert.match(readFileSync(resolve(root, "_site/projects/index.html"), "utf8"), /href="\/projects\/bloch-lab\/"/);
+assert.match(readFileSync(resolve(root, "_site/projects/index.html"), "utf8"), /href="\/projects\/metahub\/"/);
 console.log("Bloch Lab generated-site route and byte-preservation contract passed");

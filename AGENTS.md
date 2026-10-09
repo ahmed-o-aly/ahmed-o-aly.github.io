@@ -35,6 +35,8 @@ Applications implemented here include Abu Dhabi Urban Dynamics v2, UAE Economy L
 | Shared editorial data      | `_data/work_threads.yml`, `reading_threads.yml`, `home_garden.yml`, `socials.yml`, `venues.yml`, and `coauthors.yml`; follow template references before changing a schema.                                                                                                                  |
 | Old route compatibility    | `_pages/*-redirect.md`; retain redirects when revising project names or permalinks.                                                                                                                                                                                                         |
 
+MetaHub is the single Works/homepage entry for the five 3D/VR labs at `/projects/metahub/`. `_projects/metahub.md` supplies its introduction and feature; `_data/metahub.yml` supplies the catalogue records, `_layouts/metahub.liquid` and `_includes/metahub-card.liquid` render the shelf and details, and `assets/js/metahub-catalogue.js` handles search, subjects and shareable lab hashes. Add `metahub: <catalogue-id>` to a lab's project front matter to group it; keep its existing project and application routes. Works filters these members and numbers the remaining entries consecutively.
+
 Use explicit front-matter permalinks as the route authority. Preserve existing public links and use Liquid's `relative_url` filter for local assets and links.
 
 ## Templates, appearance, and browser behavior
@@ -49,7 +51,7 @@ Use explicit front-matter permalinks as the route authority. Preserve existing p
 | `_includes/garden-*.liquid`, `project-visual.liquid`                   | Reusable content, media, related items, and legacy garden cards.                                                       |
 | `_includes/head.liquid`, `metadata.liquid`, `scripts.liquid`           | Styles, SEO/social metadata, and conditional scripts. Front-matter feature flags control map/chart/simulation loading. |
 | `assets/css/garden.scss`                                               | Active custom Sass entry point; imports `_sass/garden/` partials. Import order matters, with `folio-v2` last.          |
-| `_sass/garden/_tokens.scss`, `_shell.scss`, `_folio-v2.scss`           | Design tokens, shared shell, and current portfolio presentation.                                                       |
+| `_sass/garden/_tokens.scss`, `_shell.scss`, `_folio-v2.scss`           | Token import, shared shell, and current portfolio presentation.                                                        |
 | `_sass/garden/_content.scss`, `_cards.scss`, `_responsive.scss`        | Content, reusable cards, and responsive rules.                                                                         |
 | `_sass/garden/_simulation.scss`, `_simulation-v2.scss`                 | Simulation presentation.                                                                                               |
 | `assets/css/main.scss`, `_sass/_*.scss`                                | Base al-folio stylesheet and supporting theme styles; also loaded by the site.                                         |
@@ -58,6 +60,12 @@ Use explicit front-matter permalinks as the route authority. Preserve existing p
 | `_scripts/`                                                            | Jekyll-included templated JavaScript, such as search and analytics setup; distinct from Node utilities in `scripts/`.  |
 | `assets/img/`                                                          | Published images. Selected Works uses actual captures in `assets/img/projects/selected-works/`.                        |
 | `_plugins/`                                                            | Ruby build extensions: cache busting, asset handling, citations, and external content.                                 |
+
+`_includes/project-interactive.liquid` owns the reusable project launch/embed frame. MetaHub project notes show a static preview and start the iframe only after an explicit load action, via `assets/js/metahub-embed.js`; the full-screen launch link remains available without JavaScript. Other projects retain their current embed behavior.
+
+`assets/css/garden-tokens.css` is the shared palette and font-token source, imported by `_sass/garden/_tokens.scss` and the lab theme. The four native labs use this website identity by default; `assets/css/metahub-lab-theme.css` owns its surfaces, typography, controls and lab-specific responsive adjustments. `mountLabShell` enables the common theme class; `labCanvasColor` changes only the neutral scene backdrop. Older `?theme=folio` preview links remain compatible; no parameter is required.
+
+Build and serve Jekyll, then run `node scripts/preview-metahub-layouts.mjs` (Edge by default; `METAHUB_QA_URL` and `METAHUB_QA_BROWSER_CHANNEL` override the environment). It writes desktop/phone captures and a comparison page to `output/metahub-layouts/`, including a static Machine Lab prototype because that viewer is external. Serve that directory separately for local review; `output/` is ignored and excluded from publication.
 
 Preserve keyboard access, focus visibility, reduced-motion behavior, responsive layout, and image attribution. For presentation changes, inspect the affected route at desktop and phone sizes as well as checking generated markup.
 
@@ -74,6 +82,14 @@ These apps have their own `package.json`, lockfile, Vite configuration, dependen
 | Circuits Lab       | `circuits-lab/`; Three.js/WebXR circuit equipment and experiments           | `assets/apps/circuits-lab/` publishes at `/circuits-lab/`; `_projects/circuits-lab.md` is the write-up.                   |
 
 Rebuild and commit the corresponding bundle whenever app source or prepared data changes. Do not edit compiled bundles directly. `_config.yml` excludes app source and bundle directories from normal Jekyll rendering. `_plugins/uae-economy-bundle.rb`, `_plugins/protein-structures-bundle.rb`, `_plugins/circuits-lab-bundle.rb`, `_plugins/bloch-lab-bundle.rb`, and `_plugins/power-systems-lab-bundle.rb` copy committed bundles to their public routes after Jekyll's minifiers finish. Deployment consumes committed bundles; it does not rebuild these applications. Preserve compiled module, worker, and data bytes.
+
+### Shared MetaHub interface
+
+`assets/js/metahub-app-shell.js` and `assets/css/metahub-app-shell.css` are imported into Protein Structures, Circuits Lab, Bloch Lab and Power Systems Lab. `mountLabShell` supplies the common catalogue navigation, title, action slots and fullscreen control; optional workspace/panel-width slots provide the shared two-column viewer layout. Pass existing lab buttons and heading nodes into the shell to retain their event bindings and accessible names. Labs keep their domain controls, scientific state and immersive panels. `visibleFrame` skips hidden desktop frame work while preserving immersive callbacks and each lab's XR visibility handling.
+
+Machine Lab is catalogued and uses the same deferred project embed, but its native viewer source remains in the separate repository. Its interface has not been migrated here. Future native viewers should import the shared shell rather than copy its markup/styles. Rebuild all consuming bundles after changing the shared files. `.gitattributes` preserves compiled and prepared-data bytes across Windows/Linux checkouts.
+
+Run `npm run test:metahub-browser` against a freshly built site served at `http://127.0.0.1:4001/` (or set `METAHUB_QA_URL`). It uses the locked Playwright dependency in `power-systems-lab`; install that app's dependencies and a Playwright browser first. On Windows, `METAHUB_QA_BROWSER_CHANNEL=msedge` uses installed Edge. The suite checks catalogue filters, dialogs, focus, launch links, no-JavaScript links, deferred loading and four responsive native shells, and saves captures under `tmp/metahub/`. `npm run test:site` includes the catalogue and shared visibility contracts. Physical headset verification is separate.
 
 ### UAE Economy Lab locations
 

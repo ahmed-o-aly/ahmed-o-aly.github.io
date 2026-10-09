@@ -28,7 +28,7 @@ const css = projectFile("_site/assets/css/garden.css");
 const folioCss = projectFile("_sass/garden/_folio-v2.scss");
 const shellCss = projectFile("_sass/garden/_shell.scss");
 const simulationCss = projectFile("_sass/garden/_simulation-v2.scss");
-const tokens = projectFile("_sass/garden/_tokens.scss");
+const tokens = projectFile("assets/css/garden-tokens.css");
 const script = projectFile("assets/js/garden.js");
 const urbanScript = projectFile("assets/js/udes-v2-app.js");
 const urbanBaseline = projectFile("assets/data/udes-v2/baseline.json");
@@ -138,10 +138,10 @@ const featuredProjects = [
     dimensions: [1585, 892],
   },
   {
-    title: "Machine Lab",
-    launch: "https://ahmed-o-aly.github.io/cnc-machine-inspector/?machine=vmc855",
-    launchLabel: "Open Machine Lab",
-    about: "/projects/cnc-machine-inspector/",
+    title: "MetaHub",
+    launch: "/projects/metahub/",
+    launchLabel: "Browse MetaHub",
+    about: "/projects/metahub/",
     preview: "/assets/img/projects/selected-works/vmc855.webp",
     dimensions: [1200, 900],
   },
@@ -397,8 +397,8 @@ const ventureNote = block(routes.works, "folio-venture-note");
 assertContains(ventureNote, /Current venture/, "Works distinguishes Sila from the numbered research and software work");
 assertContains(ventureNote, /href="\/projects\/sila\/"[\s\S]*?>[\s\S]*?Sila/, "Works links the current venture to its full write-up");
 const worksIndex = block(routes.works, "folio-work-index", "ol");
-assert.equal((worksIndex.match(/class="folio-work-entry"/g) || []).length, 9, "Works renders the nine selected projects");
-assert.equal((worksIndex.match(/class="folio-work-entry__description"/g) || []).length, 9, "each Works entry has one plain-language sentence");
+assert.equal((worksIndex.match(/class="folio-work-entry"/g) || []).length, 5, "Works groups the five immersive labs under MetaHub");
+assert.equal((worksIndex.match(/class="folio-work-entry__description"/g) || []).length, 5, "each Works entry has one plain-language sentence");
 assert.doesNotMatch(
   worksIndex,
   /<img\b|<picture\b|<figure\b|folio-work-plate|machine-lab-interface\.png|urban-dynamics-console\.png|folio-tags|>\s*(?:Role|Status|Methods)\s*</i,
@@ -406,14 +406,10 @@ assert.doesNotMatch(
 );
 for (const title of [
   "UAE Economy Lab",
-  "Machine Lab",
+  "MetaHub",
   "Abu Dhabi Urban Dynamics Lab",
   "Energy System Optimization with DEWA",
   "Probabilistic VNS for Delivery Territory Design",
-  "Protein Structures",
-  "Circuits Lab",
-  "Bloch Lab",
-  "Power Systems Lab",
 ]) {
   assertContains(worksIndex, new RegExp(title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i"), `Works includes ${title}`);
 }
@@ -422,13 +418,12 @@ for (const title of ["KU MetaHub AI/XR Lab", "ADSG Public Policy Simulations", "
 }
 assert.deepEqual(
   [...worksIndex.matchAll(/class="folio-work-entry__number"[^>]*>(\d{2})<\/span>/g)].map((match) => match[1]),
-  ["01", "02", "03", "04", "05", "06", "07", "08", "09"],
-  "Works numbers the nine selected projects consecutively"
+  ["01", "02", "03", "04", "05"],
+  "Works numbers the five selected entries consecutively"
 );
 assert.doesNotMatch(worksIndex, /href="\/projects\/sila\/"/, "Sila stays outside the numbered sequence");
 assertContains(worksIndex, /href="\/projects\/uae-economy-lab\/"/, "Works opens the UAE Economy Lab write-up");
-assertContains(worksIndex, /href="\/projects\/protein-structures\/"/, "Works opens the Protein Structures write-up");
-assertContains(worksIndex, /href="\/projects\/circuits-lab\/"/, "Works opens the Circuits Lab write-up");
+assertContains(worksIndex, /href="\/projects\/metahub\/"/, "Works opens the MetaHub catalogue");
 assertContains(routes.works, /href="\/projects\/abu-dhabi-urban-dynamics\/"/, "Works opens the Urban Dynamics write-up");
 assert.doesNotMatch(routes.works, /href="\/projects\/abu-dhabi-urban-dynamics-v2\/"/, "Works does not drop readers directly into the console");
 assert.doesNotMatch(

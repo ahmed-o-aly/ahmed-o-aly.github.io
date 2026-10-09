@@ -5,7 +5,7 @@ permalink: /projects/
 description: Products and research software I have built, from field-sales systems to simulation, optimization, and protein visualization.
 ---
 
-{% assign sorted_projects = site.projects | where_exp: 'project', 'project.work_number' | sort: 'work_number' %}
+{% assign sorted_projects = site.projects | where_exp: 'project', 'project.work_number and project.metahub == nil' | sort: 'work_number' %}
 {% assign current_venture = site.projects | where: 'venture', true | first %}
 
 <article class="folio-page folio-works-page">
@@ -31,7 +31,7 @@ description: Products and research software I have built, from field-sales syste
 
   <ol class="folio-work-index folio-work-index--all" role="list">
     {% for project in sorted_projects %}
-      {% include folio-work-card.liquid project=project index=project.work_number heading_level=2 %}
+      {% include folio-work-card.liquid project=project index=forloop.index heading_level=2 %}
     {% endfor %}
   </ol>
 
