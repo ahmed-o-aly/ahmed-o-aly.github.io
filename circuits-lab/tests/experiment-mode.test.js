@@ -77,7 +77,7 @@ test("Build circuit preserves chosen settings and starts a separate empty bench 
 test("Clear circuit preserves component values and Undo restores patch leads and every probe", () => {
   const state = lab("opamp");
   action(state, "set:rf:30000");
-  action(state, "set:rail:9");
+  action(state, "set:rail:8");
   const before = structuredClone(context(state));
   const settings = structuredClone(parameters(state));
   action(state, "reset-circuit");

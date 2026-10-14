@@ -1,4 +1,4 @@
-# Circuits Lab v0.10
+# Circuits Lab v0.11
 
 Four Electrical Circuits I experiments share a desktop 3D bench and an immersive WebXR lab. Students wire circuits, use instruments, change values and inspect live traces. Readings and written answers stay on paper.
 
@@ -51,8 +51,10 @@ The amplifier uses ideal feedback gain and output limits 1 V inside each supply 
 
 RC uses 100 µF and RL uses 100 mH, with a 5 V source. Switching and resistance changes preserve capacitor voltage or inductor current. **New run** resets stored energy. Playback speed changes display speed, not the circuit time constant. Replay repeats the current switching segment.
 
-The email's four learning tasks are covered. The op-amp handout was not supplied; inverting and non-inverting circuits are the current examples. Exact handout circuits and component values still need confirmation.
+Lab 7 follows Nishar’s operational-amplifier design review: one dual supply (±8/±12/±15 V), four ordered control groups, a visible 741 pinout, inverting/non-inverting/adder/subtractor circuits, DC/sine/square/triangle signals, and guided wiring/probe steps. Open `/circuits-lab/?lab=7` directly. The second input appears only for the two-input circuits. The adder uses equal input resistors; the subtractor uses matched pairs. Their paired values are linked to keep the exercise manageable.
 
-User headset feedback has guided the layout changes. Version 0.10 removes the duplicate floating graph, adds circuit status and provides a complete Explore reset. Its revised panel readability and control reach still need confirmation on the intended device; the assistant has not operated a physical headset.
+Measured gain comes from sampled node/probe voltages, with signed DC ratios or AC peak-to-peak magnitude and phase. The interface separates DC mean, AC RMS, total RMS, peak and Vpp. Clipping, stale captures, missing probes and zero reference input suppress linear measured gain. The three physical supply terminals are +V, GND and −V; both rails share one common return. This is an ideal 741 teaching approximation, not a manufacturer-specific chip simulation. The 1 V headroom is educational. Lab 8 remains unchanged.
+
+User headset feedback has guided the layout changes. Version 0.11 simplifies Lab 7 and keeps the existing immersive controls. Its revised panel readability and control reach still need confirmation on the intended device; the assistant has not operated a physical headset.
 
 See [module designs](docs/module-designs.md), [experiment checks](docs/experiment-checklist.md) and [verification](docs/verification.md).

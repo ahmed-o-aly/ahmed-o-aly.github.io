@@ -174,7 +174,7 @@ test("scope status distinguishes missing signals, grounds and a misplaced ground
   setProbe(state, "ch2Ground", "signal+");
   assert.equal(circuitStatus(state).title, "CH2 ground misplaced");
   // Any contact electrically joined to GND is a valid ground clip location.
-  setProbe(state, "ch2Ground", "minus+");
+  setProbe(state, "ch2Ground", "plus-");
   assert.equal(circuitStatus(state).level, "ok");
 });
 

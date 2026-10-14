@@ -1,8 +1,12 @@
 import { MODULES, OPTIONS, circuitFor, correctTopology, netGroups } from "./modules.js";
 import { solveDC, opamp, transient } from "./physics.js";
+import { amplifierGuide } from "./amplifier-guide.js";
+import { measuredResponse, summarizeSamples } from "./amplifier-samples.js";
 
 export const fmt = (n, decimals = 3) =>
-  Number.isFinite(n) ? Number(n.toFixed(decimals)).toLocaleString("en-US", { maximumFractionDigits: decimals }) : "—";
+  Number.isFinite(n)
+    ? Number((Math.abs(n) < 0.5 * 10 ** -decimals ? 0 : n).toFixed(decimals)).toLocaleString("en-US", { maximumFractionDigits: decimals })
+    : "—";
 export const unit = (n, u) =>
   !Number.isFinite(n) ? "—" : `${fmt(Math.abs(n) < 1 && n !== 0 ? n * 1000 : n)} ${Math.abs(n) < 1 && n !== 0 ? "m" : ""}${u}`;
 export const same = (a, b, tolerance = 0.01) => Number.isFinite(a) && Math.abs(a - b) <= Math.max(Math.abs(b) * tolerance, 1e-8);
@@ -16,6 +20,7 @@ export function createLab() {
     probeSets: {},
     scopeSets: {},
     scopeHolds: {},
+    guideConfirmed: {},
     history: {},
     predictions: {},
     sumSubmissions: {},
@@ -42,7 +47,26 @@ export function context(s) {
   if (!s.wireSets[k]) s.wireSets[k] = s.mode === "explore" ? circuit.wires.map((w) => [...w]) : [];
   if (!s.probeSets[k]) s.probeSets[k] = s.mode === "explore" ? { red: circuit.positive, black: "gnd" } : { red: null, black: null };
   if (!s.scopeSets[k]) s.scopeSets[k] = defaultScope(s);
-  return { circuit, wires: s.wireSets[k], probes: s.probeSets[k], scope: s.scopeSets[k], correct: correctTopology(circuit, s.wireSets[k]) };
+  const p = parameters(s);
+  const guideSignature = JSON.stringify([
+    p.configuration,
+    p.rin,
+    p.rf,
+    p.rail,
+    p.waveform,
+    p.amplitude,
+    p.amplitude2,
+    p.waveform === "dc" ? null : p.frequency,
+  ]);
+  return {
+    circuit,
+    wires: s.wireSets[k],
+    probes: s.probeSets[k],
+    scope: s.scopeSets[k],
+    correct: correctTopology(circuit, s.wireSets[k]),
+    guideSignature,
+    settingsConfirmed: s.guideConfirmed?.[k] === guideSignature,
+  };
 }
 
 const clone = (value) => structuredClone(value);
@@ -55,7 +79,12 @@ function defaultScope(s) {
 }
 // Gesture bookkeeping is outside serializable lab state; concurrent hands share one undo snapshot.
 const manipulationGroups = new WeakMap();
-const wiringSnapshot = (c) => ({ wires: clone(c.wires), probes: clone(c.probes), scope: clone(c.scope) });
+const wiringSnapshot = (c, s) => ({
+  wires: clone(c.wires),
+  probes: clone(c.probes),
+  scope: clone(c.scope),
+  ...(s.module === "opamp" ? { params: clone(parameters(s)) } : {}),
+});
 function pushHistory(s, k, snapshot) {
   (s.history[k] ||= []).push(snapshot);
   if (s.history[k].length > 80) s.history[k].splice(0, s.history[k].length - 80);
@@ -72,7 +101,7 @@ export function beginManipulation(s, token) {
     k = key(s);
   let group = groups.get(k);
   if (!group) {
-    group = { tokens: new Set(), snapshot: wiringSnapshot(c) };
+    group = { tokens: new Set(), snapshot: wiringSnapshot(c, s) };
     groups.set(k, group);
   }
   group.tokens.add(token);
@@ -90,7 +119,12 @@ export function endManipulation(s, token) {
   if (!groups.size) manipulationGroups.delete(s);
   // Use the original context key even if the caller has already changed the selected view.
   if (!s.wireSets[k] || !s.probeSets[k] || !s.scopeSets[k]) return true;
-  const current = { wires: s.wireSets[k], probes: s.probeSets[k], scope: s.scopeSets[k] };
+  const current = {
+    wires: s.wireSets[k],
+    probes: s.probeSets[k],
+    scope: s.scopeSets[k],
+    ...(group.snapshot.params ? { params: clone(s.params[k.split(":")[1]]) } : {}),
+  };
   if (JSON.stringify(group.snapshot) !== JSON.stringify(current)) pushHistory(s, k, group.snapshot);
   return true;
 }
@@ -98,11 +132,20 @@ function remember(s) {
   const c = context(s),
     k = key(s);
   if (manipulationGroups.get(s)?.has(k)) return;
-  pushHistory(s, k, wiringSnapshot(c));
+  pushHistory(s, k, wiringSnapshot(c, s));
 }
 const predictionKey = (s, kind = parameters(s).kind) => `${s.mode}:${s.attempts.transient}:${kind}`;
 function predictionState(s, kind = parameters(s).kind) {
-  return s.predictions[predictionKey(s, kind)] || { choice: "unset", locked: false, late: false, correct: false, run: 0, tested: false };
+  return (
+    s.predictions[predictionKey(s, kind)] || {
+      choice: "unset",
+      locked: false,
+      late: false,
+      correct: false,
+      run: 0,
+      tested: false,
+    }
+  );
 }
 function noteTrial(s) {
   if (s.module !== "transient") return;
@@ -299,11 +342,24 @@ export function measure(s, timeOverride) {
       result = { ...opamp({ ...p, headroom: 1, time: timeOverride ?? 1 / (4 * p.frequency) }), ok: true };
       ({ gain, maxInput } = result);
       peak = result.peakOutput;
-      const vn =
-        p.configuration === "inverting"
-          ? (result.input / p.rin + result.output / p.rf) / (1 / p.rin + 1 / p.rf)
-          : (result.output * p.rin) / (p.rin + p.rf);
-      voltages = pinVoltages(circuit, wires, { gnd: 0, "signal+": result.input, out: result.output, "op-": vn, vp: p.rail, vn: -p.rail });
+      const minusNode =
+        p.configuration === "noninverting"
+          ? (result.output * p.rin) / (p.rin + p.rf)
+          : p.configuration === "adder"
+            ? (result.input / p.rin + result.input2 / p.rin + result.output / p.rf) / (2 / p.rin + 1 / p.rf)
+            : (result.input / p.rin + result.output / p.rf) / (1 / p.rin + 1 / p.rf);
+      const plusNode =
+        p.configuration === "subtractor" ? (result.input2 * p.rf) / (p.rin + p.rf) : p.configuration === "noninverting" ? result.input : 0;
+      voltages = pinVoltages(circuit, wires, {
+        gnd: 0,
+        "signal+": result.input,
+        "signal2+": result.input2,
+        out: result.output,
+        "op-": minusNode,
+        "op+": plusNode,
+        vp: p.rail,
+        vn: -p.rail,
+      });
       voltage = result.output;
     }
   } else {
@@ -348,6 +404,8 @@ function scopeSignature(s) {
     amplitude: p.amplitude,
     rail: p.rail,
     frequency: p.frequency,
+    amplitude2: p.amplitude2,
+    waveform: p.waveform,
     timeDiv: p.timeDiv,
     ch1Scale: p.ch1Scale,
     ch2Scale: p.ch2Scale,
@@ -409,8 +467,13 @@ export function scope(s) {
   );
   const channelValue = (measurement, id) => measurement.voltages[channels[id].signal] - measurement.voltages[channels[id].ground];
   const period = 1 / p.frequency,
-    trigger = { edge: p.triggerEdge, level: p.triggerLevel, found: false, time: 0 };
-  if (channels.ch1.valid) {
+    trigger = {
+      edge: p.triggerEdge,
+      level: p.triggerLevel,
+      found: p.waveform === "dc",
+      time: 0,
+    };
+  if (channels.ch1.valid && p.waveform !== "dc") {
     let previous = channelValue(initial, "ch1");
     for (let i = 1; i <= 200; i++) {
       const time = (i * period) / 200,
@@ -427,7 +490,7 @@ export function scope(s) {
     }
   }
   const duration = (p.timeDiv * 10) / 1000;
-  const timebaseTooWide = duration > period * 20 * 1.000001;
+  const timebaseTooWide = p.waveform !== "dc" && duration > period * 20 * 1.000001;
   const sampleCount = Math.max(200, Math.ceil((duration / period) * 64));
   for (let i = 0; !timebaseTooWide && i <= sampleCount; i++) {
     if (!channels.ch1.valid && !channels.ch2.valid) break;
@@ -447,7 +510,7 @@ export function scope(s) {
     !channels.ch1.cropped &&
     !channels.ch2.cropped &&
     trigger.found &&
-    duration >= period * 0.999;
+    (p.waveform === "dc" || duration >= period * 0.999);
   const errors = [
     ...new Set(
       Object.values(channels)
@@ -463,7 +526,7 @@ export function scope(s) {
         ? "Waiting for the selected CH1 trigger crossing."
         : channels.ch1.cropped || channels.ch2.cropped
           ? "A trace exceeds the display. Increase V/div or use Autoscale."
-          : duration < period
+          : p.waveform !== "dc" && duration < period
             ? "Increase time/div to show a complete period."
             : null);
   const result = {
@@ -569,7 +632,7 @@ export function change(s, name, value) {
     "ch2Scale",
     "speed",
   ];
-  const nonnegativeSettings = ["amplitude", "v1", "v2", "time", "prediction"];
+  const nonnegativeSettings = ["v1", "v2", "time", "prediction", ...(p.waveform === "dc" ? [] : ["amplitude"])];
   const numericSettings = [
     ...positiveSettings,
     ...nonnegativeSettings,
@@ -578,6 +641,8 @@ export function change(s, name, value) {
     "triggerLevel",
     "sumMilliamp",
     "initial",
+    "amplitude",
+    "amplitude2",
   ];
   if (
     numericSettings.includes(name) &&
@@ -598,7 +663,17 @@ export function change(s, name, value) {
     p.time = 0;
     p.acquiredTime = 0;
   }
+  if (s.module === "opamp" && ["configuration", "waveform"].includes(name) && !OPTIONS[name].includes(value)) {
+    s.feedback = `Choose a supported ${name}.`;
+    return false;
+  }
+  if (s.module === "opamp" && name === "rail" && !OPTIONS.rail.includes(value)) {
+    s.feedback = "Choose ±8 V, ±12 V or ±15 V.";
+    return false;
+  }
+  if (s.module === "opamp" && name in p && value !== p[name] && name !== "configuration") remember(s);
   p[name] = value;
+  if (s.module === "opamp" && name === "waveform" && value !== "dc") p.amplitude = Math.abs(p.amplitude);
   if (s.module === "transient" && name === "time") {
     if (value > 0) noteTrial(s);
     if (context(s).correct) p.acquiredTime = Math.max(p.acquiredTime || 0, value);
@@ -658,7 +733,7 @@ function resetExperiment(s) {
   const module = s.module;
   const belongsToModule = (contextKey) => contextKey.split(":")[1] === module;
   // Remove every variant and mode, including caches that have no current wire entry.
-  for (const field of ["wireSets", "probeSets", "scopeSets", "scopeHolds", "history"])
+  for (const field of ["wireSets", "probeSets", "scopeSets", "scopeHolds", "history", "guideConfirmed"])
     for (const contextKey of Object.keys(s[field])) if (belongsToModule(contextKey)) delete s[field][contextKey];
   const groups = manipulationGroups.get(s);
   if (groups) {
@@ -878,6 +953,22 @@ export function assess(s) {
 
 export function action(s, id) {
   if (id === "reset-experiment") return resetExperiment(s);
+  if (id === "guided-next" && s.module === "opamp") {
+    const next = amplifierGuide(context(s), parameters(s));
+    if (next.action?.type === "wire") {
+      s.tool = "wire";
+      s.selectedTerminal = null;
+      terminal(s, next.action.from);
+      terminal(s, next.action.to);
+    } else if (next.action?.type === "probe") setProbe(s, next.action.channel, next.action.target);
+    else if (next.action?.type === "adjust") {
+      s.guideConfirmed[key(s)] = context(s).guideSignature;
+      s.sequence++;
+    }
+    s.feedback = next.text;
+    return !!next.action;
+  }
+
   if (id.startsWith("scrub:") && s.module === "transient") {
     const milliseconds = Number(id.slice(6));
     if (!Number.isFinite(milliseconds) || !context(s).correct) return false;
@@ -917,10 +1008,11 @@ export function action(s, id) {
     s.wireSets[key(s)] = previous.wires;
     s.probeSets[key(s)] = previous.probes;
     s.scopeSets[key(s)] = previous.scope;
+    if (previous.params) Object.assign(parameters(s), previous.params);
     s.selectedTerminal = null;
     s.checks[s.module] = null;
     s.sequence++;
-    s.feedback = "Last wiring or probe change undone.";
+    s.feedback = "Last circuit setting, wiring or probe change undone.";
     return;
   }
   if (id === "submit-sum") return submitSum(s);
@@ -1132,6 +1224,54 @@ export function action(s, id) {
   s.sequence++;
 }
 
+const amplifierReadingCache = new WeakMap();
+export function amplifierReadings(s) {
+  const p = parameters(s),
+    c = context(s),
+    acquisition = scope(s);
+  const signature = scopeSignature(s) + JSON.stringify(c.probes) + p.scopeRunning;
+  const cached = amplifierReadingCache.get(s);
+  if (cached?.signature === signature) return cached.value;
+  const valid = acquisition.channels.ch1.correct && acquisition.channels.ch2.correct && acquisition.ok;
+  const samples = {
+    input: [],
+    input2: [],
+    reference: [],
+    output: [],
+    meter: [],
+  };
+  // Midpoint samples cover one full physical period, independently of display scale/timebase.
+  if (measure(s).ok)
+    for (let i = 0; i < 2048; i++) {
+      const m = measure(s, (i + 0.5) / (2048 * p.frequency));
+      const v1 = m.voltages["signal+"];
+      const v2 = m.voltages["signal2+"] ?? 0;
+      samples.input.push(v1);
+      samples.input2.push(v2);
+      samples.reference.push(p.configuration === "adder" ? v1 + v2 : p.configuration === "subtractor" ? v2 - v1 : v1);
+      if (valid && !acquisition.stale) samples.output.push(m.voltages[c.scope.ch2.signal] - m.voltages[c.scope.ch2.ground]);
+      if (m.probeReady) samples.meter.push(m.probeVoltage);
+    }
+  const response = measuredResponse({
+    inputs: samples.reference,
+    outputs: samples.output,
+    dc: p.waveform === "dc",
+    clipped: measure(s).clipped,
+    valid,
+    stale: acquisition.stale,
+  });
+  const value = {
+    ...response,
+    input: summarizeSamples(samples.input),
+    input2: summarizeSamples(samples.input2),
+    output: summarizeSamples(samples.output),
+    meter: summarizeSamples(samples.meter),
+    valid,
+  };
+  amplifierReadingCache.set(s, { signature, value });
+  return value;
+}
+
 export function metrics(s) {
   const m = measure(s),
     ready = m.ok;
@@ -1141,17 +1281,29 @@ export function metrics(s) {
     unit: "V",
     detail: m.probeReady ? "V tip − COM tip" : "Place both probes",
   };
-  if (s.module === "opamp")
+  if (s.module === "opamp") {
+    const p = parameters(s),
+      response = amplifierReadings(s);
     return [
-      { ...common, label: "Voltage sample", detail: `At input +peak · ${fmt(250 / parameters(s).frequency)} ms · V tip − COM tip` },
       {
-        label: "Linear gain",
-        value: ready ? fmt(m.gain) : "—",
-        unit: "V/V",
-        detail: ready ? (m.clipped ? "Output is clipping" : "Within output limits") : "Connect feedback & supplies",
+        ...common,
+        label: p.waveform === "dc" ? "Meter DC" : "Voltage sample",
+        detail: p.waveform === "dc" ? "DC · V tip − COM tip" : `At input +peak · ${fmt(250 / p.frequency)} ms · V tip − COM tip`,
       },
-      { label: "Output peak", value: ready ? fmt(m.peak) : "—", unit: "Vpk", detail: `Teaching model: ±${parameters(s).rail - 1} V limit` },
+      {
+        label: "Theoretical gain",
+        value: fmt(p.configuration === "noninverting" ? 1 + p.rf / p.rin : p.configuration === "subtractor" ? p.rf / p.rin : -p.rf / p.rin),
+        unit: "V/V",
+        detail: ready ? (m.clipped ? "Clipping · linear model exceeded" : "Ideal feedback model") : "Connect feedback & supplies",
+      },
+      {
+        label: "Measured gain",
+        value: fmt(response.gain),
+        unit: "V/V",
+        detail: response.error || response.phase,
+      },
     ];
+  }
   if (s.module === "transient")
     return [
       common,
@@ -1412,7 +1564,10 @@ export function vrActions(s) {
     add("Settings", `set:replacement:${p.replacement === "short" ? "open" : "short"}`, "Inactive source", p.replacement);
   }
   if (s.module === "opamp") {
-    add("Settings", `set:configuration:${p.configuration === "inverting" ? "noninverting" : "inverting"}`, "Configuration", p.configuration);
+    add("Settings", `cycle:configuration:1`, "Configuration", p.configuration);
+    add("Bench", "guided-next", "Next guided connection");
+    cycle("waveform", "Waveform", p.waveform);
+    if (["adder", "subtractor"].includes(p.configuration)) cycle("amplitude2", "Vin2", `${p.amplitude2} V`);
     cycle("rin", "Rin", `${p.rin / 1000} kΩ`);
     cycle("rf", "Rf", `${p.rf / 1000} kΩ`);
     cycle("amplitude", "Input", `${p.amplitude} Vpk`);

@@ -238,8 +238,7 @@ test("adjusting amplifier supply rails changes clipping limits without changing 
   change(state, "amplitude", 3);
   for (const [rail, output, clipped] of [
     [12, -9, false],
-    [9, -8, true],
-    [5, -4, true],
+    [8, -7, true],
     [15, -9, false],
   ]) {
     action(state, `set:rail:${rail}`);
@@ -284,12 +283,12 @@ test("frequency changes preserve ideal amplifier gain and correctly timed acquir
 
 test("supply terminals and voltage probes reflect adjusted positive and negative rails", () => {
   const state = lab("opamp");
-  for (const rail of [5, 9, 12, 15]) {
+  for (const rail of [8, 12, 15]) {
     action(state, `set:rail:${rail}`);
     let m = measure(state);
     for (const terminalName of ["vp", "plus+"]) near(m.voltages[terminalName], rail);
     for (const terminalName of ["vn", "minus-"]) near(m.voltages[terminalName], -rail);
-    for (const terminalName of ["plus-", "minus+"]) near(m.voltages[terminalName], 0);
+    for (const terminalName of ["plus-"]) near(m.voltages[terminalName], 0);
     action(state, "tool:red");
     terminal(state, "vp");
     action(state, "tool:black");
@@ -404,7 +403,7 @@ test("op-amp challenge can be completed at gain -3 with clean/clipped records an
 
 test("amplifier challenge rejects clean/clipped records taken at a different rail or frequency", () => {
   for (const [name, value] of [
-    ["rail", 9],
+    ["rail", 8],
     ["frequency", 500],
   ]) {
     const state = lab("opamp", "challenge");

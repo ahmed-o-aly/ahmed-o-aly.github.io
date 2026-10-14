@@ -109,7 +109,7 @@ Run `npm run test:metahub-browser` against a freshly built site served at `http:
 ### Circuits Lab locations
 
 - `circuits-lab/src/main.js` connects the interface and scene. `src/bench.js`, `equipment.js`, `interaction.js`, and `vr-session.js` handle the physical bench, instruments, manipulation, and immersive sessions.
-- `circuits-lab/src/modules.js`, `lab.js`, and `physics.js` define experiments, state/actions, and circuit calculations. `schematic.js` and `circuit-status.js` support diagrams and diagnostics.
+- `circuits-lab/src/modules.js`, `lab.js`, and `physics.js` define experiments, state/actions, and circuit calculations. `schematic.js` and `circuit-status.js` support diagrams and diagnostics. `amplifier-guide.js` derives Lab 7 connection guidance, resistor roles and wire semantics; `amplifier-samples.js` computes sample-based measurement statistics and gain. `?lab=7` opens the operational-amplifier module directly.
 - `circuits-lab/src/cable-routing.js`, `cable-motion.js`, and `terminal-sockets.js` implement wire geometry, movement, and connections. `src/style.css` styles the interface.
 - `circuits-lab/tests/` checks activities, physics, wiring, probes, reset/history, and VR behavior. `circuits-lab/docs/module-designs.md` and `circuits-lab/docs/experiment-checklist.md` explain experiment requirements; `circuits-lab/docs/verification.md` records past verification and headset limitations.
 

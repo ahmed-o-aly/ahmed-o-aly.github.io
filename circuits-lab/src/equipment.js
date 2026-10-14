@@ -714,7 +714,55 @@ export function createPowerSupply({
   return { group: h.group, targets: h.targets, anchors: h.anchors, update, dispose: h.dispose };
 }
 
-export function createGenerator({ id = "generator", label = "FUNCTION GENERATOR" } = {}) {
+export function createDualSupply({ id = "dual-supply" } = {}) {
+  const h = hardware(id),
+    z = h.enclosure(0.32, 0.19, 0.2);
+  h.text("DUAL SUPPLY", 0.27, 0.018, [0, 0.168, z + 0.0005]);
+  const display = h.screen(0.275, 0.058, [0, 0.121, z + 0.002], {
+    pixels: [1375, 290],
+    background: "#071612",
+    foreground: "#d8ffe0",
+  });
+  const rail = h.dial("Supply ±8 / ±12 / ±15 V", "rail", 0.115, 0.041, z, {
+    radius: 0.017,
+    values: OPTIONS.rail,
+  });
+  for (const [label, x, color] of [
+    ["+V", -0.114, COLORS.red],
+    ["GND", -0.044, COLORS.black],
+    ["−V", 0.026, COLORS.ch2],
+  ]) {
+    h.socket(label, x, 0.045, z, color);
+    h.text(label, 0.06, 0.011, [x, 0.018, z + 0.001]);
+  }
+  function update(data = {}) {
+    const value = data.parameters?.rail || 12;
+    rail.set(value);
+    display.draw(value, (ctx, w, ht) => {
+      writeText(ctx, `+${value} V    0 V    −${value} V`, w / 2, ht * 0.47, {
+        size: ht * 0.55,
+        width: w - 30,
+        align: "center",
+      });
+      writeText(ctx, "+V           GND           −V", w / 2, ht * 0.88, {
+        size: ht * 0.18,
+        width: w - 30,
+        align: "center",
+      });
+    });
+  }
+  h.finish();
+  update();
+  return {
+    group: h.group,
+    targets: h.targets,
+    anchors: h.anchors,
+    update,
+    dispose: h.dispose,
+  };
+}
+
+export function createGenerator({ id = "generator", label = "INPUT SIGNAL", dual = false } = {}) {
   const h = hardware(id),
     z = h.enclosure(0.28, 0.135, 0.16);
   h.text(label, 0.238, 0.012, [0, 0.118, z + 0.0005], { size: 48 });
@@ -725,15 +773,49 @@ export function createGenerator({ id = "generator", label = "FUNCTION GENERATOR"
   h.text("Hz", 0.027, 0.009, [0.063, 0.104, z + 0.0007]);
   h.text("V pk", 0.032, 0.009, [0.111, 0.104, z + 0.0007]);
   h.socket("OUT", 0.082, 0.028, z, COLORS.metal, { bnc: true });
-  h.text("SINE OUT", 0.055, 0.008, [0.082, 0.011, z + 0.0006], { size: 45 });
+  h.text(dual ? "Vin1" : "Vin", 0.055, 0.008, [0.082, 0.011, z + 0.0006], {
+    size: 45,
+  });
+  if (dual) {
+    h.socket("OUT2", -0.016, 0.028, z, COLORS.ch1, { bnc: true });
+    h.text("Vin2", 0.05, 0.008, [-0.016, 0.011, z + 0.0006]);
+  }
+  h.socket("GND", -0.098, 0.028, z, COLORS.black);
+  const waveform = h.dial("Waveform", "waveform", 0.065, 0.117, z, {
+    radius: 0.009,
+    values: OPTIONS.waveform,
+  });
+  const input2 = dual
+    ? h.dial("Vin2 amplitude", "amplitude2", 0.112, 0.117, z, {
+        radius: 0.009,
+        values: OPTIONS.amplitude2,
+      })
+    : null;
   function update(data = {}) {
     const p = data.parameters || {};
     frequency.set(p.frequency);
+    waveform.set(p.waveform);
+    input2?.set(p.amplitude2);
+    amplitude.descriptor.values = p.waveform === "dc" ? OPTIONS.amplitude2 : OPTIONS.amplitude;
     amplitude.set(p.amplitude);
-    display.draw([p.frequency, p.amplitude], (ctx, w, ht) => {
-      writeText(ctx, `${number(p.frequency, 1)} Hz`, w / 2, ht * 0.27, { size: ht * 0.35, width: w - 44, align: "center" });
-      writeText(ctx, `${number(p.amplitude, 2)} V pk`, w / 2, ht * 0.65, { size: ht * 0.33, width: w - 44, align: "center" });
-      writeText(ctx, "SINE · 0 V OFFSET", w / 2, ht * 0.92, { size: ht * 0.1, width: w - 40, align: "center" });
+    display.draw([p.frequency, p.amplitude, p.amplitude2, p.waveform], (ctx, w, ht) => {
+      writeText(ctx, p.waveform === "dc" ? "DC" : `${number(p.frequency, 1)} Hz`, w / 2, ht * 0.27, {
+        size: ht * 0.35,
+        width: w - 44,
+        align: "center",
+      });
+      writeText(ctx, `${number(p.amplitude, 2)} V ${p.waveform === "dc" ? "DC" : "pk"}`, w / 2, ht * 0.65, {
+        size: ht * 0.33,
+        width: w - 44,
+        align: "center",
+      });
+      writeText(
+        ctx,
+        dual ? `Vin2 ${number(p.amplitude2, 2)} V · ${p.waveform || "sine"}` : `${(p.waveform || "sine").toUpperCase()} · 0 V OFFSET`,
+        w / 2,
+        ht * 0.92,
+        { size: ht * 0.1, width: w - 40, align: "center" }
+      );
     });
   }
   h.finish();
@@ -819,7 +901,10 @@ export function createExperimentControls({ id = "experiment-controls", module = 
     selector("Sources", "sourceMode", ["a", "both", "b"], -0.14, 0.23);
     selector("Inactive source", "replacement", ["short", "open"], 0.14, 0.23);
   }
-  if (module === "opamp") selector("Amplifier", "configuration", ["inverting", "noninverting"], 0, 0.34);
+  if (module === "opamp") {
+    selector("Amplifier", "configuration", OPTIONS.configuration, 0, 0.34);
+    push("Next guided step", "guided-next", 0, 0.156, 0.24, 0.035);
+  }
   let run, drive;
   if (module === "transient") {
     selector("Circuit", "kind", ["RC", "RL"], -0.18, 0.156);
@@ -846,6 +931,8 @@ export function createExperimentControls({ id = "experiment-controls", module = 
     open: "Open",
     inverting: "Inverting",
     noninverting: "Non-inverting",
+    adder: "Adder",
+    subtractor: "Subtractor",
   };
   function update(data = {}) {
     const p = data.parameters || {},

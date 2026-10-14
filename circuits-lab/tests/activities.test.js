@@ -119,8 +119,8 @@ test("VR numeric controls clamp at bounds and step between typed values without 
   for (const [module, name, low, high] of [
     ["superposition", "sumMilliamp", -8, 8],
     ["opamp", "prediction", 0, 10],
-    ["opamp", "amplitude", 0.25, 6],
-    ["opamp", "rail", 5, 15],
+    ["opamp", "amplitude", 0, 6],
+    ["opamp", "rail", 8, 15],
     ["opamp", "timeDiv", 0.02, 50],
   ]) {
     const state = lab(module);
@@ -141,7 +141,7 @@ test("VR numeric controls clamp at bounds and step between typed values without 
   const state = lab("opamp");
   for (const [name, typed, next, previous] of [
     ["amplitude", 3.65, 3.7, 3.6],
-    ["rail", 7, 9, 5],
+    ["rail", 8, 12, 8],
   ]) {
     action(state, `set:${name}:${typed}`);
     action(state, `cycle:${name}`);

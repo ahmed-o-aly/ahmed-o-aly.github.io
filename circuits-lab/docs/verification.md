@@ -1,3 +1,33 @@
+# Lab 7 simplification verification · 14 October 2026
+
+Implemented on `codex/lab7-simplify` in an isolated checkout based on `origin/main` commit `05750590d97f3e5f21f180215e422cf09d427443`. The original `/Users/aly/Documents/DEWA` checkout and its unrelated untracked files were preserved. The supplied Lab 7 DOCX text and both embedded figures were inspected. The concept image’s inconsistent electrical readings were not used as acceptance values.
+
+## Passed
+
+- `npm --prefix circuits-lab test`: **204 / 204 passed**, including all pre-existing circuits/XR lifecycle/cable tests and new Lab 7 physics/flow cases.
+- `npm --prefix circuits-lab run build`: production bundle rebuilt with Vite 6.4.3. Generated files are in `assets/apps/circuits-lab/`; no compiled files were edited manually.
+- Changed JS/CSS/Markdown formatting checks and `git diff --check` passed.
+- Reference cases A, B, C, matched D, E, G, H, I and J: inverting/non-inverting gain and RMS; signed DC and probe reversal; equal-input adder; matched subtractor and zero differential input; live gain edit/Undo; clipping on ±8/±12/±15 and recovery; waveform RMS; invalid settings/wiring/probes and stale Hold. New flow tests complete four Build variants from real nets and check pins, resistor count, source disclosure and reset.
+- Codex’s built-in browser completed all four guided paths against the rebuilt bundle served locally at `/circuits-lab/?lab=7`, after earlier CUA browser availability recovered. Each reached Understand with valid circuit and scope/meter connections. Physical 3D rendering was visually inspected.
+- Browser numerical checks included the 1 Vpp / 1 kHz inverting baseline (gain −2, output 2 Vpp, 0.707 Vrms), live Rf gain change and Undo, stale Hold suppression, clipping/recovery, and the 0.2/0.7 V DC subtractor (output +1 V, measured differential gain +2). DC disabled frequency.
+- Manual COM-probe drag to empty space disconnected only the meter measurement; Undo restored GND and −2 V sample. Camera orbit/zoom retained circuit readings. Graph ArrowRight read both traces at one time. Neighboring Labs 5/6/8 opened, then Lab 7 reset restored defaults.
+- At 1440×1000 and 390×844 viewport overrides, controls reflowed without horizontal overflow. Screenshots and browser result JSON are retained locally under `../lab7-qa/` relative to the isolated repository’s parent task folder.
+- Fresh production-route logs contained no warning/error entries. Repeated development hot reloads temporarily exhausted a WebGL context; navigation to the fresh production bundle rendered correctly.
+
+## Failed or blocked checks
+
+The full Jekyll build could not start: the available system Ruby was 2.6 and lacked Bundler 2.7.2 required by `Gemfile.lock` (`Gem::GemNotFoundException`). No system dependency, lockfile or permission change was made to bypass this. Consequently, full generated-site contracts were not run. The isolated app bundle and its local `/circuits-lab/` prefix were verified independently.
+
+## Unrun or intentionally unsupported
+
+Physical headset reach, panel readability, comfort, frame rate, controller twisting and locomotion remain unverified. Right-button pan is retained through OrbitControls but was not exercised in this browser session. Independent adder input-resistor ratios and mismatched subtractor ratios (conditional cases D/F) are not exposed: the initial exercise uses linked equal/matched pairs. The model is an ideal 741 teaching approximation with documented 1 V educational headroom; it makes no manufacturer-specific swing, bandwidth, slew-rate or input-range claim. The optional video was not promoted because its contents were not independently verified.
+
+No deployment, merge, push, external communication, access changes or Lab 8 implementation changes were performed.
+
+---
+
+The following records describe earlier builds and remain historical evidence.
+
 # Circuits Lab v0.10 verification
 
 Updated 30 September 2026. The user reported improved VR handling in v0.5 and better readability in v0.6, with control text and resistor names still unclear. The assistant has not operated a physical headset.

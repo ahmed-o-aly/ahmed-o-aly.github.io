@@ -66,24 +66,32 @@ The three linked views are solved from the student's wiring and source values. S
 
 ## Experiment 7: Operational amplifiers
 
-Email task: design an amplifier for a specified gain, then find how large the input can become before clipping. The bench needs adjustable resistors, signals, supply voltages and an oscilloscope.
+Nishar’s supplied design review calls for a realistic 3D laboratory with the sequence **Select → Build → Adjust → Measure → Understand**. The four visible control groups are **Power Supply**, **Operational Amplifier**, **Component Controls**, and **Input Signal**. The schematic stays a reference for the selected arrangement; readings follow the actual valid connections.
 
-The email refers to configurations in a lab handout that was not supplied. Inverting and non-inverting amplifiers are the current examples. These cover the requested activity, but their exact layout and values cannot be claimed to match that unseen handout.
+One dual supply exposes +V, GND and −V and selects ±8, ±12 or ±15 V. The labelled U1–741 component shows 2 (−IN), 3 (+IN), 4 (−V), 6 (Vout) and 7 (+V). Unused pins 1, 5 and 8 are excluded from the connection exercise. The device is a representative DIP-8 ideal teaching approximation. The 1 V output headroom is an educational limit, not a 741 datasheet specification. Bandwidth, slew rate, loading, offsets and input common-mode limits are omitted.
 
-The amplifier parts and lead routes are spaced apart. Separate physical GND sockets share one electrical ground, and the OUT sockets share one output node. This separates meter and scope tips without changing the circuit.
+| Configuration | Resistor arrangement                                                                           | Linear relationship           |
+| ------------- | ---------------------------------------------------------------------------------------------- | ----------------------------- |
+| Inverting     | Rin from Vin to pin 2; Rf from pin 6 to pin 2; pin 3 grounded                                  | Vout = −(Rf/Rin) Vin          |
+| Non-inverting | Rin serves as Rg from pin 2 to GND; Rf from pin 6 to pin 2; Vin to pin 3                       | Vout = (1 + Rf/Rg) Vin        |
+| Adder         | R1 = R2 = Rin; each input feeds pin 2 through its own resistor; Rf is feedback; pin 3 grounded | Vout = −(Rf/Rin)(Vin1 + Vin2) |
+| Subtractor    | R1 = R3 = Rin; R2 = R4 = Rf; Vin1 feeds pin 2, Vin2 feeds pin 3’s divider                      | Vout = (Rf/Rin)(Vin2 − Vin1)  |
+
+Rin and Rf have linked numeric, slider and physical knob controls. All three/four resistors appear on two-input circuits; matched pairs change together. Vin2 is disclosed only in those modes. AC inputs share frequency and waveform; a signed Vin2 amplitude reverses polarity. This intentionally supports equal-input/matched-pair circuits rather than arbitrary independent ratios.
 
 ### Procedure
 
-1. Start with an inverting amplifier and the assigned gain of −3. Choose input and feedback resistances and wire the circuit, including both supply rails.
-2. Put scope CH1 at the input and CH2 at the output. Attach both ground clips to circuit GND. Set a useful timebase and voltage scale.
-3. Apply a 100 Hz sine wave at 1 V peak using ±12 V supplies. Read the input and output traces and check the gain.
-4. Increase input amplitude slowly. Find the last unclipped input and the first clipped input. Repeat at another supply voltage, then try the other amplifier configuration.
+1. Select supply and configuration. Build starts a separate empty circuit for each configuration; Explore starts connected.
+2. Follow the next highlighted connection. Guidance checks actual electrical nets, including power and feedback, rather than counting clicks. Wrong extra leads must be removed.
+3. Review resistances and input settings, then confirm them. DC uses signed volts; sine, square and triangle use peak volts with zero offset. Frequency is disabled in DC.
+4. Place the meter V tip at Vout, COM at GND, CH1 at Vin/Vin1, CH2 at Vout, and both scope ground clips at GND. Guidance can place one lead or probe at a time. Manual dragging and keyboard connections remain available.
+5. Compare theoretical and measured gain. Increase amplitude until clipping; reduce it to recover. Keep calculations and observations on paper.
 
-Using Rin = 10 kΩ and Rf = 30 kΩ gives ideal gain −3. This model has ±11 V output limits at ±12 V rails, so clipping starts above an input peak of 11/3 V, about 3.67 V. At 4 V peak input the ideal output would reach 12 V but the shown output is limited to 11 V in magnitude.
+The meter’s physical AC display is labelled as a sample at the input’s positive peak. The adjacent measured-response panel separately reports DC mean, AC-component RMS, total RMS, absolute peak and Vpp from 2,048 midpoint samples across one period. DC has no AC component. Probe reversal changes the signed DC measurement. Scope channels keep their own selected terminals and grounds, timebase, vertical scale and Run/Hold state.
 
-The scope traces follow their connected terminals. Moving a tip changes what is measured; disconnected or wrongly grounded channels report a problem. Dials adjust time/div and channel volts/div. Run/Hold keeps a capture, with a visible stale indication if the circuit changes while held. A graph cursor reads voltage at a chosen time. The meter's separate sample is explicitly taken at the input positive peak.
+Single-input measured gain uses the grounded CH1/CH2 contacts. For adder/subtractor, the reference is the sum/difference of sampled input-node voltages; CH1 still shows Vin1 and CH2 shows Vout. AC gain magnitude is a Vpp ratio with covariance determining in-phase/inverted polarity. DC uses a signed ratio. Clipping, a stale held capture, invalid circuitry, disconnected/misplaced scope references or a zero/near-zero reference suppress measured linear gain. Theoretical gain remains available as a prediction.
 
-The amplifier model uses ideal gain with fixed 1 V output headroom. It does not model a particular chip, frequency response, slew rate, current limit, input common-mode limits or probe loading. Increasing frequency changes the period, not the ideal closed-loop gain.
+Examples: Rin = 10 kΩ / Rf = 20 kΩ and 1 Vpp sine give −2 gain and 2 Vpp output (0.7071 Vrms); non-inverting gives +3 and 3 Vpp (1.0607 Vrms). DC adder inputs 0.2/0.3 V give −1 V. Matched subtractor inputs 0.2/0.7 V give +1 V. With Rin = 10 kΩ / Rf = 30 kΩ, ±12 V rails clip above 11/3 V peak input. The concept image’s trace heights and meter reading are not electrical acceptance values.
 
 ## Experiment 8: RC and RL transient response
 

@@ -1870,3 +1870,202 @@ summary {
     font-size: 11px;
   }
 }
+
+/* Lab 7 keeps one stable sequence and four visible control groups. */
+#amplifier-flow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.3rem;
+  padding: 0.2rem 0 1rem;
+  font-size: 0.85rem;
+}
+#amplifier-flow span {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--muted);
+}
+#amplifier-flow b,
+.lab7-control-group h2 span {
+  font: 500 0.75rem var(--mono);
+  padding: 0.3rem 0.45rem;
+  border: 1px solid var(--line);
+}
+#amplifier-flow .active {
+  color: var(--ink);
+  font-weight: 600;
+}
+#guided-step {
+  padding: 0.8rem 1.1rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  border-bottom: 1px solid var(--line);
+}
+#guided-step label {
+  white-space: nowrap;
+  font-size: 0.85rem;
+}
+#guided-step p {
+  margin: 0;
+  flex: 1;
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+.lab7-layout {
+  grid-template-columns: minmax(0, 1fr) 325px;
+  align-items: start;
+}
+.lab7-control-group {
+  padding: 1rem;
+  border-bottom: 1px solid var(--line);
+}
+.lab7-control-group h2 {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: 0.8rem;
+  font-size: 1rem;
+}
+.lab7-control-group .control-block {
+  padding: 0;
+  margin: 0.6rem 0;
+}
+.lab7-control-group .hint {
+  font-size: 0.75rem;
+  line-height: 1.5;
+  margin: 0.6rem 0 0;
+}
+.supply-values {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font: 0.7rem var(--mono);
+  margin-top: 0.7rem;
+}
+.supply-values span {
+  display: grid;
+  gap: 0.3rem;
+}
+.pinout {
+  width: 100%;
+  max-height: 150px;
+  margin-top: 0.6rem;
+}
+.pinout text {
+  font: 12px var(--mono);
+  fill: currentColor;
+}
+.pot-control {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.pot-control input {
+  width: 100%;
+  min-width: 0;
+  padding: 0.5rem;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: transparent;
+  font: 0.8rem var(--mono);
+}
+.pot-control span {
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+.pot-range {
+  width: 100%;
+  margin: 0.5rem 0 0;
+  accent-color: var(--accent);
+}
+[data-value] {
+  font: 0.75rem var(--mono);
+}
+.resistor-roles,
+.gain-equation {
+  font-size: 0.78rem;
+  line-height: 1.55;
+  margin: 0.6rem 0 0;
+}
+.gain-equation strong {
+  display: inline-block;
+  margin-top: 0.4rem;
+}
+#lab7-controls > .model-note {
+  padding: 1rem;
+  margin: 0;
+}
+#amplifier-response {
+  padding: 1rem 1.1rem;
+  border-top: 1px solid var(--line);
+}
+.response-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+}
+.response-heading span {
+  font-size: 0.78rem;
+}
+#amplifier-response > p {
+  font-size: 0.75rem;
+  line-height: 1.5;
+  margin: 0.6rem 0;
+}
+.voltage-statistics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.9rem;
+  font: 0.72rem var(--mono);
+}
+.voltage-statistics div {
+  display: grid;
+  gap: 0.3rem;
+}
+.wire-key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+  padding-top: 1rem;
+  font-size: 0.7rem;
+}
+.wire-key span {
+  display: flex;
+  gap: 0.3rem;
+  align-items: center;
+}
+.wire-key i {
+  width: 14px;
+  height: 3px;
+}
+input[aria-invalid="true"] {
+  outline: 2px solid #a44434;
+}
+@media (max-width: 1200px) {
+  .lab7-layout {
+    grid-template-columns: 1fr;
+  }
+  #lab7-controls {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 600px) {
+  #lab7-controls {
+    grid-template-columns: 1fr;
+  }
+  #guided-step {
+    flex-wrap: wrap;
+  }
+  #guided-step p {
+    min-width: 65%;
+  }
+  #amplifier-flow {
+    gap: 0.5rem;
+  }
+  .response-heading {
+    flex-wrap: wrap;
+  }
+}

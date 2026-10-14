@@ -1,3 +1,4 @@
+import { configurationName } from "./amplifier-guide.js";
 import { MODULES } from "./modules.js";
 
 const ink = "#182630";
@@ -106,6 +107,21 @@ function drawing() {
             x + 16
           } ${y}"/>`
         );
+      } else if (kind === "square") {
+        path([
+          [x - 18, y + 10],
+          [x - 18, y - 10],
+          [x, y - 10],
+          [x, y + 10],
+          [x + 18, y + 10],
+          [x + 18, y - 10],
+        ]);
+      } else if (kind === "triangle") {
+        path([
+          [x - 19, y + 12],
+          [x, y - 12],
+          [x + 19, y + 12],
+        ]);
       } else {
         line(x - 6, y - 10, x + 6, y - 10);
         line(x - 6, y + 10, x + 6, y + 10);
@@ -230,37 +246,86 @@ function superpositionCircuit(d, p) {
 
 function amplifierCircuit(d, p) {
   const { elements, line, path, source, resistor, ground, dot, contact, text, pins } = d;
-  const inverting = p.configuration === "inverting";
+  const multi = ["adder", "subtractor"].includes(p.configuration);
+  const inverting = p.configuration === "inverting" || multi;
   const sourceTop = inverting ? 180 : 230;
   source({
     id: "signal",
     x: 90,
-    y: 285,
+    y: multi ? 232 : 285,
     top: sourceTop,
-    bottom: 345,
-    name: "Vin",
-    value: `${number(p.amplitude)} Vpk`,
-    kind: "sine",
-    frequency: p.frequency,
+    bottom: multi ? 285 : 345,
+    name: multi ? "Vin1" : "Vin",
+    value: `${number(p.amplitude)} ${p.waveform === "dc" ? "V DC" : "Vpk"}`,
+    kind: p.waveform === "dc" ? "voltage" : p.waveform || "sine",
+    frequency: p.waveform === "dc" ? undefined : p.frequency,
   });
   if (inverting) {
     line(90, 180, 150, 180);
     resistor("rin", 150, 180, 300, 180, "Rin", p.rin);
     line(300, 180, 400, 180);
-    path([
-      [400, 230],
-      [370, 230],
-      [370, 345],
-      [90, 345],
-    ]);
-    ground(230, 345);
-    dot(230, 345);
+    if (!multi) {
+      path([
+        [400, 230],
+        [370, 230],
+        [370, 345],
+        [90, 345],
+      ]);
+      ground(230, 345);
+      dot(230, 345);
+    } else ground(90, 285);
   } else {
     line(90, 230, 400, 230);
     resistor("rin", 170, 180, 300, 180, "Rin", p.rin);
     line(300, 180, 400, 180);
     ground(170, 180);
     ground(90, 345);
+  }
+  if (multi) {
+    source({
+      id: "signal2",
+      x: 85,
+      y: 363,
+      top: 310,
+      bottom: 410,
+      name: "Vin2",
+      value: `${number(p.amplitude2)} ${p.waveform === "dc" ? "V DC" : "Vpk"}`,
+      kind: p.waveform === "dc" ? "voltage" : p.waveform || "sine",
+    });
+    line(85, 310, 150, 310);
+    resistor("rin2", 150, 310, 285, 310, p.configuration === "adder" ? "R2 = Rin" : "R3 = Rin", p.rin);
+    ground(85, 410);
+    if (p.configuration === "adder") {
+      path([
+        [285, 310],
+        [320, 310],
+        [320, 180],
+      ]);
+      dot(320, 180);
+      path([
+        [400, 230],
+        [380, 230],
+        [380, 365],
+      ]);
+      ground(380, 365);
+    } else {
+      path([
+        [285, 310],
+        [360, 310],
+        [360, 230],
+        [400, 230],
+      ]);
+      dot(360, 310);
+      line(360, 310, 390, 310);
+      resistor("rf2", 390, 310, 530, 310, "R4 = Rf", p.rf);
+      ground(530, 310);
+    }
+    pins({
+      "signal2+": [85, 310],
+      rin2a: [150, 310],
+      rin2b: [285, 310],
+      ...(p.configuration === "subtractor" ? { rf2a: [390, 310], rf2b: [530, 310] } : {}),
+    });
   }
   path([
     [340, 180],
@@ -281,19 +346,28 @@ function amplifierCircuit(d, p) {
   line(410, 180, 420, 180);
   line(410, 230, 420, 230);
   line(415, 225, 415, 235);
-  text(447, 212, "U₁", "middle", 16);
+  text(447, 212, "U1–741", "middle", 14);
+  text(385, 168, "2", "middle", 14);
+  text(385, 249, "3", "middle", 14);
+  text(572, 190, "6", "middle", 14);
+  text(493, 164, "7", "middle", 14);
+  text(493, 249, "4", "middle", 14);
   // Dedicated supply pins meet the triangle; they do not join the feedback wire.
   line(480, 147, 480, 175);
-  line(480, 235, 480, 285);
+  path([
+    [480, 235],
+    [480, 260],
+    [630, 260],
+  ]);
   text(480, 130, `+${number(p.rail)} V`, "middle", 16);
-  text(480, 309, `−${number(p.rail)} V`, "middle", 16);
+  text(655, 265, `−${number(p.rail)} V`, "middle", 16);
   elements.push("</g>");
   contact(660, 205);
   text(671, 210, "Vout", "start");
-  const commonGround = inverting ? [230, 345] : [90, 345];
+  const commonGround = multi ? [90, 285] : inverting ? [230, 345] : [90, 345];
   pins({
     "signal+": [90, sourceTop],
-    "signal-": [90, 345],
+    "signal-": [90, multi ? 285 : 345],
     rina: [inverting ? 150 : 170, 180],
     rinb: [300, 180],
     rfa: [400, 80],
@@ -302,11 +376,11 @@ function amplifierCircuit(d, p) {
     "op+": [400, 230],
     out: [550, 205],
     vp: [480, 147],
-    vn: [480, 285],
+    vn: [480, 260],
     "plus+": [480, 147],
-    "minus-": [480, 285],
+    "minus-": [630, 260],
     "plus-": commonGround,
-    "minus+": commonGround,
+
     gnd: commonGround,
   });
 }
@@ -388,7 +462,7 @@ export function renderSchematic(moduleId, params = {}, { voltages } = {}) {
       p.representation === "original" ? "Original voltage-divider" : p.representation === "thevenin" ? "Thévenin equivalent" : "Norton equivalent"
     } circuit`,
     superposition: "Two-source superposition circuit; source two has its positive terminal grounded",
-    opamp: `${p.configuration === "inverting" ? "Inverting" : "Non-inverting"} amplifier circuit with separate positive and negative supply pins`,
+    opamp: `${configurationName(p.configuration)} amplifier circuit with separate positive and negative supply pins`,
     transient: `Series ${p.kind} circuit with an SPDT source and closed return path`,
   };
   const title = escape(titles[moduleId]);

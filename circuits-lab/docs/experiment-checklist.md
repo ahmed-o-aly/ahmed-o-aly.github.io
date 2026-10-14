@@ -2,7 +2,7 @@
 
 The application provides the circuit work, instruments and graphs. Students put calculations, predictions, explanations and readings on paper. Explore opens connected examples; Build circuit preserves chosen values and starts a separate empty set of patch leads. Each circuit variant has its own saved leads.
 
-These numerical checks use the ideal models and the shown circuit diagrams. They are reproducible electrical checks, not a claim that physical headset interaction has been validated. Confirm headset handling on the intended hardware. The amplifier configurations are provisional until the instructor supplies the actual lab handout.
+These numerical checks use the ideal models and the shown circuit diagrams. They are reproducible electrical checks, not a claim that physical headset interaction has been validated. Confirm headset handling on the intended hardware. Lab 7 now follows Nishar’s supplied design review, using the explicitly documented ideal 741 approximation.
 
 ## 5 — Thévenin, Norton and maximum power transfer
 
@@ -47,9 +47,11 @@ Currents add; powers do not. At +6 V / −6 V the contributions are +2 mA and �
 3. At 1 V peak input, inspect 3 V peak inverted output. Drag either graph to read both channels at the same time. Test Hold, Run and trigger controls.
 4. Raise input amplitude: 3.6 V peak gives 10.8 V peak output; 3.7 V demands 11.1 V and clips at ±11 V. Change the supply rails and repeat.
 
-The ideal input limit is 11/3 ≈ 3.667 V peak with gain −3 and ±12 V rails. The model reserves 1 V output headroom inside each rail. At ±9 V the output limit becomes ±8 V and the input limit 8/3 ≈ 2.667 V peak. A non-inverting example with Rin = 10 kΩ and Rf = 20 kΩ gives gain +3.
+The ideal input limit is 11/3 ≈ 3.667 V peak with gain −3 and ±12 V rails. The model reserves 1 V output headroom inside each rail. At ±8 V the output limit becomes ±7 V and the input limit 7/3 ≈ 2.333 V peak. A non-inverting example with Rin = 10 kΩ and Rf = 20 kΩ gives gain +3.
 
 The meter's voltage sample is at the positive input peak; the graph cursor reads the selected trace time. Incorrect scope grounds or incomplete amplifier wiring do not produce valid current-circuit traces. A held trace retains its acquisition and is marked stale when settings change. Frequency changes waveform timing; this ideal model does not simulate bandwidth or slew-rate limits.
+
+Additional Lab 7 checks: complete Build for all four configurations. Adder uses equal Rin input resistors; subtractor uses linked matched pairs (R1 = R3 = Rin, R2 = R4 = Rf). At DC, 0.2/0.3 V adder inputs produce −1 V; 0.2/0.7 V subtractor inputs produce +1 V. Equal subtractor inputs produce 0 V and unavailable measured differential gain. Verify DC mean, AC RMS, total RMS, peak and Vpp separately; sine/square/triangle with 1 V peak have RMS 0.7071/1/0.5774 V. Clipped, stale, invalid and zero-reference cases must suppress linear measured gain.
 
 ## 8 — RC and RL transient response
 

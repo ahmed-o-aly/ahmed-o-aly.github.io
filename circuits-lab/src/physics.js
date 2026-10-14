@@ -261,9 +261,34 @@ export function superposition({ v1 = 6, v2 = 6, r1 = 1000, r2 = 1000, r3 = 1000,
 }
 
 /**
- * Ideal sine-driven amplifier with symmetric supply/output limits.
+ * A source sample in volts. AC amplitude is peak, rather than peak-to-peak.
+ * A signed coefficient also permits the second source's polarity to be reversed.
+ * DC ignores frequency, which stays positive for a subsequent AC selection.
+ */
+export function signalSample({ waveform = "sine", amplitude = 1, frequency = 100, time = 0 } = {}) {
+  finite(amplitude, "Signal amplitude");
+  positive(frequency, "Frequency");
+  nonnegative(time, "Time");
+  if (waveform === "dc") return amplitude;
+  if (!["sine", "square", "triangle"].includes(waveform)) {
+    throw new RangeError("Waveform must be dc, sine, square, or triangle.");
+  }
+  const cycles = frequency * time;
+  finite(cycles, "Signal phase");
+  const sine = Math.sin(2 * Math.PI * (cycles % 1));
+  const unit = waveform === "triangle" ? (2 * Math.asin(sine)) / Math.PI : waveform === "square" ? (sine < 0 ? -1 : 1) : sine;
+  return cleanZero(amplitude * unit);
+}
+
+/**
+ * Ideal waveform-driven amplifier with symmetric supply/output limits.
  * Omits bandwidth, slew rate, input common-mode limits, offsets and load limits.
+ * The fixed headroom is an educational approximation, not a particular 741 model.
+ * The adder uses equal Rin input resistors. The subtractor uses matched pairs:
+ * R1 = R3 = Rin and R2 = R4 = Rf, giving (Rf/Rin)(Vin2 - Vin1).
+ * Both AC sources share waveform/frequency; amplitude2 may reverse polarity.
  * gain is the nominal closed-loop gain, even when feedback is disconnected.
+ * maxInput is the permitted magnitude of referenceInput (sum/difference for two inputs).
  * Missing feedback uses an ideal zero-offset comparator approximation.
  */
 export function opamp({
@@ -271,6 +296,8 @@ export function opamp({
   rin = 10000,
   rf = 20000,
   amplitude = 1,
+  amplitude2 = 0,
+  waveform = "sine",
   rail = 12,
   headroom = 1,
   frequency = 100,
@@ -280,40 +307,56 @@ export function opamp({
 } = {}) {
   positive(rin, "Input resistance");
   nonnegative(rf, "Feedback resistance");
-  nonnegative(amplitude, "Input amplitude");
+  if (waveform === "dc") finite(amplitude, "Input voltage");
+  else nonnegative(amplitude, "Input amplitude");
+  finite(amplitude2, "Second input amplitude");
   nonnegative(rail, "Supply rail magnitude");
   nonnegative(headroom, "Output headroom");
   positive(frequency, "Frequency");
   nonnegative(time, "Time");
   let gain;
-  if (configuration === "inverting") gain = -rf / rin;
+  if (configuration === "inverting" || configuration === "adder") gain = -rf / rin;
   else if (configuration === "noninverting" || configuration === "non-inverting") gain = 1 + rf / rin;
+  else if (configuration === "subtractor") gain = rf / rin;
   else if (configuration === "follower") gain = 1;
-  else throw new RangeError("Configuration must be inverting, noninverting, or follower.");
-  const input = amplitude * Math.sin(2 * Math.PI * frequency * time);
+  else throw new RangeError("Configuration must be inverting, noninverting, adder, subtractor, or follower.");
+  finite(gain, "Amplifier gain");
+  const input = signalSample({ waveform, amplitude, frequency, time });
+  const input2 = signalSample({
+    waveform,
+    amplitude: amplitude2,
+    frequency,
+    time,
+  });
+  const referenceInput = configuration === "adder" ? input + input2 : configuration === "subtractor" ? input2 - input : input;
+  const referenceAmplitude = configuration === "adder" ? amplitude + amplitude2 : configuration === "subtractor" ? amplitude2 - amplitude : amplitude;
   const limit = Math.max(0, rail - headroom);
-  const desiredPeak = Math.abs(gain) * amplitude;
-  const direction = configuration === "inverting" ? -1 : 1;
+  const desiredPeak = Math.abs(gain * referenceAmplitude);
+  finite(referenceInput, "Reference input");
+  finite(desiredPeak, "Requested output peak");
+  const direction = configuration === "inverting" || configuration === "adder" ? -1 : 1;
   let output = 0;
   let peakOutput = 0;
   let clipped = false;
   let modelState = "powered-off";
   if (powered && limit > 0) {
     if (feedback) {
-      output = Math.max(-limit, Math.min(limit, gain * input));
+      output = Math.max(-limit, Math.min(limit, gain * referenceInput));
       peakOutput = Math.min(limit, desiredPeak);
       clipped = desiredPeak > limit;
       modelState = clipped ? "saturated" : "linear";
     } else {
-      output = Math.sign(direction * input) * limit;
-      peakOutput = amplitude > 0 ? limit : 0;
-      clipped = amplitude > 0;
+      output = Math.sign(direction * referenceInput) * limit;
+      peakOutput = Math.abs(referenceAmplitude) > 0 ? limit : 0;
+      clipped = Math.abs(referenceAmplitude) > 0;
       modelState = "open-loop";
     }
   }
   return {
     gain,
     input,
+    input2,
+    referenceInput: cleanZero(referenceInput),
     output: cleanZero(output),
     limit,
     maxInput: feedback ? (gain === 0 ? Infinity : limit / Math.abs(gain)) : 0,

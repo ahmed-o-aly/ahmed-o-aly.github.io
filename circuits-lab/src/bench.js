@@ -8,6 +8,7 @@ import {
   createOscilloscope,
   createRecorder,
   createPowerSupply,
+  createDualSupply,
   createGenerator,
   createResistanceBox,
   createProbe as makeProbe,
@@ -16,6 +17,8 @@ import {
 } from "./equipment.js";
 import { createVRSession, recenterRig, snapshotDesktopView, restoreDesktopView } from "./vr-session.js";
 import { routePatchLeads, routeInstrumentLead } from "./cable-routing.js";
+import { amplifierWireRole, WIRE_ROLES } from "./amplifier-guide.js";
+import { circuitFor } from "./modules.js";
 import { deformCablePath, settleCablePath } from "./cable-motion.js";
 import { commonSocketPosition, createTerminalSocketAllocator, wireSocketKey } from "./terminal-sockets.js";
 
@@ -81,6 +84,7 @@ export function createBench({
   const homeDirection = new THREE.Vector3(-0.25, 3.0, 3.25).normalize();
   const homeTarget = new THREE.Vector3(0, 0.97, -0.77);
   let framedAspect = 0;
+  let amplifierCorners = null;
   function resetView() {
     if (renderer.xr.isPresenting) return;
     rig.position.set(0, 0, 0);
@@ -98,6 +102,7 @@ export function createBench({
       for (const y of [0, 0.36])
         for (const z of [-0.13, 0.13]) corners.push(new THREE.Vector3(x, y, z).applyQuaternion(scopeOrientation).add(scopePosition));
     for (const x of [-1.22, -0.55, 0.55, 1.22]) for (const z of [-0.46, 0.25]) corners.push(new THREE.Vector3(x, 0.82, z));
+    if (amplifierCorners) corners.splice(0, corners.length, ...amplifierCorners);
     for (let iteration = 0; iteration < 7; iteration++) {
       camera.position.copy(controls.target).addScaledVector(homeDirection, distance);
       camera.lookAt(controls.target);
@@ -394,7 +399,7 @@ export function createBench({
     if (part.type === "ground") return "GND";
     if (part.type === "C") return "C1";
     if (part.type === "L") return "L1";
-    if (part.type === "opamp") return "U1";
+    if (part.type === "opamp") return "U1–741";
     if (part.type === "switch") return "S1";
     if (part.type === "R") {
       const name = { load: "RL", rin: "Rin", rf: "Rf", r: "R", r1: "R1", r2: "R2" }[part.id];
@@ -405,7 +410,7 @@ export function createBench({
   }
   function editableParameter(part) {
     if (current.module === "thevenin") return { load: "load", req: "equivalentResistance" }[part.id];
-    if (current.module === "opamp") return { rin: "rin", rf: "rf" }[part.id];
+    if (current.module === "opamp") return { rin: "rin", rin2: "rin", rf: "rf", rf2: "rf" }[part.id];
     if (current.module === "transient" && part.id === "r") return "resistance";
     return null;
   }
@@ -443,11 +448,15 @@ export function createBench({
     unit.group.rotation.x = tilt;
     body.add(unit.group);
     body.updateWorldMatrix(true, true);
-    const contacts = unit.anchors["+"]
-      ? [unit.anchors["+"], unit.anchors["−"]]
-      : unit.anchors.A
-        ? [unit.anchors.A, unit.anchors.B]
-        : Object.values(unit.anchors).slice(0, 2);
+    const contacts = unit.anchors["+V"]
+      ? [unit.anchors["+V"], unit.anchors.GND, unit.anchors["−V"]]
+      : unit.anchors.OUT
+        ? [unit.anchors.OUT, ...(unit.anchors.OUT2 ? [unit.anchors.OUT2] : []), unit.anchors.GND].filter(Boolean)
+        : unit.anchors["+"]
+          ? [unit.anchors["+"], unit.anchors["−"]]
+          : unit.anchors.A
+            ? [unit.anchors.A, unit.anchors.B]
+            : Object.values(unit.anchors).slice(0, 2);
     contacts.forEach((anchor) => attachment.push(body.worldToLocal(anchor.getWorldPosition(new THREE.Vector3()))));
     if (unit.anchors.OUT && attachment.length === 1) attachment.push(attachment[0].clone().add(new THREE.Vector3(0.007 / 0.36, 0, 0)));
     unit.update({ ...current, meterMode });
@@ -464,7 +473,7 @@ export function createBench({
     for (const part of components) {
       const body = new THREE.Group();
       body.position.set(part.x, 0.955, part.z);
-      if (["V", "I"].includes(part.type))
+      if (["V", "I", "dual-supply"].includes(part.type))
         body.position.set(part.benchPosition?.[0] ?? Math.sign(part.x || -1) * 2.15, 0.842, part.benchPosition?.[1] ?? part.z);
       componentGroup.add(body);
       const partPins = part.pins || [];
@@ -601,7 +610,29 @@ export function createBench({
               solderPad(componentGroup, foot.x, foot.z);
             }
           const dot = mesh(new THREE.CylinderGeometry(0.009, 0.009, 0.001, 16), mat("#85877f"), body, -0.052, 0.084, -0.103);
-          topPrint(body, "OP AMP", "DIP-8", 0.115, 0.143, 0.084, 0.024);
+          topPrint(body, "U1–741", "DIP-8", 0.115, 0.143, 0.084, 0.024);
+          const symbol = canvasSurface(768, 320, 0.48, 0.2);
+          const ctx = symbol.context;
+          ctx.strokeStyle = "#e9e8df";
+          ctx.fillStyle = "#e9e8df";
+          ctx.lineWidth = 4;
+          ctx.beginPath();
+          ctx.moveTo(255, 70);
+          ctx.lineTo(255, 230);
+          ctx.lineTo(480, 150);
+          ctx.closePath();
+          ctx.stroke();
+          ctx.font = "38px monospace";
+          ctx.fillText("U1–741", 285, 163);
+          ctx.fillText("2 −", 95, 105);
+          ctx.fillText("3 +", 95, 219);
+          ctx.fillText("6 Vout", 510, 163);
+          ctx.fillText("7 +V", 295, 45);
+          ctx.fillText("4 −V", 295, 286);
+          symbol.texture.needsUpdate = true;
+          symbol.object.rotation.x = -Math.PI / 2;
+          symbol.object.position.set(0, 0.1, -0.31);
+          body.add(symbol.object);
           const byId = {
             "op+": [-0.133, -0.016, 0.033],
             "op-": [-0.133, -0.016, -0.033],
@@ -610,6 +641,11 @@ export function createBench({
             vn: [-0.133, -0.016, 0.099],
           };
           partPins.forEach((pin) => attachment.push(new THREE.Vector3(...(byId[pin.id] || [0, 0, 0]))));
+          break;
+        }
+        case "dual-supply": {
+          const unit = mountOnPart(createDualSupply({ id: part.id }), body, attachment);
+          updateHardware = () => unit.update(current);
           break;
         }
         case "switch": {
@@ -651,8 +687,14 @@ export function createBench({
           else fixedValue = 5;
           const unit =
             part.id === "signal"
-              ? createGenerator({ id: part.id })
-              : createPowerSupply({ id: part.id, label: partName(part), parameter, fixedValue, polarity });
+              ? createGenerator({ id: part.id, dual: partPins.length === 3 })
+              : createPowerSupply({
+                  id: part.id,
+                  label: partName(part),
+                  parameter,
+                  fixedValue,
+                  polarity,
+                });
           mountOnPart(unit, body, attachment);
           updateHardware = () => unit.update(current);
           break;
@@ -674,7 +716,7 @@ export function createBench({
         updateHardware,
       });
       if (part.type !== "ground") {
-        const dimensions = ["V", "I"].includes(part.type)
+        const dimensions = ["V", "I", "dual-supply"].includes(part.type)
           ? [0.46, 0.19, 0.34]
           : part.type === "C"
             ? [0.18, 0.23, 0.18]
@@ -718,7 +760,7 @@ export function createBench({
         const direction = new THREE.Vector3(pin.x - start.x, 0, pin.z - start.z).normalize();
         const landing = start.clone().addScaledVector(direction, ["R", "L"].includes(part.type) ? 0.052 : 0.014);
         landing.y = 0.938;
-        if (["V", "I"].includes(part.type)) {
+        if (["V", "I", "dual-supply"].includes(part.type)) {
           const endpoint = new THREE.Vector3(pin.x, 0.995, pin.z);
           const middle = start.clone().lerp(endpoint, 0.5);
           middle.y = Math.max(0.95, middle.y);
@@ -875,7 +917,8 @@ export function createBench({
     patchRoutes = routes;
     connections.forEach(({ id, a, b, index, startPin, endPin, start, end }) => {
       const grounded = a === "gnd" || b === "gnd" || a.endsWith("-") || b.endsWith("-") || a === "return" || b === "return";
-      const material = mat(grounded ? "#202121" : "#8b2925", { roughness: 0.79 });
+      const role = current.module === "opamp" ? amplifierWireRole(a, b, circuitFor("opamp", current.parameters)) : null;
+      const material = mat(role ? WIRE_ROLES[role][1] : grounded ? "#202121" : "#8b2925", { roughness: 0.79 });
       const route = routes.get(id);
       const previous = previousVisuals.get(id);
       const target = previous?.route === route ? previous.target : sampleCable(route).map((p) => board.localToWorld(p));
@@ -1136,10 +1179,11 @@ export function createBench({
   function refreshInteractionVisuals() {
     for (const [id, pin] of pins) {
       const selected = id === current.selectedTerminal;
+      const guided = current.guidance?.terminals?.includes(id);
       for (const socket of pin.sockets) {
         const over = hovered?.kind === "terminal" && hovered.id === id && (hovered.socket ?? 0) === socket.socket;
-        socket.ring.visible = selected || over;
-        socket.ring.material.color.set(selected ? "#f4d973" : "#e6eef5");
+        socket.ring.visible = selected || over || guided;
+        socket.ring.material.color.set(selected || guided ? "#f4d973" : "#e6eef5");
         socket.ring.scale.setScalar(selected ? 1.27 : 1.12);
       }
     }
@@ -1207,7 +1251,15 @@ export function createBench({
   const actionBoxes = [];
   function drawActions() {
     const { context: ctx, canvas } = actionPanel;
-    const status = current.diagnostic || { level: "info", title: "Circuit ready", message: "Use the equipment to take readings." };
+    const diagnostic = current.diagnostic || {
+      level: "info",
+      title: "Circuit ready",
+      message: "Use the equipment to take readings.",
+    };
+    const status =
+      current.guidance && !["error", "warning"].includes(diagnostic.level)
+        ? { ...diagnostic, title: `${current.guidance.phase} · Guided`, message: current.guidance.text, detail: diagnostic.message }
+        : { ...diagnostic, detail: current.guidance?.text || diagnostic.detail };
     const ink = status.level === "error" ? "#893e25" : status.level === "warning" ? "#7b551e" : "#25483d";
     ctx.fillStyle = "#f7f8f3";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -1473,7 +1525,7 @@ export function createBench({
     onHold: (phase, hold, result) => {
       const target = hold.target;
       if (phase === "start") {
-        if (["probe", "plug", "terminal"].includes(target.kind)) onManipulation("begin", hold);
+        if (["probe", "plug", "terminal", "dial"].includes(target.kind)) onManipulation("begin", hold);
         if (target.kind === "probe") {
           const probe = movableProbes.get(target.channel);
           if (probe) {
@@ -1541,7 +1593,7 @@ export function createBench({
             hold.lead.restTime = performance.now();
           }
         }
-        if (["probe", "plug", "terminal"].includes(target.kind)) onManipulation("end", hold);
+        if (["probe", "plug", "terminal", "dial"].includes(target.kind)) onManipulation("end", hold);
         renderer.shadowMap.needsUpdate = true;
       }
     },
@@ -1585,6 +1637,20 @@ export function createBench({
     }
     refreshInteractionVisuals();
     syncEquipment(rebuilt);
+    if (rebuilt) {
+      amplifierCorners = null;
+      if (current.module === "opamp") {
+        const box = new THREE.Box3(new THREE.Vector3(-0.62, 0.84, -1.12), new THREE.Vector3(0.62, 0.98, -0.43));
+        for (const object of [...values.values()].map((value) => value.body).concat([meter.group, scope.group, experimentControls.group])) {
+          object.updateWorldMatrix(true, true);
+          box.union(new THREE.Box3().setFromObject(object));
+        }
+        amplifierCorners = [];
+        for (const x of [box.min.x, box.max.x])
+          for (const y of [box.min.y, box.max.y]) for (const z of [box.min.z, box.max.z]) amplifierCorners.push(new THREE.Vector3(x, y, z));
+      }
+      resetView();
+    }
     const nextLive = JSON.stringify([
       current.module,
       current.metrics,
@@ -1598,7 +1664,7 @@ export function createBench({
       liveSignature = nextLive;
       drawLive();
     }
-    const nextActions = JSON.stringify(current.diagnostic);
+    const nextActions = JSON.stringify([current.diagnostic, current.guidance]);
     if (nextActions !== actionSignature) {
       actionSignature = nextActions;
       drawActions();

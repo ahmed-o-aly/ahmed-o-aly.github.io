@@ -46,10 +46,10 @@ export const MODULES = {
     description: "Set the gain and check for clipping.",
     purpose: "Design a gain with resistors, then find the largest input before output clipping.",
     steps: [
-      "Choose the amplifier circuit assigned in your lab sheet. For this example, start with the inverting circuit.",
-      "For a first design, use the inverting circuit at gain −3. Set Rin and Rf, wire feedback, and connect both supplies.",
-      "Connect CH1 to input and CH2 to output, with both grounds at GND. Set a readable timebase and voltage scales.",
-      "Increase input amplitude until clipping begins. Change the supplies or signal frequency and compare the traces.",
+      "Select: choose the supply and an inverting, non-inverting, adder or subtractor circuit.",
+      "Build: follow the highlighted connections, including pins 7 (+V), 4 (−V), feedback and common ground.",
+      "Adjust: use Rin/Rf and separate waveform, amplitude and frequency controls. Measure: connect meter and scope probes.",
+      "Understand: compare measured response with theory. Increase amplitude until clipping, then reduce it to recover.",
     ],
     challenge:
       "At ±12 V and 100 Hz, build an inverting amplifier with gain −3. Connect CH1 to Vin and CH2 to Vout, with both grounds at GND. Increase the input until clipping appears. Put measurements and calculations on paper.",
@@ -59,6 +59,9 @@ export const MODULES = {
       rin: 10000,
       rf: 20000,
       amplitude: 1,
+      amplitude2: 0.5,
+      waveform: "sine",
+      guided: true,
       rail: 12,
       frequency: 100,
       prediction: 0,
@@ -197,51 +200,64 @@ export function circuitFor(id, p) {
     sensor = "load";
   }
   if (id === "opamp") {
+    const multi = ["adder", "subtractor"].includes(p.configuration);
+    const subtractor = p.configuration === "subtractor";
+    const signalPins = [pin("signal+", multi ? "Vin1" : "Vin", -1.4, -0.48)];
+    if (multi) signalPins.push(pin("signal2+", "Vin2", -1.4, 0.58));
+    signalPins.push(pin("signal-", "GND", -1.4, 0.03));
     components = [
       {
-        ...part("signal", "INPUT", "V", `${p.amplitude} Vpk`, -1.38, -0.15, [pin("signal+", "+", -1.38, -0.35), pin("signal-", "−", -1.38, 0.06)]),
-        benchPosition: [-2.14, 0.19],
+        ...part("signal", "INPUT SIGNAL", "V", p.waveform === "dc" ? `${p.amplitude} V DC` : `${p.amplitude} Vpk`, -1.4, -0.2, signalPins),
+        benchPosition: [-2.14, 0.05],
       },
-      part("rin", "Rin", "R", `${p.rin / 1000} kΩ`, -0.72, 0.3, [pin("rina", "A", -1.14, 0.3), pin("rinb", "B", -0.3, 0.3)]),
-      part("op", "OP AMP", "opamp", `±${p.rail} V`, 0, -0.35, [
-        pin("op+", "+", -0.32, -0.12),
-        pin("op-", "−", -0.32, -0.42),
-        pin("out", "OUT", 0.53, -0.22),
-        pin("vp", "V+", 0.24, -0.72),
-        pin("vn", "V−", 0.24, -0.02),
+      part("rin", subtractor ? "R1 · Rin" : "Rin", "R", `${p.rin / 1000} kΩ`, -0.72, 0.28, [
+        pin("rina", "A", -1.12, 0.28),
+        pin("rinb", "B", -0.32, 0.28),
       ]),
-      part("rf", "Rf", "R", `${p.rf / 1000} kΩ`, 0.7, 0.3, [pin("rfa", "A", 0.28, 0.3), pin("rfb", "B", 1.12, 0.3)]),
+      part("op", "U1–741", "opamp", "Ideal teaching model", 0, -0.35, [
+        pin("op+", "3 +IN", -0.32, -0.12),
+        pin("op-", "2 −IN", -0.32, -0.42),
+        pin("out", "6 Vout", 0.53, -0.22),
+        pin("vp", "7 +V", 0.24, -0.72),
+        pin("vn", "4 −V", 0.24, -0.02),
+      ]),
+      part("rf", subtractor ? "R2 · Rf" : "Rf", "R", `${p.rf / 1000} kΩ`, 0.7, 0.28, [pin("rfa", "A", 0.28, 0.28), pin("rfb", "B", 1.12, 0.28)]),
       {
-        ...part("plus", "+ SUPPLY", "V", `${p.rail} V`, 1.38, -0.56, [pin("plus+", "+", 1.38, -0.72), pin("plus-", "−", 1.38, -0.39)]),
-        benchPosition: [2.15, -0.67],
-      },
-      {
-        ...part("minus", "− SUPPLY", "V", `${p.rail} V`, 1.38, 0.215, [pin("minus+", "+", 1.38, 0.05), pin("minus-", "−", 1.38, 0.38)]),
-        benchPosition: [2.15, 0.3],
+        ...part("supply", "DUAL SUPPLY", "dual-supply", `±${p.rail} V`, 1.38, -0.3, [
+          pin("plus+", "+V", 1.38, -0.72),
+          pin("plus-", "GND", 1.38, -0.38),
+          pin("minus-", "−V", 1.38, -0.02),
+        ]),
+        benchPosition: [2.15, -0.3],
       },
       part("ground", "GND", "ground", "0 V", -0.7, 0.79, [pin("gnd", "GND", -1.1, 0.79)]),
     ];
+    // One common return belongs to the single dual supply.
     wires = [
+      ["plus+", "vp"],
+      ["plus-", "gnd"],
+      ["minus-", "vn"],
       ["signal-", "gnd"],
       ["rfb", "out"],
       ["rfa", "op-"],
       ["rinb", "op-"],
-      ["plus+", "vp"],
-      ["plus-", "gnd"],
-      ["minus+", "gnd"],
-      ["minus-", "vn"],
     ];
-    wires.push(
-      ...(p.configuration === "inverting"
-        ? [
-            ["signal+", "rina"],
-            ["op+", "gnd"],
-          ]
-        : [
-            ["signal+", "op+"],
-            ["rina", "gnd"],
-          ])
-    );
+    if (multi) {
+      components.push(
+        part("rin2", subtractor ? "R3 · Rin" : "R2 · Rin", "R", `${p.rin / 1000} kΩ · linked`, -0.67, 0.61, [
+          pin("rin2a", "A", -0.98, 0.61),
+          pin("rin2b", "B", -0.36, 0.61),
+        ])
+      );
+      wires.push(["signal+", "rina"], ["signal2+", "rin2a"]);
+      if (subtractor) {
+        components.push(
+          part("rf2", "R4 · Rf", "R", `${p.rf / 1000} kΩ · linked`, 0.65, 0.61, [pin("rf2a", "A", 0.32, 0.61), pin("rf2b", "B", 0.98, 0.61)])
+        );
+        wires.push(["rin2b", "op+"], ["op+", "rf2a"], ["rf2b", "gnd"]);
+      } else wires.push(["rin2b", "op-"], ["op+", "gnd"]);
+    } else if (p.configuration === "inverting") wires.push(["signal+", "rina"], ["op+", "gnd"]);
+    else wires.push(["signal+", "op+"], ["rina", "gnd"]);
     positive = "out";
   }
   if (id === "transient") {
@@ -299,11 +315,14 @@ export const OPTIONS = {
   nortonCurrent: [4, 6, 8, 10, 12, 14, 16, 18, 20],
   v1: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
   v2: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
-  rin: [5000, 10000, 20000],
+  configuration: ["inverting", "noninverting", "adder", "subtractor"],
+  waveform: ["dc", "sine", "square", "triangle"],
+  rin: [1000, 5000, 10000, 20000, 50000, 100000],
   rf: [10000, 20000, 30000, 40000, 50000, 100000],
-  rail: [5, 9, 12, 15],
+  rail: [8, 12, 15],
   frequency: [10, 50, 100, 500, 1000],
-  amplitude: [0.25, 0.5, 1, 2, 3, 3.5, 3.6, 3.7, 4, 5, 6],
+  amplitude2: [-1, -0.5, 0, 0.2, 0.3, 0.5, 0.7, 1, 2, 3, 4, 5],
+  amplitude: [0, 0.1, 0.2, 0.25, 0.5, 1, 2, 3, 3.5, 3.6, 3.7, 4, 5, 6],
   prediction: Array.from({ length: 101 }, (_, i) => i / 10),
   resistance: [100, 200, 250, 500, 1000, 2000, 5000, 10000],
   speed: [0.25, 0.5, 1, 2],

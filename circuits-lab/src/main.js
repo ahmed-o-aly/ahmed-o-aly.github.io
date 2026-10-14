@@ -9,6 +9,7 @@ import {
   context,
   measure,
   metrics,
+  amplifierReadings,
   plot,
   vrActions,
   change,
@@ -27,13 +28,20 @@ import {
   endManipulation,
 } from "./lab.js";
 import { transient } from "./physics.js";
+import { amplifierGuide, amplifierTheory, configurationName, WIRE_ROLES } from "./amplifier-guide.js";
 import { createBench } from "./bench.js";
 import { renderSchematic } from "./schematic.js";
 import { circuitStatus } from "./circuit-status.js";
 
 const app = document.querySelector("#app");
 const state = createLab();
-let xrStatus = { kind: "checking", supported: false, active: false, message: "Checking headset…" },
+if (new URLSearchParams(location.search).get("lab") === "7") action(state, "module:opamp");
+let xrStatus = {
+    kind: "checking",
+    supported: false,
+    active: false,
+    message: "Checking headset…",
+  },
   bench,
   showReference = false,
   selectedPart = null,
@@ -71,7 +79,7 @@ app.innerHTML = `
       .join("")}</nav>
     <div class="sidebar-bottom"><div class="course-mark">ELEN <strong>221</strong></div><button class="text-button" id="guide-button">Help ${svgIcon(
       "arrow"
-    )}</button><span class="prototype-tag">Lab build · v0.10</span></div>
+    )}</button><span class="prototype-tag">Lab build · v0.11</span></div>
   </aside>
   <main class="workspace">
     <header class="topbar"><div class="breadcrumb">Lab <span id="lab-number">05</span><span class="slash">/</span><span id="topic-label"></span></div><div class="header-actions"><button class="button vr-button" id="vr-button">${svgIcon(
@@ -80,17 +88,20 @@ app.innerHTML = `
     <div class="vr-status-row"><span id="vr-status" role="status">Checking headset…</span><button id="headset-help" class="text-button">Open on a headset</button></div>
     <section class="intro"><div><h1 id="module-title"></h1><p id="module-description"></p></div><div class="mode-switch" aria-label="Learning mode"><button data-action="explore" class="active">Explore</button><button data-action="build">Build circuit</button></div></section>
     <section class="experiment-brief" aria-label="Experiment aim"><span>Your experiment</span><p id="experiment-aim"></p><details><summary>Experiment steps</summary><div id="experiment-steps"></div></details></section>
+    <div id="amplifier-flow" hidden aria-label="Learning sequence">${["Select", "Build", "Adjust", "Measure", "Understand"]
+      .map((name, i) => `<span data-phase="${name}"><b>${i + 1}</b>${name}</span>`)
+      .join("")}</div>
     <div class="lab-layout">
       <section class="bench-panel" aria-label="Interactive circuit experiment">
         <div class="panel-header"><div class="bench-tabs"><button id="bench-tab" class="active">3D bench</button><button id="reference-tab">Schematic</button><button id="vr-preview-tab" hidden title="Desktop check of panel layout only">Panel preview</button></div><div class="bench-toolbar"><span id="circuit-status" class="status-tag">Circuit connected</span><button class="button subtle" data-action="reset-experiment" title="Restore this lab's original Explore circuit, values and probes">Reset experiment</button><button class="icon-button" id="reset-view" aria-label="Reset 3D view">${svgIcon(
           "reset"
         )}</button></div></div>
-        <div class="stage-wrap"><div id="bench"></div><div id="schematic" hidden></div><div class="stage-top"><span id="bench-caption">Original circuit</span><span id="hover-label" hidden></span></div><div class="stage-bottom"><span>Drag empty space to look around · Scroll to zoom</span><span>Drag a probe to a contact · Drag a dial to turn it</span></div></div>
-        <div class="bench-strip"><p id="object-help">Use the equipment on the bench. The meter reads the voltage between its two test tips.</p><button class="button subtle" data-action="undo" title="Undo last wire or probe change">Undo</button><button class="button subtle" data-action="cancel" id="cancel-wire" title="Cancel selection (Esc)">Cancel lead</button></div>
+        <div id="guided-step" hidden><label><input type="checkbox" id="guided-toggle" checked> Guided mode</label><p id="guided-instruction" role="status"></p><button class="button subtle" data-action="guided-next" id="guided-next">Make this connection</button></div><div class="stage-wrap"><div id="bench"></div><div id="schematic" hidden></div><div class="stage-top"><span id="bench-caption">Original circuit</span><span id="hover-label" hidden></span></div><div class="stage-bottom"><span>Drag to rotate · Scroll to zoom · Right-drag to pan</span><span>Drag a probe to a contact · Drag a dial to turn it</span></div></div>
+        <div class="bench-strip"><p id="object-help">Use the equipment on the bench. The meter reads the voltage between its two test tips.</p><button class="button subtle" data-action="undo" title="Undo the last circuit setting, wire or probe change">Undo</button><button class="button subtle" data-action="cancel" id="cancel-wire" title="Cancel selection (Esc)">Cancel lead</button></div>
         <div class="bench-help"><span id="bench-help"></span></div>
-        <div id="readings" class="readings"></div>
+        <div id="readings" class="readings"></div><div id="amplifier-response" hidden></div>
       </section>
-      <aside class="controls-panel"><details id="keyboard-controls"><summary>Keyboard controls</summary><p class="hint">The same equipment settings, for keyboard and touch use.</p><div class="patch-toolbar" aria-label="Keyboard bench tools"><button data-action="tool:select" data-tool="select">Select</button><button data-action="tool:wire" data-tool="wire">Connect contacts</button><button data-action="tool:red" data-tool="red">Move V tip</button><button data-action="tool:black" data-tool="black">Move COM tip</button><button data-action="tool:remove" data-tool="remove">Remove lead</button></div><div class="control-heading"><div><h2>Equipment settings</h2></div><span class="small-circuit">${svgIcon(
+      <aside class="controls-panel"><div id="lab7-controls" hidden></div><details id="keyboard-controls"><summary>Keyboard controls</summary><p class="hint">The same equipment settings, for keyboard and touch use.</p><div class="patch-toolbar" aria-label="Keyboard bench tools"><button data-action="tool:select" data-tool="select">Select</button><button data-action="tool:wire" data-tool="wire">Connect contacts</button><button data-action="tool:red" data-tool="red">Move V tip</button><button data-action="tool:black" data-tool="black">Move COM tip</button><button data-action="tool:remove" data-tool="remove">Remove lead</button></div><div class="control-heading"><div><h2>Equipment settings</h2></div><span class="small-circuit">${svgIcon(
         "circuit"
       )}</span></div><div id="part-controls" hidden></div><div id="controls"></div><div id="model-note" class="model-note"></div></details></aside>
     </div>
@@ -104,7 +115,7 @@ app.innerHTML = `
     )}</button></footer>
   </main>
   <dialog id="headset-dialog" aria-labelledby="headset-title"><div class="dialog-header"><h2 id="headset-title">Open the lab in VR</h2><button class="icon-button" data-close aria-label="Close VR setup">×</button></div><p>Open this lab in your headset’s browser, then select <strong>Enter VR</strong>. The circuit bench and all four experiments open around you.</p><div id="headset-address" class="headset-address"></div><ol class="headset-steps"><li>Choose a lab and Explore or Build circuit.</li><li>Enter VR and accept the headset’s request.</li><li>Grip a probe to pick it up. Bring its tip to a contact and release. Hold a dial and turn your wrist to adjust it.</li><li>Use the left stick to move and the right stick to turn. You can also walk around within your play area.</li></ol><p id="headset-status" class="headset-status" role="status"></p><p>Your circuit and readings stay when you leave VR.</p><div class="dialog-actions"><button class="button primary" id="headset-enter" hidden>Enter VR</button><button class="button subtle" id="headset-check">Check headset</button><a id="headset-fullscreen" class="button subtle" target="_blank" rel="noopener" hidden>Open lab full screen</a></div></dialog>
-  <dialog id="guide-dialog"><div class="dialog-header"><div><span class="eyebrow">ELEN 221</span><h2>Lab guide</h2></div><button class="icon-button" data-close aria-label="Close guide">×</button></div><div class="guide-body"><h3>Use the equipment</h3><p>Explore starts with a wired circuit. Build circuit starts with loose connections. Follow the experiment steps above the bench. Reset experiment (Reset lab on the control box) returns this lab to its original Explore circuit, values and probes.</p><ol><li>Drag from one contact to another to add a lead. Grab an existing lead to move or remove it. Undo puts the last connection back.</li><li>Pick up a test probe and put its metal tip on a contact. The red lead runs to V and the black lead to COM on the meter. The reading is V minus COM. Swap the tips to reverse the sign.</li><li>Turn the dials on the equipment to change values. Flip the circuit switch to change its state. In the amplifier lab, use the two scope probes to compare input and output.</li><li>Drag on a graph to choose a load or inspect an acquired trace. The graph labels state what is being calculated or measured. Put your answers on paper.</li></ol><h3>In VR</h3><p id="vr-help-status"></p><p>Open the HTTPS link in your headset browser and select Enter VR. Grip a probe to pick it up, move it to a contact, and release. Hold a dial and turn your wrist. Use the left stick to move and the right stick to turn. You can also walk within your play area. Recenter brings you back to the bench. Read graphs on the left device, readings on the right, and circuit errors on the centre panel. The Diagram tab shows the target circuit.</p><h3>Keyboard and mouse</h3><p>Drag empty space to orbit and scroll to zoom. Drag equipment to use it. Keyboard controls below the bench offer the same settings without dragging. Focus the graph and use the arrow keys to move its cursor.</p><h3>Model limits</h3><p>DC resistor circuits are solved from your connections. The amplifier and transient labs support the shown circuit layouts. Disconnected or invalid circuits do not produce valid traces.</p><p>The amplifier uses ideal gain with adjustable supply rails. Its output stays 1 V inside each rail. This model does not include device bandwidth, slew rate, input common-mode limits, component tolerances or output current limits.</p><p>RC and RL models preserve capacitor voltage and inductor current at switching. New run resets stored energy. The instructor must confirm the amplifier configurations against the lab handout, which was not included in the email.</p><p><a href="./docs/module-designs.md" target="_blank" rel="noopener">Instructor guide ↗</a></p></div></dialog>
+  <dialog id="guide-dialog"><div class="dialog-header"><div><span class="eyebrow">ELEN 221</span><h2>Lab guide</h2></div><button class="icon-button" data-close aria-label="Close guide">×</button></div><div class="guide-body"><h3>Use the equipment</h3><p>Explore starts with a wired circuit. Build circuit starts with loose connections. Follow the experiment steps above the bench. Reset experiment (Reset lab on the control box) returns this lab to its original Explore circuit, values and probes.</p><ol><li>Drag from one contact to another to add a lead. Grab an existing lead to move or remove it. Undo puts the last connection back.</li><li>Pick up a test probe and put its metal tip on a contact. The red lead runs to V and the black lead to COM on the meter. The reading is V minus COM. Swap the tips to reverse the sign.</li><li>Turn the dials on the equipment to change values. Flip the circuit switch to change its state. In the amplifier lab, use the two scope probes to compare input and output.</li><li>Drag on a graph to choose a load or inspect an acquired trace. The graph labels state what is being calculated or measured. Put your answers on paper.</li></ol><h3>In VR</h3><p id="vr-help-status"></p><p>Open the HTTPS link in your headset browser and select Enter VR. Grip a probe to pick it up, move it to a contact, and release. Hold a dial and turn your wrist. Use the left stick to move and the right stick to turn. You can also walk within your play area. Recenter brings you back to the bench. Read graphs on the left device, readings on the right, and circuit errors on the centre panel. The Diagram tab shows the target circuit.</p><h3>Keyboard and mouse</h3><p>Drag empty space to orbit and scroll to zoom. Drag equipment to use it. Keyboard controls below the bench offer the same settings without dragging. Focus the graph and use the arrow keys to move its cursor.</p><h3>Model limits</h3><p>DC resistor circuits are solved from your connections. The amplifier and transient labs support the shown circuit layouts. Disconnected or invalid circuits do not produce valid traces.</p><p>The amplifier uses ideal gain with adjustable supply rails. Its output stays 1 V inside each rail. This model does not include device bandwidth, slew rate, input common-mode limits, component tolerances or output current limits.</p><p>RC and RL models preserve capacitor voltage and inductor current at switching. New run resets stored energy. Lab 7 uses an ideal 741 teaching model with four supported reference topologies. The 1 V rail headroom is an educational limit, not a manufacturer specification. Unused package pins are excluded from the wiring exercise.</p><p><a href="./docs/module-designs.md" target="_blank" rel="noopener">Instructor guide ↗</a></p></div></dialog>
 `;
 
 mountLabShell({
@@ -177,20 +188,69 @@ function renderControls() {
     note = "An inactive ideal voltage source is a short circuit. Compare it with an open circuit. All resistors are 1 kΩ.";
   }
   if (id === "opamp") {
-    html += controlBlock(
-      segmented("configuration", "Circuit", [
-        ["inverting", "Inverting"],
-        ["noninverting", "Non-inverting"],
-      ])
+    const theory = amplifierTheory(p);
+    const numeric = (name, label, min, max, step, unit = "", disabled = false) =>
+      `<div class="control-block"><label for="param-${name}" class="control-label">${label}</label><div class="pot-control"><input id="param-${name}" data-param="${name}" type="number" min="${min}" max="${max}" step="${step}" value="${
+        p[name]
+      }" ${
+        disabled ? "disabled" : ""
+      }><span>${unit}</span></div><input class="pot-range" type="range" aria-label="${label} dial" data-range="${name}" min="${min}" max="${max}" step="${step}" value="${
+        p[name]
+      }" ${disabled ? "disabled" : ""}><output data-value="${name}">${
+        name === "rin" || name === "rf" ? `${fmt(p[name] / 1000)} kΩ` : `${fmt(p[name])} ${unit}`
+      }</output></div>`;
+    const group = (n, title, body) => `<section class="lab7-control-group"><h2><span>${n}</span>${title}</h2>${body}</section>`;
+    html += group(
+      1,
+      "Power Supply",
+      segmented("rail", "Dual supply", [
+        [8, "±8 V"],
+        [12, "±12 V"],
+        [15, "±15 V"],
+      ]) + `<div class="supply-values"><span>+V <b>+${p.rail} V</b></span><span>GND <b>0 V</b></span><span>−V <b>−${p.rail} V</b></span></div>`
     );
-    html += `<div class="paired-controls">${controlBlock(
-      select("rin", p.configuration === "inverting" ? "Input resistor" : "Ground resistor", OPTIONS.rin, (v) => `${v / 1000} kΩ`)
-    )}${controlBlock(select("rf", "Feedback resistor", OPTIONS.rf, (v) => `${v / 1000} kΩ`))}</div>`;
-    html += controlBlock(select("amplitude", "Input amplitude", OPTIONS.amplitude, (v) => `${v} V peak`));
-    html += `<div class="paired-controls">${controlBlock(select("rail", "Supply rails", OPTIONS.rail, (v) => `±${v} V`))}${controlBlock(
-      select("frequency", "Signal frequency", OPTIONS.frequency, (v) => `${v} Hz`)
-    )}</div>`;
-    note = `Sine input · 1 V output headroom · ±${p.rail - 1} V output limit. Ideal gain. Bandwidth and slew rate are not modelled.`;
+    html += group(
+      2,
+      "Operational Amplifier",
+      select("configuration", "Configuration", OPTIONS.configuration, configurationName) +
+        `<svg class="pinout" viewBox="0 0 260 140" role="img" aria-label="741: pin 2 inverting input, 3 non-inverting input, 4 negative supply, 6 output, 7 positive supply"><path d="M80 40V115L178 78Z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M40 60H80M40 94H80M178 78H222M119 55V27M119 99V124" fill="none" stroke="currentColor" stroke-width="2"/><text x="44" y="54">2 −IN</text><text x="44" y="112">3 +IN</text><text x="180" y="68">6 Vout</text><text x="113" y="20">7 +V</text><text x="115" y="138">4 −V</text><text x="97" y="82">U1–741</text></svg><p class="hint">Representative DIP-8 · unused pins 1, 5 and 8 stay outside this exercise.</p>`
+    );
+    html += group(
+      3,
+      "Component Controls",
+      `<div class="paired-controls">${numeric("rin", p.configuration === "noninverting" ? "Rin / Rg" : "Rin", 1000, 100000, 1000, "Ω")}${numeric(
+        "rf",
+        "Rf",
+        1000,
+        100000,
+        1000,
+        "Ω"
+      )}</div><p class="resistor-roles">${theory.roles}</p><p class="gain-equation" id="gain-equation">${
+        theory.equation
+      }<br><strong>Theoretical gain ${fmt(theory.gain)} V/V</strong></p>`
+    );
+    html += group(
+      4,
+      "Input Signal",
+      select("waveform", "Waveform", OPTIONS.waveform, (v) => ({ dc: "DC", sine: "Sine", square: "Square", triangle: "Triangle" })[v]) +
+        numeric(
+          "amplitude",
+          theory.multi ? "Vin1 amplitude" : "Vin amplitude",
+          p.waveform === "dc" ? -6 : 0,
+          6,
+          0.05,
+          p.waveform === "dc" ? "V DC" : "V peak"
+        ) +
+        (theory.multi
+          ? numeric("amplitude2", "Vin2 amplitude", -6, 6, 0.05, p.waveform === "dc" ? "V DC" : "V peak") +
+            '<p class="hint">AC inputs share waveform/frequency. Negative Vin2 reverses its polarity.</p>'
+          : "") +
+        numeric("frequency", "Frequency", 10, 1000, 10, "Hz", p.waveform === "dc") +
+        `<p class="hint">${p.waveform === "dc" ? "Frequency does not apply to DC." : "Zero offset. Peak-to-peak voltage = 2 × peak amplitude."}</p>`
+    );
+    note = `Ideal 741 teaching model · ±${
+      p.rail - 1
+    } V output limit (1 V educational headroom). Bandwidth, slew rate, loading and input limits are omitted.`;
   }
   if (id === "transient") {
     html += controlBlock(
@@ -218,7 +278,11 @@ function renderControls() {
     html += controlBlock(select("speed", "Playback speed", OPTIONS.speed, (v) => `${v}×`));
     note = "Voltage, current and energy share one clock. Changing R keeps the same playback scale. New run resets stored energy.";
   }
-  document.querySelector("#controls").innerHTML = html;
+  document.querySelector("#lab7-controls").hidden = id !== "opamp";
+  document.querySelector("#lab7-controls").innerHTML = id === "opamp" ? html + `<p class="model-note">${note}</p>` : "";
+  document.querySelector("#controls").innerHTML = id === "opamp" ? "" : html;
+  document.querySelector("#keyboard-controls > summary").textContent = id === "opamp" ? "Additional keyboard bench tools" : "Keyboard controls";
+  document.querySelector("#keyboard-controls .control-heading").hidden = id === "opamp";
   renderPartControls();
   renderActivity();
   renderScopeControls();
@@ -240,7 +304,15 @@ function partParameters() {
       : state.module === "superposition"
         ? { a: ["v1"], b: ["v2"] }
         : state.module === "opamp"
-          ? { signal: ["amplitude", "frequency"], rin: ["rin"], rf: ["rf"], plus: ["rail"], minus: ["rail"], op: ["configuration"] }
+          ? {
+              signal: ["waveform", "amplitude", "amplitude2", "frequency"],
+              rin: ["rin"],
+              rin2: ["rin"],
+              rf: ["rf"],
+              rf2: ["rf"],
+              supply: ["rail"],
+              op: ["configuration"],
+            }
           : { r: ["resistance"], sw: ["charging"], storage: ["kind"] };
   return mapping[selectedPart] || [];
 }
@@ -638,6 +710,7 @@ function renderReference() {
 }
 
 function renderLive() {
+  renderAmplifierFeedback();
   const m = measure(state),
     p = parameters(state),
     c = context(state),
@@ -732,6 +805,7 @@ function renderLive() {
     tool: state.tool,
     scope: c.scope,
     selectedPart,
+    guidance: state.module === "opamp" && p.guided ? amplifierGuide(c, p) : null,
     partActions: selectedPartActionIds(),
     schematicDataURL: `data:image/svg+xml;charset=utf-8,${encodeURIComponent(renderSchematic(state.module, p))}`,
     live: { title: `Lab ${MODULES[state.module].number} · ${MODULES[state.module].name}`, lines },
@@ -739,6 +813,53 @@ function renderLive() {
     graph,
     rawGraph: g,
   });
+}
+
+function renderAmplifierFeedback() {
+  const enabled = state.module === "opamp";
+  for (const id of ["amplifier-flow", "guided-step", "amplifier-response"]) document.getElementById(id).hidden = !enabled;
+  document.querySelector(".lab-layout").classList.toggle("lab7-layout", enabled);
+  if (!enabled) return;
+  const p = parameters(state),
+    c = context(state),
+    guide = amplifierGuide(c, p),
+    theory = amplifierTheory(p),
+    r = amplifierReadings(state);
+  document.querySelector("#guided-toggle").checked = p.guided;
+  document.querySelector("#guided-instruction").textContent = p.guided
+    ? `${guide.phase}: ${guide.text}`
+    : "Guidance off. Connect and measure freely; the schematic shows the reference circuit.";
+  document.querySelector("#guided-next").hidden = !p.guided || !guide.action;
+  document.querySelector("#guided-next").textContent =
+    guide.action?.type === "probe" ? "Place this probe" : guide.action?.type === "adjust" ? "Confirm settings" : "Make this connection";
+  for (const phase of document.querySelectorAll("[data-phase]")) phase.classList.toggle("active", phase.dataset.phase === guide.phase);
+  const equation = document.querySelector("#gain-equation");
+  if (equation) equation.innerHTML = `${theory.equation}<br><strong>Theoretical gain ${fmt(theory.gain)} V/V</strong>`;
+  for (const output of document.querySelectorAll("[data-value]")) {
+    const name = output.dataset.value;
+    output.textContent = ["rin", "rf"].includes(name)
+      ? `${fmt(p[name] / 1000)} kΩ`
+      : `${fmt(p[name])} ${name === "frequency" ? "Hz" : p.waveform === "dc" ? "V DC" : "V peak"}`;
+  }
+  const voltage = (label, stats) =>
+    `<div><strong>${label}</strong><span>DC mean ${fmt(stats?.mean)} V</span><span>AC RMS ${fmt(stats?.acRms)} V</span><span>AC+DC RMS ${fmt(
+      stats?.rms
+    )} V</span><span>Peak ${fmt(stats?.peak)} V</span><span>${fmt(stats?.vpp)} Vpp</span></div>`;
+  document.querySelector("#amplifier-response").innerHTML = `<div class="response-heading"><h2>Measured response</h2><span>${
+    r.error || r.phase || "Connect probes"
+  }</span></div><p>Gain reference: ${theory.reference}. ${
+    theory.multi
+      ? "Reference uses the sum/difference of sampled input-node voltages; scope CH1 shows Vin1."
+      : "Gain follows the grounded CH1/CH2 probes."
+  } Values use one full period; display scale does not change them.</p><div class="voltage-statistics">${voltage(
+    theory.multi ? "Vin1" : "Vin",
+    r.input
+  )}${theory.multi ? voltage("Vin2", r.input2) : ""}${voltage("Vout · CH2", r.output)}${voltage(
+    "Meter · V−COM",
+    r.meter
+  )}</div><div class="wire-key">${Object.values(WIRE_ROLES)
+    .map(([label, color]) => `<span><i style="background:${color}"></i>${label}</span>`)
+    .join("")}</div>`;
 }
 
 function render() {
@@ -753,7 +874,7 @@ function render() {
   document.querySelector("#bench-caption").textContent = p.representation
     ? `${p.representation} circuit`
     : p.configuration
-      ? `${p.configuration} amplifier`
+      ? `${configurationName(p.configuration)} amplifier`
       : p.kind
         ? `${p.kind} circuit`
         : "Two-source circuit";
@@ -818,6 +939,11 @@ app.addEventListener("click", (e) => {
 app.addEventListener("change", (e) => {
   const el = e.target;
   if (el.dataset.param) {
+    if (el.type === "number" && (el.value === "" || !el.validity.valid)) {
+      el.setAttribute("aria-invalid", "true");
+      document.querySelector("#feedback").textContent = "Invalid value. The circuit retains its last accepted setting.";
+      return;
+    }
     if (["representation", "kind", "configuration"].includes(el.dataset.param)) bench?.cancelInteractions?.();
     change(state, el.dataset.param, Number.isNaN(Number(el.value)) ? el.value : Number(el.value));
     render();
@@ -834,9 +960,27 @@ app.addEventListener("change", (e) => {
 });
 app.addEventListener("input", (e) => {
   const input = e.target;
-  if (input.dataset.param && input.type === "number" && input.value !== "") {
-    change(state, input.dataset.param, Number(input.value));
+  if (input.id === "guided-toggle") {
+    change(state, "guided", input.checked);
     renderLive();
+  }
+  if (input.dataset.range) {
+    const name = input.dataset.range;
+    change(state, name, Number(input.value));
+    document.getElementById(`param-${name}`).value = input.value;
+    renderLive();
+    renderReference();
+  }
+  if (input.dataset.param && input.type === "number") {
+    if (input.value === "" || !input.validity.valid || !change(state, input.dataset.param, Number(input.value))) {
+      input.setAttribute("aria-invalid", "true");
+      document.querySelector("#feedback").textContent = "Invalid value. The circuit retains its last accepted setting.";
+      return;
+    }
+    input.removeAttribute("aria-invalid");
+    state.feedback = "Setting accepted. Readings follow the current circuit.";
+    renderLive();
+    renderReference();
   }
   if (e.target.id === "load-slider") {
     change(state, "load", OPTIONS.load[Number(e.target.value)]);

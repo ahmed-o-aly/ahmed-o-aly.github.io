@@ -34,7 +34,7 @@ test("all four modules expose a purpose and an experiment sequence matching the 
   }
   assert.match(MODULES.thevenin.steps.join(" "), /250.*500.*1000/);
   assert.match(MODULES.superposition.steps.join(" "), /inactive ideal voltage source with a short/);
-  assert.match(MODULES.opamp.steps.join(" "), /circuit assigned in your lab sheet/);
+  assert.match(MODULES.opamp.steps.join(" "), /inverting, non-inverting, adder or subtractor/);
   assert.match(MODULES.transient.steps.join(" "), /same fraction of the final value/);
 });
 

@@ -19,8 +19,9 @@ function sourceFault(state, circuit, joined) {
     state.module === "opamp"
       ? [
           ["plus+", "plus-", p.rail, "+ supply"],
-          ["minus+", "minus-", p.rail, "− supply"],
+          ["plus-", "minus-", p.rail, "− supply"],
           ["signal+", "signal-", p.amplitude, "Signal source"],
+          ...(["adder", "subtractor"].includes(p.configuration) ? [["signal2+", "signal-", p.amplitude2, "Vin2 source"]] : []),
         ]
       : state.module === "transient"
         ? [["s+", "s-", 5, "DC source"]]
@@ -62,7 +63,7 @@ function boundedCircuitFault(state, circuit, wires, joined) {
       (fault = check(
         [
           ["minus-", "vn"],
-          ["minus+", "gnd"],
+          ["plus-", "gnd"],
         ],
         "− supply",
         "− supply disconnected",
