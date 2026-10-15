@@ -42,16 +42,15 @@ Currents add; powers do not. At +6 V / −6 V the contributions are +2 mA and �
 
 **Email activity:** Design a specified gain and determine the input limit before clipping, using adjustable resistors, signals, supply voltages and an oscilloscope.
 
-1. For the example inverting design, choose Rin = 10 kΩ and Rf = 30 kΩ for gain −3. Connect input, feedback, ground and both ±12 V supplies.
-2. Set a 100 Hz sine input. Connect CH1 to input and CH2 to output, with both scope ground clips at GND. Use Autoscale, or choose a timebase and channel scales that show the waves.
-3. At 1 V peak input, inspect 3 V peak inverted output. Drag either graph to read both channels at the same time. Test Hold, Run and trigger controls.
-4. Raise input amplitude: 3.6 V peak gives 10.8 V peak output; 3.7 V demands 11.1 V and clips at ±11 V. Change the supply rails and repeat.
+1. For an inverting example, choose Rin = 10 kΩ and Rf = 30 kΩ for gain −3. Manually connect input, feedback, ground and both supply rails, then switch on ±12 V.
+2. Set a 100 Hz sine at 2 Vpp. Place CH1 at Vin and CH2 at Vout, with both ground clips at the common rail. The shared grid should show 6 Vpp inverted output. Attach the meter across Vout/GND for 2.1213 Vrms.
+3. Test scope Hold/Run. Changing Rf while held must mark the capture stale; the independently connected meter remains live. Remove one channel ground: that channel disappears while the other valid channel retains its trace and statistics.
+4. Raise input amplitude: 7.2 Vpp gives 21.6 Vpp output; 7.4 Vpp demands 22.2 Vpp and clips at ±11 V. Change the supply rails and repeat. The linear input limit is 22/3 ≈ 7.333 Vpp at ±12 V, or 14/3 ≈ 4.667 Vpp at ±8 V.
+5. Switch to non-inverting. The new arrangement must be empty with supply off; one Undo restores the previous experiment. Manually complete Rg = 10 kΩ and Rf = 20 kΩ. A 1 Vpp sine gives +3 gain, 3 Vpp output and 1.0607 Vrms.
 
-The ideal input limit is 11/3 ≈ 3.667 V peak with gain −3 and ±12 V rails. The model reserves 1 V output headroom inside each rail. At ±8 V the output limit becomes ±7 V and the input limit 7/3 ≈ 2.333 V peak. A non-inverting example with Rin = 10 kΩ and Rf = 20 kΩ gives gain +3.
+For the weighted adder, use Rin1 = 10 kΩ, Rin2 = 40 kΩ and Rf = 20 kΩ. Signed DC inputs 0.2 V and 0.4 V produce −0.6 V. Change only Rin1 to 20 kΩ: output becomes −0.4 V while Rin2 and Vin2 remain unchanged. For the general difference amplifier, use R1/R2/R3/R4 = 10/20/30/10 kΩ and DC Vin1/Vin2 = 0.2/0.8 V. Output and both input pins are +0.2 V. Explicit Match R4 sets R4 to 60 kΩ; Undo restores only that action. Two-input configurations display weighted transfer coefficients rather than a single Vout/Vin1 gain.
 
-The meter's voltage sample is at the positive input peak; the graph cursor reads the selected trace time. Incorrect scope grounds or incomplete amplifier wiring do not produce valid current-circuit traces. A held trace retains its acquisition and is marked stale when settings change. Frequency changes waveform timing; this ideal model does not simulate bandwidth or slew-rate limits.
-
-Additional Lab 7 checks: complete Build for all four configurations. Adder uses equal Rin input resistors; subtractor uses linked matched pairs (R1 = R3 = Rin, R2 = R4 = Rf). At DC, 0.2/0.3 V adder inputs produce −1 V; 0.2/0.7 V subtractor inputs produce +1 V. Equal subtractor inputs produce 0 V and unavailable measured differential gain. Verify DC mean, AC RMS, total RMS, peak and Vpp separately; sine/square/triangle with 1 V peak have RMS 0.7071/1/0.5774 V. Clipped, stale, invalid and zero-reference cases must suppress linear measured gain.
+Each configuration requires manually placed leads and probes. Hints, Another hint and phone presentation changes must preserve electrical state and history. Verify wrong leads remain wrong, resistor ends can be reversed, disconnected probes remain missing, and reset/configuration changes undo atomically. At 1 Vpp, sine/square/triangle source RMS is 0.35355/0.5/0.28868 V. DC uses signed volts and frequency is inactive. Incorrect grounds suppress their scope channel. Conflicting ideal sources must not produce plausible samples at zero crossings. The ideal 741 model reserves 1 V rail headroom and omits bandwidth, slew rate and loading.
 
 ## 8 — RC and RL transient response
 

@@ -1,6 +1,6 @@
 # Circuits Lab v0.11
 
-Four Electrical Circuits I experiments share a desktop 3D bench and an immersive WebXR lab. Students wire circuits, use instruments, change values and inspect live traces. Readings and written answers stay on paper.
+Four Electrical Circuits I experiments provide desktop 3D benches. Labs 5, 6 and 8 also retain their immersive WebXR lab; the dedicated Lab 7 rebuild supports desktop and phone presentation, with no immersive entry in that path. Students wire circuits, use instruments, change values and inspect live traces. Readings and written answers stay on paper.
 
 [Works page](https://ahmed-o-aly.github.io/projects/circuits-lab/) · [Open the lab](https://ahmed-o-aly.github.io/circuits-lab/)
 
@@ -15,7 +15,7 @@ npm run build
 
 Vite prints the local URL. The normal dev port is 5186; pass `-- --port 5187` if another copy is running. The build writes to `../assets/apps/circuits-lab/`. The site's Jekyll hook copies these files unchanged to `/circuits-lab/`. The published app needs HTTPS for headset access.
 
-## Use the bench
+## Use the neighboring labs (5, 6 and 8)
 
 - **Explore** starts with a wired circuit. **Build circuit** starts with loose connections. Each keeps its own wiring.
 - **Reset experiment**, labelled **Reset lab** on the physical control box, restores this lab’s original Explore circuit, default values, probes and instrument settings. It clears the lab’s old traces and Undo history, including other saved variants. Other labs keep their settings.
@@ -30,31 +30,37 @@ The scope or recorder sits within reach on the left ledge and is the graph displ
 
 Moving a lead keeps the other wires in place. The held cable bends with the moving end, then settles gently after release. Common sockets keep the fixed end where it was placed.
 
-The amplifier parts and lead routes have more space. Separate GND sockets share one ground connection, and the OUT sockets share the same output. Meter and scope tips can connect without stacking on one socket.
+## Use Lab 7
+
+Open `/circuits-lab/?lab=7` (or `?lab=opamp`). One live experiment starts with the supply off and no leads or probes. Choose a configuration to arrange its parts; switching clears connections, probes and power as one undoable action. There are no separate Build/Explore wiring states.
+
+Drag between labeled terminals, or tap two terminals and press Connect. The default-closed **Connection tools** disclosure provides named endpoints and probe placement for keyboard use. Select a lead to highlight its endpoints and remove it. **Undo** restores the last electrical change; **Reset** clears wiring/probes and switches off the supply as one undoable action. Hints highlight suggested terminals without constructing any part of the circuit.
+
+Each resistor and source amplitude has an independent numeric setting and physical knob. The adder exposes Rin1, Rin2 and Rf; the difference amplifier exposes R1–R4. Its explicit **Match R4** action sets only R4 = R3 × R2 / R1, with Undo. Two-input signals share waveform, frequency and phase, with independent amplitudes. AC amplitude is Vpp; DC is signed volts and disables frequency changes.
+
+Attach both meter tips and each scope channel's tip and ground clip yourself. The meter reports true RMS for AC and signed volts for DC. Scope channels share one time/voltage grid and identify their actual probe targets. Hold freezes the scope capture while the meter remains live. Phone Controls, Bench and Measure change presentation only; Measure includes the same two-channel plot. Mounting holes are isolated, while the labeled GND sockets share the visible common rail.
 
 ## The four experiments
 
-| Experiment                         | Student task                                                                          | Measurement view                                                                                                           |
-| ---------------------------------- | ------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| Thévenin, Norton and maximum power | Build equivalents, compare several loads, find maximum load power                     | The power sweep solves the current wiring. Drag along it to set the load and compare the meter readings.                   |
-| Superposition                      | Deactivate each source in turn, combine signed currents, make one branch current zero | Linked source views solve the current wiring for A alone, B alone and both.                                                |
-| Operational amplifiers             | Select resistors for a specified gain, find the largest input before clipping         | Two scope channels follow their actual probe contacts. Time and voltage scales affect the view. A cursor reads the traces. |
-| RC and RL transients               | Predict the effect of resistance on response speed, then test both circuits           | Voltage, current and energy traces grow with elapsed circuit time. Pause, slow, replay and inspect the acquired trace.     |
+| Experiment                         | Student task                                                                          | Measurement view                                                                                                       |
+| ---------------------------------- | ------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| Thévenin, Norton and maximum power | Build equivalents, compare several loads, find maximum load power                     | The power sweep solves the current wiring. Drag along it to set the load and compare the meter readings.               |
+| Superposition                      | Deactivate each source in turn, combine signed currents, make one branch current zero | Linked source views solve the current wiring for A alone, B alone and both.                                            |
+| Operational amplifiers             | Select resistors for a specified gain, find the largest input before clipping         | Two manual scope channels share one time grid; meter, transfer relation and probe-dependent readings update together.  |
+| RC and RL transients               | Predict the effect of resistance on response speed, then test both circuits           | Voltage, current and energy traces grow with elapsed circuit time. Pause, slow, replay and inspect the acquired trace. |
 
 There are no answer fields, submissions, grades or export forms.
 
 ## Model limits
 
-DC resistor networks use a nodal solver with the actual leads. Invalid or floating networks produce diagnostics. Amplifier and transient circuits support the shown layouts, and need valid connections before producing traces.
+DC resistor networks use a nodal solver with the actual leads. Invalid or floating networks produce diagnostics. Amplifier and transient circuits support the shown layouts. Lab 7 can measure connected ideal source terminals before the amplifier is complete; other incomplete or incorrect amplifier networks have no simulated amplifier readings. Conflicting ideal-source voltages invalidate the affected source component across its whole waveform.
 
-The amplifier uses ideal feedback gain and output limits 1 V inside each supply rail. It does not model a specific chip's bandwidth, slew rate, loading or input limits. Scope channels have ideal impedance and share ground. The meter's amplifier voltage sample is taken at the input's positive peak; it is not an AC RMS reading.
+The amplifier uses ideal feedback gain and output limits 1 V inside each supply rail. It does not model a specific chip's bandwidth, slew rate, loading or input limits. Scope channels have ideal impedance and share ground. Lab 7 uses sampled waveform statistics, including true RMS and signed mean. Clipped input-pin voltages follow the actual resistor network rather than assuming a virtual short.
 
 RC uses 100 µF and RL uses 100 mH, with a 5 V source. Switching and resistance changes preserve capacitor voltage or inductor current. **New run** resets stored energy. Playback speed changes display speed, not the circuit time constant. Replay repeats the current switching segment.
 
-Lab 7 follows Nishar’s operational-amplifier design review: one dual supply (±8/±12/±15 V), four ordered control groups, a visible 741 pinout, inverting/non-inverting/adder/subtractor circuits, DC/sine/square/triangle signals, and guided wiring/probe steps. Open `/circuits-lab/?lab=7` directly. The second input appears only for the two-input circuits. The adder uses equal input resistors; the subtractor uses matched pairs. Their paired values are linked to keep the exercise manageable.
+Lab 7 follows the operational-amplifier report's physical bench hierarchy: one dual supply (±8/±12/±15 V), four ordered control groups, an enlarged DIP-8 with correct pin relationships, and front-readable physical instruments. Inverting and non-inverting circuits report single-input gain only with valid paired probes and an unclipped nonzero reference. Adder and difference circuits display their two-input weighted transfer instead of a generic Vout/Vin1 ratio. The general difference relation is Vout = −(R2/R1)Vin1 + (1 + R2/R1)R4/(R3 + R4)Vin2; equal inputs cancel only when the two resistor ratios match.
 
-Measured gain comes from sampled node/probe voltages, with signed DC ratios or AC peak-to-peak magnitude and phase. The interface separates DC mean, AC RMS, total RMS, peak and Vpp. Clipping, stale captures, missing probes and zero reference input suppress linear measured gain. The three physical supply terminals are +V, GND and −V; both rails share one common return. This is an ideal 741 teaching approximation, not a manufacturer-specific chip simulation. The 1 V headroom is educational. Lab 8 remains unchanged.
-
-User headset feedback has guided the layout changes. Version 0.11 simplifies Lab 7 and keeps the existing immersive controls. Its revised panel readability and control reach still need confirmation on the intended device; the assistant has not operated a physical headset.
+The dedicated Lab 7 desktop/mobile rebuild does not implement an XR entry, session or controller path. Physical touch hardware and headset behavior have not been tested. Neighboring labs retain their existing immersive controls. See the current [Lab 7 review record](docs/lab7-visual-correction.md) for model checks, visual review status and limitations.
 
 See [module designs](docs/module-designs.md), [experiment checks](docs/experiment-checklist.md) and [verification](docs/verification.md).

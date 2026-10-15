@@ -2,11 +2,11 @@
 
 The purpose of this lab is to let students carry out the experiments requested in the email. Students make connections, operate equipment and take readings. They use their own paper for predictions, calculations and answers.
 
-The same circuit state drives desktop 3D and immersive VR. The app is at [Circuits Lab](https://ahmed-o-aly.github.io/circuits-lab/), linked from [Works](https://ahmed-o-aly.github.io/projects/circuits-lab/).
+The established Labs 5, 6 and 8 share circuit state between desktop 3D and immersive VR; the dedicated Lab 7 manual app supports desktop and phone presentation without an immersive entry. The app is at [Circuits Lab](https://ahmed-o-aly.github.io/circuits-lab/), linked from [Works](https://ahmed-o-aly.github.io/projects/circuits-lab/).
 
 ## How students work
 
-**Explore** starts with the circuit connected. **Build circuit** starts with loose connections so students can build it. Switching between the two keeps separate wiring and preserves the chosen values. Clear removes leads and probe connections; Undo can restore them.
+In Labs 5, 6 and 8, **Explore** starts with the circuit connected. **Build circuit** starts with loose connections so students can build it. Switching between the two keeps separate wiring and preserves the chosen values. Clear removes leads and probe connections; Undo can restore them.
 
 The bench is the working surface. Students use the actual instrument dials, switches, probe handles and cable plugs. The voltage meter has V and COM leads. Its reading is the difference between their contact voltages; the red and black insulation identifies the leads. These are objects to move, not required tool modes. The scope uses two signal tips and their ground clips.
 
@@ -66,32 +66,21 @@ The three linked views are solved from the student's wiring and source values. S
 
 ## Experiment 7: Operational amplifiers
 
-Nishar’s supplied design review calls for a realistic 3D laboratory with the sequence **Select → Build → Adjust → Measure → Understand**. The four visible control groups are **Power Supply**, **Operational Amplifier**, **Component Controls**, and **Input Signal**. The schematic stays a reference for the selected arrangement; readings follow the actual valid connections.
+The Lab 7 rebuild has one live manual experiment. It follows the supplied report's four control groups: **Power Supply**, **Operational Amplifier**, **Component Controls**, and **Input Signal**. The inverting slice passed its internal visual gate; all four configurations are now exposed and undergoing final browser review.
 
-One dual supply exposes +V, GND and −V and selects ±8, ±12 or ±15 V. The labelled U1–741 component shows 2 (−IN), 3 (+IN), 4 (−V), 6 (Vout) and 7 (+V). Unused pins 1, 5 and 8 are excluded from the connection exercise. The device is a representative DIP-8 ideal teaching approximation. The 1 V output headroom is an educational limit, not a 741 datasheet specification. Bandwidth, slew rate, loading, offsets and input common-mode limits are omitted.
+Selecting an arrangement places the parts with the dual supply off and no electrical leads or probes attached. There are no separate Build and Explore circuits. Students choose the From and To terminals and press Connect, or drag directly between the labeled terminals. Incorrect leads remain connected and receive diagnostics; the app does not repair them. Selecting a lead highlights its endpoints and offers Remove. Undo restores electrical changes, including reset and configuration changes, as single actions.
 
-| Configuration | Resistor arrangement                                                                           | Linear relationship           |
-| ------------- | ---------------------------------------------------------------------------------------------- | ----------------------------- |
-| Inverting     | Rin from Vin to pin 2; Rf from pin 6 to pin 2; pin 3 grounded                                  | Vout = −(Rf/Rin) Vin          |
-| Non-inverting | Rin serves as Rg from pin 2 to GND; Rf from pin 6 to pin 2; Vin to pin 3                       | Vout = (1 + Rf/Rg) Vin        |
-| Adder         | R1 = R2 = Rin; each input feeds pin 2 through its own resistor; Rf is feedback; pin 3 grounded | Vout = −(Rf/Rin)(Vin1 + Vin2) |
-| Subtractor    | R1 = R3 = Rin; R2 = R4 = Rf; Vin1 feeds pin 2, Vin2 feeds pin 3’s divider                      | Vout = (Rf/Rin)(Vin2 − Vin1)  |
+Hints observe the actual netlist and measurement contacts. Another hint changes only the suggestion. Neither action changes wires, parameters, supply state or probes. Students can wire, adjust and connect instruments in any order. Completing the circuit does not connect the instruments automatically.
 
-Rin and Rf have linked numeric, slider and physical knob controls. All three/four resistors appear on two-input circuits; matched pairs change together. Vin2 is disclosed only in those modes. AC inputs share frequency and waveform; a signed Vin2 amplitude reverses polarity. This intentionally supports equal-input/matched-pair circuits rather than arbitrary independent ratios.
+The white teaching breadboard carries physical knobs for each resistor role, an enlarged DIP-8 package with actual top-view pin order, and isolated labeled contacts. Pins 1 and 5 are offset-null terminals, and pin 8 is NC; these unused pins are excluded from the connection exercise. Mounting holes have no internal electrical connectivity. The visibly labeled GND common rail exposes several sockets for the same declared node, allowing short local return and probe connections.
 
-### Procedure
+The single dual supply selects ±8 V, ±12 V or ±15 V. The physical resistor knobs and precise numeric fields share the same independent values; the single-input layouts also provide sliders. Inverting theory is Vout = −(Rf/Rin) Vin; non-inverting theory is Vout = (1 + Rf/Rg) Vin. The weighted adder exposes Rin1, Rin2 and Rf. The difference amplifier exposes independent R1–R4, with Vout = −(R2/R1)Vin1 + (1 + R2/R1)R4/(R3 + R4)Vin2. An explicit Match R4 action changes only R4 to R3 × R2 / R1 and can be undone. Two-input configurations show both transfer coefficients rather than a generic Vout/Vin1 gain. Their amplitudes are independent while waveform, frequency and phase are shared. AC input amplitude is consistently peak-to-peak (Vpp); DC uses signed volts and disables frequency. The waveform model receives the corresponding peak amplitude internally.
 
-1. Select supply and configuration. Build starts a separate empty circuit for each configuration; Explore starts connected.
-2. Follow the next highlighted connection. Guidance checks actual electrical nets, including power and feedback, rather than counting clicks. Wrong extra leads must be removed.
-3. Review resistances and input settings, then confirm them. DC uses signed volts; sine, square and triangle use peak volts with zero offset. Frequency is disabled in DC.
-4. Place the meter V tip at Vout, COM at GND, CH1 at Vin/Vin1, CH2 at Vout, and both scope ground clips at GND. Guidance can place one lead or probe at a time. Manual dragging and keyboard connections remain available.
-5. Compare theoretical and measured gain. Increase amplitude until clipping; reduce it to recover. Keep calculations and observations on paper.
+The meter reads only its actual V and COM contacts. It reports total RMS for AC and signed voltage for DC. The oscilloscope's two traces, labeled by their actual probe targets, share one time grid and voltage scale, and require independently connected signal tips and ground clips. Missing or misplaced probes remain missing or misplaced. Scope Hold retains its samples, marks them stale after relevant circuit/settings changes, and never freezes the independent multimeter.
 
-The meter’s physical AC display is labelled as a sample at the input’s positive peak. The adjacent measured-response panel separately reports DC mean, AC-component RMS, total RMS, absolute peak and Vpp from 2,048 midpoint samples across one period. DC has no AC component. Probe reversal changes the signed DC measurement. Scope channels keep their own selected terminals and grounds, timebase, vertical scale and Run/Hold state.
+Sample statistics provide DC mean, AC-component RMS, total RMS, absolute peak and Vpp. Single-input measured gain uses the actual paired CH1/CH2 samples. AC gain magnitude is a Vpp ratio with covariance determining polarity; DC uses a signed ratio. Clipping, invalid circuits, missing scope references and zero input suppress measured linear gain. At Rin 10 kΩ, Rf 20 kΩ and 1 Vpp sine, the expected inverting result is −2 V/V, 2 Vpp and 0.7071 Vrms. The concept illustration's voltages and waveform heights are not electrical acceptance values.
 
-Single-input measured gain uses the grounded CH1/CH2 contacts. For adder/subtractor, the reference is the sum/difference of sampled input-node voltages; CH1 still shows Vin1 and CH2 shows Vout. AC gain magnitude is a Vpp ratio with covariance determining in-phase/inverted polarity. DC uses a signed ratio. Clipping, a stale held capture, invalid circuitry, disconnected/misplaced scope references or a zero/near-zero reference suppress measured linear gain. Theoretical gain remains available as a prediction.
-
-Examples: Rin = 10 kΩ / Rf = 20 kΩ and 1 Vpp sine give −2 gain and 2 Vpp output (0.7071 Vrms); non-inverting gives +3 and 3 Vpp (1.0607 Vrms). DC adder inputs 0.2/0.3 V give −1 V. Matched subtractor inputs 0.2/0.7 V give +1 V. With Rin = 10 kΩ / Rf = 30 kΩ, ±12 V rails clip above 11/3 V peak input. The concept image’s trace heights and meter reading are not electrical acceptance values.
+The 741 remains an ideal teaching model with 1 V educational output headroom. Bandwidth, slew rate, loading, offsets and input common-mode limits are omitted. The dedicated app supports desktop and phone presentation, with a shared-time dual-channel plot in phone Measure. It does not implement an XR entry, session or controller path. Physical touch and headset hardware behavior remain untested. Ideal source terminals are measurable before amplifier completion; other incomplete networks are not solved, and conflicting source constraints invalidate the affected source component.
 
 ## Experiment 8: RC and RL transient response
 

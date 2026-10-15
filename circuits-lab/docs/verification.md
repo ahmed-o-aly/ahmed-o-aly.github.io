@@ -1,3 +1,9 @@
+# Current Lab 7 manual rebuild — 15 October 2026
+
+The active Lab 7 entry now uses a separate manual experiment. Its current architecture, test evidence, visual review status and limitations are recorded in [lab7-visual-correction.md](lab7-visual-correction.md). All four configurations passed the final internal desktop visual gate at 1440 × 900 and 1280 × 800. Parent browser checks at 390 px and 430 px verified shared state, readable controls/measurements, probe placement and Hold. Independent model checks and neighboring Labs 5/6/8 numerical checks passed. The preserved pre-existing Lab 5 numeric-dropdown Undo limitation is documented in the linked review record. This is internal review, not user acceptance, student-usability evidence or physical touch/headset validation. The dated records below describe earlier implementations and do not establish acceptance of the current rebuild.
+
+---
+
 # Lab 7 simplification verification · 14 October 2026
 
 Implemented on `codex/lab7-simplify` in an isolated checkout based on `origin/main` commit `05750590d97f3e5f21f180215e422cf09d427443`. The original `/Users/aly/Documents/DEWA` checkout and its unrelated untracked files were preserved. The supplied Lab 7 DOCX text and both embedded figures were inspected. The concept image’s inconsistent electrical readings were not used as acceptance values.
