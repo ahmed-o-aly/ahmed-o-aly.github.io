@@ -1,8 +1,48 @@
 :root {
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   color: #263e4d;
   background: #e7edf0;
   font-synthesis: none;
+}
+.amp-pointer-note {
+  position: absolute;
+  z-index: 4;
+  max-width: min(300px, calc(100% - 16px));
+  padding: 8px 11px;
+  border: 1px solid #627b87;
+  border-radius: 6px;
+  background: #243e4ef2;
+  color: #f5fafb;
+  font-size: 12px;
+  font-weight: 550;
+  box-shadow: 0 3px 12px #263e4d24;
+  pointer-events: none;
+}
+.amp-pointer-note[data-tone="ready"] {
+  background: #17614f;
+  border-color: #3d9c83;
+}
+.amp-pointer-note[data-tone="blocked"] {
+  background: #774f2b;
+  border-color: #b78553;
+}
+.amp-drag-status {
+  position: absolute;
+  z-index: 4;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: calc(100% - 24px);
+  padding: 9px 14px;
+  border-radius: 7px;
+  background: #f8fbf9f5;
+  border: 1px solid #a1b9b3;
+  color: #275446;
+  font-size: 12px;
+  font-weight: 600;
+  pointer-events: none;
+  box-shadow: 0 3px 16px #263e4d1a;
 }
 * {
   box-sizing: border-box;
@@ -515,8 +555,29 @@ dialog p {
 }
 @media (max-height: 830px) and (min-width: 761px) {
   .amp-group {
-    padding-top: 12px;
-    padding-bottom: 11px;
+    padding-top: 9px;
+    padding-bottom: 9px;
+  }
+  .amp-device-note {
+    margin-top: 8px;
+  }
+  .amp-small {
+    line-height: 1.3;
+    margin-top: 5px;
+  }
+  .amp-equation {
+    margin-top: 6px;
+    gap: 3px;
+    padding: 6px 9px;
+  }
+  .amp-inputs {
+    margin-top: 6px;
+  }
+  .amp-rails {
+    margin-top: 9px;
+  }
+  .amp-model {
+    font-size: 9px;
   }
   .amp-group h2 {
     margin-bottom: 8px;

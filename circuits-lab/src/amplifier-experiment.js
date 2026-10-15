@@ -1,4 +1,5 @@
 import { circuitFor, correctTopology, netGroups } from "./modules.js";
+import { validCablePath } from "./amplifier-cables.js";
 import { signalSample } from "./physics.js";
 import { measuredResponse, summarizeSamples } from "./amplifier-samples.js";
 
@@ -27,6 +28,7 @@ export function createExperiment() {
     wires: [],
     probes: emptyProbes(),
     history: [],
+    cableLayout: { wires: [], probes: {} },
     selection: { from: "", to: "", wire: null, probe: null },
     hints: true,
     hintIndex: 0,
@@ -107,7 +109,7 @@ export function pinLabel(id, configuration = "inverting") {
 }
 const label = (s, id) => pinLabel(id, s.params.configuration);
 function remember(s) {
-  s.history.push(electricalSnapshot(s));
+  s.history.push({ ...electricalSnapshot(s), cableLayout: copy(s.cableLayout) });
   if (s.history.length > 80) s.history.shift();
 }
 function clearSelection(s) {
@@ -118,7 +120,7 @@ export function beginAdjustment(s) {
 }
 export function endAdjustment(s, before) {
   if (JSON.stringify(before) !== JSON.stringify(electricalSnapshot(s))) {
-    s.history.push(before);
+    s.history.push({ ...before, cableLayout: copy(s.cableLayout) });
     if (s.history.length > 80) s.history.shift();
   }
 }
@@ -166,6 +168,7 @@ export function selectConfiguration(s, configuration) {
   s.params.powered = false;
   s.wires = [];
   s.probes = emptyProbes();
+  s.cableLayout = { wires: [], probes: {} };
   clearSelection(s);
   s.hintIndex = 0;
   s.held = null;
@@ -173,7 +176,7 @@ export function selectConfiguration(s, configuration) {
   s.message = "Arrangement changed. Supply off; leads and probes cleared. Undo restores the previous experiment.";
   return true;
 }
-export function connect(s, from, to) {
+export function connect(s, from, to, route = null) {
   const ids = circuit(s).pins.map((p) => p.id);
   if (!ids.includes(from) || !ids.includes(to) || from === to) {
     s.message = "Choose two different terminals.";
@@ -185,23 +188,69 @@ export function connect(s, from, to) {
   }
   remember(s);
   s.wires.push([from, to]);
+  s.cableLayout.wires[s.wires.length - 1] = validCablePath(route) ? copy(route) : null;
   clearSelection(s);
   s.message = `${label(s, from)} → ${label(s, to)} connected.`;
   return true;
 }
-export function connectProbe(s, probe, terminal) {
+export function connectProbe(s, probe, terminal, placement = null) {
   if (!(probe in PROBES) || (terminal !== null && !circuit(s).pins.some((p) => p.id === terminal))) return false;
-  if (s.probes[probe] === terminal) return false;
+  const validPlacement = placement && validCablePath(placement.route),
+    previous = s.cableLayout.probes[probe];
+  // Normalizing a direction or recomputing the same tip can introduce roundoff.
+  const sameGeometry = (a, b) =>
+    Array.isArray(a) && Array.isArray(b)
+      ? a.length === b.length && a.every((v, i) => sameGeometry(v, b[i]))
+      : typeof a === "number" && typeof b === "number" && Math.abs(a - b) < 1e-9;
+  if (
+    s.probes[probe] === terminal &&
+    (!validPlacement || (previous && ["route", "contact", "direction"].every((key) => sameGeometry(previous[key], placement[key]))))
+  )
+    return false;
   remember(s);
   s.probes[probe] = terminal;
+  if (validPlacement) s.cableLayout.probes[probe] = copy({ ...placement, target: terminal });
   clearSelection(s);
   s.message = `${PROBES[probe]} ${terminal ? `at ${label(s, terminal)}` : "disconnected"}.`;
+  return true;
+}
+// A held contact is electrically open, without adding intermediate Undo entries.
+// Release commits once; cancellation simply discards this temporary view.
+export function contactPreview(s, contact) {
+  if (contact?.kind === "probe") return { ...s, probes: { ...s.probes, [contact.id]: null } };
+  if (contact?.kind === "wire") return { ...s, wires: s.wires.filter((_, i) => i !== contact.id) };
+  return s;
+}
+export function leadDrop(s, index, end, terminal, route = null) {
+  const wire = s.wires[index];
+  if (!wire || ![0, 1].includes(end)) return false;
+  if (terminal === null) return removeLead(s, index);
+  const fixed = wire[1 - end];
+  if (wire[end] === terminal) return route ? arrangeCable(s, "wire", index, route) : false;
+  if (!circuit(s).pins.some((p) => p.id === terminal) || terminal === fixed) return false;
+  if (s.wires.some(([a, b], i) => i !== index && ((a === fixed && b === terminal) || (b === fixed && a === terminal)))) return false;
+  remember(s);
+  wire[end] = terminal;
+  s.cableLayout.wires[index] = validCablePath(route) ? copy(route) : null;
+  clearSelection(s);
+  s.message = `${label(s, fixed)} → ${label(s, terminal)} connected.`;
+  return true;
+}
+export function arrangeCable(s, kind, id, route, placement = null) {
+  if (!["wire", "probe"].includes(kind) || !validCablePath(route) || (kind === "wire" ? !s.wires[id] : !(id in PROBES))) return false;
+  const previous = kind === "wire" ? s.cableLayout.wires[id] : s.cableLayout.probes[id]?.route;
+  if (JSON.stringify(previous) === JSON.stringify(route)) return false;
+  remember(s);
+  if (kind === "wire") s.cableLayout.wires[id] = copy(route);
+  else s.cableLayout.probes[id] = copy({ ...s.cableLayout.probes[id], ...placement, route, target: s.probes[id] });
+  s.message = "Cable shape saved. Endpoint connections are unchanged.";
   return true;
 }
 export function removeLead(s, index = s.selection.wire) {
   if (!Number.isInteger(index) || !s.wires[index]) return false;
   remember(s);
   const [a, b] = s.wires.splice(index, 1)[0];
+  s.cableLayout.wires.splice(index, 1);
   clearSelection(s);
   s.message = `${label(s, a)} → ${label(s, b)} removed.`;
   return true;
@@ -209,11 +258,15 @@ export function removeLead(s, index = s.selection.wire) {
 export function undo(s) {
   const previous = s.history.pop();
   if (!previous) return false;
+  const changedElectrical =
+    JSON.stringify(electricalSnapshot(s)) !== JSON.stringify({ params: previous.params, wires: previous.wires, probes: previous.probes });
   Object.assign(s, previous);
   clearSelection(s);
-  s.held = null;
-  s.running = true;
-  s.message = "Previous electrical state restored.";
+  if (changedElectrical) {
+    s.held = null;
+    s.running = true;
+  }
+  s.message = changedElectrical ? "Previous electrical state restored." : "Previous cable placement restored.";
   return true;
 }
 export function reset(s) {
@@ -221,6 +274,7 @@ export function reset(s) {
   s.params = { ...DEFAULTS, configuration: s.params.configuration };
   s.wires = [];
   s.probes = emptyProbes();
+  s.cableLayout = { wires: [], probes: {} };
   clearSelection(s);
   s.held = null;
   s.running = true;

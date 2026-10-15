@@ -14,6 +14,9 @@ import {
   setParameter,
   connect,
   connectProbe,
+  contactPreview,
+  leadDrop,
+  arrangeCable,
   selectTerminal,
   removeLead,
   undo,
@@ -41,7 +44,7 @@ const pinOptions = () =>
 const number = (key, label, value, min, max, step, unit) =>
   `<label class="number-control">${label}<span><input data-param="${key}" aria-label="${label}" type="number" value="${value}" min="${min}" max="${max}" step="${step}"><b>${unit}</b></span></label>`;
 root.innerHTML = `<div class="amp-app">
-<header class="amp-header"><a href="../projects/metahub/" class="amp-home" aria-label="Back to MetaHub">←</a><div><small>ELEN 221 / LAB 07</small><h1>Operational amplifiers</h1></div><nav aria-label="Circuits laboratories"><a href="?lab=5">05 Thévenin</a><a href="?lab=6">06 Superposition</a><span aria-current="page">07 Amplifiers</span><a href="?lab=8">08 Transients</a></nav><button data-do="undo" id="undo" title="Undo electrical change">↶ Undo</button><button data-do="reset">Reset</button><button data-do="help" aria-label="Experiment help">?</button></header>
+<header class="amp-header"><a href="../projects/metahub/" class="amp-home" aria-label="Back to MetaHub">←</a><div><small>ELEN 221 / LAB 07</small><h1>Operational amplifiers</h1></div><nav aria-label="Circuits laboratories"><a href="?lab=5">05 Thévenin</a><a href="?lab=6">06 Superposition</a><span aria-current="page">07 Amplifiers</span><a href="?lab=8">08 Transients</a></nav><button data-do="undo" id="undo" title="Undo last circuit or cable change">↶ Undo</button><button data-do="reset">Reset</button><button data-do="help" aria-label="Experiment help">?</button></header>
 <nav class="amp-phone-tabs" aria-label="Experiment presentation"><button data-view="controls" aria-pressed="false">Controls</button><button data-view="bench" class="active" aria-pressed="true">Bench</button><button data-view="measure" aria-pressed="false">Measure</button></nav>
 <main class="amp-workspace" data-view="bench">
 <aside class="amp-controls" aria-label="Experiment controls">
@@ -68,28 +71,41 @@ root.innerHTML = `<div class="amp-app">
   .map(([id, name]) => `<option value="${id}">${name}</option>`)
   .join(
     ""
-  )}</select></label><label>At<select id="probe-target">${pinOptions()}</select></label><button data-do="probe">Place</button><button data-do="disconnect" aria-label="Disconnect selected probe">Unplug</button></div></div></details><button data-do="rotate" id="rotate" aria-pressed="false">Rotate view</button><button data-do="home">Home view</button><button data-do="board-view" class="amp-phone-only">Board close-up</button><button data-do="leads">Select lead</button><button data-do="tidy">Tidy leads</button><button data-do="scope" id="scope-desktop">Hold scope</button></div><div class="amp-stage-help">Drag between terminals, or tap two and Connect · Drag a knob · Pick up a probe</div><div class="amp-pending-connection" hidden><span id="pending-endpoints"></span><button data-do="connect" class="primary" id="pending-connect">Connect</button><button data-do="cancel-selection" aria-label="Cancel terminal selection">×</button></div><div class="amp-lead-inspector" hidden><label>Lead<select id="lead-list" aria-label="Select a circuit lead"></select></label><strong id="selected-lead"></strong><button data-do="remove">Remove</button><button data-do="close-leads" aria-label="Close lead inspector">×</button></div></div>
+  )}</select></label><label>At<select id="probe-target">${pinOptions()}</select></label><button data-do="probe">Place</button><button data-do="disconnect" aria-label="Disconnect selected probe">Unplug</button></div></div></details><button data-do="rotate" id="rotate" aria-pressed="false">Rotate view</button><button data-do="home">Home view</button><button data-do="board-view" class="amp-phone-only">Board close-up</button><button data-do="leads">Select lead</button><button data-do="scope" id="scope-desktop">Hold scope</button></div><div class="amp-stage-help">Drag cable to reshape · Drag plug to reconnect · Esc cancels</div><div class="amp-pending-connection" hidden><span id="pending-endpoints"></span><button data-do="connect" class="primary" id="pending-connect">Connect</button><button data-do="cancel-selection" aria-label="Cancel terminal selection">×</button></div><div class="amp-lead-inspector" hidden><label>Lead<select id="lead-list" aria-label="Select a circuit lead"></select></label><strong id="selected-lead"></strong><button data-do="remove">Remove</button><button data-do="close-leads" aria-label="Close lead inspector">×</button></div></div>
 <div class="amp-observer"><label><input type="checkbox" id="hints" checked> Hints</label><p id="hint-text"></p><button data-do="hint">Another hint</button></div><p class="amp-status" role="status" id="message"></p>
 </section>
 <section class="amp-measure-mobile" aria-label="Measurement readings"><h2>Measured response</h2><div id="phone-scope"></div><div id="measure-values"></div><button data-do="scope" id="scope-toggle">Hold scope</button><p id="measure-explanation"></p></section>
-</main><dialog id="amp-help"><form method="dialog"><button class="amp-close" aria-label="Close help">×</button></form><h2>One live experiment</h2><p>Drag directly between labeled terminals, or tap two terminals and press Connect. Connection tools provides the same endpoint and probe choices by name for keyboard use. Every lead is your connection. Select a lead to see its endpoints and remove it; Undo restores the last electrical change.</p><p>Set each resistor with its physical knob or exact numeric control. Each resistor is independent; Match R4 explicitly sets only R4 = R3 × R2 / R1 for the difference amplifier. Switch on the dual supply when ready. Connect the meter V and COM tips, and each scope signal tip and ground clip, to measure. Probes can be placed in any order.</p><p>Hints highlight a connection or measurement to consider. Another hint changes only the suggestion. Breadboard holes are visual mounting holes; only labeled terminals are electrically active. The labeled GND sockets share the visible common rail; other contacts are isolated.</p><p>Source terminals can be measured before the amplifier is complete. Other incomplete or incorrect amplifier networks do not produce simulated readings; this teaching model checks the selected arrangement rather than solving arbitrary breadboard circuits.</p><p>The chip uses the actual DIP-8 top-view pin order. Unused pins 1, 5 and 8 are not connection targets. AC amplitude is Vpp; DC uses signed volts. The meter reports true RMS for AC and signed DC volts for DC. Both scope traces share one time grid and voltage scale. In the two-input arrangements, Vin1 and Vin2 have independent amplitudes and share waveform, frequency and phase. The weighted adder uses Vout = −Rf(Vin1/Rin1 + Vin2/Rin2). The general difference amplifier uses Vout = −(R2/R1)Vin1 + (1 + R2/R1)R4/(R3 + R4)Vin2. Equal input voltages cancel only when R2/R1 = R4/R3. A two-input transfer is not presented as a single-input gain.</p><p>Reset clears all leads and probes and switches the supply off. Undo can restore the experiment. Rotate view enables camera movement; Home view returns to the working view.</p></dialog></div>`;
+</main><dialog id="amp-help"><form method="dialog"><button class="amp-close" aria-label="Close help">×</button></form><h2>One live experiment</h2><p>Drag directly between labeled terminals, or tap two terminals and press Connect. Connection tools provides the same endpoint and probe choices by name for keyboard use. Every lead is your connection. Drag the middle of any cable to bend its route while its endpoints stay fixed. Release keeps the curve you placed; changing settings or the view does not reroute it. Undo restores the previous cable shape. Drag an existing plug to move its end; release away from a socket to unplug it. Shift-drag from an occupied socket to add another lead. Picked-up contacts are open until release. Escape cancels the drag. Click a lead to inspect its endpoints; Undo restores the last electrical change.</p><p>Set each resistor with its physical knob or exact numeric control. Each resistor is independent; Match R4 explicitly sets only R4 = R3 × R2 / R1 for the difference amplifier. Switch on the dual supply when ready. Connect the meter V and COM tips, and each scope signal tip and ground clip, to measure. Probes can be placed in any order.</p><p>Hints highlight a connection or measurement to consider. Another hint changes only the suggestion. Breadboard holes are visual mounting holes; only labeled terminals are electrically active. The labeled GND sockets share the visible common rail; other contacts are isolated.</p><p>Source terminals can be measured before the amplifier is complete. Other incomplete or incorrect amplifier networks do not produce simulated readings; this teaching model checks the selected arrangement rather than solving arbitrary breadboard circuits.</p><p>The chip uses the actual DIP-8 top-view pin order. Unused pins 1, 5 and 8 are not connection targets. AC amplitude is Vpp; DC uses signed volts. The meter reports true RMS for AC and signed DC volts for DC. Both scope traces share one time grid and voltage scale. In the two-input arrangements, Vin1 and Vin2 have independent amplitudes and share waveform, frequency and phase. The weighted adder uses Vout = −Rf(Vin1/Rin1 + Vin2/Rin2). The general difference amplifier uses Vout = −(R2/R1)Vin1 + (1 + R2/R1)R4/(R3 + R4)Vin2. Equal input voltages cancel only when R2/R1 = R4/R3. A two-input transfer is not presented as a single-input gain.</p><p>Reset clears all leads and probes and switches the supply off. Undo can restore the experiment. Rotate view enables camera movement; Home view returns to the working view.</p></dialog></div>`;
 let adjustment = null,
+  heldContact = null,
   initialDial = 0,
   rotate = false,
   leadListOpen = false,
   renderedConfiguration = null;
 const scene = mountAmplifierScene(document.querySelector("#amp-canvas"), {
+  holdContact: (contact) => {
+    heldContact = contact;
+    render();
+  },
+  dropLead: (index, end, target, route) => {
+    leadDrop(state, index, end, target, route);
+    render();
+  },
+  arrangeCable: (kind, id, route, placement) => {
+    arrangeCable(state, kind, id, route, placement);
+    render();
+  },
   terminal: (id) => {
     leadListOpen = false;
     selectTerminal(state, id);
     render();
   },
-  connect: (a, b) => {
-    connect(state, a, b);
+  connect: (a, b, route) => {
+    connect(state, a, b, route);
     render();
   },
-  probe: (id, target) => {
-    connectProbe(state, id, target);
+  probe: (id, target, placement) => {
+    connectProbe(state, id, target, placement);
     render();
   },
   selectProbe: (id) => {
@@ -199,7 +215,7 @@ function renderConfiguration() {
 }
 function render() {
   renderConfiguration();
-  const result = acquisition(state),
+  const result = acquisition(contactPreview(state, heldContact)),
     guide = hint(state),
     d = result.diagnostic,
     p = state.params;
@@ -296,6 +312,7 @@ function render() {
 root.addEventListener("click", (e) => {
   const btn = e.target.closest("button");
   if (!btn) return;
+  scene.cancelInteraction();
   if (btn.dataset.rail) {
     setParameter(state, "rail", +btn.dataset.rail);
     render();
@@ -364,9 +381,6 @@ root.addEventListener("click", (e) => {
       scene.framing("bench");
       scene.home();
       break;
-    case "tidy":
-      state.message = "Lead routes tidied. All electrical connections are unchanged.";
-      break;
     case "help":
       document.querySelector("#amp-help").showModal();
       break;
@@ -375,6 +389,7 @@ root.addEventListener("click", (e) => {
 });
 root.addEventListener("change", (e) => {
   const el = e.target;
+  scene.cancelInteraction();
   if (el.id === "configuration") {
     selectConfiguration(state, el.value);
     leadListOpen = false;

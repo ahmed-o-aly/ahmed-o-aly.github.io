@@ -1,8 +1,9 @@
 import * as THREE from "three";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
-import { circuit, resistorRoles, transfer, PROBES } from "./amplifier-experiment.js";
+import { circuit, resistorRoles, transfer, pinLabel, PROBES } from "./amplifier-experiment.js";
 
+import { cableCurve, seedCable, traceCable, moveCableEnd, grabCable, bendCable } from "./amplifier-cables.js";
 import { scopeAxes, displayNumber } from "./amplifier-display.js";
 
 const INSTRUMENTS = {
@@ -32,6 +33,22 @@ export function jackPosition(id) {
     .applyAxisAngle(new THREE.Vector3(1, 0, 0), 0.48)
     .add(new THREE.Vector3(i.x, i.y - i.h / 2, 0.23))
     .toArray();
+}
+export function clearInstrumentFaces(points) {
+  // Keep the drawn x/y path, lifting only interior points that enter a tilted face.
+  // End contacts remain exact. This runs while drawing, never after release.
+  const angle = 0.48,
+    front = 0.45;
+  return points.map((point, index) => {
+    const p = [...point];
+    if (index === 0 || index === points.length - 1) return p;
+    for (const { x, y, w, h } of Object.values(INSTRUMENTS)) {
+      const localY = (p[1] - (y - h / 2) + front * Math.sin(angle)) / Math.cos(angle);
+      if (Math.abs(p[0] - x) <= w / 2 + 0.04 && localY >= 0 && localY <= h)
+        p[2] = Math.max(p[2], 0.23 + localY * Math.sin(angle) + front * Math.cos(angle));
+    }
+    return p;
+  });
 }
 export const POSITIONS = Object.freeze({
   ...Object.fromEntries(["plus+", "plus-", "minus-", "signal+", "signal-", "signal2+"].map((id) => [id, jackPosition(id).slice(0, 2)])),
@@ -192,7 +209,7 @@ export function mountAmplifierScene(host, callbacks) {
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
   renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.shadowMap.type = THREE.VSMShadowMap;
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   host.append(renderer.domElement);
   renderer.domElement.setAttribute(
@@ -214,6 +231,7 @@ export function mountAmplifierScene(host, callbacks) {
   Object.assign(light.shadow.camera, { left: -8, right: 8, top: 6, bottom: -6 });
   light.shadow.bias = -0.0006;
   light.shadow.radius = 4;
+  light.shadow.blurSamples = 8;
   scene.add(light);
   const root = new THREE.Group();
   scene.add(root);
@@ -732,106 +750,165 @@ export function mountAmplifierScene(host, callbacks) {
   root.add(probeGroup);
   const wires = new THREE.Group();
   root.add(wires);
+  const dragGroup = new THREE.Group();
+  dragGroup.userData.frame = false;
+  root.add(dragGroup);
+  const targetRing = new THREE.Mesh(
+    new THREE.RingGeometry(0.19, 0.225, 48),
+    new THREE.MeshBasicMaterial({ color: "#23866b", side: THREE.DoubleSide, depthTest: false })
+  );
+  targetRing.renderOrder = 30;
+  targetRing.visible = false;
+  targetRing.userData.frame = false;
+  root.add(targetRing);
+  const pointerNote = document.createElement("div");
+  pointerNote.className = "amp-pointer-note";
+  pointerNote.hidden = true;
+  host.append(pointerNote);
+  const dragStatus = document.createElement("div");
+  dragStatus.className = "amp-drag-status";
+  dragStatus.setAttribute("role", "status");
+  dragStatus.hidden = true;
+  host.append(dragStatus);
+  let gesture = null;
+  const wirePaths = new Map(),
+    probePlacements = new Map();
   let renderedSignature = "";
   function tube(points, color, r = 0.029, parent = wires) {
     if (points.length < 2) return;
-    const raw = points.map((v) => new THREE.Vector3(...v)),
-      rounded = [raw[0]];
-    for (let i = 1; i < raw.length - 1; i++) {
-      const a = raw[i].clone().sub(raw[i - 1]),
-        b = raw[i + 1].clone().sub(raw[i]),
-        radius = Math.min(0.12, a.length() / 3, b.length() / 3);
-      rounded.push(raw[i].clone().addScaledVector(a.normalize(), -radius), raw[i], raw[i].clone().addScaledVector(b.normalize(), radius));
-    }
-    rounded.push(raw.at(-1));
-    const curve = new THREE.CatmullRomCurve3(rounded, false, "centripetal", 0.1);
-    const mesh = new THREE.Mesh(new THREE.TubeGeometry(curve, 60, r, 8, false), material(color, { roughness: 0.5 }));
+    const curve = cableCurve(points);
+    const mesh = new THREE.Mesh(new THREE.TubeGeometry(curve, 60, r, 8, false), material(color, { roughness: 0.36 }));
     mesh.castShadow = false;
     parent.add(mesh);
     return mesh;
   }
+  function cableHit(route, data, parent) {
+    const hit = new THREE.Mesh(new THREE.TubeGeometry(cableCurve(route), 80, 0.085, 6, false), new THREE.MeshBasicMaterial({ visible: false }));
+    hit.userData = { kind: "cable", ...data, route };
+    parent.add(hit);
+    pickables.push(hit);
+  }
+  function activeCable(kind, id) {
+    return (
+      gesture?.moved &&
+      ((gesture.kind === kind && gesture.id === id) || (gesture.kind === "cable" && gesture.cableKind === kind && gesture.id === id))
+    );
+  }
   function disposeGroup(group) {
     while (group.children.length) {
       const o = group.children.pop();
-      o.geometry?.dispose();
-      o.material?.dispose();
+      o.traverse((child) => {
+        child.geometry?.dispose();
+        child.material?.dispose();
+      });
       o.parent = null;
     }
   }
   function renderLeads() {
-    const signature = JSON.stringify([state.params.configuration, state.wires, state.probes, state.selection.wire]);
+    const signature = JSON.stringify([
+      state.params.configuration,
+      state.wires,
+      state.probes,
+      state.selection.wire,
+      state.cableLayout,
+      gesture?.moved ? [gesture.kind, gesture.id] : null,
+    ]);
     if (signature === renderedSignature) return;
     renderedSignature = signature;
     disposeGroup(wires);
     disposeGroup(probeGroup);
-    for (let i = pickables.length - 1; i >= 0; i--) if (["wire", "probe"].includes(pickables[i].userData.kind)) pickables.splice(i, 1);
+    for (let i = pickables.length - 1; i >= 0; i--) if (["wire", "probe", "cable"].includes(pickables[i].userData.kind)) pickables.splice(i, 1);
     state.wires.forEach(([a, b], index) => {
-      const route = wireRoute(a, b, index, state.params.configuration);
-      const mesh = tube(
-        route,
-        state.selection.wire === index ? "#f0a234" : wireColor(a, b, state.params.configuration),
-        state.selection.wire === index ? 0.043 : 0.027
-      );
-      if (mesh) {
-        if (state.params.configuration === "subtractor" && [a, b].includes("op+")) mesh.castShadow = true;
-        mesh.userData = { kind: "wire", id: index };
-        pickables.push(mesh);
+      const route = state.cableLayout.wires[index] || seedCable(wireRoute(a, b, index, state.params.configuration));
+      wirePaths.set(index, route);
+      if (!activeCable("wire", index)) {
+        tube(
+          route,
+          state.selection.wire === index ? "#f0a234" : wireColor(a, b, state.params.configuration),
+          state.selection.wire === index ? 0.05 : 0.035
+        );
+        cableHit(route, { cableKind: "wire", id: index }, wires);
+      }
+      for (const [end, point] of [
+        [0, route[0]],
+        [1, route.at(-1)],
+      ]) {
+        if (gesture?.moved && gesture.kind === "wire" && gesture.id === index && gesture.end === end) continue;
+        const plug = disc(point[0], point[1], point[2] + 0.055, 0.069, wireColor(a, b, state.params.configuration), wires, 0.1);
+        disc(point[0], point[1], point[2] + 0.112, 0.034, "#d3dce0", wires, 0.012);
+        plug.userData = { kind: "wire", id: index, end };
+        pickables.push(plug);
       }
     });
     for (const [id, home] of Object.entries(probeHomes)) {
       const target = state.probes[id],
-        groundX = { black: 0.8, ch1Ground: 1.3, ch2Ground: 1.8 }[id] ?? 2.2;
+        saved = state.cableLayout.probes[id];
+      const groundX = { black: 0.8, ch1Ground: 1.3, ch2Ground: 1.8 }[id] ?? 2.2;
+      const placed = saved?.target === target && saved.contact && saved.direction;
       const contact = new THREE.Vector3(
-        ...(target === "gnd"
-          ? [groundX, -2.2, 0.25]
-          : target && JACKS[target]
-            ? jackPosition(target)
-            : target
-              ? [...POSITIONS[target], 0.25]
-              : [home[0] - 0.22, home[1] - 0.42, 0.3])
+        ...(placed
+          ? saved.contact
+          : target === "gnd"
+            ? [groundX, -2.2, 0.25]
+            : target && JACKS[target]
+              ? jackPosition(target)
+              : target
+                ? [...POSITIONS[target], 0.25]
+                : [home[0] - 0.22, home[1] - 0.42, 0.3])
       );
       const direction = new THREE.Vector3(
-        ...(!target
-          ? [0.96, 0, 0.26]
-          : target === "out"
-            ? id === "red"
-              ? [0.85, -0.28, 0.35]
-              : [0.43, -0.85, 0.35]
-            : target === "signal2+"
-              ? [1, 0, 0.35]
-              : JACKS[target]
-                ? [0.2, -0.9, 0.35]
-                : target === "gnd"
-                  ? [0.05, -0.94, 0.3]
-                  : target.startsWith("op") || target === "vn"
-                    ? [-0.9, -0.1, 0.35]
-                    : [0.35, -0.85, 0.35])
+        ...(placed
+          ? saved.direction
+          : !target
+            ? [0.96, 0, 0.26]
+            : target === "out"
+              ? id === "red"
+                ? [0.85, -0.28, 0.35]
+                : [0.43, -0.85, 0.35]
+              : target === "signal2+"
+                ? [1, 0, 0.35]
+                : JACKS[target]
+                  ? [0.2, -0.9, 0.35]
+                  : target === "gnd"
+                    ? [0.05, -0.94, 0.3]
+                    : target.startsWith("op") || target === "vn"
+                      ? [-0.9, -0.1, 0.35]
+                      : [0.35, -0.85, 0.35])
       ).normalize();
-      const orientation = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction),
-        c = probeColors[id];
+      const orientation = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction);
       const handleCenter = contact.clone().addScaledVector(direction, 0.44),
-        cableEnd = contact.clone().addScaledVector(direction, 0.65);
+        cableEnd = contact.clone().addScaledVector(direction, 0.65),
+        c = probeColors[id];
+      const [x, y, z] = cableEnd.toArray();
+      let route;
+      if (saved?.route) route = moveCableEnd(saved.route, 1, cableEnd.toArray());
+      else {
+        if (!target) route = [home, [home[0] + 0.4, home[1] - 0.2, home[2]], [x, y, z]];
+        else if (id === "red") route = [home, [6.6, home[1], home[2]], [6.6, 1.1, 0.3], [2.68, 1.1, 0.3], [2.68, y + 0.25, 0.4], [x, y, z]];
+        else if (id === "black") route = [home, [2.83, home[1], home[2]], [2.83, -1.78, 0.4], [x, -1.78, 0.4], [x, y, z]];
+        else if (id === "ch1") route = [home, [home[0], -3.18, 0.3], [-4.78, -3.18, 0.3], [-4.78, y + 0.25, 0.4], [x, y, z]];
+        else
+          route = [
+            home,
+            [home[0], -3.06 - (id === "ch2Ground" ? 0.12 : 0), 0.3],
+            [2.57 + (id === "ch2" ? 0.12 : 0), -3.06 - (id === "ch2Ground" ? 0.12 : 0), 0.3],
+            [x, -3.06 - (id === "ch2Ground" ? 0.12 : 0), 0.3],
+            [x, y, z],
+          ];
+        route = seedCable(route);
+      }
+      probePlacements.set(id, { route, contact: contact.toArray(), direction: direction.toArray(), target });
+      if (!activeCable("probe", id)) {
+        tube(route, c, 0.026, probeGroup);
+        cableHit(route, { cableKind: "probe", id }, probeGroup);
+      }
+      if (gesture?.moved && gesture.kind === "probe" && gesture.id === id) continue;
       const handle = box(handleCenter.x, handleCenter.y, handleCenter.z, 0.11, 0.38, 0.11, c, 0.025, probeGroup);
       handle.quaternion.copy(orientation);
       const tip = new THREE.Mesh(new THREE.CylinderGeometry(0.019, 0.004, 0.25, 12), material("#c6d4d9", { metalness: 0.7 }));
       tip.position.copy(contact).addScaledVector(direction, 0.125);
       tip.quaternion.copy(orientation);
       probeGroup.add(tip);
-      const [x, y, z] = cableEnd.toArray();
-      let route;
-      if (!target) route = [home, [home[0] + 0.4, home[1] - 0.2, home[2]], [x, y, z]];
-      else if (id === "red") route = [home, [6.6, home[1], home[2]], [6.6, 1.1, 0.3], [2.68, 1.1, 0.3], [2.68, y + 0.25, 0.4], [x, y, z]];
-      else if (id === "black") route = [home, [2.83, home[1], home[2]], [2.83, -1.78, 0.4], [x, -1.78, 0.4], [x, y, z]];
-      else if (id === "ch1") route = [home, [home[0], -3.18, 0.3], [-4.78, -3.18, 0.3], [-4.78, y + 0.25, 0.4], [x, y, z]];
-      else
-        route = [
-          home,
-          [home[0], -3.06 - (id === "ch2Ground" ? 0.12 : 0), 0.3],
-          [2.57 + (id === "ch2" ? 0.12 : 0), -3.06 - (id === "ch2Ground" ? 0.12 : 0), 0.3],
-          [x, -3.06 - (id === "ch2Ground" ? 0.12 : 0), 0.3],
-          [x, y, z],
-        ];
-      tube(route, c, 0.018, probeGroup);
       const hit = new THREE.Mesh(new THREE.SphereGeometry(0.17), new THREE.MeshBasicMaterial({ visible: false }));
       hit.position.copy(handleCenter);
       hit.userData = { kind: "probe", id };
@@ -848,73 +925,290 @@ export function mountAmplifierScene(host, callbacks) {
   }
   const raycaster = new THREE.Raycaster(),
     pointer = new THREE.Vector2();
-  let gesture = null;
-  function hit(event, kind) {
+  function pointerRay(e) {
     const r = renderer.domElement.getBoundingClientRect();
-    pointer.set(((event.clientX - r.left) / r.width) * 2 - 1, (-(event.clientY - r.top) / r.height) * 2 + 1);
+    pointer.set(((e.clientX - r.left) / r.width) * 2 - 1, (-(e.clientY - r.top) / r.height) * 2 + 1);
     raycaster.setFromCamera(pointer, camera);
-    return raycaster
-      .intersectObjects(pickables, false)
-      .find(
-        (h) =>
-          (!kind || h.object.userData.kind === kind) &&
-          (h.object.userData.kind !== "terminal" || circuit(state).pins.some((p) => p.id === h.object.userData.id)) &&
-          (h.object.userData.kind !== "dial" ||
-            [
-              ...resistorRoles(state.params.configuration).map((r) => r.key),
-              "amplitude",
-              "frequency",
-              ...(transfer(state).multi ? ["amplitude2"] : []),
-            ].includes(h.object.userData.id)) &&
-          !(h.object.userData.kind === "dial" && h.object.userData.id === "frequency" && state?.params.waveform === "dc")
-      )?.object.userData;
+  }
+  function hit(e, kind) {
+    pointerRay(e);
+    const hits = raycaster.intersectObjects(pickables, false);
+    if (!kind)
+      hits.sort(
+        (a, b) =>
+          Number(b.object.userData.kind === "wire" && b.object.userData.end !== undefined) -
+          Number(a.object.userData.kind === "wire" && a.object.userData.end !== undefined)
+      );
+    const found = hits.find(
+      (h) =>
+        (!kind || h.object.userData.kind === kind) &&
+        (h.object.userData.kind !== "terminal" || circuit(state).pins.some((p) => p.id === h.object.userData.id)) &&
+        (h.object.userData.kind !== "dial" ||
+          [
+            ...resistorRoles(state.params.configuration).map((r) => r.key),
+            "amplitude",
+            "frequency",
+            ...(transfer(state).multi ? ["amplitude2"] : []),
+          ].includes(h.object.userData.id)) &&
+        !(h.object.userData.kind === "dial" && h.object.userData.id === "frequency" && state.params.waveform === "dc")
+    );
+    if (!found) return null;
+    const data = found.object.userData;
+    let point = data.kind === "terminal" ? found.object.getWorldPosition(new THREE.Vector3()) : found.point;
+    if (data.kind === "cable")
+      point = cableCurve(data.route)
+        .getPoints(120)
+        .reduce((closest, p) => (p.distanceToSquared(found.point) < closest.distanceToSquared(found.point) ? p : closest));
+    return { ...data, point };
+  }
+  function planePoint(e, z) {
+    pointerRay(e);
+    return raycaster.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 0, 1), -z), new THREE.Vector3());
+  }
+  function endpointName(id) {
+    return pinLabel(id, state.params.configuration);
+  }
+  function note(e, text, tone = "neutral") {
+    pointerNote.textContent = text;
+    pointerNote.dataset.tone = tone;
+    pointerNote.hidden = !text;
+    const r = host.getBoundingClientRect();
+    pointerNote.style.left = `${Math.max(8, Math.min(e.clientX - r.left + 18, r.width - pointerNote.offsetWidth - 8))}px`;
+    pointerNote.style.top = `${Math.max(8, Math.min(e.clientY - r.top - 42, r.height - pointerNote.offsetHeight - 8))}px`;
+  }
+  function highlight(target, valid = true) {
+    targetRing.visible = !!target;
+    if (!target) return;
+    targetRing.position.copy(target.point).add(new THREE.Vector3(0, 0, 0.06));
+    targetRing.rotation.x = JACKS[target.id] ? 0.48 : 0;
+    targetRing.material.color.set(valid ? "#18816a" : "#b76b32");
+  }
+  function destination(point) {
+    // Aim the actual held tip, including its grip offset, rather than the mouse cursor.
+    const projected = point.clone().project(camera),
+      r = renderer.domElement.getBoundingClientRect();
+    let target = null,
+      nearest = 15;
+    const pins = circuit(state).pins.map((p) => p.id);
+    for (const object of pickables) {
+      if (object.userData.kind !== "terminal" || !pins.includes(object.userData.id)) continue;
+      const p = object.getWorldPosition(new THREE.Vector3()),
+        screen = p.clone().project(camera);
+      const distance = Math.hypot(((screen.x - projected.x) * r.width) / 2, ((screen.y - projected.y) * r.height) / 2);
+      if (distance < nearest) {
+        nearest = distance;
+        target = { id: object.userData.id, point: p };
+      }
+    }
+    if (!target) return { target: null, valid: false };
+    const g = gesture;
+    if (g.kind === "probe") return { target, valid: true };
+    const from = g.kind === "wire" ? g.fixedId : g.id;
+    const duplicate = state.wires.some(
+      ([a, b], i) => !(g.kind === "wire" && i === g.id) && ((a === from && b === target.id) || (b === from && a === target.id))
+    );
+    return { target, valid: target.id !== from && !duplicate };
+  }
+  function showHeld(e) {
+    const g = gesture,
+      free = planePoint(e, g.dragZ);
+    if (!free) return;
+    free.add(g.pointerOffset);
+    disposeGroup(dragGroup);
+    if (g.kind === "cable") {
+      g.route = bendCable(g.baseRoute, g.knot, free.toArray());
+      tube(g.route, g.color, g.cableKind === "probe" ? 0.026 : 0.035, dragGroup);
+      const grip = new THREE.Mesh(new THREE.SphereGeometry(0.07, 16, 10), material(g.color, { emissive: g.color, emissiveIntensity: 0.3 }));
+      grip.position.copy(free);
+      dragGroup.add(grip);
+      targetRing.visible = false;
+      note(e, "Shape cable · both endpoints stay fixed");
+      dragStatus.textContent = "Rearranging cable · release keeps this shape · Esc to cancel";
+    } else {
+      const drop = destination(free),
+        contact = drop.valid ? drop.target.point.clone() : free;
+      g.drop = drop;
+      if (g.kind === "terminal") {
+        const traced = traceCable(g.trail, free.toArray());
+        g.trail = traced.trail;
+        g.route = clearInstrumentFaces(moveCableEnd(traced.route, 1, contact.toArray()));
+      } else if (g.kind === "wire") g.route = moveCableEnd(g.baseRoute, g.end, contact.toArray());
+      else {
+        const direction = new THREE.Vector3(...g.placement.direction);
+        const orientation = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction);
+        const center = contact.clone().addScaledVector(direction, 0.44);
+        const handle = box(center.x, center.y, center.z, 0.11, 0.38, 0.11, g.color, 0.025, dragGroup);
+        handle.quaternion.copy(orientation);
+        const tip = new THREE.Mesh(new THREE.CylinderGeometry(0.019, 0.004, 0.25, 12), material("#c6d4d9", { metalness: 0.7 }));
+        tip.position.copy(contact).addScaledVector(direction, 0.125);
+        tip.quaternion.copy(orientation);
+        dragGroup.add(tip);
+        g.route = moveCableEnd(g.baseRoute, 1, contact.clone().addScaledVector(direction, 0.65).toArray());
+        g.placement = { ...g.placement, contact: contact.toArray(), route: g.route };
+      }
+      tube(g.route, g.color, g.kind === "probe" ? 0.026 : 0.035, dragGroup);
+      if (g.kind !== "probe") {
+        disc(contact.x, contact.y, contact.z + 0.055, 0.069, g.color, dragGroup, 0.1);
+        disc(contact.x, contact.y, contact.z + 0.112, 0.034, "#d3dce0", dragGroup, 0.012);
+      }
+      highlight(drop.target, drop.valid);
+      note(
+        e,
+        drop.target
+          ? drop.valid
+            ? `${g.kind === "probe" ? "Place" : "Connect"} · ${endpointName(drop.target.id)}`
+            : "Already connected · choose another socket"
+          : g.kind === "wire"
+            ? "Release here to unplug"
+            : g.kind === "probe"
+              ? "Release here to set the probe down"
+              : "Draw your route to a labeled socket",
+        drop.target ? (drop.valid ? "ready" : "blocked") : "neutral"
+      );
+      dragStatus.textContent = `${
+        g.kind === "probe" ? PROBES[g.id] : endpointName(g.kind === "wire" ? g.fixedId : g.id)
+      } · held · release keeps this route · Esc to cancel`;
+    }
+    dragStatus.hidden = false;
+    renderer.domElement.style.cursor = "grabbing";
+  }
+  function clearFeedback() {
+    disposeGroup(dragGroup);
+    targetRing.visible = false;
+    pointerNote.hidden = true;
+    dragStatus.hidden = true;
+    renderer.domElement.style.cursor = "default";
   }
   function down(e) {
-    if (e.button !== 0 || gesture) return;
-    const target = hit(e);
+    if (e.button !== 0 || gesture || !state) return;
+    const target = e.shiftKey ? hit(e, "terminal") : hit(e);
     if (!target) return;
     controls.enabled = false;
     renderer.domElement.setPointerCapture(e.pointerId);
     gesture = { ...target, pointerId: e.pointerId, startY: e.clientY, startX: e.clientX, moved: false };
-    if (target.kind === "dial") callbacks.beginDial(target.id);
+    const g = gesture;
+    if (g.kind === "dial") callbacks.beginDial(g.id);
+    else if (["terminal", "wire", "probe", "cable"].includes(g.kind)) {
+      if (g.kind === "cable") {
+        const grabbed = grabCable(g.route, g.point.toArray());
+        g.baseRoute = grabbed.route;
+        g.knot = grabbed.index;
+        g.color = g.cableKind === "wire" ? wireColor(...state.wires[g.id], state.params.configuration) : probeColors[g.id];
+        if (g.cableKind === "probe") g.placement = probePlacements.get(g.id);
+        g.dragZ = g.point.z;
+      } else if (g.kind === "wire") {
+        g.baseRoute = wirePaths.get(g.id).map((p) => [...p]);
+        g.fixedId = state.wires[g.id][1 - g.end];
+        g.color = wireColor(...state.wires[g.id], state.params.configuration);
+        g.point = new THREE.Vector3(...g.baseRoute[g.end === 0 ? 0 : g.baseRoute.length - 1]);
+        g.dragZ = g.point.z;
+      } else if (g.kind === "probe") {
+        g.placement = structuredClone(probePlacements.get(g.id));
+        g.baseRoute = g.placement.route;
+        g.point = new THREE.Vector3(...g.placement.contact);
+        g.color = probeColors[g.id];
+        g.dragZ = g.point.z;
+      } else {
+        g.trail = [g.point.toArray()];
+        g.color = wireColor(g.id, "", state.params.configuration);
+        // Raised instrument sockets must exit above their face, not drop through it.
+        // The pointer still draws every turn; this only sets the working height.
+        g.dragZ = Math.max(0.6, g.point.z + 0.12);
+      }
+      const origin = planePoint(e, g.dragZ);
+      g.pointerOffset = g.kind === "terminal" ? new THREE.Vector3() : g.point.clone().sub(origin || g.point);
+      renderer.domElement.style.cursor = "grabbing";
+      dragStatus.textContent =
+        g.kind === "cable" ? "Cable selected · drag to reshape · endpoints stay fixed" : "Contact selected · drag to move · Esc to cancel";
+      dragStatus.hidden = false;
+    }
     e.preventDefault();
   }
   function move(e) {
-    if (gesture && e.pointerId !== gesture.pointerId) return;
+    if (!state || (gesture && e.pointerId !== gesture.pointerId)) return;
     if (!gesture) {
       const hover = hit(e);
-      renderer.domElement.style.cursor = hover ? (hover.kind === "dial" ? "ns-resize" : hover.kind === "wire" ? "pointer" : "crosshair") : "default";
+      renderer.domElement.style.cursor = hover ? (hover.kind === "dial" ? "ns-resize" : hover.kind === "button" ? "pointer" : "grab") : "default";
+      highlight(hover?.kind === "terminal" ? hover : null);
+      note(
+        e,
+        !hover
+          ? ""
+          : hover.kind === "terminal"
+            ? `${endpointName(hover.id)} · drag to connect`
+            : hover.kind === "probe"
+              ? `${PROBES[hover.id]} · drag probe`
+              : hover.kind === "wire"
+                ? "Drag plug to reconnect · Shift-drag to add a lead"
+                : hover.kind === "cable"
+                  ? "Drag cable to reshape · endpoints stay fixed"
+                  : hover.kind === "dial"
+                    ? "Drag up / down to adjust"
+                    : ""
+      );
       return;
     }
-    gesture.moved ||= Math.hypot(e.clientX - gesture.startX, e.clientY - gesture.startY) > 5;
+    const wasMoved = gesture.moved;
+    gesture.moved ||= Math.hypot(e.clientX - gesture.startX, e.clientY - gesture.startY) > 4;
     if (gesture.kind === "dial") callbacks.turnDial(gesture.id, gesture.startY - e.clientY);
+    else if (gesture.moved && ["terminal", "wire", "probe", "cable"].includes(gesture.kind)) {
+      if (!wasMoved) {
+        callbacks.holdContact(gesture);
+        renderLeads();
+      }
+      showHeld(e);
+    }
   }
-  function up(e) {
-    if (!gesture || e.pointerId !== gesture.pointerId) return;
+  function finish() {
     const g = gesture;
     gesture = null;
     controls.enabled = true;
-    renderer.domElement.releasePointerCapture(e.pointerId);
-    const target = hit(e, "terminal");
+    if (renderer.domElement.hasPointerCapture(g.pointerId)) renderer.domElement.releasePointerCapture(g.pointerId);
+    clearFeedback();
+    callbacks.holdContact(null);
+    renderLeads();
+    return g;
+  }
+  function up(e) {
+    if (!gesture || e.pointerId !== gesture.pointerId) return;
+    if (gesture.moved && ["terminal", "wire", "probe", "cable"].includes(gesture.kind)) showHeld(e);
+    const g = finish(),
+      drop = g.drop;
     if (g.kind === "dial") callbacks.endDial();
-    else if (g.kind === "terminal") {
-      if (g.moved && target && target.id !== g.id) callbacks.connect(g.id, target.id);
+    else if (g.kind === "cable") {
+      if (g.moved) callbacks.arrangeCable(g.cableKind, g.id, g.route, g.placement);
+      else if (g.cableKind === "wire") callbacks.wire(g.id);
+      else callbacks.selectProbe(g.id);
+    } else if (g.kind === "terminal") {
+      if (g.moved && drop?.valid) callbacks.connect(g.id, drop.target.id, g.route);
       else if (!g.moved) callbacks.terminal(g.id);
     } else if (g.kind === "probe") {
-      if (g.moved) callbacks.probe(g.id, target?.id || null);
+      if (g.moved) callbacks.probe(g.id, drop?.target?.id || null, g.placement);
       else callbacks.selectProbe(g.id);
-    } else if (g.kind === "wire") callbacks.wire(g.id);
-    else if (g.kind === "button" && !g.moved) callbacks[g.id]?.();
+    } else if (g.kind === "wire") {
+      if (!g.moved) callbacks.wire(g.id);
+      else if (drop && (!drop.target || drop.valid)) callbacks.dropLead(g.id, g.end, drop.target?.id || null, g.route);
+    } else if (g.kind === "button" && !g.moved) callbacks[g.id]?.();
+  }
+  function cancel(e) {
+    if (!gesture || (e?.pointerId !== undefined && e.pointerId !== gesture.pointerId)) return;
+    const g = finish();
+    if (g.kind === "dial") callbacks.endDial();
+  }
+  function keydown(e) {
+    if (e.key === "Escape") cancel();
+  }
+  function leave() {
+    if (!gesture) clearFeedback();
   }
   renderer.domElement.addEventListener("pointerdown", down);
   renderer.domElement.addEventListener("pointermove", move);
   renderer.domElement.addEventListener("pointerup", up);
-  renderer.domElement.addEventListener("pointercancel", (e) => {
-    if (!gesture || e.pointerId !== gesture.pointerId) return;
-    if (gesture?.kind === "dial") callbacks.endDial();
-    gesture = null;
-    controls.enabled = true;
-  });
+  renderer.domElement.addEventListener("pointercancel", cancel);
+  renderer.domElement.addEventListener("lostpointercapture", cancel);
+  renderer.domElement.addEventListener("pointerleave", leave);
+  window.addEventListener("keydown", keydown);
+  window.addEventListener("blur", cancel);
   let frameMode = "bench",
     lastConfiguration = null;
   let homePosition = camera.position.clone(),
@@ -934,7 +1228,7 @@ export function mountAmplifierScene(host, callbacks) {
     root.traverse((object) => {
       if (!object.isMesh || object.isInstancedMesh || !object.visible || object.material?.visible === false || object.userData.frame === false)
         return;
-      if (object.parent === wires || object.parent === probeGroup) return;
+      if (object.parent === wires || object.parent === probeGroup || object.parent === dragGroup) return;
       let ancestor = object.parent;
       while (ancestor && ancestor !== root) {
         if (!ancestor.visible) return;
@@ -994,6 +1288,7 @@ export function mountAmplifierScene(host, callbacks) {
   }
   renderer.setAnimationLoop(animate);
   return {
+    cancelInteraction: cancel,
     update(next, result, guide) {
       state = next;
       reading = result;
@@ -1057,6 +1352,12 @@ export function mountAmplifierScene(host, callbacks) {
       camera.updateProjectionMatrix();
     },
     dispose() {
+      cancel();
+      window.removeEventListener("keydown", keydown);
+      window.removeEventListener("blur", cancel);
+      clearFeedback();
+      pointerNote.remove();
+      dragStatus.remove();
       observer.disconnect();
       renderer.setAnimationLoop(null);
       renderer.dispose();
