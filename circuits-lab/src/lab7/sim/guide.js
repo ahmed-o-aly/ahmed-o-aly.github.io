@@ -83,13 +83,17 @@ export function nextAction(state) {
 
   if (check.missing.length) {
     const node = check.missing[0];
-    const joined = node.terminals.find((t) => !node.unreached.includes(t)) ?? node.terminals[0];
-    const target = node.unreached[0];
+    // Wire out from the board's own terminal once it is joined, otherwise from
+    // whatever was joined most recently, so the instruction reads as the next
+    // short hop rather than a long reach back to the instrument.
+    const joined = node.terminals.filter((t) => !node.unreachedAll.includes(t));
+    const from = joined.find((t) => t.startsWith("board.")) ?? joined.at(-1) ?? node.terminals[0];
+    const target = node.nextHop;
     return {
       phase: "build",
       kind: "connect",
-      text: connectText(joined, target),
-      highlight: [joined, target],
+      text: connectText(from, target),
+      highlight: [from, target],
       node: node.id,
     };
   }

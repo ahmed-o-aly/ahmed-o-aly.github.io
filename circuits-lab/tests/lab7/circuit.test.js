@@ -75,7 +75,9 @@ test("shorting the supply rails together is caught", () => {
 test("a lead held in the hand is an open contact", () => {
   const leads = wireCorrectly("inverting");
   assert.equal(verify("inverting", leads).complete, true);
-  const held = leads.map((lead, i) => (i === 0 ? { ...lead, held: true } : lead));
+  // Hold a lead the circuit depends on, not the optional edge hop at index 0.
+  const essential = leads.findIndex((lead) => lead.to === "u1.7");
+  const held = leads.map((lead, i) => (i === essential ? { ...lead, held: true } : lead));
   const result = verify("inverting", held);
   assert.equal(result.complete, false, "picking a lead up opens its node immediately");
   assert.ok(result.missing.length > 0);

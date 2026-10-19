@@ -210,6 +210,7 @@ test("settings are clamped to what the hardware offers", () => {
 test("removing a lead opens the circuit again", () => {
   const state = buildAndProbe(createExperiment());
   assert.equal(readings(state).check.complete, true);
-  removeLead(state, 0);
+  // Remove a lead the circuit depends on; the edge hop at index 0 is optional.
+  removeLead(state, state.leads.findIndex((lead) => lead.to === "u1.7"));
   assert.equal(readings(state).check.complete, false);
 });

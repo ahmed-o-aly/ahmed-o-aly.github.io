@@ -71,11 +71,11 @@ export function mountLab7(host) {
   // that the instrument panels are read square-on rather than from above.
   // Inside the mouth of the U, where the student stands. Everything is within
   // arm's reach from here and the two wings close in at the edges of vision.
-  controls.target.set(0, BENCH.height + 0.02, -0.3);
+  controls.target.set(0, BENCH.height + 0.08, -0.5);
   controls.minDistance = 0.28;
   controls.maxDistance = 3.0;
   controls.maxPolarAngle = Math.PI / 2 - 0.03;
-  camera.position.set(0, BENCH.height + 1.0, 1.42);
+  camera.position.set(0, BENCH.height + 0.5, 0.22);
   controls.update();
 
   // ---- the laboratory ----------------------------------------------------
@@ -179,7 +179,22 @@ export function mountLab7(host) {
     const rect = renderer.domElement.getBoundingClientRect();
     pointer.set(((clientX - rect.left) / rect.width) * 2 - 1, (-(clientY - rect.top) / rect.height) * 2 + 1);
     raycaster.setFromCamera(pointer, camera);
-    return raycaster.intersectObjects(pickables, false)[0] ?? null;
+    // Raycasting does not skip invisible meshes. A jumper hides its plugs, and a
+    // configuration hides the sockets it does not use; neither may be grabbed.
+    const hits = raycaster
+      .intersectObjects(pickables, false)
+      .filter((hit) => hit.object.visible !== false && hit.object.userData.owner?.visible !== false);
+    const front = hits[0] ?? null;
+    // A cable's end runs INTO its socket, so at a socket the tube is always in
+    // front of the terminal. The student pressing there means the socket — a
+    // second lead on a shared rail — not a bend in the first lead. Plugs keep
+    // their own priority: their body stands clear of the socket and is grabbed
+    // to move that end.
+    if (front?.object.userData.kind === "cable") {
+      const socket = hits.find((hit) => hit.object.userData.kind === "terminal" && hit.distance - front.distance < 0.025);
+      if (socket) return socket;
+    }
+    return front;
   }
 
   const UP = new THREE.Vector3(0, 1, 0);
@@ -201,7 +216,9 @@ export function mountLab7(host) {
     // Ride the bench, the board and the instrument cases — but never another
     // cable. A plug that climbs over the leads already on the bench can never
     // reach the socket underneath them.
-    const hit = raycaster.intersectObjects(pickables, false).find((candidate) => !["cable", "plug"].includes(candidate.object.userData.kind));
+    const hit = raycaster
+      .intersectObjects(pickables, false)
+      .find((candidate) => !["cable", "plug"].includes(candidate.object.userData.kind) && candidate.object.userData.owner?.visible !== false);
     if (hit) return hit.point.clone().addScaledVector(UP, 0.004);
     const onBench = new THREE.Vector3();
     if (raycaster.ray.intersectPlane(benchPlane, onBench)) return onBench;

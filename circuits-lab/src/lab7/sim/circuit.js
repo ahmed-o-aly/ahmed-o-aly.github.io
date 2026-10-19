@@ -38,7 +38,14 @@ export const TERMINALS = Object.freeze({
   "rf2.a": { instrument: "rf2", label: "A", role: "feedback" },
   "rf2.b": { instrument: "rf2", label: "B", role: "feedback" },
 
-  "board.gnd": { instrument: "board", label: "GND rail", role: "ground" },
+  "board.gnd": { instrument: "board", label: "GND", role: "ground" },
+  // Edge terminals: where an instrument lead lands on the trainer, so the long
+  // leads stop at the board's edge and only short jumpers cross the work.
+  "board.vplus": { instrument: "board", label: "+V", role: "supplyPos" },
+  "board.vminus": { instrument: "board", label: "−V", role: "supplyNeg" },
+  "board.vin": { instrument: "board", label: "Vin", role: "input" },
+  "board.vin2": { instrument: "board", label: "Vin2", role: "inputB" },
+  "board.vout": { instrument: "board", label: "Vout", role: "output" },
 });
 
 /** The probe tips, which observe nodes but never create them. */
@@ -52,8 +59,8 @@ export const PROBES = Object.freeze({
 });
 
 const POWER = [
-  { id: "vplus", name: "+V rail", terminals: ["supply.pos", "u1.7"] },
-  { id: "vminus", name: "−V rail", terminals: ["supply.neg", "u1.4"] },
+  { id: "vplus", name: "+V rail", terminals: ["supply.pos", "board.vplus", "u1.7"] },
+  { id: "vminus", name: "−V rail", terminals: ["supply.neg", "board.vminus", "u1.4"] },
 ];
 
 /**
@@ -63,34 +70,34 @@ const POWER = [
 export const TOPOLOGY = Object.freeze({
   inverting: [
     ...POWER,
-    { id: "gnd", name: "Common", terminals: ["supply.gnd", "gen.gnd", "board.gnd", "u1.3"] },
-    { id: "in", name: "Input", terminals: ["gen.out1", "rin.a"] },
+    { id: "gnd", name: "Common", terminals: ["supply.gnd", "board.gnd", "gen.gnd", "u1.3"] },
+    { id: "in", name: "Input", terminals: ["gen.out1", "board.vin", "rin.a"] },
     { id: "sum", name: "Summing junction", terminals: ["rin.b", "rf.a", "u1.2"] },
-    { id: "out", name: "Output", terminals: ["rf.b", "u1.6"] },
+    { id: "out", name: "Output", terminals: ["rf.b", "u1.6", "board.vout"] },
   ],
   noninverting: [
     ...POWER,
-    { id: "gnd", name: "Common", terminals: ["supply.gnd", "gen.gnd", "board.gnd", "rin.b"] },
-    { id: "in", name: "Input", terminals: ["gen.out1", "u1.3"] },
+    { id: "gnd", name: "Common", terminals: ["supply.gnd", "board.gnd", "gen.gnd", "rin.b"] },
+    { id: "in", name: "Input", terminals: ["gen.out1", "board.vin", "u1.3"] },
     { id: "sum", name: "Summing junction", terminals: ["rin.a", "rf.a", "u1.2"] },
-    { id: "out", name: "Output", terminals: ["rf.b", "u1.6"] },
+    { id: "out", name: "Output", terminals: ["rf.b", "u1.6", "board.vout"] },
   ],
   adder: [
     ...POWER,
-    { id: "gnd", name: "Common", terminals: ["supply.gnd", "gen.gnd", "board.gnd", "u1.3"] },
-    { id: "in1", name: "Input 1", terminals: ["gen.out1", "rin.a"] },
-    { id: "in2", name: "Input 2", terminals: ["gen.out2", "rin2.a"] },
+    { id: "gnd", name: "Common", terminals: ["supply.gnd", "board.gnd", "gen.gnd", "u1.3"] },
+    { id: "in1", name: "Input 1", terminals: ["gen.out1", "board.vin", "rin.a"] },
+    { id: "in2", name: "Input 2", terminals: ["gen.out2", "board.vin2", "rin2.a"] },
     { id: "sum", name: "Summing junction", terminals: ["rin.b", "rin2.b", "rf.a", "u1.2"] },
-    { id: "out", name: "Output", terminals: ["rf.b", "u1.6"] },
+    { id: "out", name: "Output", terminals: ["rf.b", "u1.6", "board.vout"] },
   ],
   subtractor: [
     ...POWER,
-    { id: "gnd", name: "Common", terminals: ["supply.gnd", "gen.gnd", "board.gnd", "rf2.b"] },
-    { id: "in1", name: "Input 1", terminals: ["gen.out1", "rin.a"] },
-    { id: "in2", name: "Input 2", terminals: ["gen.out2", "rin2.a"] },
+    { id: "gnd", name: "Common", terminals: ["supply.gnd", "board.gnd", "gen.gnd", "rf2.b"] },
+    { id: "in1", name: "Input 1", terminals: ["gen.out1", "board.vin", "rin.a"] },
+    { id: "in2", name: "Input 2", terminals: ["gen.out2", "board.vin2", "rin2.a"] },
     { id: "sum", name: "Summing junction", terminals: ["rin.b", "rf.a", "u1.2"] },
     { id: "plus", name: "+IN divider", terminals: ["rin2.b", "rf2.a", "u1.3"] },
-    { id: "out", name: "Output", terminals: ["rf.b", "u1.6"] },
+    { id: "out", name: "Output", terminals: ["rf.b", "u1.6", "board.vout"] },
   ],
 });
 
@@ -133,6 +140,14 @@ export function nets(leads = []) {
  * `shorts` lists pairs of distinct nodes that have been joined — a wiring fault.
  * The two are reported separately because they are different mistakes.
  */
+/**
+ * The board's edge terminals are pass-throughs. Guided mode routes an instrument
+ * lead to the edge and a short jumper onward, because that keeps the long leads
+ * off the student's work — but a student who runs the supply straight to pin 7
+ * has built a correct circuit, and verification must say so.
+ */
+export const OPTIONAL = new Set(["board.vplus", "board.vminus", "board.vin", "board.vin2", "board.vout"]);
+
 export function verify(configuration, leads = []) {
   const nodes = TOPOLOGY[configuration];
   if (!nodes) throw new RangeError(`Unknown configuration: ${configuration}.`);
@@ -141,8 +156,11 @@ export function verify(configuration, leads = []) {
   const missing = [];
   for (const node of nodes) {
     const [head, ...rest] = node.terminals;
-    const unreached = rest.filter((terminal) => find(terminal) !== find(head));
-    if (unreached.length) missing.push({ node: node.id, name: node.name, terminals: node.terminals, unreached });
+    const unreachedAll = rest.filter((terminal) => find(terminal) !== find(head));
+    const unreached = unreachedAll.filter((terminal) => !OPTIONAL.has(terminal));
+    // `nextHop` is the next terminal in wiring order, pass-throughs included: what
+    // guided mode asks for. `unreached` is what actually stops the circuit working.
+    if (unreached.length) missing.push({ node: node.id, name: node.name, terminals: node.terminals, unreached, unreachedAll, nextHop: unreachedAll[0] });
   }
 
   const shorts = [];

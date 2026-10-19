@@ -173,7 +173,7 @@ export function createCallout(parts, materials) {
      * anywhere a student stands, which on a U-shaped bench is a wide arc.
      */
     update(anchor, camera) {
-      group.position.copy(anchor).add(new THREE.Vector3(0, 0.1, 0));
+      group.position.copy(anchor).add(new THREE.Vector3(0, 0.13, 0));
       group.quaternion.copy(camera.quaternion);
     },
     dispose() {

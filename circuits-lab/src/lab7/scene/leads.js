@@ -19,6 +19,9 @@ const MAX_SAG = 0.1;
 export const BENCH_CLEARANCE = 0.004;
 const SEGMENTS = 28;
 const RADIUS = mm(2.2);
+/** A jumper between two board terminals is solid-core wire, not a banana lead. */
+const JUMPER_RADIUS = mm(1.1);
+const onBoard = (id) => typeof id === "string" && !/^(supply|gen|meter|scope)\./.test(id);
 
 /** A lead's colour is decided by what it CARRIES, not by where it starts. */
 export function colourFor(from, to) {
@@ -107,7 +110,7 @@ export function createLeads({ scene, parts, materials }) {
   function shape(entry, from, to, options) {
     const { curve, taut, mid } = solve(from, to, LEAD_LENGTH, options);
     entry.tube.geometry.dispose();
-    entry.tube.geometry = new THREE.TubeGeometry(curve, SEGMENTS, RADIUS, 7, false);
+    entry.tube.geometry = new THREE.TubeGeometry(curve, SEGMENTS, entry.jumper ? JUMPER_RADIUS : RADIUS, 7, false);
     // A strained lead visibly changes tint rather than silently stretching.
     entry.tube.material = materials.rubber(taut ? "#6b4a1f" : entry.colour);
     aim(entry.a, curve, true);
@@ -131,6 +134,8 @@ export function createLeads({ scene, parts, materials }) {
       const colour = colourFor(lead.from, lead.to);
       if (!meshes[index]) meshes[index] = makeLead(colour);
       const entry = meshes[index];
+      entry.jumper = onBoard(lead.from) && onBoard(lead.to);
+      entry.a.visible = entry.b.visible = !entry.jumper;
       if (entry.colour !== colour) {
         entry.colour = colour;
         entry.a.children[0].material = materials.insulator(colour);
