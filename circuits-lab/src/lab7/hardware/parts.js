@@ -39,7 +39,7 @@ export function createParts(materials) {
    * the panel, the bore is genuinely dark so it reads as something a plug enters,
    * and the collar catches a highlight. A flat coloured disc reads as a sticker.
    */
-  function jack(color, { radius = mm(4.1) } = {}) {
+  function jack(color, { radius = mm(5.6) } = {}) {
     const group = new THREE.Group();
     const bezel = facing(cylinder(radius * 1.3, radius * 1.36, mm(1.4), 20), materials.plated());
     bezel.position.z = mm(0.6);
@@ -86,11 +86,12 @@ export function createParts(materials) {
     const dummy = new THREE.Object3D();
     for (let i = 0; i < teeth; i += 1) {
       const a = (i / teeth) * Math.PI * 2;
-      dummy.position.set(Math.cos(a) * radius, Math.sin(a) * radius, mm(3) + height / 2);
+      dummy.position.set(Math.cos(a) * (radius + mm(0.5)), Math.sin(a) * (radius + mm(0.5)), mm(3) + height / 2);
       dummy.rotation.set(0, 0, a);
       dummy.updateMatrix();
       knurl.setMatrixAt(i, dummy.matrix);
     }
+    knurl.instanceMatrix.needsUpdate = true;
     knurl.castShadow = true;
     group.add(knurl);
 
@@ -108,8 +109,56 @@ export function createParts(materials) {
     return group;
   }
 
-  /** A moulded keycap standing proud of its bezel. */
-  function key({ width = mm(16), height = mm(12), color = SURFACE.trim } = {}) {
+  /**
+   * The waveform printed on a key. A blank key tells a student nothing, and this
+   * laboratory's whole argument is that a control should say what it does.
+   */
+  const glyphTexture = (kind) =>
+    geo(`glyph:${kind}`, () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = 128;
+      canvas.height = 128;
+      const c = canvas.getContext("2d");
+      c.strokeStyle = "#11161a";
+      c.lineWidth = 9;
+      c.lineCap = "round";
+      c.lineJoin = "round";
+      c.beginPath();
+      const midY = 64;
+      const amp = 26;
+      if (kind === "dc") {
+        c.moveTo(18, midY);
+        c.lineTo(110, midY);
+      } else if (kind === "square") {
+        c.moveTo(18, midY + amp);
+        c.lineTo(18, midY - amp);
+        c.lineTo(64, midY - amp);
+        c.lineTo(64, midY + amp);
+        c.lineTo(110, midY + amp);
+        c.lineTo(110, midY - amp);
+      } else if (kind === "triangle") {
+        c.moveTo(18, midY + amp);
+        c.lineTo(41, midY - amp);
+        c.lineTo(64, midY + amp);
+        c.lineTo(87, midY - amp);
+        c.lineTo(110, midY + amp);
+      } else {
+        for (let i = 0; i <= 64; i += 1) {
+          const x = 18 + (i / 64) * 92;
+          const y = midY - Math.sin((i / 64) * Math.PI * 4) * amp;
+          if (i === 0) c.moveTo(x, y);
+          else c.lineTo(x, y);
+        }
+      }
+      c.stroke();
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.colorSpace = THREE.SRGBColorSpace;
+      texture.anisotropy = 8;
+      return texture;
+    });
+
+  /** A moulded keycap standing proud of its bezel, carrying its own legend. */
+  function key({ width = mm(16), height = mm(12), color = SURFACE.trim, glyph = null } = {}) {
     const group = new THREE.Group();
     const bezel = new THREE.Mesh(box(width + mm(3), height + mm(3), mm(2), mm(0.6)), materials.abs("#2f363b"));
     bezel.position.z = mm(1);
@@ -118,6 +167,11 @@ export function createParts(materials) {
     cap.position.z = mm(3);
     cap.castShadow = true;
     group.add(cap);
+    if (glyph) {
+      const print = new THREE.Mesh(plane(width * 0.8, height * 0.8), new THREE.MeshBasicMaterial({ map: glyphTexture(glyph), transparent: true }));
+      print.position.z = mm(4.6);
+      group.add(print);
+    }
     group.userData.cap = cap;
     return group;
   }
@@ -130,60 +184,110 @@ export function createParts(materials) {
   }
 
   /**
-   * A benchtop instrument case: moulded shell, recessed panel, side vents, rubber
-   * feet and panel screws. The panel is raked toward the standing position so a
-   * figure is read square-on rather than at a glancing angle.
+   * A benchtop instrument case.
+   *
+   * Built from a BOTTOM-FRONT-CENTRE origin and tipped back on its bail, which is
+   * how a bench instrument actually stands. The first version raked the panel
+   * about its own centre, which swung the top third of the panel back INSIDE the
+   * shell and hid the instrument's name entirely.
+   *
+   * The case carries the detail that separates equipment from a box: a recessed
+   * bezel the panel sits inside, a chamfered top, a louvred vent, a carry lip and
+   * a moulded brand step.
    */
-  function instrumentCase(widthMM, heightMM, { depthMM = 230, rake = 0.18 } = {}) {
+  function instrumentCase(widthMM, heightMM, { depthMM = 230, tilt = 0.1 } = {}) {
     const width = mm(widthMM);
     const height = mm(heightMM);
     const depth = mm(depthMM);
     const group = new THREE.Group();
 
-    const shell = new THREE.Mesh(box(width + mm(6), height + mm(6), depth, mm(3)), materials.abs());
-    shell.position.set(0, height / 2, -depth / 2);
-    shell.castShadow = true;
-    shell.receiveShadow = true;
-    group.add(shell);
+    // Everything tips back together about the front edge resting on the bench.
+    const body = new THREE.Group();
+    body.rotation.x = tilt;
+    group.add(body);
 
-    // The raked front panel, and everything mounted on it, lives in this group.
+    const wall = mm(5);
+    const shellW = width + wall * 2;
+    const shellH = height + wall * 2;
+
+    // Lower carcass: the darker chassis the top cover clamps onto.
+    const chassis = new THREE.Mesh(box(shellW, mm(16), depth, mm(1.5)), materials.abs("#9aa3a9"));
+    chassis.position.set(0, mm(8), -depth / 2);
+    chassis.castShadow = true;
+    chassis.receiveShadow = true;
+    body.add(chassis);
+
+    // Top cover, inset so the chassis reads as a separate part.
+    const cover = new THREE.Mesh(box(shellW - mm(1), shellH - mm(16), depth - mm(4), mm(4)), materials.abs("#c2c9ce"));
+    cover.position.set(0, mm(16) + (shellH - mm(16)) / 2, -depth / 2 - mm(1));
+    cover.castShadow = true;
+    cover.receiveShadow = true;
+    body.add(cover);
+
+    // Recessed bezel: the frame the front panel sits down inside.
+    const bezel = new THREE.Mesh(box(shellW - mm(2), shellH - mm(2), mm(5), mm(3)), materials.abs("#b9c0c5"));
+    bezel.position.set(0, shellH / 2, mm(1));
+    bezel.castShadow = true;
+    body.add(bezel);
+
+    // The panel itself, flush in the bezel and FACING THE VIEWER, not buried.
     const face = new THREE.Group();
-    face.position.set(0, height / 2, mm(1));
-    face.rotation.x = -rake;
-    group.add(face);
+    face.position.set(0, shellH / 2, mm(3.4));
+    body.add(face);
 
-    const plate = new THREE.Mesh(box(width, height, mm(4), mm(1)), materials.panel());
+    const plate = new THREE.Mesh(box(width, height, mm(3), mm(0.8)), materials.panel());
     plate.castShadow = true;
     plate.receiveShadow = true;
     face.add(plate);
 
-    // Vents: real instruments breathe, and the slots give the case its scale.
-    const vent = box(mm(2), height * 0.42, mm(16));
+    // Louvred vent across the top cover: the single detail that most stops a case
+    // reading as a blank cube.
+    const louvre = box(shellW - mm(46), mm(1.4), mm(3.5));
+    for (let i = 0; i < 9; i += 1) {
+      const slot = new THREE.Mesh(louvre, materials.abs("#5c656b"));
+      slot.position.set(0, shellH - mm(1.0), -mm(26) - i * mm(9));
+      body.add(slot);
+    }
+    // The moulding seam where the cover meets the chassis.
+    const seam = new THREE.Mesh(box(shellW + mm(0.4), mm(1), depth - mm(6), 0), materials.abs("#8a939a"));
+    seam.position.set(0, mm(16), -depth / 2 - mm(1));
+    body.add(seam);
+
+    // A moulded step along the top front edge: a carry lip, and it catches light.
+    const lip = new THREE.Mesh(box(shellW - mm(6), mm(4), mm(10), mm(1)), materials.abs("#c6ced3"));
+    lip.position.set(0, shellH - mm(3), -mm(4));
+    body.add(lip);
+
+    // Side vents stay, but sunk into the cover rather than floating beside it.
+    const sideVent = box(mm(1.6), (shellH - mm(16)) * 0.5, mm(12));
     for (const side of [-1, 1]) {
       for (let i = 0; i < 5; i += 1) {
-        const slot = new THREE.Mesh(vent, materials.abs("#2b3237"));
-        slot.position.set(side * (width / 2 + mm(3)), height / 2, -depth * 0.35 + i * mm(9));
-        group.add(slot);
+        const slot = new THREE.Mesh(sideVent, materials.abs("#5f686e"));
+        slot.position.set(side * (shellW / 2 - mm(1.2)), shellH * 0.55, -depth * 0.3 - i * mm(14));
+        body.add(slot);
       }
     }
 
-    for (const fx of [-width * 0.36, width * 0.36]) {
-      for (const fz of [-depth * 0.72, -depth * 0.1]) {
-        const foot = facing(cylinder(mm(5), mm(6), mm(4), 12), materials.rubber());
-        foot.position.set(fx, mm(2), fz);
-        group.add(foot);
-      }
-    }
-
-    for (const sx of [-width / 2 + mm(5), width / 2 - mm(5)]) {
-      for (const sy of [-height / 2 + mm(5), height / 2 - mm(5)]) {
-        const screw = facing(cylinder(mm(1.6), mm(1.6), mm(0.8), 10), materials.plated());
-        screw.position.set(sx, sy, mm(2.2));
+    // Four panel screws, in the bezel rather than through the artwork.
+    for (const sx of [-width / 2 - mm(2.4), width / 2 + mm(2.4)]) {
+      for (const sy of [-height / 2 - mm(2.4), height / 2 + mm(2.4)]) {
+        const screw = facing(cylinder(mm(1.7), mm(1.7), mm(1), 10), materials.plated());
+        screw.position.set(sx, sy, mm(0.6));
         face.add(screw);
       }
     }
 
-    group.userData = { face, width, height, depth, panelZ: mm(2.1) };
+    // Feet, and a taller bail at the back that the tilt actually rests on.
+    for (const fx of [-width * 0.38, width * 0.38]) {
+      const front = facing(cylinder(mm(5), mm(6), mm(3), 12), materials.rubber());
+      front.position.set(fx, mm(1.5), -mm(12));
+      body.add(front);
+      const bail = new THREE.Mesh(box(mm(12), mm(3), mm(10), mm(1)), materials.rubber());
+      bail.position.set(fx, mm(1.5), -depth + mm(14));
+      body.add(bail);
+    }
+
+    group.userData = { face, width, height, depth, panelZ: mm(2) };
     return group;
   }
 

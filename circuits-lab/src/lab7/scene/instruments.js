@@ -49,7 +49,7 @@ export function createInstruments({ parts, materials, register }) {
     for (const control of controls) {
       const object =
         control.kind === "key"
-          ? parts.key({ width: mm(control.width ?? 26), height: mm(control.height ?? 20), color: control.color ?? SURFACE.trim })
+          ? parts.key({ width: mm(control.width ?? 26), height: mm(control.height ?? 20), color: control.color ?? SURFACE.trim, glyph: control.glyph })
           : parts.knob({ radius: mm(control.radius ?? 16), color: control.color ?? SURFACE.trim });
       object.position.set(...place(widthMM, heightMM, control.x, control.y));
       object.position.z = mm(2.2);
@@ -77,44 +77,50 @@ export function createInstruments({ parts, materials, register }) {
   // is item 1 of the engineer's brief.
   const supply = build("supply", {
     widthMM: 220,
-    heightMM: 130,
+    heightMM: 140,
     depthMM: 230,
     draw(c, w, h, state = {}) {
-      title(c, "DC SUPPLY", 12, 18);
-      window_(c, 12, 26, 130, 46);
+      title(c, "DC SUPPLY", 12, 20);
+
+      // Each rail's figure sits directly above the terminal of the same colour,
+      // so the display and the panel teach the same thing twice.
+      window_(c, 12, 30, 134, 48);
       const rails = [
-        ["+V", state.powered ? signed(state.rail, 1) : "– –", "#e8766c", 20],
-        ["GND", state.powered ? "0.0" : "– –", "#e9eef0", 64],
-        ["−V", state.powered ? signed(-state.rail, 1) : "– –", "#74a9da", 108],
+        ["+V", state.powered ? signed(state.rail, 1) : "– – –", "#e8766c", 34],
+        ["GND", state.powered ? "0.0" : "– – –", "#e9eef0", 79],
+        ["−V", state.powered ? signed(-state.rail, 1) : "– – –", "#74a9da", 124],
       ];
       for (const [label, value, colour, x] of rails) {
-        micro(c, label, x, 38, { align: "left" });
-        readout(c, value, x, 58, { align: "left", cap: CAP_MM.readoutLG, color: colour });
-        micro(c, "VOLTS", x, 68, { align: "left" });
+        micro(c, label, x, 42);
+        readout(c, value, x, 63, { align: "center", cap: CAP_MM.readoutLG, color: colour });
+        micro(c, "VOLTS", x, 74);
       }
-      detents(c, 178, 62, 20, [
+
+      detents(c, 180, 60, 26, [
         { angle: 180, label: "±8" },
         { angle: 270, label: "±12" },
         { angle: 0, label: "±15" },
       ]);
-      legend(c, "OUTPUT", 178, 96);
+      legend(c, "OUTPUT", 180, 100);
+      micro(c, "POWER", 196, 134);
+
       for (const [label, x] of [
-        ["+V", 30],
-        ["GND", 70],
-        ["−V", 110],
+        ["+V", 34],
+        ["GND", 79],
+        ["−V", 124],
       ])
-        legend(c, label, x, 122);
+        legend(c, label, x, 134);
     },
     jacks: [
-      { terminal: "supply.pos", color: SIGNAL.supplyPos, x: 30, y: 104 },
-      { terminal: "supply.gnd", color: SIGNAL.ground, x: 70, y: 104 },
-      { terminal: "supply.neg", color: SIGNAL.supplyNeg, x: 110, y: 104 },
+      { terminal: "supply.pos", color: SIGNAL.supplyPos, x: 34, y: 112 },
+      { terminal: "supply.gnd", color: SIGNAL.ground, x: 79, y: 112 },
+      { terminal: "supply.neg", color: SIGNAL.supplyNeg, x: 124, y: 112 },
     ],
     controls: [
-      { id: "rail", kind: "knob", x: 178, y: 62, radius: 17.5, detent: [8, 12, 15] },
-      { id: "power", kind: "key", x: 198, y: 16, width: 18, height: 14 },
+      { id: "rail", kind: "knob", x: 180, y: 60, radius: 17.5, detent: [8, 12, 15] },
+      { id: "power", kind: "key", x: 186, y: 116, width: 13, height: 13 },
     ],
-    indicators: [{ id: "power", color: "#43e08a", x: 176, y: 16 }],
+    indicators: [{ id: "power", color: "#43e08a", x: 207, y: 116 }],
   });
 
   // ---- function generator ------------------------------------------------
@@ -122,65 +128,61 @@ export function createInstruments({ parts, materials, register }) {
   // amplitude and frequency as separate controls, and they all need 6 mm labels.
   const generator = build("generator", {
     widthMM: 280,
-    heightMM: 130,
+    heightMM: 140,
     depthMM: 230,
     draw(c, w, h, state = {}) {
-      title(c, "GENERATOR", 12, 18);
-      window_(c, 12, 26, 140, 44);
+      title(c, "GENERATOR", 12, 20);
+      micro(c, "10 Hz – 100 kHz", 268, 19, { align: "right" });
+      window_(c, 12, 30, 150, 48);
       const source = state.sources?.[0] ?? { waveform: "sine", amplitude: 1, frequency: 1000 };
-      // The displayed wave is the selected waveform, drawn from the same maths the
-      // bench runs. A decorative squiggle would teach the wrong shape.
+
+      // The displayed wave is the selected waveform, from the same maths the bench
+      // runs; a decorative squiggle would teach the wrong shape.
       c.strokeStyle = SIGNAL.input;
       c.lineWidth = 1.1;
       c.lineJoin = "round";
       c.beginPath();
       for (let i = 0; i <= 96; i += 1) {
         const phase = (i / 96) * 2;
+        const p = phase % 1;
         const unit =
           source.waveform === "dc"
             ? 0
             : source.waveform === "square"
-              ? phase % 1 < 0.5
-                ? 1
-                : -1
+              ? (p < 0.5 ? 1 : -1)
               : source.waveform === "triangle"
-                ? (() => {
-                    const p = phase % 1;
-                    return p < 0.25 ? 4 * p : p < 0.75 ? 2 - 4 * p : 4 * p - 4;
-                  })()
+                ? (p < 0.25 ? 4 * p : p < 0.75 ? 2 - 4 * p : 4 * p - 4)
                 : Math.sin(phase * Math.PI * 2);
-        const x = 20 + (i / 96) * 54;
-        const y = 48 - unit * 13;
+        const x = 22 + (i / 96) * 52;
+        const y = 54 - unit * 14;
         if (i === 0) c.moveTo(x, y);
         else c.lineTo(x, y);
       }
       c.stroke();
-      readout(c, figure(source.amplitude, 2), 126, 44, { align: "right", cap: CAP_MM.readoutLG });
-      micro(c, source.waveform === "dc" ? "V DC" : "Vpp", 130, 44, { align: "left" });
-      readout(c, figure(source.frequency / 1000, 2), 126, 64, { align: "right", cap: CAP_MM.readoutLG });
-      micro(c, "kHz", 130, 64, { align: "left" });
 
-      legend(c, "AMPLITUDE", 190, 92);
-      legend(c, "FREQUENCY", 246, 92);
-      legend(c, "WAVEFORM", 12, 86, { align: "left" });
-      for (const [label, x] of [
-        ["Vin", 190],
-        ["GND", 240],
-      ])
-        legend(c, label, x, 126);
+      readout(c, figure(source.amplitude, 2), 136, 50, { align: "right", cap: CAP_MM.readoutLG });
+      micro(c, source.waveform === "dc" ? "V DC" : "Vpp", 140, 50, { align: "left" });
+      readout(c, figure(source.frequency / 1000, 2), 136, 72, { align: "right", cap: CAP_MM.readoutLG });
+      micro(c, "kHz", 140, 72, { align: "left" });
+
+      legend(c, "AMPLITUDE", 196, 92);
+      legend(c, "FREQUENCY", 250, 92);
+      legend(c, "WAVEFORM", 12, 100, { align: "left" });
+      legend(c, "Vin", 196, 134);
+      legend(c, "GND", 248, 134);
     },
     jacks: [
-      { terminal: "gen.out1", color: SIGNAL.input, x: 190, y: 108 },
-      { terminal: "gen.gnd", color: SIGNAL.ground, x: 240, y: 108 },
-      { terminal: "gen.out2", color: SIGNAL.inputB, x: 140, y: 108 },
+      { terminal: "gen.out1", color: SIGNAL.input, x: 196, y: 116 },
+      { terminal: "gen.gnd", color: SIGNAL.ground, x: 248, y: 116 },
+      { terminal: "gen.out2", color: SIGNAL.inputB, x: 164, y: 116 },
     ],
     controls: [
-      { id: "amplitude", kind: "knob", x: 190, y: 56, radius: 16 },
-      { id: "frequency", kind: "knob", x: 246, y: 56, radius: 16 },
-      { id: "wave.dc", kind: "key", x: 30, y: 104, width: 26, height: 20 },
-      { id: "wave.sine", kind: "key", x: 64, y: 104, width: 26, height: 20, color: SIGNAL.input },
-      { id: "wave.square", kind: "key", x: 98, y: 104, width: 26, height: 20 },
-      { id: "wave.triangle", kind: "key", x: 132, y: 104, width: 26, height: 20 },
+      { id: "amplitude", kind: "knob", x: 196, y: 54, radius: 16 },
+      { id: "frequency", kind: "knob", x: 250, y: 54, radius: 16 },
+      { glyph: "dc", id: "wave.dc", kind: "key", x: 28, y: 118, width: 24, height: 18 },
+      { glyph: "sine", id: "wave.sine", kind: "key", x: 60, y: 118, width: 24, height: 18, color: SIGNAL.input },
+      { glyph: "square", id: "wave.square", kind: "key", x: 92, y: 118, width: 24, height: 18 },
+      { glyph: "triangle", id: "wave.triangle", kind: "key", x: 124, y: 118, width: 24, height: 18 },
     ],
   });
 
@@ -189,34 +191,35 @@ export function createInstruments({ parts, materials, register }) {
   // the panel: 15 mm cap, readable from anywhere in the room.
   const meter = build("meter", {
     widthMM: 180,
-    heightMM: 130,
+    heightMM: 140,
     depthMM: 200,
     draw(c, w, h, state = {}) {
-      title(c, "MULTIMETER", 12, 18);
-      window_(c, 12, 26, 156, 48);
+      title(c, "MULTIMETER", 12, 20);
+      window_(c, 12, 28, 156, 50);
       const reading = state.meter;
-      micro(c, (state.meterMode ?? "dc").toUpperCase() + " VOLTAGE", 20, 38, { align: "left" });
-      micro(c, state.meterMode === "ac" ? "TRUE RMS" : "AUTO", 160, 38, { align: "right" });
+      micro(c, `${(state.meterMode ?? "dc").toUpperCase()} VOLTAGE`, 20, 41, { align: "left" });
+      micro(c, state.meterMode === "ac" ? "TRUE RMS" : "AUTO", 160, 41, { align: "right" });
       if (reading?.error) {
-        readout(c, "– – . – –", 160, 62, { align: "right", cap: CAP_MM.readoutXL, color: "#c05621" });
-        micro(c, reading.error, 160, 70, { align: "right", color: "#c05621" });
+        readout(c, "– – . – –", 160, 66, { align: "right", cap: CAP_MM.readoutXL, color: "#c05621" });
+        micro(c, reading.error, 160, 75, { align: "right", color: "#c05621" });
       } else {
-        readout(c, signed(reading?.value, 2), 160, 62, { align: "right", cap: CAP_MM.readoutXL });
-        micro(c, reading?.unit ?? "V", 160, 70, { align: "right" });
+        readout(c, signed(reading?.value, 2), 160, 66, { align: "right", cap: CAP_MM.readoutXL });
+        micro(c, reading?.unit ?? "V", 160, 75, { align: "right" });
       }
-      detents(c, 44, 96, 20, [
+      detents(c, 44, 104, 24, [
         { angle: 180, label: "OFF" },
         { angle: 270, label: "DC V" },
         { angle: 0, label: "AC V" },
       ]);
-      legend(c, "V", 120, 120);
-      legend(c, "COM", 154, 120);
+      legend(c, "V", 116, 134);
+      legend(c, "COM", 152, 134);
+      micro(c, "INPUT", 134, 90);
     },
     jacks: [
-      { terminal: "meter.v", color: SIGNAL.supplyPos, x: 120, y: 100 },
-      { terminal: "meter.com", color: SIGNAL.ground, x: 154, y: 100 },
+      { terminal: "meter.v", color: SIGNAL.supplyPos, x: 116, y: 112 },
+      { terminal: "meter.com", color: SIGNAL.ground, x: 152, y: 112 },
     ],
-    controls: [{ id: "meterMode", kind: "knob", x: 44, y: 96, radius: 17 }],
+    controls: [{ id: "meterMode", kind: "knob", x: 44, y: 104, radius: 16 }],
   });
 
   // ---- oscilloscope ------------------------------------------------------
@@ -286,18 +289,18 @@ export function createInstruments({ parts, materials, register }) {
       legend(c, "VOLTS/DIV", 258, 34);
       legend(c, "TIME/DIV", 258, 108);
       for (const [label, x] of [
-        ["CH1", 40],
-        ["⏚", 76],
-        ["CH2", 140],
-        ["⏚", 176],
+        ["CH1", 44],
+        ["⏚", 86],
+        ["CH2", 148],
+        ["⏚", 190],
       ])
-        legend(c, label, x, 158);
+        legend(c, label, x, 160);
     },
     jacks: [
-      { terminal: "scope.ch1", color: SIGNAL.input, x: 40, y: 178 },
-      { terminal: "scope.ch1gnd", color: SIGNAL.ground, x: 76, y: 178 },
-      { terminal: "scope.ch2", color: SIGNAL.output, x: 140, y: 178 },
-      { terminal: "scope.ch2gnd", color: SIGNAL.ground, x: 176, y: 178 },
+      { terminal: "scope.ch1", color: SIGNAL.input, x: 44, y: 180 },
+      { terminal: "scope.ch1gnd", color: SIGNAL.ground, x: 86, y: 180 },
+      { terminal: "scope.ch2", color: SIGNAL.output, x: 148, y: 180 },
+      { terminal: "scope.ch2gnd", color: SIGNAL.ground, x: 190, y: 180 },
     ],
     controls: [
       { id: "voltsPerDiv", kind: "knob", x: 258, y: 58, radius: 16 },

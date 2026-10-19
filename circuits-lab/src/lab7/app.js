@@ -278,8 +278,8 @@ export function mountLab7(host) {
     }
     const power = instruments.supply.controls.get("power")?.userData.cap;
     if (power) {
-      power.material = materials.panel(state.powered ? "#43e08a" : "#8d969c");
-      power.position.z = state.powered ? mm(2) : mm(3);
+      power.material = materials.panel(state.powered ? "#c3cace" : "#9aa3a9");
+      power.position.z = state.powered ? mm(1.6) : mm(3);
     }
   }
 
