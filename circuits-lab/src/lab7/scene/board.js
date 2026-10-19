@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { mm, PITCH, SIGNAL, SURFACE, CAP_MM, FONT, font } from "../design/tokens.js";
-import { Panel, legend, micro, figure } from "../hardware/panel.js";
+import { Panel, legend, micro, figure, readout, window_ } from "../hardware/panel.js";
 import { terminalsFor } from "../sim/circuit.js";
 
 /**
@@ -23,9 +23,11 @@ export const BOARD = Object.freeze({
   widthMM: 420,
   heightMM: 260,
   /** Raked toward the student, as a trainer stands on its feet. */
-  rake: 0.26,
+  rake: 0.2,
   /** Components on the board are drawn at this multiple of life size. */
   scale: 2,
+  /** The 741 larger still, so the symbol printed on it reads from standing height. */
+  chipScale: 3,
 });
 
 /**
@@ -102,12 +104,12 @@ function draw(c, w, h, state = {}) {
   c.lineCap = "round";
   for (const id of ["u1.2", "u1.3", "u1.4", "u1.7", "u1.6"]) {
     const [tx, ty] = PLACE[id];
-    const pin = { "u1.2": [-5.1, -7.6], "u1.3": [5.1, -7.6], "u1.4": [15.2, -7.6], "u1.7": [-5.1, 7.6], "u1.6": [5.1, 7.6] }[id];
+    const pin = { "u1.2": [-3.8, -11.4], "u1.3": [3.8, -11.4], "u1.4": [11.4, -11.4], "u1.7": [-3.8, 11.4], "u1.6": [3.8, 11.4] }[id];
     c.strokeStyle = pinColour[id];
     c.beginPath();
     c.moveTo(X(tx), Y(ty));
-    c.lineTo(X(tx), Y(pin[1] + Math.sign(pin[1]) * 10));
-    c.lineTo(X(pin[0]), Y(pin[1] + Math.sign(pin[1]) * 10));
+    c.lineTo(X(tx), Y(pin[1] + Math.sign(pin[1]) * 14));
+    c.lineTo(X(pin[0]), Y(pin[1] + Math.sign(pin[1]) * 14));
     c.lineTo(X(pin[0]), Y(pin[1]));
     c.stroke();
   }
@@ -116,7 +118,9 @@ function draw(c, w, h, state = {}) {
   c.textBaseline = "alphabetic";
   for (const id of ["u1.2", "u1.3", "u1.4"]) micro(c, pinLabel[id], X(PLACE[id][0]), Y(PLACE[id][1]) + 15, { color: pinColour[id] });
   for (const id of ["u1.7", "u1.6"]) micro(c, pinLabel[id], X(PLACE[id][0]), Y(PLACE[id][1]) - 10, { color: pinColour[id] });
-  legend(c, "U1 · 741", X(0), Y(-22));
+  for (const [id, x, y] of [["u1.2", -3.8, -11.4], ["u1.3", 3.8, -11.4], ["u1.4", 11.4, -11.4], ["u1.7", -3.8, 11.4], ["u1.6", 3.8, 11.4]]) {
+    micro(c, id.slice(3), X(x) + (y < 0 ? 0 : 0), Y(y) + (y < 0 ? 8 : -5), { color: pinColour[id] });
+  }
 
   const resistors = state.resistors ?? {};
   const names = state.names ?? { rin: "Rin", rf: "Rf", rin2: "Rin2", rf2: "Rf2" };
@@ -125,9 +129,9 @@ function draw(c, w, h, state = {}) {
     if (!used.has(id)) continue;
     const p = PLACE[id];
     legend(c, names[id], X(p.body[0]), Y(p.body[1]) + 16);
-    micro(c, `${figure((resistors[id] ?? 10000) / 1000, 1)} kΩ`, X(p.knob[0]), Y(p.knob[1]) + (p.knob[1] > p.body[1] ? -16 : 20), {
-      color: SURFACE.readoutPrimary,
-    });
+    const ry = p.knob[1] > p.body[1] ? (p.knob[1] + p.body[1]) / 2 + 2 : (p.knob[1] + p.body[1]) / 2 - 2;
+    window_(c, X(p.knob[0]) - 17, Y(ry) - 5.5, 34, 11);
+    readout(c, `${figure((resistors[id] ?? 10000) / 1000, 1)} kΩ`, X(p.knob[0]), Y(ry) + 3, { align: "center", cap: 5.5 });
     micro(c, "A", X(p.a[0]), Y(p.a[1]) + 14);
     micro(c, "B", X(p.b[0]), Y(p.b[1]) + 14);
   }
@@ -148,6 +152,51 @@ function draw(c, w, h, state = {}) {
   micro(c, "ELEN 221 · LAB 7", w - 14, h - 11, { align: "right" });
 }
 
+/** The op-amp symbol for the package top: triangle, inputs, output, device name. */
+function chipFace() {
+  const canvas = document.createElement("canvas");
+  canvas.width = 490;
+  canvas.height = 320;
+  const c = canvas.getContext("2d");
+  c.fillStyle = "#1c2024";
+  c.fillRect(0, 0, 490, 320);
+  c.strokeStyle = "#f4f8fa";
+  c.lineWidth = 9;
+  c.lineJoin = "round";
+  c.beginPath();
+  c.moveTo(150, 60);
+  c.lineTo(150, 260);
+  c.lineTo(345, 160);
+  c.closePath();
+  c.stroke();
+  c.fillStyle = "#f4f8fa";
+  c.font = "bold 46px 'Barlow Semi Condensed', sans-serif";
+  c.textAlign = "center";
+  c.fillText("−", 182, 128);
+  c.fillText("+", 182, 220);
+  c.lineWidth = 7;
+  const lead = (colour, x1, y1, x2, y2) => {
+    c.strokeStyle = colour;
+    c.beginPath();
+    c.moveTo(x1, y1);
+    c.lineTo(x2, y2);
+    c.stroke();
+  };
+  lead(SIGNAL.input, 70, 110, 150, 110);
+  lead("#f4f8fa", 70, 210, 150, 210);
+  lead(SIGNAL.output, 345, 160, 430, 160);
+  lead(SIGNAL.supplyPos, 215, 126, 215, 50);
+  lead(SIGNAL.supplyNeg, 215, 194, 215, 270);
+  c.font = "600 30px 'Barlow Semi Condensed', sans-serif";
+  c.fillStyle = "#aab4ba";
+  c.textAlign = "left";
+  c.fillText("U1 · 741", 24, 300);
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.anisotropy = 8;
+  return texture;
+}
+
 export function createBoard({ parts, materials, register }) {
   const group = new THREE.Group();
   group.name = "trainer-board";
@@ -163,8 +212,8 @@ export function createBoard({ parts, materials, register }) {
   face.position.y = mm(6);
   group.add(face);
 
-  const plate = new THREE.Mesh(parts.box(W + mm(12), H + mm(12), mm(10), mm(2)), materials.abs("#2f363b"));
-  plate.position.z = -mm(5);
+  const plate = new THREE.Mesh(parts.box(W + mm(8), H + mm(8), mm(3), mm(1)), materials.abs("#2f363b"));
+  plate.position.z = -mm(1.5);
   plate.castShadow = true;
   plate.receiveShadow = true;
   face.add(plate);
@@ -192,8 +241,8 @@ export function createBoard({ parts, materials, register }) {
   };
 
   // The 741 at twice life size, with its breakout terminals around it.
-  const chip = parts.dip8();
-  chip.scale.setScalar(BOARD.scale);
+  const chip = parts.dip8({ face: chipFace() });
+  chip.scale.setScalar(BOARD.chipScale);
   chip.position.copy(at(PLACE.chip, mm(0.4)));
   face.add(chip);
   for (const id of ["u1.2", "u1.3", "u1.4", "u1.7", "u1.6"]) addTerminal(id, pinColour[id], at(PLACE[id]));

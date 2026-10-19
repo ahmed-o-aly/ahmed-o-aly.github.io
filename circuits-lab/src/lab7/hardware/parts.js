@@ -314,10 +314,17 @@ export function createParts(materials) {
    * move to the floating callout. Inflating it to fit its own caption is the
    * single change that made the previous bench read as a toy.
    */
-  function dip8() {
+  function dip8({ face = null } = {}) {
     const group = new THREE.Group();
     const bodyW = mm(9.8);
     const bodyH = mm(6.4);
+    // The op-amp symbol printed on the package top, as the engineer's Figure 2
+    // draws it: on the hardware, always visible, nothing to float or occlude.
+    if (face) {
+      const print = new THREE.Mesh(plane(bodyW * 0.96, bodyH * 0.9), new THREE.MeshBasicMaterial({ map: face, transparent: true }));
+      print.position.z = mm(4.95);
+      group.add(print);
+    }
     const body = new THREE.Mesh(box(bodyW, bodyH, mm(3.4), mm(0.3)), materials.epoxy());
     body.position.z = mm(1.7) + mm(1.5);
     body.castShadow = true;

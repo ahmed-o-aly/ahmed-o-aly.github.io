@@ -45,8 +45,21 @@ export function createManipulator({ contactOf, candidates, onConnect, onDrop, on
     return best;
   }
 
+  /**
+   * A seat still travelling when the next grab arrives is committed at once. The
+   * travel is cosmetic; the connection is not, and a frame-rate hitch must never
+   * lose it.
+   */
+  function settle() {
+    if (!seating) return;
+    const finished = seating;
+    seating = null;
+    onConnect(finished.held, finished.terminal);
+  }
+
   /** Pick up an existing lead's plug. The contact opens immediately. */
   function grabLead({ lead, end, from, to, point, colour }) {
+    settle();
     grip = { kind: "lead", lead, end, point: point.clone(), from, to, colour };
     onHaptic(0.25, 15);
     return grip;
@@ -54,6 +67,7 @@ export function createManipulator({ contactOf, candidates, onConnect, onDrop, on
 
   /** Draw a fresh lead out of a socket. */
   function drawFrom({ terminal, point, colour }) {
+    settle();
     grip = { kind: "draw", terminal, point: point.clone(), colour };
     onHaptic(0.25, 15);
     return grip;
@@ -133,6 +147,7 @@ export function createManipulator({ contactOf, candidates, onConnect, onDrop, on
   return {
     grabLead,
     drawFrom,
+    settle,
     moveTo,
     release,
     update,

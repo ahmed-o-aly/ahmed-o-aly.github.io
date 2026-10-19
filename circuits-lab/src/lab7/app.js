@@ -6,7 +6,6 @@ import { createParts } from "./hardware/parts.js";
 import { createInstruments } from "./scene/instruments.js";
 import { createBench, LAYOUT } from "./scene/bench.js";
 import { createLeads, colourFor } from "./scene/leads.js";
-import { createCallout } from "./scene/callout.js";
 import { createManipulator } from "./xr/manipulate.js";
 import { createXR } from "./xr/session.js";
 import { createGuidance } from "./ui/guidance.js";
@@ -54,7 +53,7 @@ export function mountLab7(host) {
 
   // ---- renderer ----------------------------------------------------------
   const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(60, 1, 0.02, 60);
+  const camera = new THREE.PerspectiveCamera(68, 1, 0.02, 60);
   const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
   renderer.shadowMap.enabled = true;
@@ -71,11 +70,11 @@ export function mountLab7(host) {
   // that the instrument panels are read square-on rather than from above.
   // Inside the mouth of the U, where the student stands. Everything is within
   // arm's reach from here and the two wings close in at the edges of vision.
-  controls.target.set(0, BENCH.height + 0.08, -0.5);
+  controls.target.set(0, BENCH.height + 0.06, -0.42);
   controls.minDistance = 0.28;
   controls.maxDistance = 3.0;
   controls.maxPolarAngle = Math.PI / 2 - 0.03;
-  camera.position.set(0, BENCH.height + 0.5, 0.22);
+  camera.position.set(0, BENCH.height + 0.42, 0.3);
   controls.update();
 
   // ---- the laboratory ----------------------------------------------------
@@ -108,11 +107,6 @@ export function mountLab7(host) {
   bench.applyConfiguration(state.configuration);
 
   const leads = createLeads({ scene, parts, materials });
-
-  // The 741's schematic symbol, floating above the package. The brief asks for it
-  // three times; the chip stays 9.8 x 6.4 mm and this carries the teaching.
-  const callout = createCallout(parts, materials);
-  scene.add(callout.group);
 
   // The single guided highlight. Exactly one exists at any moment.
   const guideRing = parts.ring(STATE.next, mm(8));
@@ -237,6 +231,18 @@ export function mountLab7(host) {
     if (data.kind === "plug") {
       const lead = state.leads[data.index];
       if (!lead) return false;
+      // A seated plug stands 16 mm proud of its socket. Pressing at the socket
+      // face - through the plug's nose - means "another lead here", the way
+      // banana plugs stack; taking hold of the body further out means "pull
+      // this one out". Without the split, an occupied socket can never take a
+      // second lead, and a common rail needs three.
+      const terminal = data.end === 0 ? lead.from : lead.to;
+      const contact = terminal ? contactOf(terminal) : null;
+      if (contact && hit.point.distanceTo(contact) < mm(9)) {
+        manipulator.drawFrom({ terminal, point, colour: colourFor(terminal, terminal) });
+        gesture = { kind: "lead" };
+        return true;
+      }
       lead.held = true;
       manipulator.grabLead({ lead: data.index, end: data.end, from: lead.from, to: lead.to, point, colour: colourFor(lead.from, lead.to) });
       gesture = { kind: "lead" };
@@ -452,7 +458,6 @@ export function mountLab7(host) {
     });
     bench.update(state);
     applyControls();
-    callout.paint({ configuration: state.configuration });
     for (const [, lamp] of instruments.supply.indicators) lamp.material = materials.led("#43e08a", state.powered);
     syncLeads();
     placeGuideRing();
@@ -514,7 +519,6 @@ export function mountLab7(host) {
     if (seating) syncLeads(seating);
     else if (manipulator.held) syncLeads();
     if (guideRing.visible) guideRing.rotation.z += delta * 1.6;
-    callout.update(bench.chip.getWorldPosition(new THREE.Vector3()), renderer.xr.isPresenting ? renderer.xr.getCamera() : camera);
     xr.update(delta, frame, (hand) => {
       const ray = hand.ray();
       raycaster.set(ray.origin, ray.direction);
@@ -532,7 +536,6 @@ export function mountLab7(host) {
       renderer.setAnimationLoop(null);
       observer.disconnect();
       xr.dispose();
-      callout.dispose();
       leads.dispose();
       bench.dispose();
       instruments.dispose();

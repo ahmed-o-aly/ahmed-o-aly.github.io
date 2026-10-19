@@ -24,12 +24,11 @@ export const BENCH = Object.freeze({
   thickness: mm(40),
   /** The student stands here, inside the mouth of the U. */
   stand: 0.1,
-  /** Sized from reach: nothing on this bench is more than 0.76 m from the student. */
-  segments: [
-    { id: "centre", width: 1.0, depth: 0.48, x: 0, z: -0.54, rotation: 0 },
-    { id: "left", width: 0.76, depth: 0.48, x: -0.58, z: -0.2, rotation: 1.05 },
-    { id: "right", width: 0.76, depth: 0.48, x: 0.58, z: -0.2, rotation: -1.05 },
-  ],
+  /**
+   * One bench, as Figure 2 draws it: the four instruments in a row across the
+   * back, the board in front, everything facing the student and in frame at once.
+   */
+  segments: [{ id: "centre", width: 1.5, depth: 0.66, x: 0, z: -0.5, rotation: 0 }],
 });
 
 const ROOM = Object.freeze({ width: 9, depth: 9, height: 3.05 });

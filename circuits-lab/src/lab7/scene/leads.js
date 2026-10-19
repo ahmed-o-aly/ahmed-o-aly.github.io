@@ -14,13 +14,13 @@ import { TERMINALS, PROBES } from "../sim/circuit.js";
 
 /** A real 1 m banana lead. The bench is 1.8 m wide; 0.62 m could not cross it. */
 export const LEAD_LENGTH = 1.0;
-const MAX_SAG = 0.1;
+const MAX_SAG = 0.13;
 /** Nothing is allowed to sag through the benchtop. */
 export const BENCH_CLEARANCE = 0.004;
 const SEGMENTS = 28;
-const RADIUS = mm(2.2);
+const RADIUS = mm(3.2);
 /** A jumper between two board terminals is solid-core wire, not a banana lead. */
-const JUMPER_RADIUS = mm(1.1);
+const JUMPER_RADIUS = mm(1.8);
 const onBoard = (id) => typeof id === "string" && !/^(supply|gen|meter|scope)\./.test(id);
 
 /** A lead's colour is decided by what it CARRIES, not by where it starts. */
@@ -42,7 +42,7 @@ export function colourFor(from, to) {
 export function solve(a, b, length = LEAD_LENGTH, { bend = null, surface = null } = {}) {
   const span = a.distanceTo(b);
   const slack = Math.max(0, length - span);
-  const sag = Math.min(MAX_SAG, slack * 0.3);
+  const sag = Math.min(MAX_SAG, slack * 0.4);
 
   // Where the belly of the cable hangs. A student who has shaped this lead owns
   // that point; otherwise it is the midpoint, pulled down by its own slack.
@@ -97,7 +97,7 @@ export function createLeads({ scene, parts, materials }) {
 
   function makeLead(colour) {
     const node = new THREE.Group();
-    const tube = new THREE.Mesh(new THREE.BufferGeometry(), materials.rubber(colour));
+    const tube = new THREE.Mesh(new THREE.BufferGeometry(), materials.jacket(colour));
     tube.castShadow = true;
     node.add(tube);
     const a = plug(colour);
@@ -112,7 +112,7 @@ export function createLeads({ scene, parts, materials }) {
     entry.tube.geometry.dispose();
     entry.tube.geometry = new THREE.TubeGeometry(curve, SEGMENTS, entry.jumper ? JUMPER_RADIUS : RADIUS, 7, false);
     // A strained lead visibly changes tint rather than silently stretching.
-    entry.tube.material = materials.rubber(taut ? "#6b4a1f" : entry.colour);
+    entry.tube.material = materials.jacket(taut ? "#6b4a1f" : entry.colour);
     aim(entry.a, curve, true);
     aim(entry.b, curve, false);
     entry.curve = curve;

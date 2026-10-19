@@ -93,6 +93,8 @@ export function createMaterials(renderer) {
     rubber: (color = "#1d2124") => standard(`rubber:${color}`, { color: srgb(color), roughness: 0.94, metalness: 0 }),
     /** A coloured insulator on a 4 mm jack or plug. */
     insulator: (color) => standard(`ins:${color}`, { color: srgb(color), roughness: 0.42, metalness: 0.03 }),
+    /** Cable jacket: PVC with a gloss, so a lead's colour reads vividly across the bench. */
+    jacket: (color) => standard(`jacket:${color}`, { color: srgb(color), roughness: 0.36, metalness: 0.02 }),
     /** Epoxy IC body. */
     epoxy: () => standard("epoxy", { color: srgb("#24282c"), roughness: 0.48, metalness: 0.05 }),
 

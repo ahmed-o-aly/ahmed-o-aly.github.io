@@ -16,11 +16,13 @@ const TOP = BENCH.height;
 
 /** Offsets on one segment of the U, in metres. */
 export const LAYOUT = Object.freeze({
-  supply: { segment: "left", x: -0.16, z: -0.06 },
-  generator: { segment: "left", x: 0.16, z: -0.06 },
-  scope: { segment: "right", x: -0.16, z: -0.06 },
-  meter: { segment: "right", x: 0.16, z: -0.06 },
-  board: { segment: "centre", x: 0, z: 0.04 },
+  // Source on the left, measurement on the right, in one row across the back;
+  // the board front-centre. Offsets are from the bench centre, in metres.
+  supply: { segment: "centre", x: -0.5, z: -0.2 },
+  generator: { segment: "centre", x: -0.2, z: -0.2 },
+  scope: { segment: "centre", x: 0.16, z: -0.2 },
+  meter: { segment: "centre", x: 0.47, z: -0.2 },
+  board: { segment: "centre", x: 0, z: 0.2 },
 });
 
 export function createBench({ scene, parts, materials, register, segments }) {
@@ -43,7 +45,6 @@ export function createBench({ scene, parts, materials, register, segments }) {
     board,
     terminals: board.terminals,
     modules: board.modules,
-    chip: board.chipAnchor,
     placeInstrument,
     applyConfiguration: (configuration) => board.applyConfiguration(configuration),
     contactOf: (id) => board.contactOf(id),
