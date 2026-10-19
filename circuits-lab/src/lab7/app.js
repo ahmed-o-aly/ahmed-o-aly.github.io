@@ -68,11 +68,14 @@ export function mountLab7(host) {
   const controls = new OrbitControls(camera, renderer.domElement);
   // Framed to hold the whole 1.8 m bench: far enough back to see it, low enough
   // that the instrument panels are read square-on rather than from above.
-  controls.target.set(0, BENCH.height + 0.02, -0.08);
-  controls.minDistance = 0.35;
+  // A working view, not a showroom view: close enough that the breadboard — the
+  // thing the student actually builds on — is the largest object in frame, with
+  // the instrument row readable behind it. Scroll out to see the whole bench.
+  controls.target.set(0, BENCH.height + 0.02, 0.09);
+  controls.minDistance = 0.3;
   controls.maxDistance = 3.2;
   controls.maxPolarAngle = Math.PI / 2 - 0.03;
-  camera.position.set(0, BENCH.height + 0.85, 0.95);
+  camera.position.set(0, BENCH.height + 0.52, 0.86);
   controls.update();
 
   // ---- the laboratory ----------------------------------------------------
@@ -81,13 +84,19 @@ export function mountLab7(host) {
   const room = createRoom(scene, renderer, materials);
 
   const pickables = [];
+  /**
+   * Make an object pickable. Merges rather than replaces: parts.js stores a knob's
+   * pointer and a jack's contact offset in userData, and overwriting them silently
+   * broke both.
+   */
   const register = (object, data) => {
     object.traverse?.((child) => {
       if (child.isMesh) {
-        child.userData = { ...data, owner: object };
+        child.userData = { ...child.userData, ...data, owner: object };
         pickables.push(child);
       }
     });
+    object.userData = { ...object.userData, ...data, owner: object };
   };
 
   const bench = createBench({ scene, parts, materials, register });
@@ -184,7 +193,10 @@ export function mountLab7(host) {
     const rect = renderer.domElement.getBoundingClientRect();
     pointer.set(((clientX - rect.left) / rect.width) * 2 - 1, (-(clientY - rect.top) / rect.height) * 2 + 1);
     raycaster.setFromCamera(pointer, camera);
-    const hit = raycaster.intersectObjects(pickables, false)[0];
+    // Ride the bench, the board and the instrument cases — but never another
+    // cable. A plug that climbs over the leads already on the bench can never
+    // reach the socket underneath them.
+    const hit = raycaster.intersectObjects(pickables, false).find((candidate) => !["cable", "plug"].includes(candidate.object.userData.kind));
     if (hit) return hit.point.clone().addScaledVector(UP, 0.004);
     const onBench = new THREE.Vector3();
     if (raycaster.ray.intersectPlane(benchPlane, onBench)) return onBench;
@@ -194,15 +206,18 @@ export function mountLab7(host) {
   function beginAt(hit, point) {
     const data = hit.object.userData;
     if (data.kind === "terminal") {
-      const index = state.leads.findIndex((lead) => lead.from === data.id || lead.to === data.id);
-      if (index >= 0) {
-        const lead = state.leads[index];
-        const end = lead.from === data.id ? 0 : 1;
-        lead.held = true;
-        manipulator.grabLead({ lead: index, end, from: lead.from, to: lead.to, point, colour: colourFor(lead.from, lead.to) });
-      } else {
-        manipulator.drawFrom({ terminal: data.id, point, colour: colourFor(data.id, data.id) });
-      }
+      // A socket always starts a NEW lead. Several leads may share one terminal,
+      // which is what a common rail is for.
+      manipulator.drawFrom({ terminal: data.id, point, colour: colourFor(data.id, data.id) });
+      gesture = { kind: "lead" };
+      return true;
+    }
+    if (data.kind === "plug") {
+      const lead = state.leads[data.index];
+      if (!lead) return false;
+      lead.held = true;
+      manipulator.grabLead({ lead: data.index, end: data.end, from: lead.from, to: lead.to, point, colour: colourFor(lead.from, lead.to) });
+      gesture = { kind: "lead" };
       return true;
     }
     if (data.kind === "knob") {
@@ -213,7 +228,59 @@ export function mountLab7(host) {
       pressKey(data.id);
       return true;
     }
+    if (data.kind === "cable") {
+      // Take hold of the cable itself. Both ends stay plugged in; what moves is
+      // the belly of the lead, so a student can route a wire out of the way.
+      gesture = { kind: "bend", index: data.index };
+      return true;
+    }
     return false;
+  }
+
+  /**
+   * Where a control is pointing, 0..1 across its sweep. A knob that does not move
+   * when it is turned is the clearest possible sign the bench is fake, so every
+   * control's pointer is driven from the value it actually holds.
+   */
+  function knobFraction(id) {
+    const span = (value, min, max) => Math.min(1, Math.max(0, (value - min) / (max - min)));
+    const logSpan = (value, min, max) => span(Math.log(value), Math.log(min), Math.log(max));
+    if (id in state.resistors) return logSpan(state.resistors[id], RESISTOR_RANGE.min, RESISTOR_RANGE.max);
+    if (id === "amplitude") return span(state.sources[0].amplitude, 0, 10);
+    if (id === "frequency") return logSpan(state.sources[0].frequency, 10, 100000);
+    if (id === "rail") return [8, 12, 15].indexOf(state.rail) / 2;
+    if (id === "meterMode") return state.meterMode === "ac" ? 1 : 0;
+    if (id === "voltsPerDiv") return 0.5;
+    if (id === "timePerDiv") return 0.5;
+    return 0.5;
+  }
+
+  /** 260 degrees of sweep, as the design system's Knob specifies. */
+  const SWEEP = (260 * Math.PI) / 180;
+  function applyControls() {
+    for (const entry of instruments.all.values()) {
+      for (const [id, object] of entry.controls) {
+        if (object.userData.kind === "knob") object.rotation.z = SWEEP / 2 - knobFraction(id) * SWEEP;
+      }
+    }
+    for (const [id, module] of bench.modules) {
+      module.knob.rotation.z = SWEEP / 2 - knobFraction(id) * SWEEP;
+    }
+    // Keys show what is selected, and the power key stays pressed in.
+    const generator = instruments.generator;
+    for (const waveform of ["dc", "sine", "square", "triangle"]) {
+      const object = generator.controls.get(`wave.${waveform}`);
+      const cap = object?.userData.cap;
+      if (!cap) continue;
+      const on = state.sources[0].waveform === waveform;
+      cap.material = materials.panel(on ? SIGNAL.input : "#8d969c");
+      cap.position.z = on ? mm(2.2) : mm(3);
+    }
+    const power = instruments.supply.controls.get("power")?.userData.cap;
+    if (power) {
+      power.material = materials.panel(state.powered ? "#43e08a" : "#8d969c");
+      power.position.z = state.powered ? mm(2) : mm(3);
+    }
   }
 
   const controlValue = (id) =>
@@ -256,8 +323,8 @@ export function mountLab7(host) {
     const hit = pick(event.clientX, event.clientY);
     if (!hit) return;
     if (beginAt(hit, hit.point.clone())) {
+      // beginAt decides what kind of gesture this is; do not overwrite it here.
       if (gesture?.kind === "knob") gesture.startY = event.clientY;
-      else gesture = { kind: "lead" };
       controls.enabled = false;
       renderer.domElement.setPointerCapture?.(event.pointerId);
       event.preventDefault();
@@ -270,6 +337,14 @@ export function mountLab7(host) {
       gesture.startY = event.clientY;
       return;
     }
+    if (gesture?.kind === "bend") {
+      const lead = state.leads[gesture.index];
+      if (lead) {
+        lead.bend = pointerPoint(event.clientX, event.clientY).toArray();
+        syncLeads();
+      }
+      return;
+    }
     if (manipulator.held) {
       manipulator.moveTo(pointerPoint(event.clientX, event.clientY));
       return;
@@ -277,7 +352,14 @@ export function mountLab7(host) {
     const hit = pick(event.clientX, event.clientY);
     const data = hit?.object.userData;
     renderer.domElement.style.cursor = data ? (data.kind === "knob" ? "ns-resize" : "grab") : "default";
-    hint.textContent = data?.kind === "terminal" ? `${TERMINALS[data.id]?.label ?? data.id} · drag to connect` : "";
+    hint.textContent =
+      data?.kind === "terminal"
+        ? `${TERMINALS[data.id]?.label ?? data.id} · drag to connect`
+        : data?.kind === "cable"
+          ? "Drag the cable to route it · both ends stay connected"
+          : data?.kind === "knob"
+            ? "Drag up or down to adjust"
+            : "";
   });
 
   const endGesture = () => {
@@ -343,22 +425,35 @@ export function mountLab7(host) {
       scale: { ch1: 1, ch2: 2, time: Math.round(1e6 / state.sources[0].frequency / 10) },
     });
     bench.update(state);
+    applyControls();
     for (const [, lamp] of instruments.supply.indicators) lamp.material = materials.led("#43e08a", state.powered);
     syncLeads();
     placeGuideRing();
     ui.render(state, result);
   }
 
+  const cablePickables = new Set();
   function syncLeads(override) {
     const held = override ?? manipulator.held ?? null;
-    leads.sync(
-      state.leads,
-      (id) => (id ? contactOf(id) : null),
-      held ? { lead: held.lead, end: held.end, point: held.point } : null
-    );
+    leads.sync(state.leads, (id) => (id ? contactOf(id) : null), held ? { lead: held.lead, end: held.end, point: held.point } : null, {
+      surface: BENCH.height,
+      onCable: (tube) => {
+        if (cablePickables.has(tube)) return;
+        cablePickables.add(tube);
+        pickables.push(tube);
+      },
+      onPlug: (node) => {
+        node.traverse((child) => {
+          if (child.isMesh && !cablePickables.has(child)) {
+            cablePickables.add(child);
+            pickables.push(child);
+          }
+        });
+      },
+    });
     if (held?.kind === "draw") {
       const from = contactOf(held.terminal);
-      if (from) leads.draw(from, held.point, held.colour);
+      if (from) leads.draw(from, held.point, held.colour, BENCH.height);
     } else leads.clearDrawing();
   }
 

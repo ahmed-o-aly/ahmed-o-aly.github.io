@@ -41,7 +41,7 @@ export function createInstruments({ parts, materials, register }) {
       socket.position.set(...place(widthMM, heightMM, jack.x, jack.y));
       socket.position.z = mm(2.2);
       face.add(socket);
-      socket.userData = { kind: "terminal", id: jack.terminal, instrument: id };
+      socket.userData = { ...socket.userData, kind: "terminal", id: jack.terminal, instrument: id };
       register(socket, socket.userData);
       mounted.jacks.set(jack.terminal, socket);
     }
@@ -54,7 +54,7 @@ export function createInstruments({ parts, materials, register }) {
       object.position.set(...place(widthMM, heightMM, control.x, control.y));
       object.position.z = mm(2.2);
       face.add(object);
-      object.userData = { kind: control.kind === "key" ? "key" : "knob", id: control.id, instrument: id, control };
+      object.userData = { ...object.userData, kind: control.kind === "key" ? "key" : "knob", id: control.id, instrument: id, control };
       register(object, object.userData);
       mounted.controls.set(control.id, object);
     }

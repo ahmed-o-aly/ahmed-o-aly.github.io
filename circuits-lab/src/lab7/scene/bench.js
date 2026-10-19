@@ -18,15 +18,18 @@ const TOP = BENCH.height;
 
 /** Positions in metres from bench centre; z is positive toward the student. */
 export const LAYOUT = Object.freeze({
-  supply: { x: -0.52, z: -0.24 },
-  generator: { x: -0.17, z: -0.24 },
-  scope: { x: 0.26, z: -0.18 },
-  meter: { x: 0.62, z: -0.205 },
-  board: { x: 0, z: 0.2325 },
-  rin: { x: -0.3, z: 0.2325 },
-  rf: { x: -0.17, z: 0.2325 },
-  rin2: { x: 0.17, z: 0.2325 },
-  rf2: { x: 0.3, z: 0.2325 },
+  // Pulled in and forward from the first cut: a 1 m lead has to reach any socket
+  // from any other, and a standing student has to reach the whole bench without
+  // stepping. Source left, measurement right, board front-centre.
+  supply: { x: -0.42, z: -0.175 },
+  generator: { x: -0.12, z: -0.175 },
+  scope: { x: 0.21, z: -0.15 },
+  meter: { x: 0.49, z: -0.165 },
+  board: { x: 0, z: 0.185 },
+  rin: { x: -0.25, z: 0.175 },
+  rf: { x: -0.13, z: 0.175 },
+  rin2: { x: 0.25, z: 0.175 },
+  rf2: { x: 0.13, z: 0.175 },
 });
 
 /**
@@ -50,7 +53,7 @@ export function createBench({ scene, parts, materials, register }) {
   const modules = new Map();
 
   const addTerminal = (object, id) => {
-    object.userData = { kind: "terminal", id };
+    object.userData = { ...object.userData, kind: "terminal", id };
     register(object, object.userData);
     terminals.set(id, object);
   };
@@ -114,7 +117,7 @@ export function createBench({ scene, parts, materials, register }) {
     knob.rotation.x = -Math.PI / 2;
     knob.position.set(0, mm(26), mm(-2));
     module.add(knob);
-    knob.userData = { kind: "knob", id, control: { id, kind: "resistor" } };
+    knob.userData = { ...knob.userData, kind: "knob", id, control: { id, kind: "resistor" } };
     register(knob, knob.userData);
 
     const a = parts.jack(SIGNAL.feedback, { radius: mm(3.4) });

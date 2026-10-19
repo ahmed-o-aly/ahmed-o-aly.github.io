@@ -12,9 +12,11 @@ import { TERMINALS, PROBES } from "../sim/circuit.js";
  * explicitly forbidden by the design system's HeldLead rules.
  */
 
-/** A lead is a real length of wire, not an elastic band. */
-export const LEAD_LENGTH = 0.62;
-const MAX_SAG = 0.14;
+/** A real 1 m banana lead. The bench is 1.8 m wide; 0.62 m could not cross it. */
+export const LEAD_LENGTH = 1.0;
+const MAX_SAG = 0.1;
+/** Nothing is allowed to sag through the benchtop. */
+export const BENCH_CLEARANCE = 0.004;
 const SEGMENTS = 28;
 const RADIUS = mm(2.2);
 
@@ -34,21 +36,30 @@ export function colourFor(from, to) {
  * straightening the curve and shifting the jacket — a student discovers the lead
  * is too short the way they would at a real bench.
  */
-export function solve(a, b, length = LEAD_LENGTH) {
+export function solve(a, b, length = LEAD_LENGTH, { bend = null, surface = null } = {}) {
   const span = a.distanceTo(b);
   const slack = Math.max(0, length - span);
-  const sag = Math.min(MAX_SAG, slack * 0.42);
-  const mid = a.clone().add(b).multiplyScalar(0.5);
-  mid.y -= sag;
-  // Two interior controls give a rope-like belly rather than a single arc.
-  const first = a.clone().lerp(mid, 0.55);
-  const second = b.clone().lerp(mid, 0.55);
-  first.y -= sag * 0.25;
-  second.y -= sag * 0.25;
+  const sag = Math.min(MAX_SAG, slack * 0.3);
+
+  // Where the belly of the cable hangs. A student who has shaped this lead owns
+  // that point; otherwise it is the midpoint, pulled down by its own slack.
+  const mid = bend ? new THREE.Vector3(...bend) : a.clone().add(b).multiplyScalar(0.5).setY(Math.min(a.y, b.y) - sag);
+
+  // A cable rests ON the bench. Without this it sags straight through the top,
+  // which is the single most obviously wrong thing a virtual wire can do.
+  if (surface !== null) mid.y = Math.max(mid.y, surface + BENCH_CLEARANCE);
+
+  const first = a.clone().lerp(mid, 0.6);
+  const second = b.clone().lerp(mid, 0.6);
+  if (surface !== null) {
+    first.y = Math.max(first.y, surface + BENCH_CLEARANCE);
+    second.y = Math.max(second.y, surface + BENCH_CLEARANCE);
+  }
   return {
-    curve: new THREE.CatmullRomCurve3([a.clone(), first, mid, second, b.clone()], false, "centripetal", 0.4),
-    taut: span > length - 0.02,
+    curve: new THREE.CatmullRomCurve3([a.clone(), first, mid, second, b.clone()], false, "centripetal", 0.35),
+    taut: span > length - 0.03,
     span,
+    mid,
   };
 }
 
@@ -93,8 +104,8 @@ export function createLeads({ scene, parts, materials }) {
     return { node, tube, a, b, colour };
   }
 
-  function shape(entry, from, to) {
-    const { curve, taut } = solve(from, to);
+  function shape(entry, from, to, options) {
+    const { curve, taut, mid } = solve(from, to, LEAD_LENGTH, options);
     entry.tube.geometry.dispose();
     entry.tube.geometry = new THREE.TubeGeometry(curve, SEGMENTS, RADIUS, 7, false);
     // A strained lead visibly changes tint rather than silently stretching.
@@ -103,13 +114,14 @@ export function createLeads({ scene, parts, materials }) {
     aim(entry.b, curve, false);
     entry.curve = curve;
     entry.taut = taut;
+    entry.mid = mid;
   }
 
   /**
    * Rebuild from state. A lead the student is holding is drawn to wherever their
    * hand is, not to its socket.
    */
-  function sync(leads, contactOf, held) {
+  function sync(leads, contactOf, held, { surface = null, onCable = null, onPlug = null } = {}) {
     while (meshes.length > leads.length) {
       const extra = meshes.pop();
       extra.tube.geometry.dispose();
@@ -132,13 +144,30 @@ export function createLeads({ scene, parts, materials }) {
         return;
       }
       entry.node.visible = true;
-      shape(entry, from, to);
+      shape(entry, from, to, { bend: lead.bend ?? null, surface });
+      // The cable body is grabbable along its whole length, so a lead can be
+      // shaped from wherever the student takes hold of it.
+      entry.tube.userData = { kind: "cable", index, owner: entry.tube };
+      if (onCable) onCable(entry.tube);
+      // Each plug is grabbable in its own right. Taking hold of a PLUG moves that
+      // end; taking hold of a SOCKET stacks a new lead, the way banana plugs
+      // stack on a real bench. Without that split, a common rail can only ever
+      // carry one lead.
+      for (const [end, node] of [
+        [0, entry.a],
+        [1, entry.b],
+      ]) {
+        node.traverse((child) => {
+          if (child.isMesh) child.userData = { kind: "plug", index, end, owner: node };
+        });
+        if (onPlug) onPlug(node);
+      }
     });
   }
 
   /** A lead being drawn from a socket that has not reached anywhere yet. */
   let drawing = null;
-  function draw(fromPoint, toPoint, colour) {
+  function draw(fromPoint, toPoint, colour, surface = null) {
     if (!drawing) drawing = makeLead(colour);
     drawing.node.visible = true;
     if (drawing.colour !== colour) {
@@ -146,7 +175,7 @@ export function createLeads({ scene, parts, materials }) {
       drawing.a.children[0].material = materials.insulator(colour);
       drawing.b.children[0].material = materials.insulator(colour);
     }
-    shape(drawing, fromPoint, toPoint);
+    shape(drawing, fromPoint, toPoint, { surface });
   }
   function clearDrawing() {
     if (drawing) drawing.node.visible = false;
