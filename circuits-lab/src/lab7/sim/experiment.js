@@ -122,6 +122,23 @@ export function connect(state, from, to, route = null) {
   return true;
 }
 
+/**
+ * Let go of a plug away from any socket. The lead stays on the bench with a free
+ * end rather than vanishing or springing back — the design system forbids both.
+ */
+export function dropLeadEnd(state, index, end, point) {
+  const lead = state.leads[index];
+  if (!lead || ![0, 1].includes(end)) return false;
+  remember(state);
+  if (end === 0) lead.from = null;
+  else lead.to = null;
+  lead.freeEnd = point ? [...point] : null;
+  lead.held = false;
+  // A lead with neither end connected is just wire on the bench; clear it.
+  if (!lead.from && !lead.to) state.leads.splice(index, 1);
+  return true;
+}
+
 export function removeLead(state, index) {
   if (!state.leads[index]) return false;
   remember(state);

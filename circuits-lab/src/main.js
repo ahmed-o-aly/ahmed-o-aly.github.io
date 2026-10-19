@@ -1,7 +1,7 @@
 // Lab 7 has one manual experiment; neighboring labs retain their established workspace.
 const lab = new URLSearchParams(location.search).get("lab");
 if (lab === "7" || lab === "opamp") {
-  import("./amplifier-app.js");
+  import("./lab7/app.js").then(({ mountLab7 }) => mountLab7(document.querySelector("#app")));
 } else {
   import("./legacy-main.js");
   document.addEventListener(

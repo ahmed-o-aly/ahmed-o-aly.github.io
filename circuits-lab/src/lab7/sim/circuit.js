@@ -117,7 +117,10 @@ export function nets(leads = []) {
   };
   const union = (a, b) => parent.set(find(a), find(b));
   for (const lead of leads) {
-    if (!lead || lead.held) continue; // a lead in the hand is an open contact
+    // A lead in the hand is an open contact, and so is one with a dropped end
+    // lying on the bench. Neither carries current, and the circuit reflects that
+    // the instant the student picks it up.
+    if (!lead || lead.held || !lead.from || !lead.to) continue;
     union(lead.from, lead.to);
   }
   return { find, union, parent };
