@@ -6,6 +6,7 @@ import { createParts } from "./hardware/parts.js";
 import { createInstruments } from "./scene/instruments.js";
 import { createBench, LAYOUT } from "./scene/bench.js";
 import { createLeads, colourFor } from "./scene/leads.js";
+import { createCallout } from "./scene/callout.js";
 import { createManipulator } from "./xr/manipulate.js";
 import { createXR } from "./xr/session.js";
 import { createGuidance } from "./ui/guidance.js";
@@ -53,7 +54,7 @@ export function mountLab7(host) {
 
   // ---- renderer ----------------------------------------------------------
   const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(54, 1, 0.02, 60);
+  const camera = new THREE.PerspectiveCamera(60, 1, 0.02, 60);
   const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
   renderer.shadowMap.enabled = true;
@@ -68,14 +69,13 @@ export function mountLab7(host) {
   const controls = new OrbitControls(camera, renderer.domElement);
   // Framed to hold the whole 1.8 m bench: far enough back to see it, low enough
   // that the instrument panels are read square-on rather than from above.
-  // A working view, not a showroom view: close enough that the breadboard — the
-  // thing the student actually builds on — is the largest object in frame, with
-  // the instrument row readable behind it. Scroll out to see the whole bench.
-  controls.target.set(0, BENCH.height + 0.02, 0.09);
-  controls.minDistance = 0.3;
-  controls.maxDistance = 3.2;
+  // Inside the mouth of the U, where the student stands. Everything is within
+  // arm's reach from here and the two wings close in at the edges of vision.
+  controls.target.set(0, BENCH.height + 0.02, -0.3);
+  controls.minDistance = 0.28;
+  controls.maxDistance = 3.0;
   controls.maxPolarAngle = Math.PI / 2 - 0.03;
-  camera.position.set(0, BENCH.height + 0.52, 0.86);
+  camera.position.set(0, BENCH.height + 1.0, 1.42);
   controls.update();
 
   // ---- the laboratory ----------------------------------------------------
@@ -99,7 +99,7 @@ export function mountLab7(host) {
     object.userData = { ...object.userData, ...data, owner: object };
   };
 
-  const bench = createBench({ scene, parts, materials, register });
+  const bench = createBench({ scene, parts, materials, register, segments: room.segments });
   const instruments = createInstruments({ parts, materials, register });
   bench.placeInstrument(instruments.supply, LAYOUT.supply);
   bench.placeInstrument(instruments.generator, LAYOUT.generator);
@@ -108,6 +108,11 @@ export function mountLab7(host) {
   bench.applyConfiguration(state.configuration);
 
   const leads = createLeads({ scene, parts, materials });
+
+  // The 741's schematic symbol, floating above the package. The brief asks for it
+  // three times; the chip stays 9.8 x 6.4 mm and this carries the teaching.
+  const callout = createCallout(parts, materials);
+  scene.add(callout.group);
 
   // The single guided highlight. Exactly one exists at any moment.
   const guideRing = parts.ring(STATE.next, mm(8));
@@ -326,7 +331,11 @@ export function mountLab7(host) {
       // beginAt decides what kind of gesture this is; do not overwrite it here.
       if (gesture?.kind === "knob") gesture.startY = event.clientY;
       controls.enabled = false;
-      renderer.domElement.setPointerCapture?.(event.pointerId);
+      try {
+        renderer.domElement.setPointerCapture?.(event.pointerId);
+      } catch {
+        /* The pointer ended before capture; the gesture still tracks it. */
+      }
       event.preventDefault();
     }
   });
@@ -426,6 +435,7 @@ export function mountLab7(host) {
     });
     bench.update(state);
     applyControls();
+    callout.paint({ configuration: state.configuration });
     for (const [, lamp] of instruments.supply.indicators) lamp.material = materials.led("#43e08a", state.powered);
     syncLeads();
     placeGuideRing();
@@ -487,6 +497,7 @@ export function mountLab7(host) {
     if (seating) syncLeads(seating);
     else if (manipulator.held) syncLeads();
     if (guideRing.visible) guideRing.rotation.z += delta * 1.6;
+    callout.update(bench.chip.getWorldPosition(new THREE.Vector3()), renderer.xr.isPresenting ? renderer.xr.getCamera() : camera);
     xr.update(delta, frame, (hand) => {
       const ray = hand.ray();
       raycaster.set(ray.origin, ray.direction);
@@ -504,6 +515,7 @@ export function mountLab7(host) {
       renderer.setAnimationLoop(null);
       observer.disconnect();
       xr.dispose();
+      callout.dispose();
       leads.dispose();
       bench.dispose();
       instruments.dispose();

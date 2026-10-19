@@ -440,6 +440,48 @@ export function createParts(materials) {
     return group;
   }
 
+  /**
+   * An axial resistor: beige body, tapered ends, tinned leads and printed colour
+   * bands. Students read resistors by their bands, so the bands are generated
+   * from the actual value rather than being decoration.
+   */
+  const BAND = ["#1a1a1a", "#6b3f1d", "#c0392b", "#d97b26", "#d8c33a", "#2e8b57", "#2d6ca8", "#7b5ea7", "#9aa0a4", "#f2f2f2"];
+  function resistor(ohms = 10000) {
+    const group = new THREE.Group();
+    const bodyL = mm(9);
+    const bodyR = mm(2.1);
+
+    const body = new THREE.Mesh(cylinder(bodyR, bodyR, bodyL, 18), materials.abs("#d8c9a3"));
+    body.rotation.z = Math.PI / 2;
+    body.castShadow = true;
+    group.add(body);
+    for (const side of [-1, 1]) {
+      const shoulder = new THREE.Mesh(cylinder(bodyR * 0.55, bodyR, mm(1.4), 16), materials.abs("#d8c9a3"));
+      shoulder.rotation.z = side * Math.PI / 2;
+      shoulder.position.x = side * (bodyL / 2 + mm(0.7));
+      group.add(shoulder);
+      const wire = new THREE.Mesh(cylinder(mm(0.33), mm(0.33), mm(9), 8), materials.plated("#c9ced2"));
+      wire.rotation.z = Math.PI / 2;
+      wire.position.x = side * (bodyL / 2 + mm(5.4));
+      group.add(wire);
+    }
+
+    // Four bands: two digits, a multiplier and a gold tolerance ring.
+    const digits = Math.round(ohms).toString();
+    const first = Number(digits[0] ?? 1);
+    const second = Number(digits[1] ?? 0);
+    const multiplier = Math.max(0, digits.length - 2);
+    const colours = [BAND[first], BAND[second], BAND[Math.min(9, multiplier)], "#c9a227"];
+    colours.forEach((colour, i) => {
+      const band = new THREE.Mesh(cylinder(bodyR * 1.03, bodyR * 1.03, mm(0.9), 18), materials.abs(colour));
+      band.rotation.z = Math.PI / 2;
+      band.position.x = -bodyL / 2 + mm(1.6) + i * mm(1.8) + (i === 3 ? mm(2.2) : 0);
+      group.add(band);
+    });
+    group.userData.bands = colours;
+    return group;
+  }
+
   /** A marker ring around a socket: the single guided highlight, or drag feedback. */
   function ring(color, radius = mm(7)) {
     const mesh = new THREE.Mesh(torus(radius, mm(0.9), 24), materials.marker(color));
@@ -456,6 +498,7 @@ export function createParts(materials) {
     printedFace,
     dip8,
     breadboard,
+    resistor,
     ring,
     box,
     cylinder,

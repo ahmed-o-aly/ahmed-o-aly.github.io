@@ -11,13 +11,25 @@ import { mm, SURFACE } from "../design/tokens.js";
  * a room-scale headset without a second coordinate frame to keep in step.
  */
 
+/**
+ * A U-shaped bench that wraps the student, rather than one long wall of equipment
+ * they have to walk along. Everything is inside arm's reach from one standing
+ * position, which is the whole point of doing this in a headset.
+ *
+ * Each wing is a bench segment with its own transform; `segments` is what the
+ * layout places instruments on.
+ */
 export const BENCH = Object.freeze({
-  width: 1.8,
-  depth: 0.75,
   height: 0.92,
   thickness: mm(40),
-  /** Where a standing student's feet are: 0.42 m clear of the front edge. */
-  stand: 0.75 / 2 + 0.42,
+  /** The student stands here, inside the mouth of the U. */
+  stand: 0.1,
+  /** Sized from reach: nothing on this bench is more than 0.76 m from the student. */
+  segments: [
+    { id: "centre", width: 1.0, depth: 0.48, x: 0, z: -0.54, rotation: 0 },
+    { id: "left", width: 0.76, depth: 0.48, x: -0.58, z: -0.2, rotation: 1.05 },
+    { id: "right", width: 0.76, depth: 0.48, x: 0.58, z: -0.2, rotation: -1.05 },
+  ],
 });
 
 const ROOM = Object.freeze({ width: 9, depth: 9, height: 3.05 });
@@ -112,25 +124,6 @@ export function createRoom(scene, renderer, materials) {
     }
   }
 
-  // Glazing on the far wall gives the room a direction to be lit from.
-  const glass = standard({
-    color: srgb("#cfe4f2"),
-    roughness: 0.08,
-    transparent: true,
-    opacity: 0.55,
-    emissive: srgb("#eaf4fc"),
-    emissiveIntensity: 0.9,
-  });
-  const frameMaterial = standard({ color: srgb("#8d969c"), roughness: 0.5, metalness: 0.35 });
-  for (const x of [-2.5, 0, 2.5]) {
-    const pane = new THREE.Mesh(keep(new THREE.PlaneGeometry(2.2, 1.28)), glass);
-    pane.position.set(x, 1.72, -ROOM.depth / 2 + 0.03);
-    group.add(pane);
-    const frame = new THREE.Mesh(keep(new RoundedBoxGeometry(2.32, 1.4, 0.07, 2, 0.02)), frameMaterial);
-    frame.position.set(x, 1.72, -ROOM.depth / 2);
-    group.add(frame);
-  }
-
   // ---- light -------------------------------------------------------------
   scene.add(keep(new THREE.HemisphereLight(srgb("#f2f7fb"), srgb("#8d969c"), 1.0)));
 
@@ -157,105 +150,65 @@ export function createRoom(scene, renderer, materials) {
   bench.name = "bench";
   group.add(bench);
 
-  const top = new THREE.Mesh(
-    keep(new RoundedBoxGeometry(BENCH.width, BENCH.thickness, BENCH.depth, 3, mm(3))),
-    standard({
-      roughness: 0.42,
-      metalness: 0.06,
-      map: texture(
-        512,
-        (c, s) => {
-          c.fillStyle = SURFACE.benchTop;
-          c.fillRect(0, 0, s, s);
-          for (let i = 0; i < 14000; i += 1) {
-            const v = 40 + Math.random() * 46;
-            c.fillStyle = `rgba(${v},${v + 6},${v + 10},${0.18 + Math.random() * 0.26})`;
-            c.fillRect(Math.random() * s, Math.random() * s, 2, 1);
-          }
-        },
-        4
-      ),
-    })
-  );
-  top.position.set(0, BENCH.height - BENCH.thickness / 2, 0);
-  top.castShadow = true;
-  top.receiveShadow = true;
-  bench.add(top);
+  const benchTopMaterial = standard({
+    roughness: 0.42,
+    metalness: 0.06,
+    map: texture(
+      512,
+      (c, s2) => {
+        c.fillStyle = SURFACE.benchTop;
+        c.fillRect(0, 0, s2, s2);
+        for (let i = 0; i < 14000; i += 1) {
+          const v = 40 + Math.random() * 46;
+          c.fillStyle = `rgba(${v},${v + 6},${v + 10},${0.18 + Math.random() * 0.26})`;
+          c.fillRect(Math.random() * s2, Math.random() * s2, 2, 1);
+        }
+      },
+      4
+    ),
+  });
+  const carcass = standard({ color: srgb("#767e84"), roughness: 0.72, metalness: 0.05 });
+  const bullnoseMaterial = standard({ color: srgb("#272d31"), roughness: 0.5, metalness: 0.1 });
 
-  const bullnose = new THREE.Mesh(
-    keep(new THREE.CylinderGeometry(BENCH.thickness / 2, BENCH.thickness / 2, BENCH.width, 16)),
-    standard({ color: srgb("#272d31"), roughness: 0.5, metalness: 0.1 })
-  );
-  bullnose.rotation.z = Math.PI / 2;
-  bullnose.position.set(0, BENCH.height - BENCH.thickness / 2, BENCH.depth / 2);
-  bench.add(bullnose);
-
-  // Drawer pedestals at each end: how a teaching bench is actually built, and it
-  // means the underside is never a see-through gap at standing height.
-  const carcass = standard({ color: srgb("#aeb6bb"), roughness: 0.66, metalness: 0.08 });
-  const drawerFace = standard({ color: srgb("#c4ccd1"), roughness: 0.55, metalness: 0.12 });
-  const steel = standard({ color: srgb("#b7bfc4"), roughness: 0.34, metalness: 0.8 });
-  const pedestal = { width: 0.52, height: BENCH.height - BENCH.thickness - 0.07, depth: BENCH.depth - 0.12 };
-  for (const side of [-1, 1]) {
+  const segments = new Map();
+  for (const segment of BENCH.segments) {
     const unit = new THREE.Group();
-    unit.position.set(side * (BENCH.width / 2 - pedestal.width / 2 - 0.05), 0, -0.02);
+    unit.name = `bench-${segment.id}`;
+    segments.set(segment.id, unit);
+    unit.position.set(segment.x, 0, segment.z);
+    unit.rotation.y = segment.rotation;
     bench.add(unit);
-    const body = new THREE.Mesh(keep(new THREE.BoxGeometry(pedestal.width, pedestal.height, pedestal.depth)), carcass);
-    body.position.y = pedestal.height / 2 + 0.07;
-    body.castShadow = true;
-    body.receiveShadow = true;
-    unit.add(body);
-    const plinth = new THREE.Mesh(
-      keep(new THREE.BoxGeometry(pedestal.width - 0.05, 0.07, pedestal.depth - 0.05)),
-      standard({ color: srgb("#6e767b"), roughness: 0.8 })
+
+    const top = new THREE.Mesh(keep(new RoundedBoxGeometry(segment.width, BENCH.thickness, segment.depth, 3, mm(3))), benchTopMaterial);
+    top.position.y = BENCH.height - BENCH.thickness / 2;
+    top.castShadow = true;
+    top.receiveShadow = true;
+    unit.add(top);
+
+    const bullnose = new THREE.Mesh(
+      keep(new THREE.CylinderGeometry(BENCH.thickness / 2, BENCH.thickness / 2, segment.width, 16)),
+      bullnoseMaterial
     );
-    plinth.position.y = 0.035;
-    unit.add(plinth);
-    const drawer = keep(new RoundedBoxGeometry(pedestal.width - 0.04, pedestal.height / 3 - 0.02, 0.02, 2, 0.005));
-    const handle = keep(new THREE.CylinderGeometry(0.007, 0.007, 0.18, 10));
-    for (let i = 0; i < 3; i += 1) {
-      const y = 0.07 + (i + 0.5) * (pedestal.height / 3);
-      const front = new THREE.Mesh(drawer, drawerFace);
-      front.position.set(0, y, pedestal.depth / 2 + 0.002);
-      front.castShadow = true;
-      unit.add(front);
-      const pull = new THREE.Mesh(handle, steel);
-      pull.rotation.z = Math.PI / 2;
-      pull.position.set(0, y + pedestal.height / 9, pedestal.depth / 2 + 0.016);
-      unit.add(pull);
-    }
-  }
+    bullnose.rotation.z = Math.PI / 2;
+    bullnose.position.set(0, BENCH.height - BENCH.thickness / 2, segment.depth / 2);
+    unit.add(bullnose);
 
-  const backPanel = new THREE.Mesh(keep(new THREE.BoxGeometry(BENCH.width - 0.08, BENCH.height - BENCH.thickness - 0.14, 0.018)), carcass);
-  backPanel.position.set(0, (BENCH.height - BENCH.thickness) / 2 + 0.03, -BENCH.depth / 2 + 0.09);
-  backPanel.receiveShadow = true;
-  bench.add(backPanel);
-
-  // Neighbouring benches: depth and scale, with nothing to interact with.
-  const neighbourTop = standard({ color: srgb("#434b50"), roughness: 0.5 });
-  for (const [x, z, rotation] of [
-    [-3.4, -1.4, Math.PI / 2],
-    [3.4, -1.4, -Math.PI / 2],
-    [-3.4, 1.9, Math.PI / 2],
-    [3.4, 1.9, -Math.PI / 2],
-  ]) {
-    const unit = new THREE.Group();
-    unit.position.set(x, 0, z);
-    unit.rotation.y = rotation;
-    const slab = new THREE.Mesh(keep(new THREE.BoxGeometry(1.9, 0.04, 0.8)), neighbourTop);
-    slab.position.y = BENCH.height - 0.02;
-    slab.castShadow = true;
-    slab.receiveShadow = true;
-    unit.add(slab);
-    const base = new THREE.Mesh(keep(new THREE.BoxGeometry(1.8, BENCH.height - 0.06, 0.72)), carcass);
-    base.position.y = (BENCH.height - 0.06) / 2;
+    // A plain closed base. The student never opens it, so it carries no detail
+    // that would compete with the equipment standing on top.
+    const base = new THREE.Mesh(
+      keep(new THREE.BoxGeometry(segment.width - 0.1, BENCH.height - BENCH.thickness, segment.depth - 0.14)),
+      carcass
+    );
+    base.position.y = (BENCH.height - BENCH.thickness) / 2;
+    base.castShadow = true;
+    base.receiveShadow = true;
     unit.add(base);
-    group.add(unit);
   }
 
   return {
     group,
     bench,
+    segments,
     BENCH,
     dispose() {
       scene.environment = null;

@@ -17,19 +17,21 @@ import { terminalsFor } from "../sim/circuit.js";
 const TOP = BENCH.height;
 
 /** Positions in metres from bench centre; z is positive toward the student. */
+/**
+ * Where everything sits, as an offset on one segment of the U. Source on the left
+ * wing, measurement on the right, and the board the student actually builds on
+ * directly in front of them — all of it inside arm's reach from one spot.
+ */
 export const LAYOUT = Object.freeze({
-  // Pulled in and forward from the first cut: a 1 m lead has to reach any socket
-  // from any other, and a standing student has to reach the whole bench without
-  // stepping. Source left, measurement right, board front-centre.
-  supply: { x: -0.42, z: -0.175 },
-  generator: { x: -0.12, z: -0.175 },
-  scope: { x: 0.21, z: -0.15 },
-  meter: { x: 0.49, z: -0.165 },
-  board: { x: 0, z: 0.185 },
-  rin: { x: -0.25, z: 0.175 },
-  rf: { x: -0.13, z: 0.175 },
-  rin2: { x: 0.25, z: 0.175 },
-  rf2: { x: 0.13, z: 0.175 },
+  supply: { segment: "left", x: -0.16, z: -0.06 },
+  generator: { segment: "left", x: 0.16, z: -0.06 },
+  scope: { segment: "right", x: -0.16, z: -0.06 },
+  meter: { segment: "right", x: 0.16, z: -0.06 },
+  board: { segment: "centre", x: 0, z: 0.14 },
+  rin: { segment: "centre", x: -0.3, z: 0.12 },
+  rf: { segment: "centre", x: -0.3, z: -0.06 },
+  rin2: { segment: "centre", x: 0.3, z: 0.12 },
+  rf2: { segment: "centre", x: 0.3, z: -0.06 },
 });
 
 /**
@@ -45,10 +47,12 @@ const PIN_HOLES = Object.freeze({
   "u1.7": [-1.27, 6.35],
 });
 
-export function createBench({ scene, parts, materials, register }) {
+export function createBench({ scene, parts, materials, register, segments }) {
   const group = new THREE.Group();
   group.name = "benchtop";
   scene.add(group);
+  /** Attach to a bench segment so a wing's angle applies automatically. */
+  const on = (spot) => segments.get(spot.segment) ?? group;
   const terminals = new Map();
   const modules = new Map();
 
@@ -61,20 +65,20 @@ export function createBench({ scene, parts, materials, register }) {
   // ---- breadboard, the 741, and the common rail --------------------------
   const board = parts.breadboard();
   board.position.set(LAYOUT.board.x, TOP, LAYOUT.board.z);
-  group.add(board);
+  on(LAYOUT.board).add(board);
   const surfaceY = board.userData.surfaceY;
 
   const chip = parts.dip8();
   chip.rotation.x = -Math.PI / 2;
   chip.position.set(LAYOUT.board.x, TOP + surfaceY, LAYOUT.board.z);
-  group.add(chip);
+  on(LAYOUT.board).add(chip);
 
   /** A breadboard tie point used as a connection target. */
   const holeTarget = (id, xMM, zMM, color) => {
     const socket = parts.jack(color, { radius: mm(2.6) });
     socket.rotation.x = -Math.PI / 2;
     socket.position.set(LAYOUT.board.x + mm(xMM), TOP + surfaceY, LAYOUT.board.z - mm(zMM));
-    group.add(socket);
+    on(LAYOUT.board).add(socket);
     addTerminal(socket, id);
     return socket;
   };
@@ -90,10 +94,10 @@ export function createBench({ scene, parts, materials, register }) {
   function resistorModule(id, name, position) {
     const module = new THREE.Group();
     module.position.set(position.x, TOP, position.z);
-    group.add(module);
+    on(position).add(module);
 
-    const widthMM = 62;
-    const depthMM = 54;
+    const widthMM = 70;
+    const depthMM = 58;
     const body = new THREE.Mesh(parts.box(mm(widthMM), mm(26), mm(depthMM), mm(2)), materials.abs());
     body.position.y = mm(13);
     body.castShadow = true;
@@ -109,30 +113,40 @@ export function createBench({ scene, parts, materials, register }) {
       legend(c, `${figure((state.ohms ?? 10000) / 1000, 1)} kΩ`, w - 6, 13, { align: "right", color: SURFACE.readoutPrimary });
     });
     const label = new THREE.Mesh(parts.plane(mm(widthMM), mm(20)), materials.printed(panel.texture));
-    label.position.set(0, mm(26.1), 0);
+    label.position.set(0, mm(26.1), mm(-15));
     label.rotation.x = -Math.PI / 2;
     module.add(label);
 
-    const knob = parts.knob({ radius: mm(13) });
+    // The component itself, so a student can SEE what they are adjusting.
+    const part = parts.resistor(10000);
+    part.position.set(0, mm(34), mm(2));
+    module.add(part);
+    for (const side of [-1, 1]) {
+      const post = new THREE.Mesh(parts.cylinder(mm(1), mm(1.4), mm(9), 10), materials.plated());
+      post.position.set(side * mm(18), mm(30), mm(2));
+      module.add(post);
+    }
+
+    const knob = parts.knob({ radius: mm(11) });
     knob.rotation.x = -Math.PI / 2;
-    knob.position.set(0, mm(26), mm(-2));
+    knob.position.set(0, mm(26), mm(-15));
     module.add(knob);
     knob.userData = { ...knob.userData, kind: "knob", id, control: { id, kind: "resistor" } };
     register(knob, knob.userData);
 
-    const a = parts.jack(SIGNAL.feedback, { radius: mm(3.4) });
+    const a = parts.jack(SIGNAL.feedback, { radius: mm(4.2) });
     a.rotation.x = -Math.PI / 2;
-    a.position.set(mm(-20), mm(26), mm(18));
+    a.position.set(mm(-21), mm(26), mm(19));
     module.add(a);
     addTerminal(a, `${id}.a`);
 
-    const b = parts.jack(SIGNAL.feedback, { radius: mm(3.4) });
+    const b = parts.jack(SIGNAL.feedback, { radius: mm(4.2) });
     b.rotation.x = -Math.PI / 2;
-    b.position.set(mm(20), mm(26), mm(18));
+    b.position.set(mm(21), mm(26), mm(19));
     module.add(b);
     addTerminal(b, `${id}.b`);
 
-    modules.set(id, { group: module, panel, knob, name });
+    modules.set(id, { group: module, panel, knob, name, part });
     return module;
   }
 
@@ -144,7 +158,7 @@ export function createBench({ scene, parts, materials, register }) {
   /** Instruments are placed by the same table, after they are built. */
   function placeInstrument(entry, spot) {
     entry.group.position.set(spot.x, TOP, spot.z);
-    group.add(entry.group);
+    on(spot).add(entry.group);
   }
 
   /**
@@ -178,7 +192,18 @@ export function createBench({ scene, parts, materials, register }) {
       return object.localToWorld(point);
     },
     update(state) {
-      for (const [id, module] of modules) module.panel.paint({ ohms: state.resistors[id], name: module.name });
+      for (const [id, module] of modules) {
+        module.panel.paint({ ohms: state.resistors[id], name: module.name });
+        // The bands are read off the value, so they have to follow it.
+        if (module.ohms !== state.resistors[id]) {
+          module.ohms = state.resistors[id];
+          const replacement = parts.resistor(state.resistors[id]);
+          replacement.position.copy(module.part.position);
+          module.group.remove(module.part);
+          module.group.add(replacement);
+          module.part = replacement;
+        }
+      }
     },
     dispose() {
       for (const module of modules.values()) module.panel.dispose();
