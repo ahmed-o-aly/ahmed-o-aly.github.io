@@ -6,7 +6,13 @@ export default defineConfig({
   base: "./",
   server: { port: 5186, strictPort: true, fs: { allow: [".."] } },
   preview: { port: 4186, strictPort: true },
-  build: { outDir: "../assets/apps/circuits-lab", emptyOutDir: true, chunkSizeWarningLimit: 900 },
+  build: {
+    outDir: "../assets/apps/circuits-lab",
+    emptyOutDir: true,
+    chunkSizeWarningLimit: 900,
+    // Lab 7 is its own room-scale page, published beside the bench at /circuits-lab/lab7/
+    rollupOptions: { input: { main: `${root}index.html`, lab7: `${root}lab7/index.html` } },
+  },
   plugins: [
     {
       name: "include-instructor-designs",

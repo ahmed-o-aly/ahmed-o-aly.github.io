@@ -1,4 +1,4 @@
-// Lab 7 instrument-wall prototype: source, circuit and measure bays.
+// Lab 7 · operational amplifiers: the instrument wall, a room-scale op-amp lab.
 // Everything is a physical object: cords hang and drape, plugs seat and stack,
 // knobs turn with detents, keys latch, configuration cards slot in. Units are
 // metres. The rope simulation runs in the circuit panel's local frame (x right,

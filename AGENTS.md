@@ -112,6 +112,7 @@ Run `npm run test:metahub-browser` against a freshly built site served at `http:
 - `circuits-lab/src/modules.js`, `lab.js`, and `physics.js` define experiments, state/actions, and circuit calculations. `schematic.js` and `circuit-status.js` support diagrams and diagnostics.
 - `circuits-lab/src/cable-routing.js`, `cable-motion.js`, and `terminal-sockets.js` implement wire geometry, movement, and connections. `src/style.css` styles the interface.
 - `circuits-lab/tests/` checks activities, physics, wiring, probes, reset/history, and VR behavior. `circuits-lab/docs/module-designs.md` and `circuits-lab/docs/experiment-checklist.md` explain experiment requirements; `circuits-lab/docs/verification.md` records past verification and headset limitations.
+- Lab 7 (operational amplifiers) is the room-scale instrument wall in `circuits-lab/lab7/`: a second Vite page, published at `/circuits-lab/lab7/`. The bench's Lab 7 entry (`module:opamp` in `src/main.js`) opens it. `lab7/main.js` holds its bays, rope physics, configuration cards, ideal op-amp nodal solver and WebXR interactions (gloved controllers, near-only grab, fingertip keys, height fit). The older op-amp module in `src/` remains for its unit tests but is no longer reachable from the interface. Physical headset verification of Lab 7 is pending.
 
 ### Bloch Lab
 

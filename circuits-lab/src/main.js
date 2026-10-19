@@ -773,6 +773,11 @@ function render() {
 }
 
 function doAction(id) {
+  // Lab 7 is the room-scale instrument wall, published as its own page beside this bench
+  if (id === "module:opamp") {
+    window.location.assign(new URL("./lab7/", window.location.href));
+    return;
+  }
   if (/^(module:|explore$|build$|undo$|clear$|restore$|reset-circuit$|reset-experiment$|set:(representation|kind|configuration):)/.test(id))
     bench?.cancelInteractions?.();
   if (id.startsWith("module:") || /set:(representation|kind|configuration):/.test(id)) {
