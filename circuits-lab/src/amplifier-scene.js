@@ -5,6 +5,9 @@ import { circuit, resistorRoles, transfer, pinLabel, PROBES } from "./amplifier-
 
 import { cableCurve, seedCable, traceCable, moveCableEnd, grabCable, bendCable } from "./amplifier-cables.js";
 import { scopeAxes, displayNumber } from "./amplifier-display.js";
+import { mountLabRoom, BENCH_HEIGHT, BENCH_SCALE } from "./lab-room.js";
+import { createAmplifierVR } from "./amplifier-vr.js";
+import { createHardware } from "./lab-hardware.js";
 
 const INSTRUMENTS = {
   supply: { x: -2.55, y: 2.97, w: 3.55, h: 1.1 },
@@ -201,16 +204,18 @@ export function wireRoute(a, b, lane = 0, configuration = "inverting") {
 }
 export function mountAmplifierScene(host, callbacks) {
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color("#e7edf0");
-  const camera = new THREE.PerspectiveCamera(36, 1, 0.1, 100);
-  const homeDirection = new THREE.Vector3(0.025, -0.48, 0.877).normalize();
-  camera.position.copy(homeDirection).multiplyScalar(13);
-  camera.lookAt(0, 0, 0);
-  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+  const camera = new THREE.PerspectiveCamera(36, 1, 0.05, 80);
+  // Room coordinates, Y up: slightly right of centre, above and in front of the
+  // bench. The bench scene's own frame is Z-up, so this is deliberately not the
+  // same vector the experiment geometry uses.
+  const homeDirection = new THREE.Vector3(0.03, 0.38, 0.92).normalize();
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: "high-performance" });
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.VSMShadowMap;
   renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.toneMapping = THREE.NeutralToneMapping;
+  renderer.toneMappingExposure = 1.08;
   host.append(renderer.domElement);
   renderer.domElement.setAttribute(
     "aria-label",
@@ -221,20 +226,37 @@ export function mountAmplifierScene(host, callbacks) {
   controls.enableRotate = false;
   controls.enablePan = false;
   controls.enableZoom = false;
-  controls.target.set(0, 0, 0);
+  controls.target.set(0, BENCH_HEIGHT, 0);
   controls.update();
-  scene.add(new THREE.HemisphereLight("#ffffff", "#b7c8d1", 3.0));
-  const light = new THREE.DirectionalLight("#fff9ec", 1.9);
-  light.position.set(-3, 6, 15);
-  light.castShadow = true;
-  light.shadow.mapSize.set(2048, 2048);
-  Object.assign(light.shadow.camera, { left: -8, right: 8, top: 6, bottom: -6 });
-  light.shadow.bias = -0.0006;
-  light.shadow.radius = 4;
-  light.shadow.blurSamples = 8;
-  scene.add(light);
+
+  // The teaching laboratory: floor, walls, daylight and the bench the experiment
+  // stands on. It also supplies the environment map that makes the instrument
+  // cases read as real plastic and metal rather than flat shaded boxes.
+  const labRoom = mountLabRoom(scene, renderer);
+
+  // The experiment is authored Z-up in bench units. benchRig lays it on the table
+  // in metres with Y up, which is what a room-scale headset requires. Everything
+  // downstream still works in bench units.
+  // The mat's underside sits at bench z = -0.51; raise the rig so it rests on the
+  // tabletop rather than sinking through it.
+  const MAT_UNDERSIDE = -0.51;
+  const benchRig = labRoom.benchRig({ height: BENCH_HEIGHT - MAT_UNDERSIDE * BENCH_SCALE });
+  scene.add(benchRig);
   const root = new THREE.Group();
-  scene.add(root);
+  benchRig.add(root);
+  const benchToWorld = benchRig.matrixWorld;
+  const worldToBench = new THREE.Matrix4();
+  benchRig.updateMatrixWorld(true);
+  worldToBench.copy(benchToWorld).invert();
+
+  // The headset viewer moves this rig, never the camera, so desktop framing and
+  // room-scale locomotion cannot fight over the same transform.
+  const viewerRig = new THREE.Group();
+  viewerRig.name = "viewer-rig";
+  scene.add(viewerRig);
+  viewerRig.add(camera);
+  camera.position.set(0, BENCH_HEIGHT, 0).addScaledVector(homeDirection, 13.8 * BENCH_SCALE);
+  camera.lookAt(0, BENCH_HEIGHT, 0);
   const pickables = [],
     sockets = new Map(),
     dials = new Map(),
@@ -244,9 +266,16 @@ export function mountAmplifierScene(host, callbacks) {
     conditionalObjects = new Map();
   let state = null,
     reading = null;
-  const material = (color, extra = {}) => new THREE.MeshStandardMaterial({ color, roughness: 0.65, metalness: 0.05, ...extra });
+  // Industrial-design vocabulary: real moulded plastic, anodised panels, plated
+  // metal and glass, shared across every part so the bench stays headset-fast.
+  const hardware = createHardware();
+  const material = (color, extra = {}) =>
+    Object.keys(extra).length
+      ? new THREE.MeshStandardMaterial({ color: hardware.srgb(color), roughness: 0.52, metalness: 0.05, ...extra })
+      : hardware.materials.shell(color);
   function box(x, y, z, w, h, d, color, r = 0.05, parent = root) {
-    const mesh = new THREE.Mesh(new RoundedBoxGeometry(w, h, d, 3, r), material(color));
+    // Tight fillets read as moulded hardware; the old wide radii read as toys.
+    const mesh = new THREE.Mesh(hardware.geo.rounded(w, h, d, Math.min(r, 0.035)), hardware.materials.shell(color));
     mesh.position.set(x, y, z);
     mesh.castShadow = true;
     mesh.receiveShadow = true;
@@ -254,8 +283,7 @@ export function mountAmplifierScene(host, callbacks) {
     return mesh;
   }
   function disc(x, y, z, r, color, parent = root, depth = 0.06) {
-    const mesh = new THREE.Mesh(new THREE.CylinderGeometry(r, r, depth, 32), material(color, { metalness: 0.25 }));
-    mesh.rotation.x = Math.PI / 2;
+    const mesh = hardware.disc(r, r, depth, hardware.materials.anodised(color), 24);
     mesh.position.set(x, y, z);
     mesh.castShadow = true;
     parent.add(mesh);
@@ -306,26 +334,22 @@ export function mountAmplifierScene(host, callbacks) {
     );
     paint(id);
   }
-  // A restrained common work surface supports the equipment; the breadboard remains the focus.
-  box(0, 0.1, -0.65, 13.1, 6.85, 0.22, "#9aaeb6", 0.15).userData.frame = false;
-  box(0, 0.1, -0.492, 12.95, 6.7, 0.035, "#bcc9ce", 0.1).userData.frame = false;
+  // The laboratory bench itself is now real geometry in the room, so the scene only
+  // needs the anti-static mat the equipment actually stands on.
+  box(0, 0.1, -0.492, 12.6, 6.5, 0.035, "#4d6570", 0.1).userData.frame = false;
   // A close physical teaching board: perforations are mounting holes, every contact is isolated.
-  box(-0.95, -0.35, -0.28, 7.35, 5.05, 0.22, "#c8d2d8", 0.13);
-  box(-0.95, -0.3, -0.12, 7.2, 4.9, 0.19, "#f8f9f6", 0.12);
-  const holes = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.023, 0.023, 0.014, 8), material("#a0a9a9"), 1400);
-  const dummy = new THREE.Object3D();
-  let hi = 0;
-  for (let row = 0; row < 28; row++)
-    for (let col = 0; col < 48; col++) {
-      if (row === 13 || row === 14) continue;
-      dummy.position.set(-4.36 + col * 0.146, -2.52 + row * 0.161, -0.012);
-      dummy.rotation.x = Math.PI / 2;
-      dummy.updateMatrix();
-      holes.setMatrixAt(hi++, dummy.matrix);
-    }
-  holes.count = hi;
-  root.add(holes);
-  box(-0.95, -0.3, -0.005, 6.85, 0.07, 0.012, "#e0e4df", 0.01);
+  // A mounting tray, then the breadboard itself. The board's moulded recesses,
+  // centre channel and bus rails are one printed map rather than a field of
+  // hole meshes: sharper up close and far cheaper to draw in a headset.
+  box(-0.95, -0.35, -0.28, 7.35, 5.05, 0.22, "#8e989e", 0.03);
+  box(-0.95, -0.3, -0.12, 7.2, 4.9, 0.19, "#e9eae5", 0.02);
+  const boardFace = new THREE.Mesh(
+    hardware.geo.plane(7.2, 4.9),
+    new THREE.MeshStandardMaterial({ map: hardware.breadboardFace(7.2, 4.9), roughness: 0.58, metalness: 0.03 })
+  );
+  boardFace.position.set(-0.95, -0.3, -0.024);
+  boardFace.receiveShadow = true;
+  root.add(boardFace);
   label("board-title", "741 TEACHING BREADBOARD", -0.85, 2.02, 0.015, 3.6, 0.18, "#52646c", 16);
   label("board-rule", "Holes isolated · labeled GND sockets share the common rail", -0.85, -2.51, 0.015, 6.5, 0.18, "#52646c", 11);
   for (const x of [-4.38, 2.48]) for (const y of [-2.55, 1.95]) disc(x, y, 0.035, 0.046, "#a5afb5", root, 0.012);
@@ -382,11 +406,18 @@ export function mountAmplifierScene(host, callbacks) {
   // Each physical resistor has its own value; names follow the selected circuit role.
   function pot(id, x, y, color) {
     const before = root.children.length;
-    box(x, y + 0.1, 0.11, 1.1, 1.18, 0.2, "#e3e9ec");
-    disc(x, y - 0.12, 0.29, 0.3, "#263b46", root, 0.2);
-    const knob = disc(x, y - 0.12, 0.405, 0.26, color, root, 0.03);
-    const tick = box(x, y + 0.07, 0.43, 0.035, 0.17, 0.025, "#e8f4f5", 0.009);
-    dials.set(id, { knob, tick, x, y: y - 0.12 });
+    // A panel-mount potentiometer on its own sub-plate, as it would be built.
+    box(x, y + 0.1, 0.1, 1.12, 1.2, 0.17, "#cfd6db", 0.02);
+    box(x, y + 0.1, 0.17, 1.0, 1.08, 0.05, "#e8edf0", 0.015);
+    const built = hardware.knob(color, { radius: 0.27, height: 0.16 });
+    built.group.position.set(x, y - 0.12, 0.19);
+    root.add(built.group);
+    // update() drives the pointer in root coordinates, so it lives beside the knob
+    // rather than inside it.
+    built.tick.removeFromParent();
+    root.add(built.tick);
+    const knob = built.group.children[2];
+    dials.set(id, { knob, tick: built.tick, x, y: y - 0.12 });
     const hit = new THREE.Mesh(new THREE.SphereGeometry(0.43), new THREE.MeshBasicMaterial({ visible: false }));
     hit.position.set(x, y - 0.12, 0.4);
     hit.userData = { kind: "dial", id };
@@ -429,16 +460,18 @@ export function mountAmplifierScene(host, callbacks) {
     group.rotation.x = 0.48;
     root.add(group);
     instruments.set(id, { group, w, h });
-    box(0, h / 2, -0.42, w + 0.12, h + 0.12, 0.92, "#7b929e", 0.11, group);
-    box(0, h / 2, 0.06, w, h, 0.14, "#e8edef", 0.07, group);
-    for (const fx of [-w * 0.37, w * 0.37]) box(fx, 0.04, -0.35, 0.25, 0.16, 0.85, "#293c45", 0.035, group);
-    const face = surface(id, 0, h / 2, 0.138, w - 0.17, h - 0.16, draw, 1400);
+    const shell = hardware.instrumentCase(w, h, { depth: 0.95, shell: "#cdd4d9", panel: "#e6eaed" });
+    group.add(shell.group);
+    // The face is the panel's printed legend, and each instrument draws its own
+    // dark readout windows into it, so the panel itself stays light.
+    const face = surface(id, 0, h / 2, shell.panelZ + 0.002, w - 0.17, h - 0.16, draw, 1400);
     group.add(face.mesh);
-    for (const sx of [-w / 2 + 0.09, w / 2 - 0.09]) for (const sy of [0.1, h - 0.1]) disc(sx, sy, 0.15, 0.025, "#5b707b", group, 0.012);
   }
   function physicalButton(instrumentId, id, label, x, y, color = "#38596c") {
     const { group } = instruments.get(instrumentId);
-    const key = box(x, y, 0.2, 0.3, 0.19, 0.11, color, 0.035, group);
+    // A moulded keycap standing proud of its bezel.
+    box(x, y, 0.17, 0.36, 0.25, 0.06, "#2f363b", 0.015, group);
+    const key = box(x, y, 0.23, 0.3, 0.19, 0.1, color, 0.02, group);
     key.userData = { kind: "button", id };
     pickables.push(key);
     const hit = new THREE.Mesh(new THREE.SphereGeometry(0.18), new THREE.MeshBasicMaterial({ visible: false }));
@@ -458,10 +491,17 @@ export function mountAmplifierScene(host, callbacks) {
     const radius = id === "amplitude2" ? 0.82 : 1;
     const { group } = instruments.get("generator");
     const before = group.children.length;
-    disc(x, y, 0.22, 0.22 * radius, "#213d4d", group, 0.18);
-    const knob = disc(x, y, 0.32, 0.19 * radius, "#5b7380", group, 0.04);
-    const tick = box(x, y + 0.13, 0.35, 0.022, 0.11, 0.018, "#f5f7ed", 0.005, group);
-    dials.set(id, { knob, tick, x, y });
+    const built = hardware.knob("#7f8c94", { radius: 0.2 * radius, height: 0.12 });
+    built.group.position.set(x, y, 0.16);
+    group.add(built.group);
+    built.tick.removeFromParent();
+    group.add(built.tick);
+    // This knob and pointer are recoloured live for the DC case, so they cannot
+    // share the cached materials every other knob uses.
+    const knob = built.group.children[2];
+    knob.material = knob.material.clone();
+    built.tick.material = built.tick.material.clone();
+    dials.set(id, { knob, tick: built.tick, x, y });
     const hit = new THREE.Mesh(new THREE.SphereGeometry(0.29), new THREE.MeshBasicMaterial({ visible: false }));
     hit.position.set(x, y, 0.29);
     hit.userData = { kind: "dial", id };
@@ -473,9 +513,9 @@ export function mountAmplifierScene(host, callbacks) {
     const [instrumentId, x, y] = JACKS[id],
       { group } = instruments.get(instrumentId);
     const before = group.children.length;
-    disc(x, y, 0.24, 0.09, "#869da7", group, 0.16);
-    disc(x, y, 0.335, 0.065, color, group, 0.04);
-    disc(x, y, 0.36, 0.03, "#142731", group, 0.015);
+    const socket = hardware.bananaJack(color, { radius: 0.082 });
+    socket.position.set(x, y, 0.2);
+    group.add(socket);
     if (id === "signal2+") conditionalObjects.set(id, group.children.slice(before));
   }
 
@@ -925,7 +965,32 @@ export function mountAmplifierScene(host, callbacks) {
   }
   const raycaster = new THREE.Raycaster(),
     pointer = new THREE.Vector2();
+  // Headset gestures use synthetic pointer ids that the DOM never issued, so
+  // pointer capture is best-effort and must not throw into the gesture.
+  function capturePointer(e) {
+    if (e?.xrRay) return;
+    try {
+      renderer.domElement.setPointerCapture(e.pointerId);
+    } catch {
+      /* The pointer ended before capture; the gesture still tracks it. */
+    }
+  }
+  function releasePointer(pointerId) {
+    try {
+      if (renderer.domElement.hasPointerCapture(pointerId)) renderer.domElement.releasePointerCapture(pointerId);
+    } catch {
+      /* Already released or never a DOM pointer. */
+    }
+  }
+  // A gesture carries its own world ray when it comes from a headset controller;
+  // otherwise the ray is built from the pointer over the canvas. Everything below
+  // this point is identical for mouse, touch and VR.
   function pointerRay(e) {
+    if (e?.xrRay) {
+      raycaster.ray.copy(e.xrRay);
+      raycaster.camera = camera;
+      return;
+    }
     const r = renderer.domElement.getBoundingClientRect();
     pointer.set(((e.clientX - r.left) / r.width) * 2 - 1, (-(e.clientY - r.top) / r.height) * 2 + 1);
     raycaster.setFromCamera(pointer, camera);
@@ -954,16 +1019,20 @@ export function mountAmplifierScene(host, callbacks) {
     );
     if (!found) return null;
     const data = found.object.userData;
-    let point = data.kind === "terminal" ? found.object.getWorldPosition(new THREE.Vector3()) : found.point;
+    // Raycasting reports world space; every route, socket and plane below works in
+    // bench units, so convert once here rather than at each use.
+    const local = found.point.clone().applyMatrix4(worldToBench);
+    let point = data.kind === "terminal" ? found.object.getWorldPosition(new THREE.Vector3()).applyMatrix4(worldToBench) : local;
     if (data.kind === "cable")
       point = cableCurve(data.route)
         .getPoints(120)
-        .reduce((closest, p) => (p.distanceToSquared(found.point) < closest.distanceToSquared(found.point) ? p : closest));
+        .reduce((closest, p) => (p.distanceToSquared(local) < closest.distanceToSquared(local) ? p : closest));
     return { ...data, point };
   }
   function planePoint(e, z) {
     pointerRay(e);
-    return raycaster.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 0, 1), -z), new THREE.Vector3());
+    const local = raycaster.ray.clone().applyMatrix4(worldToBench);
+    return local.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 0, 1), -z), new THREE.Vector3());
   }
   function endpointName(id) {
     return pinLabel(id, state.params.configuration);
@@ -985,15 +1054,18 @@ export function mountAmplifierScene(host, callbacks) {
   }
   function destination(point) {
     // Aim the actual held tip, including its grip offset, rather than the mouse cursor.
-    const projected = point.clone().project(camera),
+    // The held point is in bench units; screen proximity has to be compared in world
+    // space, while the contact handed back stays in bench units like every route.
+    const projected = point.clone().applyMatrix4(benchToWorld).project(camera),
       r = renderer.domElement.getBoundingClientRect();
     let target = null,
       nearest = 15;
     const pins = circuit(state).pins.map((p) => p.id);
     for (const object of pickables) {
       if (object.userData.kind !== "terminal" || !pins.includes(object.userData.id)) continue;
-      const p = object.getWorldPosition(new THREE.Vector3()),
-        screen = p.clone().project(camera);
+      const world = object.getWorldPosition(new THREE.Vector3()),
+        p = world.clone().applyMatrix4(worldToBench),
+        screen = world.clone().project(camera);
       const distance = Math.hypot(((screen.x - projected.x) * r.width) / 2, ((screen.y - projected.y) * r.height) / 2);
       if (distance < nearest) {
         nearest = distance;
@@ -1084,7 +1156,7 @@ export function mountAmplifierScene(host, callbacks) {
     const target = e.shiftKey ? hit(e, "terminal") : hit(e);
     if (!target) return;
     controls.enabled = false;
-    renderer.domElement.setPointerCapture(e.pointerId);
+    capturePointer(e);
     gesture = { ...target, pointerId: e.pointerId, startY: e.clientY, startX: e.clientX, moved: false };
     const g = gesture;
     if (g.kind === "dial") callbacks.beginDial(g.id);
@@ -1163,7 +1235,7 @@ export function mountAmplifierScene(host, callbacks) {
     const g = gesture;
     gesture = null;
     controls.enabled = true;
-    if (renderer.domElement.hasPointerCapture(g.pointerId)) renderer.domElement.releasePointerCapture(g.pointerId);
+    releasePointer(g.pointerId);
     clearFeedback();
     callbacks.holdContact(null);
     renderLeads();
@@ -1218,6 +1290,8 @@ export function mountAmplifierScene(host, callbacks) {
     const w = host.clientWidth,
       h = host.clientHeight;
     if (!w || !h) return;
+    // The headset owns projection and viewport while presenting.
+    if (renderer.xr?.isPresenting) return;
     const aspect = w / h;
     camera.aspect = aspect;
     camera.updateProjectionMatrix();
@@ -1242,11 +1316,14 @@ export function mountAmplifierScene(host, callbacks) {
           for (const z of [b.min.z, b.max.z]) corners.push(new THREE.Vector3(x, y, z).applyMatrix4(object.matrixWorld));
     });
     // Space for real cable exits and the front channel leads, independent of state.
+    // These framing margins are authored in bench units; the camera works in room
+    // metres, so lift them through the same rig the experiment sits on.
+    const benchPoint = (x, y, z) => new THREE.Vector3(x, y, z).applyMatrix4(benchToWorld);
     if (frameMode === "board") {
       corners.length = 0;
-      for (const x of [-4.5, 2.7]) for (const y of [-2.7, 2.1]) for (const z of [0, 0.5]) corners.push(new THREE.Vector3(x, y, z));
-    } else corners.push(new THREE.Vector3(6.7, 1.1, 0.35), new THREE.Vector3(-5.7, -3.24, 0.3), new THREE.Vector3(6.2, -3.24, 0.3));
-    let distance = 13.8;
+      for (const x of [-4.5, 2.7]) for (const y of [-2.7, 2.1]) for (const z of [0, 0.5]) corners.push(benchPoint(x, y, z));
+    } else corners.push(benchPoint(6.7, 1.1, 0.35), benchPoint(-5.7, -3.24, 0.3), benchPoint(6.2, -3.24, 0.3));
+    let distance = 13.8 * BENCH_SCALE;
     const target = new THREE.Box3().setFromPoints(corners).getCenter(new THREE.Vector3());
     for (let i = 0; i < 9; i++) {
       camera.position.copy(target).addScaledVector(homeDirection, distance);
@@ -1261,8 +1338,10 @@ export function mountAmplifierScene(host, callbacks) {
         right = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 0),
         up = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 1);
       target.addScaledVector(right, (minX + maxX) * 0.5 * halfHeight * aspect);
-      target.addScaledVector(up, ((minY + maxY) * 0.5 - 0.07) * halfHeight);
-      distance *= Math.max(0.8, Math.min(1.4, Math.max((maxX - minX) / 1.94, (maxY - minY) / 1.7)));
+      target.addScaledVector(up, ((minY + maxY) * 0.5 - 0.06) * halfHeight);
+      // Leave margin so the bench, its edge and some of the room stay in frame
+      // instead of the experiment filling the canvas corner to corner.
+      distance *= Math.max(0.8, Math.min(1.4, Math.max((maxX - minX) / 1.88, (maxY - minY) / 1.62)));
     }
     camera.position.copy(target).addScaledVector(homeDirection, distance);
     camera.lookAt(target);
@@ -1277,9 +1356,47 @@ export function mountAmplifierScene(host, callbacks) {
   const observer = new ResizeObserver(resize);
   observer.observe(host);
   resize();
-  function animate() {
+  // Controller gestures reuse the mouse handlers verbatim; see pointerRay.
+  const vr = createAmplifierVR({
+    renderer,
+    scene,
+    camera,
+    controls,
+    viewerRig,
+    benchHeight: BENCH_HEIGHT,
+    onStatusText: (text) => callbacks.vrStatus?.(text),
+    onPointer: (phase, event) => {
+      if (phase === "down") down(event);
+      else if (phase === "move") move(event);
+      else if (phase === "up") up(event);
+      else cancel(event);
+    },
+  });
+
+  /** Nearest interactive object along a controller ray, in world metres. */
+  function xrHover(ray) {
+    if (!state) return null;
+    const found = hit({ xrRay: ray });
+    if (!found) return null;
+    const world = found.point.clone().applyMatrix4(benchToWorld);
+    return { distance: world.distanceTo(ray.origin), data: found };
+  }
+
+  const clock = new THREE.Clock();
+  function animate(_time, frame) {
+    const delta = clock.getDelta();
+    const presenting = renderer.xr.isPresenting;
+    if (presenting) {
+      vr.placeViewer(frame, renderer.xr.getReferenceSpace());
+      vr.update(delta, xrHover);
+    }
     renderer.render(scene, camera);
+    // The HTML keyboard affordances track the desktop canvas only.
     for (const { el, object } of accessibleControls) {
+      if (presenting) {
+        el.hidden = true;
+        continue;
+      }
       const p = object.getWorldPosition(new THREE.Vector3()).project(camera);
       el.hidden = p.z < -1 || p.z > 1 || Math.abs(p.x) > 0.97 || Math.abs(p.y) > 0.97;
       el.style.left = `${((p.x + 1) / 2) * host.clientWidth}px`;
@@ -1289,6 +1406,14 @@ export function mountAmplifierScene(host, callbacks) {
   renderer.setAnimationLoop(animate);
   return {
     cancelInteraction: cancel,
+    renderer,
+    vr,
+    labRoom,
+    onVRSessionStarted: () => vr.onSessionStarted(),
+    onVRSessionEnded: () => {
+      vr.onSessionEnded();
+      resize();
+    },
     update(next, result, guide) {
       state = next;
       reading = result;
@@ -1360,6 +1485,9 @@ export function mountAmplifierScene(host, callbacks) {
       dragStatus.remove();
       observer.disconnect();
       renderer.setAnimationLoop(null);
+      vr.dispose();
+      labRoom.dispose();
+      hardware.dispose();
       renderer.dispose();
       controls.dispose();
     },
