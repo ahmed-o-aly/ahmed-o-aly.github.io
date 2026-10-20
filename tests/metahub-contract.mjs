@@ -26,12 +26,27 @@ for (const [index, id] of ids.entries()) {
   const preview = catalogue.match(new RegExp(`data-metahub-detail="${id}"[\\s\\S]*?src="([^"]+)"`))[1];
   assert.ok(existsSync(new URL(`../_site${preview}`, import.meta.url)), `${id} has a published cover`);
 }
-for (const app of ["protein-structures", "circuits-lab", "bloch-lab", "power-systems-lab"]) {
-  const html = readRoute(`/${app}/`);
+// A page's entry script may share the shell with sibling pages through a chunk
+// it imports statically, so the check follows those imports.
+function bundleWithImports(dir, entry) {
+  const seen = new Set();
+  const visit = (file) => {
+    if (seen.has(file)) return "";
+    seen.add(file);
+    const source = read(`${dir}/${file}`);
+    const base = file.includes("/") ? file.slice(0, file.lastIndexOf("/") + 1) : "";
+    const imports = [...source.matchAll(/(?:^|[;}\s])import\s*(?:[^"';]*?from\s*)?"(\.\/[^"]+\.js)"/g)].map((m) => base + m[1].slice(2));
+    return source + imports.map(visit).join("");
+  };
+  return visit(entry);
+}
+for (const page of ["protein-structures", "circuits-lab", "circuits-lab/lab7", "circuits-lab/lab7-bench", "bloch-lab", "power-systems-lab"]) {
+  const html = readRoute(`/${page}/`);
   const script = html.match(/<script\b[^>]*src="([^\"]+)"/)?.[1];
-  assert.ok(script);
-  const bundle = read(`_site/${app}/${script.replace(/^\.\//, "")}`);
-  assert.match(bundle, /metahub-app-bar/);
+  assert.ok(script, `${page} loads a script`);
+  const path = new URL(script, `https://site.test/${page}/`).pathname.slice(1);
+  const dir = `_site/${path.slice(0, path.lastIndexOf("/"))}`;
+  assert.match(bundleWithImports(dir, path.slice(path.lastIndexOf("/") + 1)), /metahub-app-bar/, `${page} uses the MetaHub shell`);
 }
 // Test the shared visibility boundary without mocking scientific models or XR input.
 const { visibleFrame } = await import(`data:text/javascript;base64,${Buffer.from(read("assets/js/metahub-app-shell.js")).toString("base64")}`);
