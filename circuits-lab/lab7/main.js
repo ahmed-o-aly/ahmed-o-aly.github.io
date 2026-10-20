@@ -6,8 +6,11 @@
 // their transforms.
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
-import { VRButton } from "three/addons/webxr/VRButton.js";
+import "../../assets/css/metahub-app-shell.css";
+import "../../assets/css/metahub-lab-theme.css";
+import { mountLabShell } from "../../assets/js/metahub-app-shell.js";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
+import { XRControllerModelFactory } from "three/addons/webxr/XRControllerModelFactory.js";
 
 const MM = 0.00085; // one circuit-panel layout unit in metres
 const DEG = Math.PI / 180;
@@ -33,15 +36,50 @@ const COLORS = {
 // ---------- renderer, scene, room ----------
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-renderer.setSize(innerWidth, innerHeight);
+const stage = document.getElementById("stage");
+const stageSize = () => ({ w: Math.max(stage.clientWidth, 1), h: Math.max(stage.clientHeight, 1) });
+renderer.setSize(stageSize().w, stageSize().h);
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.xr.enabled = true;
 renderer.xr.setFramebufferScaleFactor(1.2); // a little supersampling keeps printed labels crisp in the headset
 renderer.xr.setFoveation(0.3); // light foveation: the panel is read in the middle of the view
-document.body.appendChild(renderer.domElement);
-document.body.appendChild(VRButton.createButton(renderer));
+stage.appendChild(renderer.domElement);
+
+mountLabShell({
+  host: document.getElementById("lab7-bar"),
+  title: "Circuits Lab",
+  notes: "/projects/circuits-lab/",
+  context: Object.assign(document.createElement("span"), { textContent: "Lab 07 / Operational amplifiers" }),
+  workspace: document.querySelector(".lab7-layout"),
+});
+
+// Enter VR lives in the side panel; the session request stays inside the click
+const vrButton = document.getElementById("lab7-vr");
+const vrStatus = document.getElementById("lab7-vr-status");
+const setVr = (label, message, enabled) => { vrButton.textContent = label; vrButton.disabled = !enabled; vrStatus.textContent = message; };
+let vrSession = null;
+async function checkVr() {
+  if (!isSecureContext) return setVr("VR needs HTTPS", "Open the HTTPS address of this lab in your headset browser.", false);
+  if (!navigator.xr) return setVr("Use a headset", "This browser has no WebXR. Open the page in your headset browser.", false);
+  try {
+    if (await navigator.xr.isSessionSupported("immersive-vr")) setVr("Enter VR", "Headset ready. Select Enter VR and accept the request.", true);
+    else setVr("No headset detected", "No immersive VR device was found.", false);
+  } catch { setVr("VR unavailable", "WebXR could not be checked in this browser.", false); }
+}
+vrButton.addEventListener("click", async () => {
+  if (vrSession) { vrSession.end(); return; }
+  setVr("Opening VR…", "Opening the headset session…", false);
+  try {
+    const session = await navigator.xr.requestSession("immersive-vr", { optionalFeatures: ["local-floor", "bounded-floor", "hand-tracking"] });
+    vrSession = session;
+    session.addEventListener("end", () => { vrSession = null; setVr("Enter VR", "Back on the desktop. Your circuit is unchanged.", true); });
+    await renderer.xr.setSession(session);
+    setVr("Exit VR", "In VR.", true);
+  } catch { vrSession = null; setVr("Try VR again", "The headset refused the session. Check the headset and try again.", true); }
+});
+checkVr();
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color("#14171a");
@@ -49,7 +87,7 @@ const pmrem = new THREE.PMREMGenerator(renderer);
 scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
 scene.environmentIntensity = 0.55;
 
-const camera = new THREE.PerspectiveCamera(62, innerWidth / innerHeight, 0.01, 50);
+const camera = new THREE.PerspectiveCamera(62, stageSize().w / stageSize().h, 0.01, 50);
 camera.position.set(0, 1.58, 0.5); // a step behind the student's spot, so all three bays are in view
 
 scene.add(new THREE.HemisphereLight(0xf2f4f5, 0x30363b, 0.75));
@@ -277,7 +315,8 @@ class Key {
     this.h = h;
     this.latched = false; // a poked key acts once, then waits for the finger to lift
     const side = new THREE.MeshStandardMaterial({ color: "#c9c3b4", roughness: 0.5 });
-    this.cap = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.012), [side, side, side, side, new THREE.MeshBasicMaterial({ map: this.view.texture, toneMapped: false }), side]);
+    this.faceMat = new THREE.MeshBasicMaterial({ map: this.view.texture, toneMapped: false });
+    this.cap = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.012), [side, side, side, side, this.faceMat, side]);
     this.rest = 0.008;
     this.cap.position.set(x, y, this.rest);
     this.cap.castShadow = true;
@@ -1770,66 +1809,43 @@ controls.maxDistance = 2.5;
 controls.enableDamping = true;
 controls.update();
 
-// ---------- controllers, drawn as gloved hands ----------
-// Near only: there is no pointer ray. The one thing within a hand's width of the
-// palm glows, and the grip takes it.
-const GLOVE = new THREE.MeshStandardMaterial({ color: "#6f9fd4", roughness: 0.62 });
-const GLOVE_CUFF = new THREE.MeshStandardMaterial({ color: "#4f7fb6", roughness: 0.7 });
+// ---------- controllers ----------
+// Each hand shows the headset's own controller model, which moves its buttons as they
+// are pressed, and a short pointer from its nose. The bead at the pointer's end is the
+// fingertip: push it into a key to press it. Grabs stay near-only, at the palm.
+const controllerModels = new XRControllerModelFactory();
 const PALM = new THREE.Vector3(0, -0.006, -0.035); // grip space: the middle of the closed hand
-function makeGlove(side) { // side +1 for the right hand, -1 for the left
-  const hand = new THREE.Group();
-  hand.rotation.x = -0.45; // the fingers follow the controller's pointing direction
-  const palm = new THREE.Mesh(new THREE.BoxGeometry(0.078, 0.026, 0.085), GLOVE);
-  palm.position.set(0, 0, 0.012);
-  const cuff = new THREE.Mesh(new THREE.CylinderGeometry(0.036, 0.04, 0.05, 20).rotateX(Math.PI / 2), GLOVE_CUFF);
-  cuff.position.set(0, 0, 0.075);
-  palm.castShadow = cuff.castShadow = true;
-  hand.add(palm, cuff);
-  const fingers = [];
-  const finger = (x, len, thumb = false) => {
-    const r = thumb ? 0.0095 : 0.0085;
-    const segment = (l) => {
-      const mesh = new THREE.Mesh(new THREE.CapsuleGeometry(r, l, 4, 10).rotateX(Math.PI / 2).translate(0, 0, -l / 2), GLOVE);
-      mesh.castShadow = true;
-      return mesh;
-    };
-    const knuckle = new THREE.Group();
-    const joint = new THREE.Group();
-    const tip = new THREE.Object3D();
-    joint.position.z = -len * 0.55;
-    tip.position.z = -len * 0.45 - r;
-    knuckle.add(segment(len * 0.55), joint);
-    joint.add(segment(len * 0.45), tip);
-    if (thumb) { knuckle.position.set(x, -0.004, 0); knuckle.rotation.y = -side * 0.4; }
-    else knuckle.position.set(x, 0.002, -0.03);
-    hand.add(knuckle);
-    const f = { knuckle, joint, tip, thumb, curl: 0 };
-    fingers.push(f);
-    return f;
-  };
-  const index = finger(-side * 0.026, 0.075);
-  finger(-side * 0.009, 0.082);
-  finger(side * 0.009, 0.077);
-  finger(side * 0.025, 0.062);
-  finger(-side * 0.04, 0.06, true);
-  return { hand, fingers, index };
+const POKE_REACH = 0.07; // the bead sits 7 cm ahead of the controller
+const BEAD_IDLE = new THREE.Color("#f5c518");
+const BEAD_READY = new THREE.Color(COLORS.valid);
+function makePointer() {
+  const group = new THREE.Group();
+  const line = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.0006, 0.0009, POKE_REACH, 6).rotateX(Math.PI / 2).translate(0, 0, -POKE_REACH / 2),
+    new THREE.MeshBasicMaterial({ color: "#f2f4f5", transparent: true, opacity: 0.45, depthWrite: false }),
+  );
+  const bead = new THREE.Mesh(new THREE.SphereGeometry(0.004, 14, 10), new THREE.MeshBasicMaterial({ color: BEAD_IDLE }));
+  bead.position.z = -POKE_REACH;
+  group.add(line, bead);
+  return { group, line, bead };
 }
 
 const vrHolders = [0, 1].map((i) => {
   const ctrl = renderer.xr.getController(i);
   const grip = renderer.xr.getControllerGrip(i);
-  const holder = { vr: true, ctrl, grip, source: null, glove: null, grab: null, hover: null, candidate: null, offset: new THREE.Vector3(), lastRoll: 0, armed: new Set(), stickLatched: false, atStop: false };
+  const pointer = makePointer();
+  pointer.group.visible = false;
+  ctrl.add(pointer.group);
+  grip.add(controllerModels.createControllerModel(grip));
+  const holder = { vr: true, ctrl, grip, pointer, source: null, grab: null, hover: null, candidate: null, offset: new THREE.Vector3(), lastRoll: 0, armed: new Set(), stickLatched: false, atStop: false };
   ctrl.addEventListener("connected", (e) => {
     holder.source = e.data;
-    if (holder.glove) grip.remove(holder.glove.hand);
-    holder.glove = makeGlove(e.data.handedness === "left" ? -1 : 1);
-    grip.add(holder.glove.hand);
+    pointer.group.visible = e.data.targetRayMode === "tracked-pointer";
   });
   ctrl.addEventListener("disconnected", () => {
     if (holder.grab) endGrab(holder);
-    if (holder.glove) grip.remove(holder.glove.hand);
     holder.source = null;
-    holder.glove = null;
+    pointer.group.visible = false;
   });
   const start = () => { wakeAudio(); vrGrab(holder); };
   const end = () => { if (holder.grab) endGrab(holder); };
@@ -1884,19 +1900,11 @@ function updateVrHolders(dt) {
   for (const holder of vrHolders) {
     if (!holder.source) continue;
     const pad = holder.source.gamepad;
-    const squeeze = pad?.buttons?.[1]?.value ?? 0;
-    const trigger = pad?.buttons?.[0]?.value ?? 0;
     const stick = pad?.axes?.[2] ?? 0;
     const grab = holder.grab;
-    // the glove points with the index finger until it closes on something
-    if (holder.glove) {
-      holder.glove.fingers.forEach((f, i) => {
-        const target = f.thumb ? (grab ? 0.9 : 0.3 + squeeze * 0.5) : i === 0 ? (grab ? 0.85 : trigger * 0.7) : grab ? 1 : 0.6 + squeeze * 0.4;
-        f.curl += (target - f.curl) * Math.min(1, dt * 18);
-        f.knuckle.rotation.x = -f.curl * (f.thumb ? 0.6 : 1.25);
-        f.joint.rotation.x = -f.curl * (f.thumb ? 0.5 : 1.4);
-      });
-    }
+    // the pointer steps back while the hand holds something
+    holder.pointer.line.material.opacity = grab ? 0.12 : 0.45;
+    holder.pointer.bead.visible = !grab;
     holder.candidate = grab ? null : nearCandidate(holder);
     if (!grab) {
       // the thumbstick nudges a knob the hand is over, one detent per flick
@@ -1941,18 +1949,21 @@ function updateVrHolders(dt) {
   }
 }
 
-// fingertip pokes: each key takes the deepest press from either free hand
+// pointer-bead pokes: each key takes the deepest press from either free hand
+const beadWorld = new THREE.Vector3();
 function updatePokes() {
   for (const key of keys) {
     let depth = 0;
     let by = null;
     for (const holder of vrHolders) {
-      if (!holder.glove || holder.grab) continue;
-      const d = key.pokeDepth(holder.glove.index.tip.getWorldPosition(new THREE.Vector3()), holder);
+      if (!holder.source || holder.grab) continue;
+      const d = key.pokeDepth(holder.pointer.bead.getWorldPosition(beadWorld), holder);
       if (d > depth) { depth = d; by = holder; }
     }
     if (by || key.cap.position.z !== key.rest) key.setDepth(depth, by);
   }
+  // the bead turns green while it hovers in front of a key, ready to push
+  for (const holder of vrHolders) holder.pointer.bead.material.color.copy(holder.armed.size ? BEAD_READY : BEAD_IDLE);
 }
 
 // a probe that was let go travels back along its cable to its dock
@@ -2026,9 +2037,9 @@ function updateHighlights(time) {
     card.halo.material.color.set(hover ? "#ffffff" : COLORS.next);
     card.halo.material.opacity = hover ? 0.4 : next?.card === card ? 0.25 + 0.6 * blink : 0;
   }
-  if (next?.key) outputKey.draw(blink);
-  else if (outputKey.blinking) outputKey.draw();
-  outputKey.blinking = Boolean(next?.key);
+  // tinted rather than redrawn, so the blink costs no texture upload
+  if (next?.key) outputKey.faceMat.color.copy(WHITE).lerp(amber, blink * 0.7);
+  else outputKey.faceMat.color.copy(WHITE);
 }
 
 let last = performance.now();
@@ -2055,18 +2066,20 @@ renderer.setAnimationLoop((time) => {
   for (const cord of allCords) updateTube(cord);
   for (const card of cardsList) card.pose(dt);
   cover.rotation.x += ((generator.vin2Open ? -2.6 : 0) - cover.rotation.x) * 0.15;
-  if (changed) { changed = false; evaluate(); drawMeter(); }
-  if (frame % 2 === 0) drawScope();
-  if (frame % 15 === 0) { drawMeter(); drawLightbox(); }
+  // Displays redraw only when something changed. Re-uploading unchanged screens every
+  // few frames cost the headset frames, and dropped frames make printed text judder.
+  if (changed) { changed = false; evaluate(); drawMeter(); drawScope(); }
   updateHighlights(time);
   renderer.render(scene, camera);
 });
 
-addEventListener("resize", () => {
-  camera.aspect = innerWidth / innerHeight;
+function fitStage() {
+  const { w, h } = stageSize();
+  camera.aspect = w / h;
   camera.updateProjectionMatrix();
-  renderer.setSize(innerWidth, innerHeight);
-});
+  renderer.setSize(w, h);
+}
+new ResizeObserver(fitStage).observe(stage);
 
 drawGenerator();
 resetLab();
@@ -2077,7 +2090,7 @@ window.__wall = {
   cords: allCords, cards: cardsList, pick, camera, panel, sockets: socketById, keys: { output: outputKey },
   knobs: { rin: rinKnob, rf: rfKnob, rin2: rin2Knob, r3: r3Knob, amp: ampKnob, vin2: vin2Knob },
   get model() { return model; },
-  vr: { holders: vrHolders, grab: vrGrab, release: endGrab, update: updateVrHolders, pokes: updatePokes, makeGlove, setLift, fitHeight, keyList: keys, knobList: knobs, plugs, toLocal },
+  vr: { holders: vrHolders, grab: vrGrab, release: endGrab, update: updateVrHolders, pokes: updatePokes, setLift, fitHeight, keyList: keys, knobList: knobs, plugs, toLocal },
   seat(name, end, socketId) {
     const plug = cordByName[name].plugs[end];
     detach(plug);
