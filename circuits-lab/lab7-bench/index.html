@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f6f0e3">
+  <title>Lab 7 (breadboard bench) · Operational amplifiers · Circuits Lab</title>
+  <meta name="description" content="A standing lab bench for the op-amp experiment: wire the inverting, non-inverting, summing and difference amplifiers on a breadboard, then measure them with a scope and multimeter, on desktop or in VR.">
+  <style>
+    html, body { margin: 0; height: 100%; overflow: hidden; background: #c9ccc8; }
+    body { display: flex; flex-direction: column; }
+    #stage { position: relative; flex: 1; min-height: 0; overflow: hidden; }
+    #stage canvas { display: block; touch-action: none; }
+  </style>
+</head>
+<body>
+  <header id="lab7-bar"></header>
+  <div id="stage" aria-label="Lab 7 bench: drag wires, leads and probes; drag a dial to turn it; click a button to press it"></div>
+  <script type="module" src="./main.js"></script>
+</body>
+</html>

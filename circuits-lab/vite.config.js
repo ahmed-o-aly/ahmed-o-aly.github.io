@@ -10,8 +10,9 @@ export default defineConfig({
     outDir: "../assets/apps/circuits-lab",
     emptyOutDir: true,
     chunkSizeWarningLimit: 900,
-    // Lab 7 is its own room-scale page, published beside the bench at /circuits-lab/lab7/
-    rollupOptions: { input: { main: `${root}index.html`, lab7: `${root}lab7/index.html` } },
+    // Lab 7 is its own room-scale page at /circuits-lab/lab7/; its breadboard-bench
+    // alternative sits beside it at /circuits-lab/lab7-bench/ for instructors to compare
+    rollupOptions: { input: { main: `${root}index.html`, lab7: `${root}lab7/index.html`, lab7bench: `${root}lab7-bench/index.html` } },
   },
   plugins: [
     {
