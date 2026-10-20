@@ -51,7 +51,8 @@ mountLabShell({
   host: document.getElementById("lab7-bar"),
   title: "Circuits Lab",
   notes: "/projects/circuits-lab/",
-  context: Object.assign(document.createElement("span"), { textContent: "Lab 07 / Operational amplifiers" }),
+  context: Object.assign(document.createElement("span"), { textContent: "Lab 07 / Operational amplifiers · instrument wall" }),
+  actions: [Object.assign(document.createElement("a"), { href: "../lab7-bench/", textContent: "Breadboard-bench version" })],
   workspace: document.querySelector(".lab7-layout"),
 });
 

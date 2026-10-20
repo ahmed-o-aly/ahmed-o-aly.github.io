@@ -993,6 +993,31 @@ textarea {
   font-size: 13px;
   line-height: 1.6;
 }
+.lab7-choices {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+.lab7-choice {
+  display: grid;
+  gap: 4px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: inherit;
+  text-decoration: none;
+  line-height: 1.5;
+}
+.lab7-choice span {
+  color: #626c74;
+  font-size: 13px;
+}
+.lab7-choice:hover,
+.lab7-choice:focus-visible {
+  border-color: currentColor;
+  outline: 2px solid transparent;
+  box-shadow: 0 0 0 2px var(--line);
+}
 .dialog-actions {
   display: flex;
   gap: 9px;
