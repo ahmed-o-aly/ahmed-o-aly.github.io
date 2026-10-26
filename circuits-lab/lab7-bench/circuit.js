@@ -3,69 +3,115 @@
 // electrical behaviour can be tested in Node.
 
 // ---------- breadboard ----------
-// A teaching breadboard: 30 columns, rows a–e above the centre gap and f–j
-// below it. Each half-column of five holes is one strip. Four rails run along
-// the edges: +V (top outer), GND (top inner and bottom inner) and −V (bottom
-// outer). Terminal blocks for VIN, VIN2 and VOUT sit at the board's ends, and
-// the trainer's binding posts are wired to the rails and blocks underneath.
-export const COLS = 30;
-export const TOP_ROWS = ["a", "b", "c", "d", "e"];
-export const BOTTOM_ROWS = ["f", "g", "h", "i", "j"];
-export const RAILS = { rp: "VP", rg: "GND", rh: "GND", rn: "VN" };
-export const BLOCKS = { vin: "VIN", vtwo: "VIN2", vout: "VOUT" };
-export const BLOCK_HOLES = 4;
-export const POSTS = { "post+": "VP", postg: "GND", "post-": "VN", postin: "VIN", postin2: "VIN2", postout: "VOUT" };
+// A teaching breadboard turned portrait: 30 numbered rows run from the far end
+// (row 1) toward the student. Columns a–e sit left of the centre channel and
+// f–j right of it, so each half-row of five holes is one strip (L0…L29 and
+// R0…R29). Each long side carries three rails, from the board outward: GND,
+// +V and −V. Screw-terminal blocks beside the board carry VIN2, VIN and its
+// ground on the left, VOUT and its ground on the right. The trainer's binding
+// posts are wired to the rails and blocks underneath.
+export const ROWS = 30;
+export const LEFT_COLS = ["a", "b", "c", "d", "e"];
+export const RIGHT_COLS = ["f", "g", "h", "i", "j"];
+export const RAILS = { lg: "GND", lp: "VP", ln: "VN", rg: "GND", rp: "VP", rn: "VN" };
+export const BLOCKS = {
+  vtwo: { net: "VIN2", holes: 4, label: "VIN2" },
+  vin: { net: "VIN", holes: 4, label: "VIN" },
+  gin: { net: "GND", holes: 3, label: "GND" },
+  vout: { net: "VOUT", holes: 4, label: "VOUT" },
+  gout: { net: "GND", holes: 3, label: "GND" },
+};
+export const POSTS = {
+  "post+": "VP", postg: "GND", "post-": "VN",
+  postin2: "VIN2", postin: "VIN", postgin: "GND",
+  postout: "VOUT", postgout: "GND",
+};
 
-/** Every hole id on the board, in drawing order. */
+/** Every hole on the board, in drawing order (chip pins are contacts of their own). */
 export function allHoles() {
   const holes = [];
-  for (const r of [...TOP_ROWS, ...BOTTOM_ROWS]) for (let c = 0; c < COLS; c += 1) holes.push(`${r}${c}`);
-  for (const rail of Object.keys(RAILS)) for (let c = 0; c < COLS; c += 1) holes.push(`${rail}${c}`);
-  for (const block of Object.keys(BLOCKS)) for (let i = 0; i < BLOCK_HOLES; i += 1) holes.push(`${block}${i}`);
+  for (const c of [...LEFT_COLS, ...RIGHT_COLS]) for (let r = 0; r < ROWS; r += 1) holes.push(`${c}${r}`);
+  // rail holes come in groups of five
+  for (const rail of Object.keys(RAILS)) for (let r = 0; r < ROWS; r += 1) if (r % 6 !== 5) holes.push(`${rail}${r}`);
+  for (const [block, { holes: n }] of Object.entries(BLOCKS)) for (let i = 0; i < n; i += 1) holes.push(`${block}${i}`);
   return holes;
 }
 
-/** The strip, rail or terminal a hole or post belongs to. */
+/** The strip, rail or terminal a hole, pin or post belongs to. */
 export function netOf(id) {
+  if (!id) return null;
   if (POSTS[id]) return POSTS[id];
-  const rail = /^(rp|rg|rh|rn)(\d+)$/.exec(id);
+  const pin = /^pin([1-8])$/.exec(id);
+  if (pin) return netOf(PINS[pin[1]]);
+  const rail = /^(lg|lp|ln|rg|rp|rn)(\d+)$/.exec(id);
   if (rail) return RAILS[rail[1]];
-  const block = /^(vin|vtwo|vout)(\d)$/.exec(id);
-  if (block) return BLOCKS[block[1]];
+  const block = /^(vtwo|vin|gin|vout|gout)(\d)$/.exec(id);
+  if (block) return BLOCKS[block[1]].net;
   const main = /^([a-j])(\d+)$/.exec(id);
-  if (main) return `${TOP_ROWS.includes(main[1]) ? "T" : "B"}${main[2]}`;
+  if (main) return `${LEFT_COLS.includes(main[1]) ? "L" : "R"}${main[2]}`;
   return null;
 }
 
 // ---------- the 741 ----------
-// Pins 1–4 along row f (columns 13–16), pins 8–5 along row e, notch on the left.
-export const CHIP_COL = 13;
+// Straddling the channel with its notch toward the far end: pins 1–4 run down
+// column e, pins 8–5 down column f.
+export const CHIP_ROW = 12;
 export const PINS = {
-  1: "f13", 2: "f14", 3: "f15", 4: "f16",
-  8: "e13", 7: "e14", 6: "e15", 5: "e16",
+  1: "e12", 2: "e13", 3: "e14", 4: "e15",
+  8: "f12", 7: "f13", 6: "f14", 5: "f15",
 };
 export const PIN_NAMES = { 1: "Offset null", 2: "−IN", 3: "+IN", 4: "V−", 5: "Offset null", 6: "OUT", 7: "V+", 8: "NC" };
+const PIN_HOLE = Object.fromEntries(Object.entries(PINS).map(([n, hole]) => [hole, Number(n)]));
+
+const NET_NAMES = { VP: "+V", VN: "−V", GND: "ground", VIN: "VIN", VIN2: "VIN2", VOUT: "VOUT" };
+const POST_NAMES = {
+  "post+": "+V terminal", postg: "GND terminal", "post-": "−V terminal",
+  postin2: "VIN2 terminal", postin: "VIN terminal", postgin: "GND terminal (input side)",
+  postout: "VOUT terminal", postgout: "GND terminal (output side)",
+};
+
+/** What a contact is, for the hover label. */
+export function contactName(id) {
+  if (POSTS[id]) return POST_NAMES[id];
+  const pin = /^pin([1-8])$/.exec(id);
+  if (pin) return `Pin ${pin[1]} · ${PIN_NAMES[pin[1]]}`;
+  const rail = /^(lg|lp|ln|rg|rp|rn)(\d+)$/.exec(id);
+  if (rail) return `${NET_NAMES[RAILS[rail[1]]] === "ground" ? "GND" : NET_NAMES[RAILS[rail[1]]]} rail (${rail[1][0] === "l" ? "left" : "right"})`;
+  const block = /^(vtwo|vin|gin|vout|gout)(\d)$/.exec(id);
+  if (block) return `${BLOCKS[block[1]].label} terminal block`;
+  const main = /^([a-j])(\d+)$/.exec(id);
+  if (main) {
+    const row = Number(main[2]);
+    const col = LEFT_COLS.includes(main[1]) ? "e" : "f";
+    const pinHere = PIN_HOLE[`${col}${row}`];
+    return `Hole ${main[1]}${row + 1}${pinHere ? ` · same strip as pin ${pinHere} (${PIN_NAMES[pinHere]})` : ""}`;
+  }
+  return id;
+}
 
 // ---------- components and configurations ----------
 // Rin and Rf are potentiometer modules; R2, R3 and R4 are fixed axial resistors.
+// The pots sit well clear of the chip and are joined to it with jumpers.
 export const POT_VALUES = [1, 2.2, 4.7, 5, 10, 15, 20, 22, 33, 47, 68, 100].map((k) => k * 1000);
 
-const PARTS = {
-  rin: { kind: "pot", label: "Rin", legs: ["h9", "h14"] },
-  rf: { kind: "pot", label: "Rf", legs: ["c8", "c15"] },
-  r2: { kind: "resistor", label: "R2", value: 10000, legs: ["b2", "b6"] },
-  r3: { kind: "resistor", label: "R3", value: 10000, legs: ["h19", "h24"] },
-  r4: { kind: "resistor", label: "R4", value: 20000, legs: ["j19", "rh19"] },
+export const PARTS = {
+  rin: { kind: "pot", label: "Rin", legs: ["b21", "b27"] },
+  rf: { kind: "pot", label: "Rf", legs: ["d5", "g5"] },
+  r2: { kind: "resistor", label: "R2", value: 10000, legs: ["b8", "b13"] },
+  r3: { kind: "resistor", label: "R3", value: 10000, legs: ["b6", "b10"] },
+  r4: { kind: "resistor", label: "R4", value: 20000, legs: ["a10", "lg10"] },
 };
 
-// Colour convention: power red/blue, ground black, input yellow, second input
-// purple, feedback green, output cyan, internal links white.
-const POWER = [
-  { id: "vplus", a: "rp14", b: "a14", color: "red", text: "+V rail to pin 7 (V+)" },
-  { id: "vminus", a: "rn16", b: "j16", color: "blue", text: "−V rail to pin 4 (V−)" },
+// Colour convention: +V red, −V blue, ground black, input yellow, second input
+// purple, feedback green, output cyan, links inside the circuit orange.
+export const WIRE_COLORS = ["red", "blue", "black", "yellow", "purple", "green", "cyan", "orange"];
+const RIN_LINK = { id: "rin-link", a: "a21", b: "c13", color: "orange", text: "Rin to pin 2 (−IN)" };
+const FEEDBACK = [
+  { id: "feedback", a: "d13", b: "c5", color: "green", text: "Pin 2 (−IN) to Rf: the feedback path" },
+  { id: "feedback-out", a: "i5", b: "i14", color: "green", text: "Rf to pin 6 (OUT): closes the feedback loop" },
 ];
-const FEEDBACK = { id: "feedback", a: "i14", b: "b8", color: "green", text: "Pin 2 (−IN) to Rf: the feedback path" };
-const OUTPUT = { id: "out", a: "d15", b: "vout0", color: "cyan", text: "Pin 6 (OUT) to the VOUT terminal" };
+const OUTPUT = { id: "out", a: "j14", b: "vout2", color: "cyan", text: "Pin 6 (OUT) to the VOUT terminal" };
+const PLUS_GND = { id: "plus", a: "a14", b: "lg14", color: "black", text: "Pin 3 (+IN) to the GND rail" };
 
 export const CONFIGS = {
   inverting: {
@@ -73,10 +119,10 @@ export const CONFIGS = {
     short: "INV",
     parts: ["rin", "rf"],
     jumpers: [
-      ...POWER,
-      { id: "in", a: "vin0", b: "g9", color: "yellow", text: "VIN terminal to Rin" },
-      FEEDBACK,
-      { id: "plus", a: "j15", b: "rh15", color: "black", text: "Pin 3 (+IN) to ground" },
+      { id: "in", a: "vin3", b: "a27", color: "yellow", text: "VIN terminal to Rin" },
+      RIN_LINK,
+      ...FEEDBACK,
+      PLUS_GND,
       OUTPUT,
     ],
     usesVin2: false,
@@ -87,10 +133,10 @@ export const CONFIGS = {
     short: "NON-INV",
     parts: ["rin", "rf"],
     jumpers: [
-      ...POWER,
-      { id: "rin-gnd", a: "g9", b: "rh9", color: "black", text: "Rin to ground" },
-      FEEDBACK,
-      { id: "in", a: "vin0", b: "g15", color: "yellow", text: "VIN terminal to pin 3 (+IN)" },
+      { id: "rin-gnd", a: "a27", b: "lg27", color: "black", text: "Rin to the GND rail" },
+      RIN_LINK,
+      ...FEEDBACK,
+      { id: "in", a: "vin0", b: "a14", color: "yellow", text: "VIN terminal to pin 3 (+IN)" },
       OUTPUT,
     ],
     usesVin2: false,
@@ -101,12 +147,11 @@ export const CONFIGS = {
     short: "ADDER",
     parts: ["rin", "rf", "r2"],
     jumpers: [
-      ...POWER,
-      { id: "in", a: "vin0", b: "g9", color: "yellow", text: "VIN terminal to Rin" },
-      { id: "in2", a: "vtwo0", b: "a2", color: "purple", text: "VIN2 terminal to R2" },
-      { id: "r2-sum", a: "a6", b: "g14", color: "purple", text: "R2 to pin 2, the summing point" },
-      FEEDBACK,
-      { id: "plus", a: "j15", b: "rh15", color: "black", text: "Pin 3 (+IN) to ground" },
+      { id: "in", a: "vin3", b: "a27", color: "yellow", text: "VIN terminal to Rin" },
+      RIN_LINK,
+      { id: "in2", a: "vtwo1", b: "a8", color: "purple", text: "VIN2 terminal to R2, which feeds pin 2" },
+      ...FEEDBACK,
+      PLUS_GND,
       OUTPUT,
     ],
     usesVin2: true,
@@ -117,11 +162,11 @@ export const CONFIGS = {
     short: "SUBTR",
     parts: ["rin", "rf", "r3", "r4"],
     jumpers: [
-      ...POWER,
-      { id: "in", a: "vin0", b: "g9", color: "yellow", text: "VIN terminal to Rin" },
-      FEEDBACK,
-      { id: "plus-link", a: "g15", b: "g19", color: "white", text: "Pin 3 (+IN) to the R3–R4 divider" },
-      { id: "in2", a: "vtwo0", b: "g24", color: "purple", text: "VIN2 terminal to R3" },
+      { id: "in", a: "vin3", b: "a27", color: "yellow", text: "VIN terminal to Rin" },
+      { ...RIN_LINK, b: "b13" },
+      ...FEEDBACK,
+      { id: "in2", a: "vtwo0", b: "a6", color: "purple", text: "VIN2 terminal to R3" },
+      { id: "plus-link", a: "c10", b: "c14", color: "orange", text: "R3–R4 divider to pin 3 (+IN)" },
       OUTPUT,
     ],
     usesVin2: true,
@@ -134,13 +179,30 @@ export function partsFor(config) {
   return CONFIGS[config].parts.map((id) => ({ id, ...PARTS[id] }));
 }
 
-// Leads run from instrument jacks to the trainer's binding posts.
+/** A sensible colour for a new wire between two contacts: the guide's, else by what it carries. */
+export function suggestColor(config, a, b) {
+  const pair = [netOf(a), netOf(b)].sort().join("|");
+  const planned = CONFIGS[config].jumpers.find((j) => [netOf(j.a), netOf(j.b)].sort().join("|") === pair);
+  if (planned) return planned.color;
+  const nets = [netOf(a), netOf(b)];
+  const byNet = { VP: "red", VN: "blue", GND: "black", VIN: "yellow", VIN2: "purple", VOUT: "cyan" };
+  for (const net of ["VP", "VN", "GND", "VIN", "VIN2", "VOUT"]) if (nets.includes(net)) return byNet[net];
+  if (nets.includes(netOf(PINS[6]))) return "cyan";
+  return "orange";
+}
+
+// Leads run from instrument jacks to the trainer: into a binding post, or
+// straight into a breadboard hole. The supply's leads go directly into the rows
+// of pin 7 and pin 4, with its COM on the common ground. The generator's output
+// is referenced to its COM, so its black lead goes to the GND post beside VIN.
+// A lead's step is done once it reaches its target, by whatever route.
 export const LEADS = {
-  "sup+": { from: "S+", post: "post+", color: "red", text: "Supply +V to the +V post" },
-  supg: { from: "EARTH", post: "postg", color: "black", text: "Supply COM to the GND post" },
-  "sup-": { from: "S-", post: "post-", color: "blue", text: "Supply −V to the −V post" },
-  gen: { from: "GEN", post: "postin", color: "yellow", text: "Generator OUTPUT to the VIN post" },
-  gen2: { from: "GEN2", post: "postin2", color: "purple", text: "Generator DC OUT 2 to the VIN2 post" },
+  "sup+": { from: "S+", target: "j13", color: "red", text: "Supply +V lead straight into pin 7's row (V+)" },
+  supg: { from: "EARTH", target: "postg", color: "black", text: "Supply COM lead to the GND post (common ground)" },
+  "sup-": { from: "S-", target: "a15", color: "blue", text: "Supply −V lead straight into pin 4's row (V−)" },
+  gen: { from: "GEN", target: "postin", color: "yellow", text: "Generator OUTPUT to the VIN post" },
+  genc: { from: "GENC", target: "postgin", color: "black", text: "Generator COM to the GND post beside VIN" },
+  gen2: { from: "GEN2", target: "postin2", color: "purple", text: "Generator DC OUT 2 to the VIN2 post" },
 };
 
 // ---------- the instruments' settings ----------
@@ -159,8 +221,8 @@ export function initialState() {
     rf: 20000,
     supply: { level: 12, on: false },
     gen: { wave: "sine", amp: 1, freq: 1000, dc2: 1 },
-    jumpers: [], // { id, a, b } with a/b hole ids, or null while that end is loose
-    leads: { "sup+": null, supg: null, "sup-": null, gen: null, gen2: null }, // post id or null
+    jumpers: [], // { id, a, b, color, bend } with a/b contact ids (holes, pins or posts)
+    leads: { "sup+": null, supg: null, "sup-": null, gen: null, genc: null, gen2: null }, // post or hole id, or null
     probes: { ch1: null, ch2: null, red: null, black: null }, // hole/post id or null
     meter: "dcv",
   };
@@ -224,14 +286,12 @@ export function buildModel(state) {
   // binding posts are wired to their rails and blocks under the board
   for (const [post, net] of Object.entries(POSTS)) u.join(post, net);
   for (const j of state.jumpers) if (j.a && j.b) u.join(netOf(j.a), netOf(j.b));
-  for (const [id, post] of Object.entries(state.leads)) if (post) u.join(LEADS[id].from, POSTS[post]);
+  for (const [id, contact] of Object.entries(state.leads)) if (contact) u.join(LEADS[id].from, netOf(contact));
 
   const level = state.supply.level;
-  const sources = [
-    ["EARTH", () => 0],
-    ["GEN", (t) => waveAt(state.gen, t)],
-    ["GEN2", () => state.gen.dc2],
-  ];
+  const sources = [["EARTH", () => 0], ["GENC", () => 0]];
+  // the generator drives its outputs against its COM; with that lead unplugged they float
+  if (u.find("GENC") !== "GENC") sources.push(["GEN", (t) => waveAt(state.gen, t)], ["GEN2", () => state.gen.dc2]);
   if (state.supply.on) sources.push(["S+", () => level], ["S-", () => -level]);
 
   // a node held by two different sources is a short; the supply's current limit trips
@@ -240,6 +300,7 @@ export function buildModel(state) {
   for (const [name, fn] of sources) {
     const root = u.find(name);
     if (fixed.has(root)) {
+      if (["EARTH", "GENC"].includes(name) && ["EARTH", "GENC"].includes(fixed.get(root).name)) continue; // both grounds
       short = short ?? describeShort([fixed.get(root).name, name]);
       continue;
     }
@@ -313,12 +374,12 @@ export function buildModel(state) {
 
   const resolveNode = (id) => {
     if (!id) return null;
-    if (["EARTH", "GEN", "GEN2", "S+", "S-"].includes(id)) return u.find(id);
+    if (["EARTH", "GENC", "GEN", "GEN2", "S+", "S-"].includes(id)) return u.find(id);
     const net = netOf(id);
     return net ? u.find(net) : null;
   };
 
-  const groundRoot = u.find("EARTH");
+  const groundRoot = u.find("GND");
   return {
     short: state._short ?? short,
     supplyOn: state.supply.on && !state._short,
@@ -337,7 +398,7 @@ export function buildModel(state) {
 
 function describeShort(pair) {
   pair.sort((x, y) => Number(y.startsWith("S")) - Number(x.startsWith("S"))); // name the supply rail first
-  const name = { "S+": "+V", "S-": "−V", EARTH: "ground", GEN: "the generator output", GEN2: "DC OUT 2" };
+  const name = { "S+": "+V", "S-": "−V", EARTH: "ground", GENC: "the generator COM", GEN: "the generator output", GEN2: "DC OUT 2" };
   return `${name[pair[0]]} is shorted to ${name[pair[1]]}`;
 }
 
@@ -383,14 +444,14 @@ export function steps(state, model = buildModel(state)) {
   const list = [];
   const joined = (a, b) => state.jumpers.some((j) => j.a && j.b && ((netOf(j.a) === netOf(a) && netOf(j.b) === netOf(b)) || (netOf(j.a) === netOf(b) && netOf(j.b) === netOf(a))));
   for (const j of config.jumpers) list.push({ kind: "jumper", ...j, done: joined(j.a, j.b) });
-  const leadIds = ["sup+", "supg", "sup-", "gen", ...(config.usesVin2 ? ["gen2"] : [])];
-  for (const id of leadIds) list.push({ kind: "lead", id, ...LEADS[id], done: state.leads[id] === LEADS[id].post });
+  const leadIds = ["sup+", "supg", "sup-", "gen", "genc", ...(config.usesVin2 ? ["gen2"] : [])];
+  for (const id of leadIds) list.push({ kind: "lead", id, ...LEADS[id], done: Boolean(state.leads[id]) && model.connected(LEADS[id].from, LEADS[id].target) });
   list.push({ kind: "power", id: "power", text: "Switch the power supply on", done: model.supplyOn });
   const onNet = (probe, net) => Boolean(state.probes[probe]) && netOf(state.probes[probe]) !== null && model.root(state.probes[probe]) === model.root(net);
   list.push({ kind: "probe", id: "ch1", text: "Clip scope CH1 onto VIN", target: "vin1", done: onNet("ch1", "postin") });
   list.push({ kind: "probe", id: "ch2", text: "Clip scope CH2 onto VOUT", target: "vout1", done: onNet("ch2", "postout") });
-  list.push({ kind: "probe", id: "red", text: "Multimeter red probe on VOUT", target: "vout2", done: onNet("red", "postout") });
-  list.push({ kind: "probe", id: "black", text: "Multimeter black probe on GND", target: "rh27", done: onNet("black", "postg") });
+  list.push({ kind: "probe", id: "red", text: "Multimeter red probe on VOUT", target: "vout3", done: onNet("red", "postout") });
+  list.push({ kind: "probe", id: "black", text: "Multimeter black probe on the GND beside VOUT", target: "gout1", done: onNet("black", "postgout") });
   return list;
 }
 

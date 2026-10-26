@@ -8,7 +8,7 @@ export const SANS = "'Helvetica Neue', Arial, sans-serif";
 export const MONO = "'SF Mono', Menlo, Consolas, monospace";
 export const COLOR = {
   red: "#d0312d", black: "#1d1f22", blue: "#2a62d4", yellow: "#f2c230", purple: "#8e5bd0",
-  green: "#2f9e5b", cyan: "#29b6c9", white: "#e9e6df", amber: "#ffb347", next: "#ffcf3f",
+  green: "#2f9e5b", cyan: "#29b6c9", orange: "#e8812a", white: "#e9e6df", amber: "#ffb347", next: "#ffcf3f",
 };
 
 let anisotropy = 4;

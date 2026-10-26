@@ -1,9 +1,9 @@
 // Lab 7 · operational amplifiers, breadboard-bench alternative to the instrument
 // wall in ../lab7/, published beside it for instructors to compare. A standing lab bench: a breadboard trainer in
-// the middle, the instruments around it within reach, and every control a
-// physical part. The student picks a configuration on the trainer, wires it with
-// jumpers and leads as the guide highlights each connection, powers it, and
-// measures it with the scope and multimeter. Units are metres; +z faces the student.
+// the middle, leaning toward the student like a lectern, with the instruments around
+// it within reach and every control a physical part. The student picks a configuration
+// on the trainer, wires it by clicking two contacts (the wire routes itself), powers it,
+// and measures it with the scope and multimeter. Units are metres; +z faces the student.
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
@@ -12,17 +12,24 @@ import "../../assets/css/metahub-app-shell.css";
 import "../../assets/css/metahub-lab-theme.css";
 import { mountLabShell } from "../../assets/js/metahub-app-shell.js";
 import {
-  AMPLITUDES, BLOCK_HOLES, CHIP_COL, COLS, CONFIGS, CONFIG_ORDER, DC2_LEVELS, FREQUENCIES, LEADS, PINS, POT_VALUES,
-  SUPPLY_LEVELS, TDIV, VDIV, WAVES, buildModel, initialState, measure, netOf, partsFor, period, steps, strayJumpers, theory,
+  AMPLITUDES, BLOCKS, CHIP_ROW, CONFIGS, CONFIG_ORDER, DC2_LEVELS, FREQUENCIES, LEADS, LEFT_COLS, PINS, POT_VALUES, RIGHT_COLS,
+  ROWS, SUPPLY_LEVELS, TDIV, VDIV, WAVES, WIRE_COLORS, allHoles, buildModel, contactName, initialState, measure, partsFor, period, steps,
+  strayJumpers, suggestColor, theory,
 } from "./circuit.js";
+import { BLOCK_AT, BOARD, CHIP, COL_X, LANES_X, LANES_Z, POST_AT, RAIL_X, contactXZ, contacts, endObstacle, partObstacles, partPose, rowZ } from "./layout.js";
+import { routeWire } from "./routing.js";
 import { COLOR, Cable, Display, Key, Knob, MONO, SANS, canvasTexture, jack, mat, printedFace, rounded, setAnisotropy, text } from "./kit.js";
 
 const TOP = 0.9; // bench height for a standing student
-const BOARD_Z = -0.52;
+const TILT = THREE.MathUtils.degToRad(20); // the trainer leans toward the student
+const HINGE_Z = -0.37; // where the trainer's front edge meets the bench
+const TRAINER_W = 0.44;
+const TRAINER_D = 0.46;
 const TRAINER_H = 0.03;
+const BOARD_CZ = -0.245; // the board's centre along the trainer
 const BOARD_H = 0.012;
-const BOARD_TOP = TOP + TRAINER_H + BOARD_H;
-const PITCH = 0.01;
+const POST_TIP = 0.0152; // a binding post's top above the trainer face
+const SHELF_Y = TOP + 0.25; // the instrument shelf behind the trainer
 
 // ---------- renderer and page ----------
 const stage = document.getElementById("stage");
@@ -51,6 +58,15 @@ mountLabShell({
   actions: [Object.assign(document.createElement("a"), { href: "../lab7/", textContent: "Instrument-wall version" }), vrButton],
 });
 
+// a label that follows the pointer: what a contact is, and what a click will do
+const tipLabel = document.createElement("div");
+Object.assign(tipLabel.style, {
+  position: "absolute", left: "0", top: "0", display: "none", pointerEvents: "none", zIndex: "2",
+  padding: "5px 9px", borderRadius: "4px", background: "rgba(22, 24, 28, 0.9)", color: "#f4f1ea",
+  font: "600 12px/1.35 'IBM Plex Mono', Menlo, monospace", whiteSpace: "nowrap", transform: "translate(14px, 14px)",
+});
+stage.appendChild(tipLabel);
+
 const scene = new THREE.Scene();
 scene.background = new THREE.Color("#c9ccc8");
 const pmrem = new THREE.PMREMGenerator(renderer);
@@ -70,7 +86,7 @@ const standMat = new THREE.Mesh(new THREE.CircleGeometry(0.3, 48), mat.plastic("
 scene.add(new THREE.HemisphereLight("#f4f6f8", "#6d6a64", 0.9));
 const sun = new THREE.DirectionalLight("#fff6ea", 1.6);
 sun.position.set(0.6, 2.6, 0.9);
-sun.target.position.set(0, TOP, -0.55);
+sun.target.position.set(0, TOP, -0.6);
 sun.castShadow = true;
 sun.shadow.mapSize.set(2048, 2048);
 Object.assign(sun.shadow.camera, { left: -1.1, right: 1.1, top: 0.9, bottom: -0.9, near: 0.5, far: 5 });
@@ -94,7 +110,7 @@ lab.add(sun, sun.target);
   scene.add(standMat);
 }
 
-// ---------- bench ----------
+// ---------- bench and instrument shelf ----------
 {
   const top = new THREE.Mesh(rounded(1.8, 0.035, 0.82, 0.006), mat.plastic("#d8d4cb", 0.7));
   top.position.set(0, TOP - 0.0175, -0.63);
@@ -117,16 +133,26 @@ lab.add(sun, sun.target);
   const esd = new THREE.Mesh(rounded(1.3, 0.003, 0.62, 0.0012), mat.plastic("#5d7586", 0.85));
   esd.position.set(0, TOP + 0.0015, -0.6);
   esd.receiveShadow = true;
-  lab.add(top, frame, esd);
+  // the power supply sits on a shelf above the trainer's far edge, its leads dropping to the posts
+  const shelf = new THREE.Mesh(rounded(0.8, 0.018, 0.27, 0.004), mat.plastic("#cfcac0", 0.7));
+  shelf.position.set(0, SHELF_Y - 0.009, -0.935);
+  shelf.castShadow = shelf.receiveShadow = true;
+  for (const x of [-0.39, 0.39]) {
+    const upright = new THREE.Mesh(new THREE.BoxGeometry(0.02, SHELF_Y - TOP - 0.018, 0.24), steel);
+    upright.position.set(x, TOP + (SHELF_Y - TOP - 0.018) / 2, -0.94);
+    upright.castShadow = true;
+    frame.add(upright);
+  }
+  lab.add(top, frame, esd, shelf);
 }
 
 // ---------- registry of things to touch ----------
 const pickables = [];
-const obstacles = []; // boxes cables drape over: the chip and the pot modules
 const keys = [];
 const knobs = [];
 const glowTargets = new Set();
 function pickable(mesh) { pickables.push(mesh); return mesh; }
+function unpick(mesh) { const i = pickables.indexOf(mesh); if (i >= 0) pickables.splice(i, 1); }
 // an unseen, larger grab area for parts too slim to hit reliably with a mouse
 const HIT = new THREE.MeshBasicMaterial({ visible: false });
 function hitArea(parent, geometry, ref, at) {
@@ -143,10 +169,10 @@ function refOf(object) {
 const addKnob = (parent, opts) => { const k = new Knob(parent, opts); knobs.push(k); pickable(k.pickable); glowTargets.add(k); return k; };
 const addKey = (parent, opts) => { const k = new Key(parent, opts); keys.push(k); pickable(k.pickable); pickable(k.face); glowTargets.add(k); return k; };
 
-/** An instrument: body on the bench, turned to face the student, with a front-face group (origin at its centre, +z out). */
-function instrument({ w, h, d, x, z, color = "#e4e2dc", face = "#2a2e33", yaw }) {
+/** An instrument: body on the bench (or shelf), turned to face the student, with a front-face group (origin at its centre, +z out). */
+function instrument({ w, h, d, x, z, y = TOP, color = "#e4e2dc", face = "#2a2e33", yaw }) {
   const group = new THREE.Group();
-  group.position.set(x, TOP, z);
+  group.position.set(x, y, z);
   group.rotation.y = yaw ?? Math.atan2(-x, -z);
   const body = new THREE.Mesh(rounded(w, h, d, 0.01), mat.plastic(color, 0.6));
   body.position.y = h / 2 + 0.008;
@@ -173,6 +199,7 @@ let state = initialState();
 let model = buildModel(state);
 let stepList = steps(state, model);
 let guided = true;
+let showSolution = false;
 const history = [];
 const listeners = [];
 function changed() {
@@ -184,164 +211,216 @@ function changed() {
 const onChange = (fn) => listeners.push(fn);
 
 // ---------- breadboard trainer ----------
+// The trainer is hinged at its front edge and leans back by TILT. Everything on
+// it lives in the board frame: origin at the board's centre on the trainer
+// face, x to the right, z along the rows toward the student, y out of the face.
 const trainer = new THREE.Group();
-trainer.position.set(0, TOP, BOARD_Z);
+trainer.position.set(0, TOP, HINGE_Z);
+trainer.rotation.x = TILT;
 lab.add(trainer);
-const ROW_Z = { a: -0.055, b: -0.045, c: -0.035, d: -0.025, e: -0.015, f: 0.015, g: 0.025, h: 0.035, i: 0.045, j: 0.055, rp: -0.092, rg: -0.081, rh: 0.081, rn: 0.092 };
-const colX = (c) => (c - (COLS - 1) / 2) * PITCH;
-const BLOCK_AT = { vtwo: [-0.185, -0.06], vin: [-0.185, 0.02], vout: [0.185, -0.015] };
-const POST_AT = { "post+": [-0.05, -0.138], postg: [0, -0.138], "post-": [0.05, -0.138], postin2: [-0.248, -0.045], postin: [-0.248, 0.035], postout: [0.248, 0] };
-const POST_COLOR = { "post+": COLOR.red, postg: COLOR.black, "post-": COLOR.blue, postin2: COLOR.purple, postin: COLOR.yellow, postout: COLOR.cyan };
-const POST_LABEL = { "post+": "+V", postg: "GND", "post-": "−V", postin2: "VIN2", postin: "VIN", postout: "VOUT" };
+const board = new THREE.Group();
+board.position.set(0, TRAINER_H, BOARD_CZ);
+trainer.add(board);
+lab.updateMatrixWorld(true);
+const toLab = (v) => lab.worldToLocal(board.localToWorld(v.clone()));
+const toBoard = (v) => board.worldToLocal(lab.localToWorld(v.clone()));
+const FACE_Z0 = -TRAINER_D - BOARD_CZ; // the trainer face's extent along the board's z
+const FACE_Z1 = -BOARD_CZ;
 
-/** Lab-local position of a hole's mouth, or a post's top. */
+const isPost = (id) => Boolean(POST_AT[id]);
+const isPin = (id) => Boolean(id?.startsWith("pin"));
+const CONTACTS = contacts();
 function contactPoint(id) {
-  if (POST_AT[id]) { const [x, z] = POST_AT[id]; return new THREE.Vector3(x, TOP + TRAINER_H + 0.0152, BOARD_Z + z); }
-  let x, z;
-  const block = /^(vin|vtwo|vout)(\d)$/.exec(id);
-  const rail = /^(rp|rg|rh|rn)(\d+)$/.exec(id);
-  const main = /^([a-j])(\d+)$/.exec(id);
-  if (block) { [x, z] = BLOCK_AT[block[1]]; z += Number(block[2]) * PITCH; }
-  else if (rail) { x = colX(Number(rail[2])); z = ROW_Z[rail[1]]; }
-  else if (main) { x = colX(Number(main[2])); z = ROW_Z[main[1]]; }
-  else return null;
-  return new THREE.Vector3(x, BOARD_TOP, BOARD_Z + z);
+  const p = contactXZ(id);
+  if (!p) return null;
+  return new THREE.Vector3(p.x, isPost(id) ? POST_TIP : isPin(id) ? BOARD_H + 0.0045 : BOARD_H, p.z);
 }
-const HOLES = [];
-for (const r of "abcdefghij") for (let c = 0; c < COLS; c += 1) HOLES.push(`${r}${c}`);
-for (const r of ["rp", "rg", "rh", "rn"]) for (let c = 0; c < COLS; c += 1) if (c % 6 !== 5) HOLES.push(`${r}${c}`); // rails come in groups of five
-for (const b of ["vin", "vtwo", "vout"]) for (let i = 0; i < BLOCK_HOLES; i += 1) HOLES.push(`${b}${i}`);
-const HOLE_POINT = new Map(HOLES.map((id) => [id, contactPoint(id)]));
-const POST_POINT = new Map(Object.keys(POST_AT).map((id) => [id, contactPoint(id)]));
+const CONTACT_POINT = new Map(CONTACTS.map((id) => [id, contactPoint(id)]));
+const POST_COLOR = { "post+": COLOR.red, postg: COLOR.black, "post-": COLOR.blue, postin2: COLOR.purple, postin: COLOR.yellow, postgin: COLOR.black, postout: COLOR.cyan, postgout: COLOR.black };
+const POST_LABEL = { "post+": "+V", postg: "GND", "post-": "−V", postin2: "VIN2", postin: "VIN", postgin: "GND", postout: "VOUT", postgout: "GND" };
+const ROLE = { red: "+V", blue: "−V", black: "ground", yellow: "input", purple: "input 2", green: "feedback", cyan: "output", orange: "link" };
+const postDisplays = {};
 
 {
-  // trainer base, dark with silkscreened post labels
-  const base = new THREE.Mesh(rounded(0.56, TRAINER_H, 0.33, 0.006), mat.plastic("#34383d", 0.6));
-  base.position.set(0, TRAINER_H / 2, -0.015);
+  // a wedge holds the trainer at its angle
+  const far = TRAINER_D * Math.cos(TILT), rise = TRAINER_D * Math.sin(TILT);
+  const shape = new THREE.Shape([new THREE.Vector2(0, 0), new THREE.Vector2(-far, 0), new THREE.Vector2(-far, rise)]);
+  const wedge = new THREE.Mesh(new THREE.ExtrudeGeometry(shape, { depth: TRAINER_W - 0.02, bevelEnabled: false }).rotateY(-Math.PI / 2).translate((TRAINER_W - 0.02) / 2, 0, 0), mat.plastic("#2b2e32", 0.7));
+  wedge.position.set(0, TOP, HINGE_Z);
+  wedge.castShadow = wedge.receiveShadow = true;
+  lab.add(wedge);
+
+  // trainer base, dark with silkscreened posts, colour key and pinout
+  const base = new THREE.Mesh(rounded(TRAINER_W, TRAINER_H, TRAINER_D, 0.006), mat.plastic("#34383d", 0.6));
+  base.position.set(0, TRAINER_H / 2, -TRAINER_D / 2);
   base.castShadow = base.receiveShadow = true;
   trainer.add(base);
+  const cz = (FACE_Z0 + FACE_Z1) / 2;
   const top = new THREE.Group();
   top.rotation.x = -Math.PI / 2;
-  top.position.set(0, TRAINER_H + 0.0002, -0.015);
-  trainer.add(top);
-  printedFace(top, 0.55, 0.32, {
-    pxPerM: 3000, background: "#34383d", z: 0,
+  top.position.set(0, 0.0002, cz);
+  board.add(top);
+  printedFace(top, TRAINER_W - 0.008, TRAINER_D - 0.008, {
+    pxPerM: 3200, background: "#34383d", z: 0,
     draw: (ctx, at) => {
+      const P = (x, z) => at(x, -(z - cz));
+      const say = (s, x, z, size, opts = {}) => { const [px, py] = P(x, z); text(ctx, s, px, py, size, { color: "#f1eee6", ...opts }); };
       for (const [id, [x, z]] of Object.entries(POST_AT)) {
-        const ly = -(z + 0.015);
-        const side = x < -0.2 ? [x, ly + 0.021] : x > 0.2 ? [x, ly + 0.021] : [x, ly - 0.021];
-        silk(ctx, at, POST_LABEL[id], side[0], side[1], 27, { color: "#f1eee6" });
-        const [cx, cy] = at(x, ly);
+        const [cx, cy] = P(x, z);
         ctx.strokeStyle = POST_COLOR[id] === COLOR.black ? "#9aa0a6" : POST_COLOR[id];
         ctx.lineWidth = 5;
-        ctx.beginPath(); ctx.arc(cx, cy, 0.0135 * 3000, 0, Math.PI * 2); ctx.stroke();
+        ctx.beginPath(); ctx.arc(cx, cy, 0.0135 * 3200, 0, Math.PI * 2); ctx.stroke();
+        say(POST_LABEL[id], x, z - 0.0205, 28, { weight: 800 });
       }
-      silk(ctx, at, "OP-AMP TRAINER  ·  ELEN 221", 0.14, -0.136, 22, { color: "#b9bdc2", weight: 600 });
-      silk(ctx, at, "Posts are wired to the rails and terminals underneath", -0.14, -0.136, 17, { color: "#8d9298", weight: 500 });
+      // a key to the wire colours and the 741's pins, along the front edge
+      const keyZ = BOARD.l / 2 + 0.024;
+      say("WIRE COLOURS", -0.2, keyZ - 0.009, 19, { color: "#b9bdc2", align: "left", weight: 800 });
+      WIRE_COLORS.forEach((c, i) => {
+        const x = -0.2 + (i % 4) * 0.052, z = keyZ + 0.006 + Math.floor(i / 4) * 0.016;
+        const [px, py] = P(x, z);
+        ctx.fillStyle = COLOR[c];
+        ctx.fillRect(px, py - 9, 34, 18);
+        if (c === "black") { ctx.strokeStyle = "#9aa0a6"; ctx.lineWidth = 2; ctx.strokeRect(px, py - 9, 34, 18); }
+        say(ROLE[c], x + 0.0135, z, 19, { align: "left", weight: 600, color: "#e1ded6" });
+      });
+      say("741 PINOUT (notch at top)", 0.005, keyZ - 0.009, 19, { color: "#b9bdc2", align: "left", weight: 800 });
+      const pinout = [["1 offset", "8 NC"], ["2 −IN", "7 V+"], ["3 +IN", "6 OUT"], ["4 V−", "5 offset"]];
+      pinout.forEach(([l, r], i) => {
+        const z = keyZ + 0.003 + i * 0.0085;
+        say(l, 0.005, z, 18, { align: "left", weight: 600, color: "#e1ded6" });
+        say(r, 0.055, z, 18, { align: "left", weight: 600, color: "#e1ded6" });
+      });
+      say("WIRING", 0.118, keyZ - 0.009, 19, { color: "#b9bdc2", align: "left", weight: 800 });
+      ["Click two holes", "to lay a wire.", "Click a wire: colour", "or delete. Drag its", "bead to re-route."].forEach((s, i) => say(s, 0.118, keyZ + 0.002 + i * 0.0072, 15, { align: "left", weight: 600, color: "#a9aeb4" }));
+      say("ELEN 221 OP-AMP TRAINER", -0.21, FACE_Z0 + 0.008, 16, { color: "#8d9298", align: "left", weight: 600 });
     },
   });
-  for (const [id] of Object.entries(POST_AT)) {
-    const p = contactPoint(id);
-    const j = jack(lab, 0, 0, POST_COLOR[id], { post: true });
-    j.group.position.set(p.x, TOP + TRAINER_H, p.z);
+  for (const [id, [x, z]] of Object.entries(POST_AT)) {
+    const j = jack(board, x, 0, POST_COLOR[id], { post: true });
+    j.group.position.set(x, 0, z);
     j.group.rotation.x = -Math.PI / 2;
   }
+  // the supply's voltages, read out beside its posts
+  const readouts = new THREE.Group();
+  readouts.rotation.x = -Math.PI / 2;
+  readouts.position.y = 0.001;
+  board.add(readouts);
+  postDisplays.plus = new Display(readouts, POST_AT["post+"][0] - 0.06, -POST_AT["post+"][1], 0.05, 0.016, { pxPerM: 6000 });
+  postDisplays.minus = new Display(readouts, POST_AT["post-"][0] + 0.06, -POST_AT["post-"][1], 0.05, 0.016, { pxPerM: 6000 });
 
   // the breadboard itself
-  const board = new THREE.Mesh(rounded(0.41, BOARD_H, 0.215, 0.003), mat.plastic("#f3f1ea", 0.55));
-  board.position.set(0, TRAINER_H + BOARD_H / 2, 0);
-  board.castShadow = board.receiveShadow = true;
-  trainer.add(board);
+  const body = new THREE.Mesh(rounded(BOARD.w + 0.006, BOARD_H, BOARD.l + 0.006, 0.003), mat.plastic("#f3f1ea", 0.55));
+  body.position.y = BOARD_H / 2;
+  body.castShadow = body.receiveShadow = true;
+  board.add(body);
   const face = new THREE.Group();
   face.rotation.x = -Math.PI / 2;
-  face.position.set(0, TRAINER_H + BOARD_H + 0.0003, 0);
-  trainer.add(face);
-  const W = 0.405, H = 0.21, PX = 4000;
-  printedFace(face, W, H, {
+  face.position.y = BOARD_H + 0.0003;
+  board.add(face);
+  const PX = 4000;
+  printedFace(face, BOARD.w, BOARD.l, {
     pxPerM: PX, background: "#f3f1ea", z: 0, roughness: 0.55,
     draw: (ctx, at) => {
-      const hole = (x, z) => {
-        const [px, py] = at(x, -z);
+      const P = (x, z) => at(x, -z);
+      const say = (s, x, z, size, opts = {}) => { const [px, py] = P(x, z); text(ctx, s, px, py, size, { color: "#77736b", weight: 600, ...opts }); };
+      // rails: a tinted lane under each, lettered at both ends
+      const RAIL_TINT = { g: "#d8d8d4", p: "#f2c9c4", n: "#c9d6f2" };
+      const RAIL_INK = { g: "#25272a", p: COLOR.red, n: COLOR.blue };
+      const RAIL_MARK = { g: "G", p: "+", n: "−" };
+      for (const [rail, x] of Object.entries(RAIL_X)) {
+        const [x0, y0] = P(x - 0.0042, rowZ(-0.6));
+        const [x1, y1] = P(x + 0.0042, rowZ(ROWS - 0.4));
+        ctx.fillStyle = RAIL_TINT[rail[1]];
+        ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
+        for (const z of [rowZ(-1.25), rowZ(ROWS + 0.25)]) say(RAIL_MARK[rail[1]], x, z, 34, { color: RAIL_INK[rail[1]], weight: 800 });
+      }
+      // the centre channel
+      const [gx0, gy0] = P(-0.008, rowZ(-0.6));
+      const [gx1, gy1] = P(0.008, rowZ(ROWS - 0.4));
+      ctx.fillStyle = "#dedbd2";
+      ctx.fillRect(gx0, gy0, gx1 - gx0, gy1 - gy0);
+      for (const id of allHoles()) {
+        const p = contactXZ(id);
+        const [px, py] = P(p.x, p.z);
         ctx.fillStyle = "#3b3d40";
         ctx.fillRect(px - 5.5, py - 5.5, 11, 11);
         ctx.fillStyle = "#121314";
         ctx.fillRect(px - 3.5, py - 3.5, 7, 7);
-      };
-      for (const id of HOLES) { const p = contactPoint(id); hole(p.x, p.z - BOARD_Z); }
-      // rail stripes
-      const stripe = (z, color) => { const [x0, y] = at(colX(0) - 0.006, -z); const [x1] = at(colX(COLS - 1) + 0.006, -z); ctx.fillStyle = color; ctx.fillRect(x0, y - 3, x1 - x0, 6); };
-      stripe(-0.1, COLOR.red); stripe(-0.073, "#25272a"); stripe(0.073, "#25272a"); stripe(0.1, COLOR.blue);
-      silk(ctx, at, "+V", colX(0) - 0.012, 0.092, 26, { color: COLOR.red, weight: 800 });
-      silk(ctx, at, "GND", colX(0) - 0.013, 0.081, 20, { color: "#25272a", weight: 800 });
-      silk(ctx, at, "GND", colX(0) - 0.013, -0.081, 20, { color: "#25272a", weight: 800 });
-      silk(ctx, at, "−V", colX(0) - 0.012, -0.092, 26, { color: COLOR.blue, weight: 800 });
-      // the centre channel
-      const [gx0, gy0] = at(colX(0) - 0.004, 0.005);
-      const [gx1, gy1] = at(colX(COLS - 1) + 0.004, -0.005);
-      ctx.fillStyle = "#dedbd2";
-      ctx.fillRect(gx0, gy0, gx1 - gx0, gy1 - gy0);
-      // row letters and column numbers
-      for (const r of "abcdefghij") silk(ctx, at, r, colX(0) - 0.01, -ROW_Z[r], 20, { color: "#77736b", weight: 600 });
-      for (let c = 0; c < COLS; c += 1) if ((c + 1) % 5 === 0 || c === 0) {
-        silk(ctx, at, String(c + 1), colX(c), 0.0665, 18, { color: "#77736b", weight: 600 });
-        silk(ctx, at, String(c + 1), colX(c), -0.0665, 18, { color: "#77736b", weight: 600 });
+      }
+      // column letters and row numbers
+      for (const c of [...LEFT_COLS, ...RIGHT_COLS]) for (const z of [rowZ(-1.1), rowZ(ROWS + 0.1)]) say(c, COL_X[c], z, 22);
+      for (let r = 0; r < ROWS; r += 1) if (r === 0 || (r + 1) % 5 === 0 || (r >= CHIP_ROW && r < CHIP_ROW + 4)) {
+        say(String(r + 1), -0.0665, rowZ(r), 20);
+        say(String(r + 1), 0.0665, rowZ(r), 20);
       }
       // terminal blocks
-      const block = (name, label, color, labelAt) => {
-        const [bx, bz] = BLOCK_AT[name];
-        const [x0, y0] = at(bx - 0.008, -(bz - 0.008));
-        const [x1, y1] = at(bx + 0.008, -(bz + (BLOCK_HOLES - 1) * PITCH + 0.008));
+      for (const [name, [x, row]] of Object.entries(BLOCK_AT)) {
+        const block = BLOCKS[name];
+        const color = { VIN: "#b08a12", VIN2: COLOR.purple, VOUT: "#1f8a99", GND: "#25272a" }[block.net];
+        const [x0, y0] = P(x - 0.0075, rowZ(row) - 0.0075);
+        const [x1, y1] = P(x + 0.0075, rowZ(row + block.holes - 1) + 0.0075);
         ctx.strokeStyle = color;
         ctx.lineWidth = 6;
         ctx.strokeRect(x0, y0, x1 - x0, y1 - y0);
-        silk(ctx, at, label, bx, -labelAt, 22, { color: color === COLOR.yellow ? "#9a7a10" : color, weight: 800 });
-      };
-      block("vtwo", "VIN2", COLOR.purple, -0.073);
-      block("vin", "VIN", COLOR.yellow, 0.061);
-      block("vout", "VOUT", "#1f8a99", 0.03);
+        say(block.label, x, rowZ(row) - 0.014, 24, { color, weight: 800 });
+      }
     },
   });
 }
 
-// the 741, straddling the centre channel with its notch to the left
+// the 741, straddling the channel with its notch toward the far end
 {
   const chip = new THREE.Group();
-  const cx = (colX(CHIP_COL) + colX(CHIP_COL + 3)) / 2;
-  chip.position.set(cx, BOARD_TOP, BOARD_Z);
-  lab.add(chip);
-  const body = new THREE.Mesh(rounded(0.042, 0.009, 0.022, 0.0012), mat.plastic("#1b1c1e", 0.45));
-  body.position.y = 0.0075;
+  const cz = (rowZ(CHIP_ROW) + rowZ(CHIP_ROW + 3)) / 2;
+  chip.position.set(0, BOARD_H + 0.002, cz);
+  board.add(chip);
+  const w = CHIP.w, l = CHIP.l, notch = 0.0034;
+  const shape = new THREE.Shape();
+  shape.moveTo(-w / 2, -l / 2);
+  shape.lineTo(w / 2, -l / 2);
+  shape.lineTo(w / 2, l / 2);
+  shape.lineTo(notch, l / 2);
+  shape.absarc(0, l / 2, notch, 0, Math.PI, true);
+  shape.lineTo(-w / 2, l / 2);
+  shape.closePath();
+  const geometry = new THREE.ExtrudeGeometry(shape, { depth: 0.009, bevelEnabled: true, bevelThickness: 0.0006, bevelSize: 0.0006, bevelSegments: 2, curveSegments: 20 });
+  geometry.rotateX(-Math.PI / 2);
+  // the top: pin numbers along both edges, names beside them, a dimple at pin 1
+  const PX = 16000;
+  const view = canvasTexture(w * PX, l * PX);
+  const { ctx, canvas } = view;
+  ctx.fillStyle = "#1b1c1e";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  const at = (x, z) => [(x + w / 2) * PX, (z + l / 2) * PX];
+  const [dx, dy] = at(-w / 2 + 0.0042, -l / 2 + 0.0042);
+  ctx.fillStyle = "#3d3f43";
+  ctx.beginPath(); ctx.arc(dx, dy, 0.0017 * PX, 0, Math.PI * 2); ctx.fill();
+  const names = { 1: "OFS", 2: "−IN", 3: "+IN", 4: "V−", 5: "OFS", 6: "OUT", 7: "V+", 8: "NC" };
+  for (const [n, hole] of Object.entries(PINS)) {
+    const z = contactXZ(hole).z - cz;
+    const left = Number(n) <= 4;
+    const [nx, ny] = at(left ? -w / 2 + 0.0026 : w / 2 - 0.0026, z);
+    text(ctx, n, nx, ny, 58, { color: "#ffffff", weight: 800 });
+    const [tx, ty] = at(left ? -w / 2 + 0.0052 : w / 2 - 0.0052, z);
+    text(ctx, names[n], tx, ty, 30, { color: "#c9c6bf", weight: 700, align: left ? "left" : "right" });
+  }
+  const [lx, ly] = at(0, l / 2 - 0.0034);
+  text(ctx, "µA741", lx, ly, 30, { color: "#8f8c86", weight: 700 });
+  view.texture.repeat.set(1 / w, 1 / l);
+  view.texture.offset.set(0.5, 0.5);
+  const body = new THREE.Mesh(geometry, [new THREE.MeshStandardMaterial({ map: view.texture, roughness: 0.4 }), mat.plastic("#1b1c1e", 0.45)]);
   body.castShadow = true;
   chip.add(body);
   const legMat = mat.metal("#c4c7cb", 0.3);
-  for (const [pin, id] of Object.entries(PINS)) {
-    const p = contactPoint(id);
-    const leg = new THREE.Mesh(new THREE.BoxGeometry(0.0022, 0.009, 0.0009), legMat);
-    leg.position.set(p.x - cx, 0.004, (p.z - BOARD_Z) * 0.92);
-    const shoulder = new THREE.Mesh(new THREE.BoxGeometry(0.003, 0.0012, 0.004), legMat);
-    shoulder.position.set(p.x - cx, 0.0085, Math.sign(p.z - BOARD_Z) * 0.0118);
+  for (const hole of Object.values(PINS)) {
+    const p = contactXZ(hole);
+    const side = Math.sign(p.x);
+    const leg = new THREE.Mesh(new THREE.BoxGeometry(0.0009, 0.0085, 0.0024), legMat);
+    leg.position.set(p.x, -0.0018, p.z - cz);
+    const shoulder = new THREE.Mesh(new THREE.BoxGeometry(0.0036, 0.0011, 0.0024), legMat);
+    shoulder.position.set(side * 0.0136, 0.0022, p.z - cz);
     chip.add(leg, shoulder);
-    leg.userData.pin = pin;
   }
-  const label = new THREE.Group();
-  label.rotation.x = -Math.PI / 2;
-  label.position.y = 0.0121;
-  chip.add(label);
-  printedFace(label, 0.04, 0.02, {
-    pxPerM: 16000, background: "#1b1c1e", z: 0, roughness: 0.4,
-    draw: (ctx, at) => {
-      const [nx, ny] = at(-0.02, 0);
-      ctx.fillStyle = "#0c0c0d";
-      ctx.beginPath(); ctx.arc(nx, ny, 0.0028 * 16000, -Math.PI / 2, Math.PI / 2); ctx.fill();
-      const [dx, dy] = at(-0.0155, -0.0062);
-      ctx.fillStyle = "#4a4c50";
-      ctx.beginPath(); ctx.arc(dx, dy, 0.0011 * 16000, 0, Math.PI * 2); ctx.fill();
-      silk(ctx, at, "U1  µA741", 0.001, 0.0005, 62, { color: "#d8d6d0", weight: 700 });
-      const names = { 1: "1", 2: "2 −IN", 3: "3 +IN", 4: "4 V−", 5: "5", 6: "6 OUT", 7: "7 V+", 8: "8" };
-      [1, 2, 3, 4].forEach((p, i) => silk(ctx, at, names[p], (i - 1.5) * PITCH, -0.0078, 30, { color: "#b9b6ae", weight: 600 }));
-      [8, 7, 6, 5].forEach((p, i) => silk(ctx, at, names[p], (i - 1.5) * PITCH, 0.0078, 30, { color: "#b9b6ae", weight: 600 }));
-    },
-  });
 }
 
 // ---------- components: Rin and Rf modules, fixed resistors ----------
@@ -361,42 +440,36 @@ function resistorTexture(value) {
 }
 const kOhm = (v) => (v >= 1000 ? `${(v / 1000).toFixed(v < 10000 ? 1 : 0)} kΩ` : `${v} Ω`);
 const parts = new THREE.Group();
-lab.add(parts);
+board.add(parts);
 const potModules = {};
-let occupiedByParts = new Set();
 function placeParts() {
   for (const child of [...parts.children]) parts.remove(child);
-  for (const m of Object.values(potModules)) { knobs.splice(knobs.indexOf(m.knob), 1); pickables.splice(pickables.indexOf(m.knob.pickable), 1); glowTargets.delete(m.knob); }
+  for (const m of Object.values(potModules)) { knobs.splice(knobs.indexOf(m.knob), 1); unpick(m.knob.pickable); glowTargets.delete(m.knob); }
   for (const id of Object.keys(potModules)) delete potModules[id];
-  occupiedByParts = new Set(Object.values(PINS));
-  obstacles.length = 0;
-  obstacles.push({ x0: -0.024, x1: 0.024, z0: BOARD_Z - 0.014, z1: BOARD_Z + 0.014, y: BOARD_TOP + 0.013 });
   const legMat = mat.metal("#c4c7cb", 0.3);
+  const pin = (x, z) => { const m = new THREE.Mesh(new THREE.CylinderGeometry(0.0007, 0.0007, 0.009, 8), legMat); m.position.set(x, BOARD_H - 0.0005, z); parts.add(m); };
   for (const part of partsFor(state.config)) {
-    const [a, b] = part.legs.map(contactPoint);
-    part.legs.forEach((id) => occupiedByParts.add(id));
-    const mid = a.clone().add(b).multiplyScalar(0.5);
-    const along = b.clone().sub(a);
-    const group = new THREE.Group();
-    group.position.copy(mid);
-    group.rotation.y = -Math.atan2(along.z, along.x);
-    parts.add(group);
-    const span = along.length();
-    const leg = (x, h) => { const m = new THREE.Mesh(new THREE.CylinderGeometry(0.0007, 0.0007, h, 8), legMat); m.position.set(x, h / 2 - 0.002, 0); group.add(m); };
+    const pose = partPose(part);
+    for (const end of [pose.a, pose.b]) pin(end.x, end.z);
     if (part.kind === "pot") {
-      // a trimmer on a carrier: legs bent out to the holes, body in between
+      // a trimmer module standing square to the board, its feet bent out to the holes, its readout toward the student
+      const group = new THREE.Group();
+      group.position.set(pose.mid.x, BOARD_H, pose.mid.z);
+      parts.add(group);
       const body = new THREE.Mesh(rounded(0.03, 0.026, 0.022, 0.003), mat.plastic("#2f6db5", 0.45));
-      body.position.y = 0.016;
+      body.position.y = 0.017;
       body.castShadow = true;
       group.add(body);
-      for (const s of [-1, 1]) {
-        leg(s * span / 2, 0.006);
-        const foot = new THREE.Mesh(new THREE.BoxGeometry(span / 2 - 0.014, 0.0012, 0.0012), legMat);
-        foot.position.set(s * (span / 4 + 0.007), 0.004, 0);
+      for (const end of [pose.a, pose.b]) {
+        const dx = end.x - pose.mid.x, dz = end.z - pose.mid.z;
+        const across = Math.abs(dx) > Math.abs(dz);
+        const reach = across ? Math.abs(dx) - 0.015 : Math.abs(dz) - 0.011;
+        const foot = new THREE.Mesh(new THREE.BoxGeometry(across ? reach : 0.0012, 0.0012, across ? 0.0012 : reach), legMat);
+        foot.position.set(across ? Math.sign(dx) * (0.015 + reach / 2) : dx, 0.004, across ? dz : Math.sign(dz) * (0.011 + reach / 2));
         group.add(foot);
       }
       const front = new THREE.Group();
-      front.position.set(0, 0.016, 0.0111);
+      front.position.set(0, 0.017, 0.0111);
       group.add(front);
       printedFace(front, 0.028, 0.024, {
         pxPerM: 9000, background: "#2f6db5", z: 0.0002,
@@ -405,30 +478,33 @@ function placeParts() {
       const display = new Display(front, 0, -0.004, 0.024, 0.01, { pxPerM: 12000, z: 0.0004 });
       const knobHolder = new THREE.Group();
       knobHolder.rotation.x = -Math.PI / 2;
-      knobHolder.position.y = 0.029;
+      knobHolder.position.y = 0.0302;
       group.add(knobHolder);
       const knob = addKnob(knobHolder, {
         x: 0, y: 0, radius: 0.0095, values: POT_VALUES, index: POT_VALUES.indexOf(state[part.id]), color: "#e8e5dc", cap: "#cfcbc0", marker: "#1d1f22", name: part.id,
         onChange: (v) => { state[part.id] = v; changed(); },
       });
       potModules[part.id] = { display, knob };
-      obstacles.push({ x0: mid.x - 0.018, x1: mid.x + 0.018, z0: mid.z - 0.014, z1: mid.z + 0.014, y: BOARD_TOP + 0.042 });
     } else {
-      const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.0042, Math.min(0.022, span - 0.012), 6, 18).rotateZ(Math.PI / 2), new THREE.MeshStandardMaterial({ map: resistorTexture(part.value), roughness: 0.5 }));
+      const group = new THREE.Group();
+      group.position.set(pose.mid.x, BOARD_H, pose.mid.z);
+      group.rotation.y = -Math.atan2(pose.b.z - pose.a.z, pose.b.x - pose.a.x);
+      parts.add(group);
+      const span = Math.hypot(pose.b.x - pose.a.x, pose.b.z - pose.a.z);
+      const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.0042, pose.len, 6, 18).rotateZ(Math.PI / 2), new THREE.MeshStandardMaterial({ map: resistorTexture(part.value), roughness: 0.5 }));
       body.position.y = 0.007;
       body.castShadow = true;
       group.add(body);
       const lead = new THREE.Mesh(new THREE.CylinderGeometry(0.0006, 0.0006, span, 8).rotateZ(Math.PI / 2), legMat);
       lead.position.y = 0.007;
       group.add(lead);
-      for (const s of [-1, 1]) leg(s * span / 2, 0.009);
-      // its value, printed on a small flag beside it
+      for (const s of [-1, 1]) { const m = new THREE.Mesh(new THREE.CylinderGeometry(0.0006, 0.0006, 0.007, 8), legMat); m.position.set((s * span) / 2, 0.0035, 0); group.add(m); }
+      // its value, on a small tag that always reads square to the board
       const flag = new THREE.Group();
-      flag.position.set(0, 0.0125, 0);
+      flag.position.set(pose.mid.x, BOARD_H + 0.0125, pose.mid.z);
       flag.rotation.x = -Math.PI / 2;
-      group.add(flag);
-      printedFace(flag, 0.03, 0.009, { pxPerM: 9000, background: "#f3f1ea", z: 0, draw: (ctx, at) => silk(ctx, at, `${part.label} ${kOhm(part.value)}`, 0, 0, 52, { color: "#33302a", weight: 800 }) });
-      flag.position.z = 0;
+      parts.add(flag);
+      printedFace(flag, 0.024, 0.0075, { pxPerM: 9000, background: "#f3f1ea", z: 0, draw: (ctx, at) => silk(ctx, at, `${part.label} ${kOhm(part.value)}`, 0, 0, 46, { color: "#33302a", weight: 800 }) });
     }
   }
   drawModules();
@@ -439,44 +515,52 @@ function drawModules() {
 }
 
 // ---------- instruments ----------
-// Dual DC supply, behind the trainer
-const supply = instrument({ w: 0.3, h: 0.13, d: 0.22, x: 0, z: -0.87, color: "#e6e3dc" });
+// Dual DC supply, on the shelf behind the trainer
+const supply = instrument({ w: 0.3, h: 0.13, d: 0.22, x: 0, z: -0.95, y: SHELF_Y, yaw: 0 });
 const supplyJacks = {};
 const supplyDisplays = {};
-let powerKey, rangeKnob;
+const rangeKeys = {};
+let powerKey;
 {
   const f = supply.front;
   printedFace(f, supply.w, supply.h, {
     pxPerM: 3600, background: "#2a2e33", z: 0.0006,
     draw: (ctx, at) => {
-      silk(ctx, at, "DUAL DC POWER SUPPLY", -0.138, 0.05, 30, { align: "left", weight: 800 });
-      silk(ctx, at, "+V", -0.09, -0.017, 28, { color: "#ff8a80", weight: 800 });
-      silk(ctx, at, "COM", -0.045, -0.017, 24, { weight: 800 });
-      silk(ctx, at, "−V", 0, -0.017, 28, { color: "#8fb3ff", weight: 800 });
-      silk(ctx, at, "RANGE", 0.1, -0.008, 22, { weight: 700, color: "#c9c6bf" });
-      silk(ctx, at, "POWER", 0.1, -0.058, 22, { weight: 700, color: "#c9c6bf" });
-      [["±8", 45], ["±12", 0], ["±15", -45]].forEach(([s, deg]) => {
-        const a = ((90 + deg) * Math.PI) / 180;
-        silk(ctx, at, s, 0.1 + Math.cos(a) * 0.025, 0.02 + Math.sin(a) * 0.025, 22, { weight: 700 });
-      });
+      silk(ctx, at, "DUAL DC POWER SUPPLY", -0.138, 0.053, 28, { align: "left", weight: 800 });
+      silk(ctx, at, "+V OUTPUT", -0.08, 0.04, 22, { color: "#ff8a80", weight: 800 });
+      silk(ctx, at, "−V OUTPUT", 0.005, 0.04, 22, { color: "#8fb3ff", weight: 800 });
+      silk(ctx, at, "+V", -0.105, -0.052, 24, { color: "#ff8a80", weight: 800 });
+      silk(ctx, at, "COM", -0.0375, -0.052, 22, { weight: 800 });
+      silk(ctx, at, "−V", 0.03, -0.052, 24, { color: "#8fb3ff", weight: 800 });
+      silk(ctx, at, "OUTPUT ±V", 0.1, 0.053, 20, { weight: 700, color: "#c9c6bf" });
+      silk(ctx, at, "POWER", 0.1, -0.054, 20, { weight: 700, color: "#c9c6bf" });
     },
   });
-  supplyDisplays.plus = new Display(f, -0.075, 0.018, 0.068, 0.026);
-  supplyDisplays.minus = new Display(f, 0.0, 0.018, 0.068, 0.026);
-  supplyJacks["sup+"] = jack(f, -0.09, -0.035, COLOR.red);
-  supplyJacks.supg = jack(f, -0.045, -0.035, COLOR.black);
-  supplyJacks["sup-"] = jack(f, 0, -0.035, COLOR.blue);
-  rangeKnob = addKnob(f, { x: 0.1, y: 0.02, radius: 0.015, values: SUPPLY_LEVELS, index: 1, sweep: 90, name: "range", onChange: (v) => { state.supply.level = v; changed(); } });
-  powerKey = addKey(f, { x: 0.1, y: -0.038, w: 0.018, round: true, color: "#c9473d", label: "I/O", labelColor: "#ffffff", led: "#53e07a", name: "power", onPress: () => { state.supply.on = !state.supply.on; changed(); } });
+  supplyDisplays.plus = new Display(f, -0.08, 0.016, 0.08, 0.03);
+  supplyDisplays.minus = new Display(f, 0.005, 0.016, 0.08, 0.03);
+  supplyJacks["sup+"] = jack(f, -0.105, -0.035, COLOR.red);
+  supplyJacks.supg = jack(f, -0.0375, -0.035, COLOR.black);
+  supplyJacks["sup-"] = jack(f, 0.03, -0.035, COLOR.blue);
+  SUPPLY_LEVELS.forEach((v, i) => {
+    rangeKeys[v] = addKey(f, { x: 0.072 + i * 0.028, y: 0.022, w: 0.025, h: 0.014, label: `±${v}`, color: "#d9d5cb", led: "#53e07a", name: `range:${v}`, onPress: () => { state.supply.level = v; changed(); } });
+  });
+  powerKey = addKey(f, { x: 0.1, y: -0.03, w: 0.018, round: true, color: "#c9473d", label: "I/O", labelColor: "#ffffff", led: "#53e07a", name: "power", onPress: () => { state.supply.on = !state.supply.on; changed(); } });
 }
 function drawSupply() {
   const short = model.short && state.supply.on;
   const on = state.supply.on && !short;
   const level = state.supply.level;
-  const show = (d, s, color) => d.draw(`${s}|${color}`, (ctx, w, h) => text(ctx, s, w * 0.92, h / 2 + 2, h * 0.7, { color, font: MONO, weight: 700, align: "right" }));
-  show(supplyDisplays.plus, short ? "LIMIT" : on ? `+${level.toFixed(1)}` : "", short ? "#ffb347" : "#ff6b5e");
-  show(supplyDisplays.minus, short ? "LIMIT" : on ? `−${level.toFixed(1)}` : "", short ? "#ffb347" : "#6f9dff");
+  // the set voltage always shows: bright when the outputs are live, dim when off
+  const show = (d, s, color, note) => d.draw(`${s}|${color}|${note}`, (ctx, w, h) => {
+    text(ctx, s, w * 0.95, h * 0.5 + 2, h * (note ? 0.42 : 0.62), { color, font: MONO, weight: 700, align: "right" });
+    if (note) text(ctx, note, w * 0.05, h * 0.5, h * 0.28, { color: "#8a8f94", font: MONO, weight: 700, align: "left" });
+  });
+  show(supplyDisplays.plus, short ? "LIMIT" : `+${level.toFixed(1)} V`, short ? "#ffb347" : on ? "#ff6b5e" : "#5a3431", on || short ? "" : "OFF");
+  show(supplyDisplays.minus, short ? "LIMIT" : `−${level.toFixed(1)} V`, short ? "#ffb347" : on ? "#6f9dff" : "#2f3d5c", on || short ? "" : "OFF");
+  show(postDisplays.plus, `+${level} V`, on ? "#ff6b5e" : "#5a3431", "");
+  show(postDisplays.minus, `−${level} V`, on ? "#6f9dff" : "#2f3d5c", "");
   powerKey.setLit(state.supply.on);
+  for (const [v, key] of Object.entries(rangeKeys)) key.setLit(Number(v) === level);
 }
 
 // Function generator, to the left
@@ -508,7 +592,8 @@ function waveIcon(type, ctx, w, h, color) {
       silk(ctx, at, "WAVEFORM", -0.077, -0.012, 20, { color: "#c9c6bf", weight: 700 });
       silk(ctx, at, "AMPL Vpp", 0.05, -0.004, 20, { color: "#c9c6bf", weight: 700 });
       silk(ctx, at, "FREQ", 0.1, -0.004, 20, { color: "#c9c6bf", weight: 700 });
-      silk(ctx, at, "OUTPUT", -0.005, -0.053, 20, { color: COLOR.yellow, weight: 800 });
+      silk(ctx, at, "OUTPUT", -0.011, -0.053, 20, { color: COLOR.yellow, weight: 800 });
+      silk(ctx, at, "COM", 0.016, -0.053, 18, { weight: 800 });
       silk(ctx, at, "OUT 2 LEVEL", 0.05, -0.056, 18, { color: "#c9c6bf", weight: 700 });
       silk(ctx, at, "DC OUT 2", 0.105, -0.053, 18, { color: "#c3a1ff", weight: 800 });
     },
@@ -524,7 +609,8 @@ function waveIcon(type, ctx, w, h, color) {
   ampKnob = addKnob(f, { x: 0.05, y: 0.018, radius: 0.013, values: AMPLITUDES, index: AMPLITUDES.indexOf(state.gen.amp), name: "amp", onChange: (v) => { state.gen.amp = v; changed(); } });
   freqKnob = addKnob(f, { x: 0.1, y: 0.018, radius: 0.013, values: FREQUENCIES, index: FREQUENCIES.indexOf(state.gen.freq), name: "freq", onChange: (v) => { state.gen.freq = v; changed(); } });
   dc2Knob = addKnob(f, { x: 0.05, y: -0.036, radius: 0.011, values: DC2_LEVELS, index: DC2_LEVELS.indexOf(state.gen.dc2), name: "dc2", onChange: (v) => { state.gen.dc2 = v; changed(); } });
-  genJacks.gen = jack(f, -0.005, -0.036, COLOR.yellow);
+  genJacks.gen = jack(f, -0.011, -0.036, COLOR.yellow);
+  genJacks.genc = jack(f, 0.016, -0.036, COLOR.black);
   genJacks.gen2 = jack(f, 0.105, -0.036, COLOR.purple);
 }
 const hz = (f) => (f >= 1000 ? `${(f / 1000).toFixed(f % 1000 ? 1 : 0)} kHz` : `${f} Hz`);
@@ -692,12 +778,12 @@ function drawMeter() {
   });
 }
 
-// ---------- the trainer console: circuit selector, guide, undo and reset ----------
+// ---------- the trainer console: circuit selector, guide, undo, reset and solution ----------
 const consoleFace = new THREE.Group();
-consoleFace.position.set(0, TOP + 0.03, BOARD_Z + 0.21);
+consoleFace.position.set(0, TOP + 0.03, HINGE_Z + 0.072);
 consoleFace.rotation.x = -1.1;
 lab.add(consoleFace);
-let guideDisplay, configKnob;
+let guideDisplay, configKnob, solutionKey;
 {
   const body = new THREE.Mesh(rounded(0.56, 0.12, 0.03, 0.006), mat.plastic("#34383d", 0.6));
   body.position.z = -0.0155;
@@ -717,12 +803,13 @@ let guideDisplay, configKnob;
   });
   configKnob = addKnob(consoleFace, {
     x: -0.215, y: -0.004, radius: 0.016, values: CONFIG_ORDER, index: 0, sweep: 135, name: "config",
-    onChange: (v) => { pushHistory(); state.config = v; clearJumpers(); state.supply.on = false; placeParts(); changed(); },
+    onChange: (v) => { pushHistory(); state.config = v; clearWires(); state.supply.on = false; placeParts(); changed(); },
   });
   guideDisplay = new Display(consoleFace, 0.005, 0, 0.32, 0.096, { pxPerM: 4400, glass: "#0e1418" });
-  addKey(consoleFace, { x: 0.222, y: 0.026, w: 0.05, h: 0.022, label: "UNDO", color: "#d9d5cb", name: "undo", onPress: () => undo() });
-  addKey(consoleFace, { x: 0.222, y: -0.008, w: 0.05, h: 0.022, label: "RESET", color: "#d9d5cb", name: "reset", onPress: () => resetLab() });
-  addKey(consoleFace, { x: 0.222, y: -0.04, w: 0.05, h: 0.018, label: "GUIDE", color: "#d9d5cb", led: "#ffcf3f", name: "guide", onPress: (k) => { guided = !guided; k.setLit(guided); changed(); } }).setLit(true);
+  addKey(consoleFace, { x: 0.198, y: 0.026, w: 0.046, h: 0.02, label: "UNDO", color: "#d9d5cb", name: "undo", onPress: () => undo() });
+  addKey(consoleFace, { x: 0.25, y: 0.026, w: 0.046, h: 0.02, label: "RESET", color: "#d9d5cb", name: "reset", onPress: () => resetLab() });
+  addKey(consoleFace, { x: 0.198, y: -0.03, w: 0.046, h: 0.02, label: "GUIDE", color: "#d9d5cb", led: "#ffcf3f", name: "guide", onPress: (k) => { guided = !guided; k.setLit(guided); changed(); } }).setLit(true);
+  solutionKey = addKey(consoleFace, { x: 0.25, y: -0.03, w: 0.046, h: 0.02, label: "SOLUTION", color: "#d9d5cb", led: "#4ade80", name: "solution", onPress: (k) => { showSolution = !showSolution; k.setLit(showSolution); changed(); } });
 }
 
 function schematic(ctx, x0, y0, w, h, config) {
@@ -740,7 +827,7 @@ function schematic(ctx, x0, y0, w, h, config) {
   };
   const vresistor = (x, y1, y2, label) => { const m = (y1 + y2) / 2; line([x, y1], [x, m - 8]); line([x, m + 8], [x, y2]); ctx.strokeRect(X(x - 4), Y(m - 8), 8 * s, 16 * s); text(ctx, label, X(x + 13), Y(m), 9 * s, { color: "#dfe7e3", weight: 700 }); };
   const ground = (x, y) => { line([x, y], [x, y + 5]); line([x - 7, y + 5], [x + 7, y + 5]); line([x - 4.5, y + 8], [x + 4.5, y + 8]); line([x - 2, y + 11], [x + 2, y + 11]); };
-  const terminal = (x, y, label, color) => { ctx.beginPath(); ctx.arc(X(x), Y(y), 2.6 * s, 0, Math.PI * 2); ctx.stroke(); text(ctx, label, X(x), Y(y - 8), 9 * s, { color, weight: 800 }); };
+  const terminal = (x, y, label, color, below = false) => { ctx.beginPath(); ctx.arc(X(x), Y(y), 2.6 * s, 0, Math.PI * 2); ctx.stroke(); text(ctx, label, X(x), Y(below ? y + 9 : y - 8), 9 * s, { color, weight: 800 }); };
   // op-amp at (95..125, 40..70)
   ctx.beginPath(); ctx.moveTo(X(95), Y(36)); ctx.lineTo(X(95), Y(74)); ctx.lineTo(X(128), Y(55)); ctx.closePath(); ctx.stroke();
   text(ctx, "−", X(100), Y(45), 11 * s, { color: "#dfe7e3" }); text(ctx, "+", X(100), Y(65), 11 * s, { color: "#dfe7e3" });
@@ -759,11 +846,12 @@ function schematic(ctx, x0, y0, w, h, config) {
   if (config === "inverting" || config === "adder") { line([95, 65], [86, 65]); ground(86, 65); }
   if (config === "adder") { line([66, 45], [66, 22]); resistor(22, 22, 66, "R2"); terminal(19.4, 22, "VIN2", "#c3a1ff"); }
   if (config === "noninverting") {
-    line([80, 45], [62, 45]); vresistor(62, 45, 80, "Rin"); ground(62, 80);
-    line([95, 65], [22, 65]); terminal(19.4, 65, "VIN", COLOR.yellow);
+    // Rin runs from the summing point back to ground on the left, clear of the input below it
+    resistor(42, 45, 80, "Rin"); ground(42, 45);
+    line([95, 65], [22, 65]); terminal(19.4, 65, "VIN", COLOR.yellow, true);
   }
   if (config === "subtractor") {
-    resistor(22, 65, 70, "R3"); terminal(19.4, 65, "VIN2", "#c3a1ff"); line([70, 65], [95, 65]);
+    resistor(22, 65, 70, "R3"); terminal(19.4, 65, "VIN2", "#c3a1ff", true); line([70, 65], [95, 65]);
     vresistor(78, 65, 88, "R4"); ground(78, 88);
   }
 }
@@ -784,22 +872,24 @@ function drawGuide() {
   }
   const clipped = vout && model.supplyOn && (Math.max(...vout.values) > state.supply.level - 1.6 || Math.min(...vout.values) < -state.supply.level + 1.6);
   const stray = strayJumpers(state);
-  const warning = model.short ? `Short circuit: ${model.short}` : stray.length ? `A jumper is not part of this circuit (${stray.length})` : clipped ? `Vout is clipping at ±${(state.supply.level - 1.5).toFixed(1)} V` : "";
+  const warning = model.short ? `Short circuit: ${model.short}` : stray.length ? `A wire is not part of this circuit (${stray.length})` : clipped ? `Vout is clipping at ±${(state.supply.level - 1.5).toFixed(1)} V` : "";
   const lines = {
     title: `${config.title}`,
-    progress: next ? `Step ${doneCount + 1} of ${stepList.length}` : "Circuit complete",
+    progress: `${next ? `Step ${doneCount + 1} of ${stepList.length}` : "Circuit complete"}  ·  ±${state.supply.level} V`,
     step: next ? next.text : "Adjust Rin, Rf and the input; compare measured with theory",
     theory: `theory  ${t.text}`,
     measured, warning, guided,
+    solution: showSolution && next ? "Solution shown: faint wires and rings mark what is left" : "",
   };
   guideDisplay.draw(JSON.stringify(lines), (ctx, w, h) => {
     schematic(ctx, 6, h * 0.06, h * 1.5, h * 0.9, state.config);
     const x = h * 1.5 + 22;
     text(ctx, lines.title, x, h * 0.12, h * 0.088, { color: "#f2efe7", align: "left", weight: 800 });
-    text(ctx, lines.progress, w - 16, h * 0.12, h * 0.062, { color: "#9fb3ab", align: "right", font: MONO, weight: 600 });
-    wrap(ctx, lines.step, x, h * 0.33, w - x - 16, h * 0.105, { color: next && guided ? COLOR.next : "#f2efe7", align: "left", weight: 700 });
-    text(ctx, lines.theory, x, h * 0.66, h * 0.075, { color: "#cfe0d8", align: "left", font: MONO, weight: 600 });
-    if (lines.measured) text(ctx, lines.measured, x, h * 0.78, h * 0.075, { color: COLOR.cyan, align: "left", font: MONO, weight: 600 });
+    text(ctx, lines.progress, x, h * 0.215, h * 0.058, { color: "#9fb3ab", align: "left", font: MONO, weight: 600 });
+    wrap(ctx, lines.step, x, h * 0.335, w - x - 16, h * 0.095, { color: next && guided ? COLOR.next : "#f2efe7", align: "left", weight: 700 });
+    if (lines.solution) text(ctx, lines.solution, x, h * 0.565, h * 0.058, { color: "#4ade80", align: "left", weight: 600 });
+    text(ctx, lines.theory, x, h * 0.67, h * 0.075, { color: "#cfe0d8", align: "left", font: MONO, weight: 600 });
+    if (lines.measured) text(ctx, lines.measured, x, h * 0.79, h * 0.075, { color: COLOR.cyan, align: "left", font: MONO, weight: 600 });
     if (lines.warning) text(ctx, lines.warning, x, h * 0.91, h * 0.075, { color: "#ffb347", align: "left", weight: 700 });
   });
 }
@@ -816,9 +906,8 @@ function wrap(ctx, s, x, y, maxW, size, opts) {
   text(ctx, line, x, y + row * size * 1.2, size, opts);
 }
 
-// ---------- movable things: leads, probes and jumpers ----------
+// ---------- movable things: leads and probes ----------
 const movers = [];
-const tmp = new THREE.Vector3();
 const UP = new THREE.Vector3(0, 1, 0);
 
 /** Lab-local point and outward direction of a jack mounted on an instrument face. */
@@ -863,7 +952,6 @@ class Plug {
     }
     hitArea(this.group, new THREE.CylinderGeometry(0.011, 0.011, this.length, 10).translate(0, this.length / 2 + 0.004, 0), this);
     this.cable = new Cable(lab, color === COLOR.black ? "#2a2c2f" : color, kind === "lead" ? 0.0028 : 0.0022);
-    this.seat = null;
     this.held = false;
     lab.add(this.group);
     movers.push(this);
@@ -872,23 +960,24 @@ class Plug {
   }
   get contact() { return this.kind === "lead" ? state.leads[this.id] : state.probes[this.id]; }
   set contact(v) { if (this.kind === "lead") state.leads[this.id] = v; else state.probes[this.id] = v; }
-  accepts(id) { return this.kind === "lead" ? Boolean(POST_AT[id]) : true; }
+  // a lead goes into a post or a free hole; a probe clips onto anything
+  accepts(id) { return this.kind === "lead" ? isPost(id) || (!isPin(id) && !takenHoles(this).has(id)) : true; }
   park() { this.group.position.copy(this.parkPos); this.group.quaternion.copy(this.parkQuat); this.updateCable(); }
   tip() { return this.group.position.clone(); }
-  /** Place from the current state: seated on its contact or resting. */
+  grabPoint() { return this.group.localToWorld(new THREE.Vector3(0, this.length * 0.6, 0)).sub(lab.position); }
+  /** Place from the current state: seated on its contact, square to the trainer, or resting. */
   sync() {
     const c = this.contact;
     if (this.held) return;
     if (c) {
-      const p = (POST_POINT.get(c) ?? HOLE_POINT.get(c)).clone();
-      // several plugs on one post stack up its shank
-      if (POST_AT[c]) {
+      const p = CONTACT_POINT.get(c).clone();
+      if (isPost(c)) {
         // a lead's pin sinks into the post; later plugs stack on the one below
-        const below = movers.filter((m) => m !== this && m.contact === c && movers.indexOf(m) < movers.indexOf(this)).length;
+        const below = movers.filter((m) => m instanceof Plug && m !== this && m.contact === c && movers.indexOf(m) < movers.indexOf(this)).length;
         p.y += (this.kind === "lead" ? -0.012 : 0) + below * 0.036;
-      }
-      this.group.position.copy(p);
-      this.group.quaternion.identity();
+      } else if (this.kind === "lead") p.y -= 0.009; // its pin sinks into the hole
+      this.group.position.copy(toLab(p));
+      this.group.quaternion.copy(trainer.quaternion);
     } else this.park();
     this.updateCable();
   }
@@ -899,15 +988,14 @@ class Plug {
   }
   updateCable() {
     const { p, n } = jackPose(this.from);
-    const end = this.group.localToWorld(new THREE.Vector3(0, this.length, 0));
-    lab.worldToLocal(end);
+    const end = lab.worldToLocal(this.group.localToWorld(new THREE.Vector3(0, this.length, 0)));
     // the cable leaves the back of the plug and bends toward its instrument
     const dir = UP.clone().applyQuaternion(this.group.quaternion);
     const toward = p.clone().sub(end).setY(0);
     if (toward.lengthSq() > 1e-6) dir.multiplyScalar(0.4).addScaledVector(toward.normalize(), 1).normalize();
     this.cable.update(p, n, end, dir, heightAt);
   }
-  begin() { this.held = true; return this; }
+  begin() { this.held = true; closeMenu(); return this; }
   drop(p) {
     this.held = false;
     const target = nearestContact(p, this);
@@ -919,15 +1007,16 @@ class Plug {
 }
 
 // leads and probes, resting in front of their instruments
-const leadPark = (inst, x) => inst.group.localToWorld(new THREE.Vector3(x, 0.0055, inst.front.position.z + 0.05)).sub(lab.position);
+const leadPark = (inst, x, ahead = 0.05) => inst.group.localToWorld(new THREE.Vector3(x, 0.0055, inst.front.position.z + ahead)).sub(lab.position);
 const leadYaw = (inst) => inst.group.rotation.y;
 const plugs = {};
-for (const [id, jx] of [["sup+", -0.09], ["supg", -0.045], ["sup-", 0]]) {
-  supply.group.updateMatrixWorld(true);
-  plugs[id] = new Plug({ kind: "lead", id, color: LEADS[id].color === "black" ? COLOR.black : COLOR[LEADS[id].color], from: supplyJacks[id], park: leadPark(supply, jx), parkYaw: leadYaw(supply) });
+supply.group.updateMatrixWorld(true);
+for (const [id, jx] of [["sup+", -0.105], ["supg", -0.0375], ["sup-", 0.03]]) {
+  plugs[id] = new Plug({ kind: "lead", id, color: COLOR[LEADS[id].color], from: supplyJacks[id], park: leadPark(supply, jx, 0.052), parkYaw: leadYaw(supply) });
 }
 gen.group.updateMatrixWorld(true);
-plugs.gen = new Plug({ kind: "lead", id: "gen", color: COLOR.yellow, from: genJacks.gen, park: leadPark(gen, -0.005), parkYaw: leadYaw(gen) });
+plugs.gen = new Plug({ kind: "lead", id: "gen", color: COLOR.yellow, from: genJacks.gen, park: leadPark(gen, -0.011), parkYaw: leadYaw(gen) });
+plugs.genc = new Plug({ kind: "lead", id: "genc", color: COLOR.black, from: genJacks.genc, park: leadPark(gen, 0.016), parkYaw: leadYaw(gen) });
 plugs.gen2 = new Plug({ kind: "lead", id: "gen2", color: COLOR.purple, from: genJacks.gen2, park: leadPark(gen, 0.105), parkYaw: leadYaw(gen) });
 scope.group.updateMatrixWorld(true);
 plugs.ch1 = new Plug({ kind: "probe", id: "ch1", color: COLOR.yellow, from: scopeJacks.ch1, park: leadPark(scope, -0.13), parkYaw: leadYaw(scope) });
@@ -936,211 +1025,443 @@ meter.updateMatrixWorld(true);
 plugs.red = new Plug({ kind: "probe", id: "red", color: COLOR.red, from: meterJacks.red, park: new THREE.Vector3(0.42, TOP + 0.0055, -0.25), parkYaw: meter.rotation.y });
 plugs.black = new Plug({ kind: "probe", id: "black", color: COLOR.black, from: meterJacks.black, park: new THREE.Vector3(0.3, TOP + 0.0055, -0.25), parkYaw: meter.rotation.y });
 
-/** A jumper wire: two legs and an insulated arch between them. */
-class Jumper {
-  constructor(color) {
-    this.color = color;
-    this.mat = mat.plastic(COLOR[color] ?? color, 0.45);
-    this.wire = new THREE.Mesh(new THREE.BufferGeometry(), this.mat);
-    this.wire.castShadow = true;
-    this.wire.frustumCulled = false;
-    this.wire.userData.ref = null;
-    lab.add(this.wire);
-    this.ends = [0, 1].map((i) => new JumperEnd(this, i));
-    this.key = "";
+// ---------- wires ----------
+// A wire joins two contacts and routes itself square across the board. Its ends
+// can be dragged to other contacts, its bead dragged to bend it a different way,
+// and a click opens a wheel to recolour or delete it.
+const wires = [];
+const wireLayer = new THREE.Group();
+board.add(wireLayer);
+const WIRE_R = 0.0016;
+const BEAD = new THREE.SphereGeometry(0.0028, 14, 10);
+
+/** Height above the trainer face at which a wire meets a contact. */
+const endHeight = (id) => (isPost(id) ? 0.007 : isPin(id) ? BOARD_H + 0.0045 : BOARD_H - 0.003);
+
+/** A smooth tube along a polyline, its corners rounded. */
+function tubeAlong(points, radius, radial = 8) {
+  const pts = points.filter((p, i) => i === 0 || p.distanceTo(points[i - 1]) > 1e-5);
+  const path = new THREE.CurvePath();
+  let prev = pts[0];
+  for (let i = 1; i < pts.length - 1; i += 1) {
+    const c = pts[i], n = pts[i + 1];
+    const k = Math.min(0.0035, c.distanceTo(prev) / 2, c.distanceTo(n) / 2);
+    const p1 = c.clone().addScaledVector(prev.clone().sub(c).normalize(), k);
+    const p2 = c.clone().addScaledVector(n.clone().sub(c).normalize(), k);
+    if (p1.distanceTo(prev) > 1e-6) path.add(new THREE.LineCurve3(prev, p1));
+    path.add(new THREE.QuadraticBezierCurve3(p1, c, p2));
+    prev = p2;
   }
+  path.add(new THREE.LineCurve3(prev, pts[pts.length - 1]));
+  const segments = THREE.MathUtils.clamp(Math.round(path.getLength() / 0.0015), 16, 320);
+  return new THREE.TubeGeometry(path, segments, radius, radial, false);
+}
+
+/** The 3D path of a wire: down into each contact, across at its layer's height. */
+function wirePoints(route, a, b, ya, yb, height) {
+  const out = [new THREE.Vector3(a.x, ya, a.z)];
+  for (const p of route.points) out.push(new THREE.Vector3(p.x, height, p.z));
+  out.push(new THREE.Vector3(b.x, yb, b.z));
+  return out;
+}
+
+/** What a wire between these contacts has to go around: the parts and other wires' ends. */
+function obstaclesFor(mine, except) {
+  return [
+    ...partObstacles(state.config).filter((o) => !mine.includes(o.what)),
+    ...[...wires.filter((w) => w !== except).flatMap((w) => [w.a, w.b]), ...Object.values(state.leads)].filter((id) => id && !mine.includes(id) && !isPost(id) && !isPin(id)).map(endObstacle),
+  ];
+}
+function routeBetween(a, b, ids, { via = null, except = null } = {}) {
+  return routeWire(a, b, {
+    obstacles: obstaclesFor(ids, except),
+    wires: wires.filter((w) => w !== except && w.route).map((w) => w.route.points),
+    lanesX: LANES_X, lanesZ: LANES_Z, via,
+  });
+}
+
+let layerCount = 0;
+class Wire {
+  constructor({ a, b, color, bend = null }) {
+    this.a = a;
+    this.b = b;
+    this.color = color;
+    this.bend = bend;
+    this.free = [null, null]; // where a dragged end is, until it lands
+    this.layer = layerCount++ % 4;
+    this.mat = mat.plastic(COLOR[color], 0.45);
+    this.glow = this.mat;
+    this.mesh = new THREE.Mesh(new THREE.BufferGeometry(), this.mat);
+    this.mesh.castShadow = true;
+    this.mesh.frustumCulled = false;
+    this.mesh.userData.ref = this;
+    this.hit = new THREE.Mesh(new THREE.BufferGeometry(), HIT);
+    this.hit.userData.ref = this;
+    wireLayer.add(this.mesh, this.hit);
+    pickable(this.hit);
+    this.ends = [0, 1].map((i) => new WireEnd(this, i));
+    this.bead = new WireBend(this);
+    glowTargets.add(this);
+    wires.push(this);
+    this.update();
+  }
+  id(i) { return i ? this.b : this.a; }
+  endXZ(i) { return this.free[i] ?? contactXZ(this.id(i)); }
+  endY(i) { return this.free[i] ? BOARD_H + 0.006 : endHeight(this.id(i)); }
   update() {
-    const tops = this.ends.map((e) => e.pos.clone().add(new THREE.Vector3(0, 0.007, 0)));
+    const a = this.endXZ(0), b = this.endXZ(1);
+    this.route = routeBetween(a, b, [this.a, this.b], { via: this.bend, except: this });
+    const height = BOARD_H + 0.0035 + this.layer * 0.0013 + (this.route.over ? 0.012 : 0);
+    const points = wirePoints(this.route, a, b, this.endY(0), this.endY(1), height);
+    this.mesh.geometry.dispose();
+    this.mesh.geometry = tubeAlong(points, WIRE_R);
+    this.hit.geometry.dispose();
+    this.hit.geometry = tubeAlong(points, 0.0042, 6);
     for (const e of this.ends) e.place();
-    const key = tops.map((p) => p.toArray().map((v) => v.toFixed(4)).join()).join("|");
-    if (key === this.key) return;
-    this.key = key;
-    const [a, b] = tops;
-    const d = a.distanceTo(b);
-    const lift = Math.min(0.006 + d * 0.08, 0.02);
-    const mid = a.clone().add(b).multiplyScalar(0.5);
-    mid.y = Math.max(a.y, b.y) + lift;
-    const curve = new THREE.CatmullRomCurve3([a, a.clone().add(new THREE.Vector3(0, lift * 0.7, 0)).lerp(mid, 0.25), mid, b.clone().add(new THREE.Vector3(0, lift * 0.7, 0)).lerp(mid, 0.25), b]);
-    this.wire.geometry.dispose();
-    this.wire.geometry = new THREE.TubeGeometry(curve, 32, 0.0017, 8, false);
+    // the bead sits on the lane a student chose, else halfway along the run
+    const mid = this.bend ? laneBead(this.bend, a, b) : midpoint(this.route.points);
+    this.bead.place(new THREE.Vector3(mid.x, height, mid.z));
+    dirty();
+  }
+  setColor(color) {
+    this.color = color;
+    this.mat.color.set(COLOR[color]);
   }
   remove() {
-    lab.remove(this.wire);
-    for (const e of this.ends) {
-      lab.remove(e.group);
-      for (const m of [e.handle, e.hit]) pickables.splice(pickables.indexOf(m), 1);
-      movers.splice(movers.indexOf(e), 1);
-      glowTargets.delete(e);
-    }
-    jumpers.splice(jumpers.indexOf(this), 1);
+    wireLayer.remove(this.mesh, this.hit);
+    this.mesh.geometry.dispose();
+    this.hit.geometry.dispose();
+    unpick(this.hit);
+    for (const part of [...this.ends, this.bead]) part.dispose();
+    glowTargets.delete(this);
+    wires.splice(wires.indexOf(this), 1);
+    if (menuWire === this) closeMenu();
   }
 }
-class JumperEnd {
-  constructor(jumper, index) {
-    this.jumper = jumper;
+function laneBead(bend, a, b) {
+  const clamp = (v, p, q) => THREE.MathUtils.clamp(v, Math.min(p, q), Math.max(p, q));
+  return bend.lane === "x" ? { x: bend.x, z: clamp(bend.z, a.z, b.z) } : { x: clamp(bend.x, a.x, b.x), z: bend.z };
+}
+function midpoint(points) {
+  const lengths = points.slice(1).map((q, i) => Math.hypot(q.x - points[i].x, q.z - points[i].z));
+  let half = lengths.reduce((s, l) => s + l, 0) / 2;
+  for (let i = 0; i < lengths.length; i += 1) {
+    if (half <= lengths[i]) { const t = lengths[i] ? half / lengths[i] : 0; return { x: points[i].x + (points[i + 1].x - points[i].x) * t, z: points[i].z + (points[i + 1].z - points[i].z) * t }; }
+    half -= lengths[i];
+  }
+  return points[0];
+}
+
+/** One end of a wire: a stripped tip in the contact and an insulated sleeve to take hold of. */
+class WireEnd {
+  constructor(wire, index) {
+    this.wire = wire;
     this.index = index;
-    this.hole = null;
-    this.pos = new THREE.Vector3();
     this.held = false;
     this.group = new THREE.Group();
-    const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.0007, 0.0007, 0.01, 8).translate(0, 0.002, 0), mat.metal("#c4c7cb", 0.3));
-    // a slightly larger insulated collar makes the end easy to see and grab
-    this.handle = new THREE.Mesh(new THREE.CylinderGeometry(0.0024, 0.0024, 0.006, 12).translate(0, 0.0075, 0), jumper.mat);
-    this.handle.userData.ref = this;
-    this.group.add(leg, this.handle);
-    lab.add(this.group);
-    pickable(this.handle);
-    this.hit = hitArea(this.group, new THREE.CylinderGeometry(0.006, 0.006, 0.016, 10).translate(0, 0.006, 0), this);
+    const tip = new THREE.Mesh(new THREE.CylinderGeometry(0.0007, 0.0007, 0.008, 8).translate(0, -0.001, 0), mat.metal("#c4c7cb", 0.3));
+    this.sleeve = new THREE.Mesh(new THREE.CylinderGeometry(0.0022, 0.0022, 0.005, 12).translate(0, 0.0055, 0), wire.mat);
+    this.sleeve.userData.ref = this;
+    this.group.add(tip, this.sleeve);
+    wireLayer.add(this.group);
+    pickable(this.sleeve);
+    this.hitMesh = hitArea(this.group, new THREE.CylinderGeometry(0.005, 0.005, 0.014, 10).translate(0, 0.005, 0), this);
+    this.glow = wire.mat;
     movers.push(this);
-    glowTargets.add(this);
-    this.glow = jumper.mat;
   }
-  get other() { return this.jumper.ends[1 - this.index]; }
-  place() { this.group.position.copy(this.pos); }
-  tip() { return this.pos.clone(); }
-  accepts(id) { return HOLE_POINT.has(id); }
-  begin() { this.held = true; return this; }
+  get contact() { return this.wire.id(this.index); }
+  place() {
+    const p = this.wire.endXZ(this.index);
+    this.group.position.set(p.x, this.wire.endY(this.index), p.z);
+  }
+  tip() { return toLab(this.group.position); }
+  grabPoint() { return toLab(this.group.position.clone().add(new THREE.Vector3(0, 0.006, 0))); }
+  accepts(id) { return !isPost(id) && !isPin(id) && id !== this.wire.id(1 - this.index); }
+  begin() { this.held = true; this.before = snapshot(); closeMenu(); return this; }
   moveTo(p) {
-    this.pos.copy(p);
-    // a jumper picked up by one loose end hangs its other loose end beside it
-    if (!this.other.hole && !this.other.held) this.other.pos.copy(p).add(new THREE.Vector3(0.028, -0.004, 0.006));
-    this.jumper.update();
+    const q = toBoard(p);
+    this.wire.free[this.index] = { x: q.x, z: q.z };
+    this.wire.update();
   }
   drop(p) {
     this.held = false;
-    const hole = nearestContact(p, this);
-    pushHistory();
-    if (hole) { this.hole = hole; this.pos.copy(HOLE_POINT.get(hole)); }
-    // a jumper needs one end on the board; dropped anywhere else, or back in the tray, it is put away
-    else if (overTray(p) || !this.other.hole) { this.jumper.remove(); syncJumpers(); changed(); return; }
-    else { this.hole = null; this.pos.set(p.x, surfaceBelow(p) + 0.003, p.z); }
-    if (!this.other.hole && !this.other.held) this.other.pos.copy(this.pos).add(new THREE.Vector3(0.03, 0, 0.012));
-    this.jumper.update();
-    syncJumpers();
+    const target = nearestContact(p, this);
+    this.wire.free[this.index] = null;
+    if (target && target !== this.contact) {
+      history.push(this.before);
+      if (this.index) this.wire.b = target; else this.wire.a = target;
+      this.wire.bend = null;
+    }
+    this.wire.update();
+    syncWires();
     changed();
   }
-}
-const jumpers = [];
-function syncJumpers() {
-  state.jumpers = jumpers.map((j, i) => ({ id: `j${i}`, color: j.color, a: j.ends[0].hole, b: j.ends[1].hole }));
-}
-function clearJumpers() {
-  for (const j of [...jumpers]) j.remove();
-  state.jumpers = [];
-}
-function restoreJumpers(list) {
-  clearJumpers();
-  for (const saved of list) {
-    const j = new Jumper(saved.color);
-    j.ends.forEach((e, i) => { e.hole = saved.holes[i]; e.pos.copy(saved.holes[i] ? HOLE_POINT.get(saved.holes[i]) : new THREE.Vector3(...saved.pos[i])); });
-    jumpers.push(j);
-    j.update();
+  dispose() {
+    wireLayer.remove(this.group);
+    unpick(this.sleeve);
+    unpick(this.hitMesh);
+    movers.splice(movers.indexOf(this), 1);
   }
-  syncJumpers();
 }
 
-// the jumper kit: a tray of colour-sorted, pre-cut jumpers
-const TRAY_COLORS = ["red", "blue", "black", "yellow", "purple", "green", "cyan", "white"];
-const tray = new THREE.Group();
-tray.position.set(-0.4, TOP, -0.33);
-tray.rotation.y = 0.35;
-lab.add(tray);
-const traySlots = {};
-class TraySlot {
-  constructor(color, x) {
-    this.color = color;
-    this.glow = mat.plastic(COLOR[color], 0.45);
-    const bundle = new THREE.Group();
-    bundle.position.set(x, 0.0192, -0.006);
-    for (let i = 0; i < 3; i += 1) {
-      const wire = new THREE.Mesh(new THREE.CylinderGeometry(0.0018, 0.0018, 0.05 - i * 0.008, 8).rotateX(Math.PI / 2), this.glow);
-      wire.position.set((i - 1) * 0.0045, 0.0018 * (i % 2), 0);
-      wire.userData.ref = this;
-      wire.castShadow = true;
-      bundle.add(wire);
-      pickable(wire);
-    }
-    tray.add(bundle);
-    this.bundle = bundle;
-    hitArea(bundle, new THREE.BoxGeometry(0.028, 0.014, 0.058), this);
-    glowTargets.add(this);
+/**
+ * The bead on a wire's run. Dragged sideways it moves the wire's run up the
+ * board to another lane; dragged along the rows it moves its run across.
+ */
+class WireBend {
+  constructor(wire) {
+    this.wire = wire;
+    this.held = false;
+    this.mesh = new THREE.Mesh(BEAD, new THREE.MeshStandardMaterial({ color: "#f4f1ea", roughness: 0.4 }));
+    this.mesh.visible = false;
+    this.mesh.userData.ref = this;
+    wireLayer.add(this.mesh);
+    this.hitMesh = hitArea(this.mesh, new THREE.SphereGeometry(0.0065, 10, 8), this);
+    this.glow = wire.mat;
+    movers.push(this);
   }
-  tip() { return lab.worldToLocal(this.bundle.getWorldPosition(new THREE.Vector3())); }
-  begin() {
-    const j = new Jumper(this.color);
-    jumpers.push(j);
-    const start = this.tip();
-    j.ends[0].pos.copy(start);
-    j.ends[1].pos.copy(start).add(new THREE.Vector3(0.028, 0, 0));
-    j.update();
-    return j.ends[0].begin();
+  place(p) { this.mesh.position.copy(p); }
+  tip() { return toLab(this.mesh.position); }
+  grabPoint() { return this.tip(); }
+  begin() { this.held = true; this.moved = false; this.before = snapshot(); this.from = this.mesh.position.clone(); closeMenu(); return this; }
+  moveTo(p) {
+    const q = toBoard(p);
+    const snap = (v) => Math.round(v / 0.005) * 0.005; // half-pitch steps keep runs between holes
+    const lane = Math.abs(q.x - this.from.x) >= Math.abs(q.z - this.from.z) ? "x" : "z";
+    this.wire.bend = { x: snap(q.x), z: snap(q.z), lane };
+    this.moved = true;
+    this.wire.update();
+  }
+  drop() {
+    this.held = false;
+    if (this.moved) { history.push(this.before); syncWires(); changed(); }
+  }
+  dispose() {
+    wireLayer.remove(this.mesh);
+    unpick(this.hitMesh);
+    movers.splice(movers.indexOf(this), 1);
+  }
+}
+
+function syncWires() {
+  state.jumpers = wires.map((w, i) => ({ id: `w${i}`, a: w.a, b: w.b, color: w.color, bend: w.bend }));
+}
+function clearWires() {
+  for (const w of [...wires]) w.remove();
+  layerCount = 0;
+  state.jumpers = [];
+}
+function restoreWires(list) {
+  clearWires();
+  for (const saved of list) new Wire(saved);
+  syncWires();
+}
+
+/** Holes already holding a part's leg, a wire end or a lead (pins and posts take any number). */
+function takenHoles(except) {
+  const taken = new Set([...Object.values(PINS), ...partsFor(state.config).flatMap((p) => p.legs)]);
+  for (const w of wires) for (const e of w.ends) if (e !== except && !isPost(e.contact) && !isPin(e.contact)) taken.add(e.contact);
+  for (const [id, c] of Object.entries(state.leads)) if (c && !isPost(c) && plugs[id] !== except) taken.add(c);
+  return taken;
+}
+
+/** Lay a wire between two contacts, coloured for the job it does. */
+function addWire(a, b) {
+  pushHistory();
+  const wire = new Wire({ a, b, color: suggestColor(state.config, a, b) });
+  syncWires();
+  changed();
+  return wire;
+}
+
+// ---------- laying a wire: click one contact, then another ----------
+let wireStart = null;
+const preview = new THREE.Mesh(new THREE.BufferGeometry(), new THREE.MeshBasicMaterial({ color: "#ffffff", transparent: true, opacity: 0.55, depthWrite: false }));
+preview.visible = false;
+preview.frustumCulled = false;
+wireLayer.add(preview);
+let previewKey = "";
+function showPreview(to) {
+  if (!wireStart || !to) { preview.visible = false; previewKey = ""; return; }
+  const key = `${wireStart}|${to.id ?? `${to.x.toFixed(3)},${to.z.toFixed(3)}`}`;
+  if (key === previewKey) return;
+  previewKey = key;
+  const a = contactXZ(wireStart), b = to.id ? contactXZ(to.id) : to;
+  const route = routeBetween(a, b, [wireStart, to.id]);
+  const points = wirePoints(route, a, b, endHeight(wireStart), to.id ? endHeight(to.id) : BOARD_H + 0.006, BOARD_H + 0.0035 + (route.over ? 0.012 : 0));
+  preview.geometry.dispose();
+  preview.geometry = tubeAlong(points, WIRE_R * 1.1);
+  preview.material.color.set(COLOR[to.id ? suggestColor(state.config, wireStart, to.id) : "white"]);
+  preview.visible = true;
+}
+/** Whether a click on this contact can start or finish a wire. */
+// wires go into breadboard holes only: posts are for instrument leads, and a pin is reached through its row
+function canWire(id) { return !isPost(id) && !isPin(id) && !takenHoles().has(id); }
+/** Where a wire end already sits in this hole, so a click there opens that wire instead. */
+const wireAt = (id) => (isPost(id) || isPin(id) ? null : wires.find((w) => w.a === id || w.b === id) ?? null);
+function contactClicked(id) {
+  closeMenu();
+  if (!wireStart) {
+    const there = wireAt(id);
+    if (there) { openMenu(there); return "menu"; }
+    if (!canWire(id)) return "taken";
+    wireStart = id;
+    ringAt(startRing, id);
+    return "start";
+  }
+  if (id === wireStart) { cancelWire(); return "cancel"; }
+  if (!canWire(id)) return "taken";
+  addWire(wireStart, id);
+  cancelWire();
+  return "wire";
+}
+function cancelWire() {
+  wireStart = null;
+  startRing.visible = false;
+  showPreview(null);
+}
+
+// ---------- the colour wheel ----------
+const menu = new THREE.Group();
+menu.visible = false;
+board.add(menu);
+let menuWire = null;
+const menuItems = [];
+class MenuItem {
+  constructor(action, angle, radius, draw) {
+    this.action = action;
+    const r = action === "delete" ? 0.0074 : 0.0066;
+    const view = canvasTexture(128, 128);
+    draw(view.ctx, 128);
+    view.texture.needsUpdate = true;
+    this.mesh = new THREE.Mesh(new THREE.CircleGeometry(r, 32), new THREE.MeshBasicMaterial({ map: view.texture, transparent: true, depthTest: false, toneMapped: false }));
+    this.mesh.position.set(Math.cos(angle) * radius, Math.sin(angle) * radius, 0.0004);
+    this.mesh.renderOrder = 21;
+    this.mesh.userData.ref = this;
+    this.outline = new THREE.Mesh(new THREE.RingGeometry(r + 0.0006, r + 0.0016, 32), new THREE.MeshBasicMaterial({ color: "#ffffff", depthTest: false, transparent: true }));
+    this.outline.position.copy(this.mesh.position);
+    this.outline.renderOrder = 21;
+    this.outline.visible = false;
+    menu.add(this.mesh, this.outline);
+    pickable(this.mesh);
+    menuItems.push(this);
+  }
+  get label() {
+    if (this.action === "delete") return "Delete this wire";
+    if (this.action === "auto") return "Re-route automatically";
+    return `${this.action[0].toUpperCase()}${this.action.slice(1)} · ${ROLE[this.action]}`;
   }
 }
 {
-  const box = new THREE.Mesh(rounded(0.26, 0.016, 0.085, 0.004), mat.plastic("#3b4046", 0.6));
-  box.position.y = 0.008;
-  box.castShadow = box.receiveShadow = true;
-  tray.add(box);
-  const lid = new THREE.Group();
-  lid.rotation.x = -Math.PI / 2;
-  lid.position.set(0, 0.0162, 0.034);
-  tray.add(lid);
-  printedFace(lid, 0.25, 0.012, { pxPerM: 4000, background: "#3b4046", z: 0, draw: (ctx, at) => silk(ctx, at, "JUMPER WIRES  ·  pick one, drop it back here to discard", 0, 0, 22, { weight: 700, color: "#d6d3cc" }) });
-  TRAY_COLORS.forEach((c, i) => {
-    const well = new THREE.Mesh(new THREE.BoxGeometry(0.027, 0.002, 0.058), mat.plastic("#22262a", 0.8));
-    well.position.set(-0.1085 + i * 0.031, 0.0162, -0.006);
-    tray.add(well);
-    traySlots[c] = new TraySlot(c, -0.1085 + i * 0.031);
+  const back = new THREE.Mesh(new THREE.CircleGeometry(0.032, 48), new THREE.MeshBasicMaterial({ color: "#16191c", transparent: true, opacity: 0.82, depthTest: false }));
+  back.renderOrder = 20;
+  menu.add(back);
+  const swatch = (color) => (ctx, s) => {
+    ctx.fillStyle = COLOR[color];
+    ctx.beginPath(); ctx.arc(s / 2, s / 2, s / 2 - 2, 0, Math.PI * 2); ctx.fill();
+    if (color === "black") { ctx.strokeStyle = "#8a9096"; ctx.lineWidth = 6; ctx.stroke(); }
+  };
+  const actions = [...WIRE_COLORS, "auto"];
+  actions.forEach((action, i) => {
+    const angle = Math.PI / 2 - (i / actions.length) * Math.PI * 2;
+    new MenuItem(action, angle, 0.0225, action === "auto" ? (ctx, s) => {
+      ctx.fillStyle = "#3a4048";
+      ctx.beginPath(); ctx.arc(s / 2, s / 2, s / 2 - 2, 0, Math.PI * 2); ctx.fill();
+      text(ctx, "AUTO", s / 2, s / 2 + 2, 30, { color: "#f4f1ea", weight: 800 });
+    } : swatch(action));
+  });
+  new MenuItem("delete", 0, 0, (ctx, s) => {
+    ctx.fillStyle = "#b8322b";
+    ctx.beginPath(); ctx.arc(s / 2, s / 2, s / 2 - 2, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 12; ctx.lineCap = "round";
+    ctx.beginPath(); ctx.moveTo(s * 0.33, s * 0.33); ctx.lineTo(s * 0.67, s * 0.67); ctx.moveTo(s * 0.67, s * 0.33); ctx.lineTo(s * 0.33, s * 0.67); ctx.stroke();
   });
 }
-function overTray(p) {
-  const local = tray.worldToLocal(lab.localToWorld(p.clone()));
-  return Math.abs(local.x) < 0.14 && Math.abs(local.z) < 0.05 && local.y < 0.08;
+/** Open a wire's wheel just above where it was clicked (its bead, by default). */
+function openMenu(wire, at = wire.bead.mesh.position) {
+  cancelWire();
+  menuWire = wire;
+  menu.position.set(at.x, BOARD_H + 0.03, at.z);
+  for (const item of menuItems) item.outline.visible = item.action === wire.color;
+  menu.visible = true;
 }
-function surfaceBelow(p) {
-  const local = p.clone().sub(new THREE.Vector3(0, 0, BOARD_Z));
-  return Math.abs(local.x) < 0.205 && Math.abs(local.z) < 0.107 ? BOARD_TOP : Math.abs(local.x) < 0.28 && local.z > -0.18 && local.z < 0.15 ? TOP + TRAINER_H : TOP;
+function closeMenu() { menuWire = null; menu.visible = false; }
+function applyMenu(item) {
+  const wire = menuWire;
+  if (!wire) return;
+  pushHistory();
+  if (item.action === "delete") wire.remove();
+  else if (item.action === "auto") { wire.bend = null; wire.update(); }
+  else wire.setColor(item.action);
+  closeMenu();
+  syncWires();
+  changed();
+}
+// the wheel turns to face whoever is looking at it
+const menuQuat = new THREE.Quaternion();
+function faceMenu(cam) {
+  if (!menu.visible) return;
+  board.getWorldQuaternion(menuQuat).invert();
+  menu.quaternion.copy(menuQuat.multiply(cam.getWorldQuaternion(new THREE.Quaternion())));
 }
 
-// what a cable lying across the bench rests on: bench, trainer, console, board and the parts on it
+// ---------- surfaces ----------
+/** Lab height of the trainer frame's plane at height s above its face's base, or null off the trainer. */
+function trainerSurface(x, z, s) {
+  const zl = (z - HINGE_Z - s * Math.sin(TILT)) / Math.cos(TILT);
+  if (Math.abs(x) > TRAINER_W / 2 || zl < -TRAINER_D || zl > 0) return null;
+  return { y: TOP + s * Math.cos(TILT) - zl * Math.sin(TILT), zb: zl - BOARD_CZ };
+}
+// what a cable lying across the bench rests on: bench, shelf, console, trainer and board
 function heightAt(x, z) {
-  const lz = z - BOARD_Z;
   let h = TOP;
-  if (Math.abs(x) < 0.28 && lz > -0.18 && lz < 0.15) h = TOP + TRAINER_H;
-  if (Math.abs(x) < 0.28 && lz >= 0.15 && lz < 0.27) h = TOP + 0.06;
-  if (Math.abs(x) < 0.205 && Math.abs(lz) < 0.108) h = BOARD_TOP;
-  for (const o of obstacles) if (x > o.x0 && x < o.x1 && z > o.z0 && z < o.z1) h = Math.max(h, o.y);
+  const t = trainerSurface(x, z, TRAINER_H);
+  if (t) {
+    h = t.y;
+    if (Math.abs(x) < BOARD.w / 2 && Math.abs(t.zb) < BOARD.l / 2) h = trainerSurface(x, z, TRAINER_H + BOARD_H)?.y ?? h;
+  }
+  if (Math.abs(x) < 0.28 && z > HINGE_Z && z < HINGE_Z + 0.13) h = Math.max(h, TOP + 0.06);
+  if (Math.abs(x) < 0.4 && z > -1.07 && z < -0.8) h = Math.max(h, SHELF_Y);
   return h;
 }
 
 /** The nearest contact this mover can use, within snapping reach, or null. */
 function nearestContact(p, mover) {
+  const q = toBoard(p);
+  const taken = mover instanceof WireEnd ? takenHoles(mover) : null;
   let best = null;
   let bestD = Infinity;
-  const taken = new Set(occupiedByParts);
-  for (const j of jumpers) for (const e of j.ends) if (e.hole && e !== mover) taken.add(e.hole);
-  const consider = (id, point, reach) => {
-    if (!mover.accepts(id)) return;
-    if (mover instanceof JumperEnd && taken.has(id)) return;
-    const dx = point.x - p.x, dz = point.z - p.z, dy = Math.max(0, p.y - point.y - 0.03);
-    const d = Math.hypot(dx, dz) + dy;
+  for (const [id, point] of CONTACT_POINT) {
+    if (!mover.accepts(id)) continue;
+    if (taken?.has(id)) continue;
+    const reach = isPost(id) ? (mover.kind === "lead" ? 0.03 : 0.018) : 0.0075;
+    const d = Math.hypot(point.x - q.x, point.z - q.z) + Math.max(0, q.y - point.y - 0.03);
     if (d < reach && d < bestD) { best = id; bestD = d; }
-  };
-  for (const [id, point] of HOLE_POINT) consider(id, point, 0.0075);
-  for (const [id, point] of POST_POINT) consider(id, point, 0.03);
+  }
+  return best;
+}
+/** The contact nearest a board-frame point, for pointing and clicking. */
+function contactAt(q, reachHole = 0.0065, reachPost = 0.014) {
+  let best = null;
+  let bestD = Infinity;
+  for (const [id, point] of CONTACT_POINT) {
+    const d = Math.hypot(point.x - q.x, point.z - q.z);
+    if (d < (isPost(id) ? reachPost : reachHole) && d < bestD) { best = id; bestD = d; }
+  }
   return best;
 }
 
-// ---------- highlights: the next step, the snap target, the thing under the hand ----------
+// ---------- highlights: the next step, the snap target, the solution ----------
 const ringGeo = new THREE.TorusGeometry(1, 0.14, 8, 32).rotateX(Math.PI / 2);
-const makeRing = (color) => { const m = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.95, depthWrite: false })); m.visible = false; m.renderOrder = 5; lab.add(m); return m; };
+const makeRing = (color) => { const m = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.95, depthWrite: false })); m.visible = false; m.renderOrder = 5; board.add(m); return m; };
 const guideRings = [makeRing(COLOR.next), makeRing(COLOR.next)];
 const snapRing = makeRing("#4ade80");
+const startRing = makeRing("#ffffff");
 function ringAt(ring, id) {
-  const p = POST_POINT.get(id) ?? HOLE_POINT.get(id);
+  const p = CONTACT_POINT.get(id);
   if (!p) { ring.visible = false; return; }
   ring.position.copy(p).add(new THREE.Vector3(0, 0.0015, 0));
-  ring.userData.size = POST_AT[id] ? 0.012 : 0.0048;
+  ring.userData.size = isPost(id) ? 0.012 : 0.0048;
   ring.scale.setScalar(ring.userData.size);
   ring.visible = true;
 }
@@ -1153,11 +1474,8 @@ function updateGuide() {
   if (next.kind === "jumper") {
     ringAt(guideRings[0], next.a);
     ringAt(guideRings[1], next.b);
-    const holding = jumpers.some((j) => j.color === next.color && j.ends.some((e) => !e.hole));
-    if (!holding) guideTargets.add(traySlots[next.color]);
-    for (const j of jumpers) if (j.color === next.color) for (const e of j.ends) if (!e.hole) guideTargets.add(e);
   } else if (next.kind === "lead") {
-    ringAt(guideRings[0], next.post);
+    ringAt(guideRings[0], next.target);
     guideTargets.add(plugs[next.id]);
   } else if (next.kind === "power") {
     guideTargets.add(powerKey);
@@ -1166,18 +1484,53 @@ function updateGuide() {
     guideTargets.add(plugs[next.id]);
   }
 }
+
+// the solution: every connection still missing, drawn faintly in place
+const solution = new THREE.Group();
+board.add(solution);
+const solutionRings = [];
+function updateSolution() {
+  for (const child of [...solution.children]) { solution.remove(child); if (child.geometry !== ringGeo) child.geometry.dispose(); }
+  if (!showSolution) return;
+  const placed = [];
+  let ring = 0;
+  for (const step of stepList) {
+    if (step.done) continue;
+    if (step.kind === "jumper") {
+      const a = contactXZ(step.a), b = contactXZ(step.b);
+      const route = routeWire(a, b, {
+        obstacles: [...obstaclesFor([step.a, step.b], null), ...placed.flatMap((p) => [p.a, p.b]).filter((id) => id !== step.a && id !== step.b && !isPost(id) && !isPin(id)).map(endObstacle)],
+        wires: [...wires.map((w) => w.route.points), ...placed.map((p) => p.points)], lanesX: LANES_X, lanesZ: LANES_Z,
+      });
+      placed.push({ a: step.a, b: step.b, points: route.points });
+      const ghost = new THREE.Mesh(tubeAlong(wirePoints(route, a, b, endHeight(step.a), endHeight(step.b), BOARD_H + 0.0035 + (route.over ? 0.012 : 0)), WIRE_R * 1.15), new THREE.MeshBasicMaterial({ color: COLOR[step.color], transparent: true, opacity: 0.38, depthWrite: false }));
+      ghost.renderOrder = 4;
+      solution.add(ghost);
+    } else if (step.kind === "lead" || step.kind === "probe") {
+      if (!solutionRings[ring]) solutionRings[ring] = makeRing("#4ade80");
+      const r = solutionRings[ring++];
+      board.remove(r);
+      solution.add(r);
+      ringAt(r, step.target);
+    }
+  }
+}
+
 const hovered = new Set();
 function updateGlow(time) {
   const blink = 0.5 + 0.5 * Math.sin(time * 0.007);
   for (const target of glowTargets) {
     const m = target.glow;
     if (!m?.emissive) continue;
-    if (hovered.has(target)) m.emissive.setRGB(0.22, 0.22, 0.22);
+    if (hovered.has(target) || target === menuWire) m.emissive.setRGB(0.22, 0.22, 0.22);
     else if (guideTargets.has(target)) m.emissive.setRGB(0.45 * blink, 0.33 * blink, 0.02);
     else if (target instanceof Key && target.name?.startsWith("wave:") && target.name === `wave:${state.gen.wave}`) m.emissive.set("#5a4300");
     else m.emissive.setRGB(0, 0, 0);
   }
+  // a wire shows its bend bead while it is pointed at, held or open
+  for (const w of wires) w.bead.mesh.visible = hovered.has(w) || hovered.has(w.bead) || w.bead.held || w === menuWire;
   for (const ring of guideRings) if (ring.visible) ring.scale.setScalar(ring.userData.size * (1 + 0.25 * blink));
+  if (startRing.visible) startRing.scale.setScalar(startRing.userData.size * (1.1 + 0.3 * blink));
 }
 
 // ---------- history ----------
@@ -1185,7 +1538,7 @@ function snapshot() {
   return {
     config: state.config,
     supplyOn: state.supply.on,
-    jumpers: jumpers.filter((j) => j.ends.some((e) => e.hole)).map((j) => ({ color: j.color, holes: j.ends.map((e) => e.hole), pos: j.ends.map((e) => e.pos.toArray()) })),
+    wires: wires.map((w) => ({ a: w.a, b: w.b, color: w.color, bend: w.bend })),
     leads: { ...state.leads },
     probes: { ...state.probes },
   };
@@ -1201,7 +1554,9 @@ function applySnapshot(s) {
   state.leads = { ...s.leads };
   state.probes = { ...s.probes };
   if (configChanged) { configKnob.setValue(s.config); placeParts(); }
-  restoreJumpers(s.jumpers);
+  closeMenu();
+  cancelWire();
+  restoreWires(s.wires);
   changed();
   for (const m of movers) if (m instanceof Plug) m.sync();
 }
@@ -1213,19 +1568,21 @@ function resetLab() {
   pushHistory();
   const keep = state.config;
   state = { ...initialState(), config: keep };
-  rangeKnob.setValue(state.supply.level);
   ampKnob.setValue(state.gen.amp);
   freqKnob.setValue(state.gen.freq);
   dc2Knob.setValue(state.gen.dc2);
   meterKnob.setValue(state.meter);
   ch1Knob.setValue(0.5); ch2Knob.setValue(1); timeKnob.setValue(200e-6);
-  clearJumpers();
+  closeMenu();
+  cancelWire();
+  clearWires();
   placeParts();
   changed();
   for (const m of movers) if (m instanceof Plug) m.sync();
 }
 
 onChange(() => {
+  tipLabel.style.display = "none"; // what it named may have just changed
   drawSupply();
   drawGenerator();
   drawModules();
@@ -1233,95 +1590,174 @@ onChange(() => {
   drawMeter();
   drawGuide();
   updateGuide();
+  updateSolution();
 });
 
 // ---------- desktop interaction ----------
+// A click on a contact lays wires; a click on a wire opens its colour wheel; a
+// drag moves plugs, probes, wire ends and bends, or turns a knob. Dragging the
+// empty bench orbits the view.
 const controls = new OrbitControls(camera, renderer.domElement);
-controls.target.set(0, TOP + 0.03, -0.6);
+controls.target.set(0, TOP + 0.085, -0.56);
 controls.enableDamping = true;
-controls.minDistance = 0.18;
+controls.minDistance = 0.15;
 controls.maxDistance = 2.2;
 controls.maxPolarAngle = Math.PI * 0.49;
 controls.update();
 const raycaster = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
 let drag = null;
+let press = null; // a press that becomes a click, or a drag once the pointer moves
+const boardMatrix = new THREE.Matrix4();
 function rayFrom(e) {
   const rect = renderer.domElement.getBoundingClientRect();
   pointer.set(((e.clientX - rect.left) / rect.width) * 2 - 1, -((e.clientY - rect.top) / rect.height) * 2 + 1);
   raycaster.setFromCamera(pointer, camera);
-  return raycaster.ray;
+  return raycaster.ray.clone();
 }
 function hit(ray) {
   raycaster.ray.copy(ray);
-  const found = raycaster.intersectObjects(pickables, false)[0];
-  return found ? { ref: refOf(found.object), point: found.point } : null;
+  const found = raycaster.intersectObjects(pickables, false).filter((f) => menu.visible || !(refOf(f.object) instanceof MenuItem));
+  // the wheel draws over everything, so it wins when it is under the pointer
+  const onMenu = found.find((f) => refOf(f.object) instanceof MenuItem);
+  const first = onMenu ?? found[0];
+  return first ? { ref: refOf(first.object), point: first.point } : null;
 }
-// where a dragged tip goes: on a plane just above the surface under the pointer
+/** Where a ray meets the board face, in the board frame. */
+function boardPoint(ray, lift = 0) {
+  boardMatrix.copy(board.matrixWorld).invert();
+  const local = ray.clone().applyMatrix4(boardMatrix);
+  return local.intersectPlane(new THREE.Plane(UP, -(BOARD_H + lift)), new THREE.Vector3());
+}
+// where a dragged tip goes: just above the trainer face, else just above the bench
 function dragPoint(ray) {
+  const q = boardPoint(ray, 0.004);
+  if (q && Math.abs(q.x) < TRAINER_W / 2 && q.z > FACE_Z0 && q.z < FACE_Z1) return toLab(q);
   const local = ray.clone();
   local.origin.copy(lab.worldToLocal(ray.origin.clone()));
-  for (const height of [BOARD_TOP, TOP + TRAINER_H, TOP]) {
-    const plane = new THREE.Plane(UP, -(height + 0.004));
-    const p = local.intersectPlane(plane, new THREE.Vector3());
-    if (p && surfaceBelow(p) >= height - 1e-6) return p;
-  }
-  return null;
+  return local.intersectPlane(new THREE.Plane(UP, -(TOP + 0.004)), new THREE.Vector3());
 }
+function showTip(e, s) {
+  if (!s) { tipLabel.style.display = "none"; return; }
+  const rect = stage.getBoundingClientRect();
+  tipLabel.textContent = s;
+  tipLabel.style.left = `${e.clientX - rect.left}px`;
+  tipLabel.style.top = `${e.clientY - rect.top}px`;
+  tipLabel.style.display = "block";
+}
+const wireOf = (ref) => (ref instanceof Wire ? ref : ref instanceof WireEnd || ref instanceof WireBend ? ref.wire : null);
 renderer.domElement.addEventListener("pointerdown", (e) => {
-  if (renderer.xr.isPresenting) return;
-  const h = hit(rayFrom(e));
-  if (!h) return;
-  if (h.ref instanceof Key) { h.ref.press(); return; }
-  controls.enabled = false;
-  renderer.domElement.setPointerCapture(e.pointerId);
-  if (h.ref instanceof Knob) drag = { kind: "knob", knob: h.ref, x: e.clientX, y: e.clientY, start: h.ref.index };
-  else drag = { kind: "mover", mover: h.ref.begin() };
-  hovered.clear();
-  if (drag.kind === "mover") hovered.add(drag.mover);
+  if (renderer.xr.isPresenting || e.button !== 0) return;
+  const ray = rayFrom(e);
+  const h = hit(ray);
+  press = { x: e.clientX, y: e.clientY, ref: h?.ref ?? null, point: h ? board.worldToLocal(h.point.clone()) : null, contact: null, id: e.pointerId };
+  if (h?.ref instanceof MenuItem) { applyMenu(h.ref); press = null; return; }
+  if (h?.ref instanceof Key) { h.ref.press(); press = null; return; }
+  if (h?.ref instanceof Knob) {
+    controls.enabled = false;
+    renderer.domElement.setPointerCapture(e.pointerId);
+    drag = { kind: "knob", knob: h.ref, x: e.clientX, y: e.clientY, start: h.ref.index };
+    press = null;
+    return;
+  }
+  if (h?.ref instanceof Plug) {
+    controls.enabled = false;
+    renderer.domElement.setPointerCapture(e.pointerId);
+    drag = { kind: "mover", mover: h.ref.begin() };
+    hovered.clear();
+    hovered.add(h.ref);
+    press = null;
+    return;
+  }
+  if (wireOf(h?.ref)) { controls.enabled = false; renderer.domElement.setPointerCapture(e.pointerId); return; }
+  // nothing to take hold of: a click on a contact lays wires, a drag orbits the view
+  const q = boardPoint(ray);
+  press.contact = q ? contactAt(q) : null;
 });
 renderer.domElement.addEventListener("pointermove", (e) => {
   if (renderer.xr.isPresenting) return;
-  if (!drag) {
-    const h = hit(rayFrom(e));
+  if (press && !drag && wireOf(press.ref) && Math.hypot(e.clientX - press.x, e.clientY - press.y) > 4) {
+    // a wire pressed and pulled: its end moves, or its run bends
+    const mover = press.ref instanceof WireEnd ? press.ref : wireOf(press.ref).bead;
+    drag = { kind: "mover", mover: mover.begin() };
     hovered.clear();
-    if (h) hovered.add(h.ref);
-    renderer.domElement.style.cursor = h ? (h.ref instanceof Key ? "pointer" : "grab") : "";
+    hovered.add(mover.wire);
+  }
+  if (!drag) {
+    const ray = rayFrom(e);
+    const h = hit(ray);
+    hovered.clear();
+    snapRing.visible = false;
+    if (h) {
+      hovered.add(h.ref);
+      const w = wireOf(h.ref);
+      if (w) hovered.add(w);
+      renderer.domElement.style.cursor = h.ref instanceof Key || h.ref instanceof MenuItem ? "pointer" : "grab";
+      showTip(e, h.ref instanceof MenuItem ? h.ref.label : w ? `Wire ${contactName(w.a)} → ${contactName(w.b)} · click to recolour, drag to move` : null);
+      if (!w) showPreview(null);
+      return;
+    }
+    const q = boardPoint(ray);
+    const c = q ? contactAt(q) : null;
+    if (c) {
+      ringAt(snapRing, c);
+      const busy = !canWire(c) && !wireAt(c);
+      const action = isPin(c) ? "wire into a hole in its row" : isPost(c) ? "for instrument leads" : wireAt(c) && !wireStart ? "click to open its wire" : busy ? "taken" : wireStart ? (c === wireStart ? "click to cancel" : "click to finish the wire") : "click to start a wire";
+      showTip(e, `${contactName(c)} · ${action}`);
+      renderer.domElement.style.cursor = busy ? "not-allowed" : "crosshair";
+      showPreview(c !== wireStart && canWire(c) ? { id: c } : null);
+    } else {
+      showTip(e, wireStart ? "Click a second contact · Esc cancels" : null);
+      renderer.domElement.style.cursor = "";
+      showPreview(q ? { x: q.x, z: q.z } : null);
+    }
     return;
   }
+  showTip(e, null);
   if (drag.kind === "knob") {
-    const steps = Math.round(((e.clientX - drag.x) - (e.clientY - drag.y)) / 24);
-    drag.knob.setIndex(drag.start + steps);
+    const n = Math.round(((e.clientX - drag.x) - (e.clientY - drag.y)) / 24);
+    drag.knob.setIndex(drag.start + n);
     return;
   }
   const p = dragPoint(rayFrom(e));
   if (!p) return;
-  p.y += 0.006;
+  if (drag.mover instanceof Plug) p.add(new THREE.Vector3(0, 0.006, 0));
   drag.mover.moveTo(p);
-  const target = nearestContact(p, drag.mover);
+  const target = drag.mover instanceof WireBend ? null : nearestContact(p, drag.mover);
   if (target) ringAt(snapRing, target); else snapRing.visible = false;
   dirty();
 });
-function endDrag(e) {
-  if (!drag) return;
-  if (drag.kind === "mover") {
-    const p = drag.mover.tip();
-    drag.mover.drop(p);
+function endPress(e) {
+  if (drag) {
+    if (drag.kind === "mover") drag.mover.drop(drag.mover.tip());
+  } else if (press && e?.type === "pointerup" && Math.hypot(e.clientX - press.x, e.clientY - press.y) <= 4) {
+    // a click
+    const w = wireOf(press.ref);
+    if (w) openMenu(w, press.point);
+    else if (press.contact) contactClicked(press.contact);
+    else { cancelWire(); closeMenu(); }
   }
   snapRing.visible = false;
   drag = null;
+  press = null;
   controls.enabled = true;
   hovered.clear();
   if (e?.pointerId !== undefined && renderer.domElement.hasPointerCapture(e.pointerId)) renderer.domElement.releasePointerCapture(e.pointerId);
 }
-renderer.domElement.addEventListener("pointerup", endDrag);
-renderer.domElement.addEventListener("pointercancel", endDrag);
-renderer.domElement.addEventListener("pointerleave", () => { if (!drag) hovered.clear(); });
+renderer.domElement.addEventListener("pointerup", endPress);
+renderer.domElement.addEventListener("pointercancel", endPress);
+renderer.domElement.addEventListener("pointerleave", () => { if (!drag) { hovered.clear(); showTip(null, null); } });
+window.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") { cancelWire(); closeMenu(); }
+  if ((e.key === "Delete" || e.key === "Backspace") && menuWire) { e.preventDefault(); applyMenu(menuItems.find((i) => i.action === "delete")); }
+});
 
 // ---------- VR ----------
 // Controllers are drawn as the headset's own models. A short pointer with a bead
-// at its end presses keys by pushing into them; the grip (or trigger) takes the
-// nearest knob, plug, probe or jumper within reach of the palm.
+// at its end presses keys by pushing into them. The trigger, with the bead at a
+// contact, lays wires the way a click does, and opens a wire's colour wheel; the
+// grip (or a trigger away from any contact) takes the nearest knob, plug, probe,
+// wire end or wire bend within reach of the palm.
 const controllerModels = new XRControllerModelFactory();
 const PALM = new THREE.Vector3(0, -0.006, -0.035);
 const POKE_REACH = 0.07;
@@ -1341,23 +1777,27 @@ const holders = [0, 1].map((i) => {
   const holder = { ctrl, grip, line, bead, pointerGroup, source: null, grab: null, near: null, armed: new Set(), offset: new THREE.Vector3(), lastRoll: 0 };
   ctrl.addEventListener("connected", (e) => { holder.source = e.data; pointerGroup.visible = e.data.targetRayMode === "tracked-pointer"; });
   ctrl.addEventListener("disconnected", () => { if (holder.grab) release(holder); holder.source = null; pointerGroup.visible = false; });
-  const start = () => grab(holder);
-  const end = () => release(holder);
-  ctrl.addEventListener("squeezestart", start);
-  ctrl.addEventListener("squeezeend", end);
-  ctrl.addEventListener("selectstart", start);
-  ctrl.addEventListener("selectend", end);
+  ctrl.addEventListener("squeezestart", () => grab(holder));
+  ctrl.addEventListener("squeezeend", () => release(holder));
+  ctrl.addEventListener("selectstart", () => select(holder));
+  ctrl.addEventListener("selectend", () => release(holder));
   scene.add(ctrl, grip);
   return holder;
 });
 const palmOf = (holder) => lab.worldToLocal(holder.grip.localToWorld(PALM.clone()));
+const beadOf = (holder) => lab.worldToLocal(holder.bead.getWorldPosition(new THREE.Vector3()));
+/** The contact at the bead's end, when the bead is down at the board. */
+function contactAtBead(holder) {
+  const q = toBoard(beadOf(holder));
+  if (q.y < -0.01 || q.y > BOARD_H + 0.025) return null;
+  return contactAt(q, 0.0075, 0.016);
+}
 function nearest(holder) {
   const palm = palmOf(holder);
   let best = null;
   let bestD = 0.06;
   const consider = (ref, point, reach = 0.06) => { const d = point.distanceTo(palm); if (d < Math.min(bestD, reach)) { best = ref; bestD = d; } };
-  for (const m of movers) if (!m.held) consider(m, m instanceof Plug ? m.group.localToWorld(new THREE.Vector3(0, m.length * 0.6, 0)).sub(lab.position) : m.pos.clone().add(new THREE.Vector3(0, 0.008, 0)), m instanceof JumperEnd ? 0.03 : 0.06);
-  for (const s of Object.values(traySlots)) consider(s, s.tip(), 0.03);
+  for (const m of movers) if (!m.held) consider(m, m.grabPoint(), m instanceof Plug ? 0.06 : 0.025);
   for (const k of knobs) consider(k, lab.worldToLocal(k.group.getWorldPosition(new THREE.Vector3())), 0.045);
   return best;
 }
@@ -1368,6 +1808,20 @@ function controllerRoll(holder, knob) {
   return Math.atan2(x.y, x.x);
 }
 const pulse = (holder, strength, ms) => holder.source?.gamepad?.hapticActuators?.[0]?.pulse?.(strength, ms);
+function select(holder) {
+  if (holder.grab) return;
+  const bead = holder.bead.getWorldPosition(new THREE.Vector3());
+  if (menu.visible) {
+    const item = menuItems.find((i) => i.mesh.getWorldPosition(new THREE.Vector3()).distanceTo(bead) < 0.01);
+    if (item) { applyMenu(item); pulse(holder, 0.4, 20); return; }
+  }
+  const c = contactAtBead(holder);
+  if (c) { contactClicked(c); pulse(holder, 0.35, 20); return; }
+  const local = beadOf(holder);
+  const w = wires.find((wire) => wire.bead.grabPoint().distanceTo(local) < 0.012);
+  if (w) { openMenu(w); pulse(holder, 0.3, 20); return; }
+  grab(holder);
+}
 function grab(holder) {
   if (holder.grab) return;
   const ref = nearest(holder);
@@ -1392,12 +1846,18 @@ const wrapAngle = (a) => Math.atan2(Math.sin(a), Math.cos(a));
 const beadWorld = new THREE.Vector3();
 function updateHands() {
   hovered.clear();
+  let pointed = null;
   for (const holder of holders) {
     if (!holder.source) continue;
     holder.line.material.opacity = holder.grab ? 0.12 : 0.45;
     holder.bead.visible = !holder.grab;
     const g = holder.grab;
-    if (!g) { const n = nearest(holder); if (n) hovered.add(n); continue; }
+    if (!g) {
+      const n = nearest(holder);
+      if (n) { hovered.add(n); if (n.wire) hovered.add(n.wire); }
+      pointed = contactAtBead(holder) ?? pointed;
+      continue;
+    }
     if (g.kind === "knob") {
       const roll = controllerRoll(holder, g.knob);
       g.acc -= wrapAngle(roll - holder.lastRoll);
@@ -1407,13 +1867,15 @@ function updateHands() {
       continue;
     }
     const p = lab.worldToLocal(holder.grip.localToWorld(holder.offset.clone()));
-    p.y = Math.max(p.y, surfaceBelow(p) + 0.002);
+    p.y = Math.max(p.y, heightAt(p.x, p.z) + 0.002);
     g.mover.moveTo(p);
-    const target = nearestContact(p, g.mover);
-    if (target) ringAt(snapRing, target); else snapRing.visible = false;
+    const target = g.mover instanceof WireBend ? null : nearestContact(p, g.mover);
+    if (target) ringAt(snapRing, target); else if (!pointed) snapRing.visible = false;
     hovered.add(g.mover);
     dirty();
   }
+  if (pointed) { ringAt(snapRing, pointed); showPreview(pointed !== wireStart ? { id: pointed } : null); }
+  else if (!holders.some((h) => h.grab?.kind === "mover")) { snapRing.visible = false; showPreview(null); }
   // bead pokes: each key takes the deepest press from either free hand
   for (const key of keys) {
     let depth = 0, by = null;
@@ -1424,7 +1886,7 @@ function updateHands() {
     }
     if (by || key.cap.position.z !== key.rest) if (key.setDepth(depth) && by) pulse(by, 0.5, 25);
   }
-  for (const holder of holders) holder.bead.material.color.copy(holder.armed.size ? BEAD_READY : BEAD_IDLE);
+  for (const holder of holders) holder.bead.material.color.copy(holder.armed.size || contactAtBead(holder) ? BEAD_READY : BEAD_IDLE);
 }
 
 // the bench rises or falls to meet the student once the headset has settled
@@ -1432,6 +1894,7 @@ let fitPending = 0;
 function fitHeight() {
   const eye = renderer.xr.getCamera().getWorldPosition(new THREE.Vector3());
   lab.position.y = THREE.MathUtils.clamp(eye.y - 0.62 - TOP, -0.3, 0.3);
+  lab.updateMatrixWorld(true);
   for (const m of movers) if (m instanceof Plug) m.updateCable();
   dirty();
 }
@@ -1465,8 +1928,8 @@ checkVr();
 // until the student moves the view, the camera backs off far enough to show the whole bench
 let viewTouched = false;
 controls.addEventListener("start", () => { viewTouched = true; });
-const VIEW_DIR = new THREE.Vector3(0, 0.62, 0.78).normalize();
-const VIEW_DIR_TALL = new THREE.Vector3(0, 0.86, 0.5).normalize(); // portrait screens look down on the bench
+const VIEW_DIR = new THREE.Vector3(0, 0.74, 0.67).normalize();
+const VIEW_DIR_TALL = new THREE.Vector3(0, 0.88, 0.47).normalize(); // portrait screens look down on the bench
 function fitStage() {
   const w = Math.max(stage.clientWidth, 1), h = Math.max(stage.clientHeight, 1);
   camera.aspect = w / h;
@@ -1476,7 +1939,7 @@ function fitStage() {
   const halfV = THREE.MathUtils.degToRad(camera.fov / 2);
   const halfH = Math.atan(Math.tan(halfV) * camera.aspect);
   const tall = camera.aspect < 1;
-  const distance = Math.max((tall ? 0.6 : 0.7) / Math.tan(halfH), 0.42 / Math.tan(halfV), 0.75);
+  const distance = Math.max((tall ? 0.3 : 0.62) / Math.tan(halfH), 0.36 / Math.tan(halfV), 0.6);
   camera.position.copy(controls.target).addScaledVector(tall ? VIEW_DIR_TALL : VIEW_DIR, distance);
   controls.update();
 }
@@ -1493,6 +1956,7 @@ renderer.setAnimationLoop((time) => {
     if (fitPending && --fitPending === 0) fitHeight();
     updateHands();
   }
+  faceMenu(renderer.xr.isPresenting ? renderer.xr.getCamera() : camera);
   updateGlow(time);
   if (shadowsDirty) { renderer.shadowMap.needsUpdate = true; shadowsDirty = false; }
   renderer.render(scene, camera);
@@ -1500,7 +1964,7 @@ renderer.setAnimationLoop((time) => {
 
 // exposed for automated checks only
 window.__lab7 = {
-  get state() { return state; }, get model() { return model; }, get steps() { return stepList; },
-  plugs, traySlots, jumpers, knobs, keys, camera, contactPoint, nearestContact, lab,
-  configKnob, powerKey, controls, holders, vr: { grab, release, updateHands, fitHeight },
+  get state() { return state; }, get model() { return model; }, get steps() { return stepList; }, get wireStart() { return wireStart; }, get menuWire() { return menuWire; },
+  plugs, wires, knobs, keys, rangeKeys, camera, contactPoint, toLab, toBoard, nearestContact, contactClicked, openMenu, applyMenu, menuItems, lab, board,
+  configKnob, powerKey, solutionKey, controls, holders, vr: { grab, release, select, updateHands, fitHeight },
 };
