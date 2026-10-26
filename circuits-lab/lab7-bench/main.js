@@ -307,8 +307,13 @@ let solutionKey;
   board.add(readouts);
   postDisplays.plus = new Display(readouts, POST_AT["post+"][0] - 0.06, -POST_AT["post+"][1], 0.05, 0.016, { pxPerM: 6000 });
   postDisplays.minus = new Display(readouts, POST_AT["post-"][0] + 0.06, -POST_AT["post-"][1], 0.05, 0.016, { pxPerM: 6000 });
-  // an unmarked white button below the output-side GND post: the instructor's solution, built in place
-  solutionKey = addKey(readouts, { x: POST_AT.postgout[0], y: -(POST_AT.postgout[1] + 0.045), w: 0.012, round: true, color: "#ecebe6", name: "solution", onPress: () => buildSolution() });
+  // the instructor's solution: an unmarked white button set into the trainer's right-hand edge,
+  // level with the output terminals, out of sight from where the student stands
+  const edge = new THREE.Group();
+  edge.position.set(TRAINER_W / 2 + 0.0004, TRAINER_H / 2, BOARD_CZ + POST_AT.postgout[1]);
+  edge.rotation.y = Math.PI / 2;
+  trainer.add(edge);
+  solutionKey = addKey(edge, { x: 0, y: 0, w: 0.012, round: true, color: "#ecebe6", name: "solution", onPress: () => buildSolution() });
 
   // the breadboard itself
   const body = new THREE.Mesh(rounded(BOARD.w + 0.006, BOARD_H, BOARD.l + 0.006, 0.003), mat.plastic("#f3f1ea", 0.55));
