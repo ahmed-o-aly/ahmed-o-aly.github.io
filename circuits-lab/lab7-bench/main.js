@@ -199,7 +199,6 @@ let state = initialState();
 let model = buildModel(state);
 let stepList = steps(state, model);
 let guided = true;
-let showSolution = false;
 const history = [];
 const listeners = [];
 function changed() {
@@ -240,6 +239,7 @@ const POST_COLOR = { "post+": COLOR.red, postg: COLOR.black, "post-": COLOR.blue
 const POST_LABEL = { "post+": "+V", postg: "GND", "post-": "−V", postin2: "VIN2", postin: "VIN", postgin: "GND", postout: "VOUT", postgout: "GND" };
 const ROLE = { red: "+V", blue: "−V", black: "ground", yellow: "input", purple: "input 2", green: "feedback", cyan: "output", orange: "link" };
 const postDisplays = {};
+let solutionKey;
 
 {
   // a wedge holds the trainer at its angle
@@ -307,6 +307,8 @@ const postDisplays = {};
   board.add(readouts);
   postDisplays.plus = new Display(readouts, POST_AT["post+"][0] - 0.06, -POST_AT["post+"][1], 0.05, 0.016, { pxPerM: 6000 });
   postDisplays.minus = new Display(readouts, POST_AT["post-"][0] + 0.06, -POST_AT["post-"][1], 0.05, 0.016, { pxPerM: 6000 });
+  // an unmarked white button below the output-side GND post: the instructor's solution, built in place
+  solutionKey = addKey(readouts, { x: POST_AT.postgout[0], y: -(POST_AT.postgout[1] + 0.045), w: 0.012, round: true, color: "#ecebe6", name: "solution", onPress: () => buildSolution() });
 
   // the breadboard itself
   const body = new THREE.Mesh(rounded(BOARD.w + 0.006, BOARD_H, BOARD.l + 0.006, 0.003), mat.plastic("#f3f1ea", 0.55));
@@ -778,12 +780,12 @@ function drawMeter() {
   });
 }
 
-// ---------- the trainer console: circuit selector, guide, undo, reset and solution ----------
+// ---------- the trainer console: circuit selector, guide, undo and reset ----------
 const consoleFace = new THREE.Group();
 consoleFace.position.set(0, TOP + 0.03, HINGE_Z + 0.072);
 consoleFace.rotation.x = -1.1;
 lab.add(consoleFace);
-let guideDisplay, configKnob, solutionKey;
+let guideDisplay, configKnob;
 {
   const body = new THREE.Mesh(rounded(0.56, 0.12, 0.03, 0.006), mat.plastic("#34383d", 0.6));
   body.position.z = -0.0155;
@@ -808,8 +810,7 @@ let guideDisplay, configKnob, solutionKey;
   guideDisplay = new Display(consoleFace, 0.005, 0, 0.32, 0.096, { pxPerM: 4400, glass: "#0e1418" });
   addKey(consoleFace, { x: 0.198, y: 0.026, w: 0.046, h: 0.02, label: "UNDO", color: "#d9d5cb", name: "undo", onPress: () => undo() });
   addKey(consoleFace, { x: 0.25, y: 0.026, w: 0.046, h: 0.02, label: "RESET", color: "#d9d5cb", name: "reset", onPress: () => resetLab() });
-  addKey(consoleFace, { x: 0.198, y: -0.03, w: 0.046, h: 0.02, label: "GUIDE", color: "#d9d5cb", led: "#ffcf3f", name: "guide", onPress: (k) => { guided = !guided; k.setLit(guided); changed(); } }).setLit(true);
-  solutionKey = addKey(consoleFace, { x: 0.25, y: -0.03, w: 0.046, h: 0.02, label: "SOLUTION", color: "#d9d5cb", led: "#4ade80", name: "solution", onPress: (k) => { showSolution = !showSolution; k.setLit(showSolution); changed(); } });
+  addKey(consoleFace, { x: 0.224, y: -0.03, w: 0.046, h: 0.02, label: "GUIDE", color: "#d9d5cb", led: "#ffcf3f", name: "guide", onPress: (k) => { guided = !guided; k.setLit(guided); changed(); } }).setLit(true);
 }
 
 function schematic(ctx, x0, y0, w, h, config) {
@@ -879,7 +880,6 @@ function drawGuide() {
     step: next ? next.text : "Adjust Rin, Rf and the input; compare measured with theory",
     theory: `theory  ${t.text}`,
     measured, warning, guided,
-    solution: showSolution && next ? "Solution shown: faint wires and rings mark what is left" : "",
   };
   guideDisplay.draw(JSON.stringify(lines), (ctx, w, h) => {
     schematic(ctx, 6, h * 0.06, h * 1.5, h * 0.9, state.config);
@@ -887,7 +887,6 @@ function drawGuide() {
     text(ctx, lines.title, x, h * 0.12, h * 0.088, { color: "#f2efe7", align: "left", weight: 800 });
     text(ctx, lines.progress, x, h * 0.215, h * 0.058, { color: "#9fb3ab", align: "left", font: MONO, weight: 600 });
     wrap(ctx, lines.step, x, h * 0.335, w - x - 16, h * 0.095, { color: next && guided ? COLOR.next : "#f2efe7", align: "left", weight: 700 });
-    if (lines.solution) text(ctx, lines.solution, x, h * 0.565, h * 0.058, { color: "#4ade80", align: "left", weight: 600 });
     text(ctx, lines.theory, x, h * 0.67, h * 0.075, { color: "#cfe0d8", align: "left", font: MONO, weight: 600 });
     if (lines.measured) text(ctx, lines.measured, x, h * 0.79, h * 0.075, { color: COLOR.cyan, align: "left", font: MONO, weight: 600 });
     if (lines.warning) text(ctx, lines.warning, x, h * 0.91, h * 0.075, { color: "#ffb347", align: "left", weight: 700 });
@@ -1451,7 +1450,7 @@ function contactAt(q, reachHole = 0.0065, reachPost = 0.014) {
   return best;
 }
 
-// ---------- highlights: the next step, the snap target, the solution ----------
+// ---------- highlights: the next step and the snap target ----------
 const ringGeo = new THREE.TorusGeometry(1, 0.14, 8, 32).rotateX(Math.PI / 2);
 const makeRing = (color) => { const m = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.95, depthWrite: false })); m.visible = false; m.renderOrder = 5; board.add(m); return m; };
 const guideRings = [makeRing(COLOR.next), makeRing(COLOR.next)];
@@ -1485,35 +1484,21 @@ function updateGuide() {
   }
 }
 
-// the solution: every connection still missing, drawn faintly in place
-const solution = new THREE.Group();
-board.add(solution);
-const solutionRings = [];
-function updateSolution() {
-  for (const child of [...solution.children]) { solution.remove(child); if (child.geometry !== ringGeo) child.geometry.dispose(); }
-  if (!showSolution) return;
-  const placed = [];
-  let ring = 0;
-  for (const step of stepList) {
-    if (step.done) continue;
-    if (step.kind === "jumper") {
-      const a = contactXZ(step.a), b = contactXZ(step.b);
-      const route = routeWire(a, b, {
-        obstacles: [...obstaclesFor([step.a, step.b], null), ...placed.flatMap((p) => [p.a, p.b]).filter((id) => id !== step.a && id !== step.b && !isPost(id) && !isPin(id)).map(endObstacle)],
-        wires: [...wires.map((w) => w.route.points), ...placed.map((p) => p.points)], lanesX: LANES_X, lanesZ: LANES_Z,
-      });
-      placed.push({ a: step.a, b: step.b, points: route.points });
-      const ghost = new THREE.Mesh(tubeAlong(wirePoints(route, a, b, endHeight(step.a), endHeight(step.b), BOARD_H + 0.0035 + (route.over ? 0.012 : 0)), WIRE_R * 1.15), new THREE.MeshBasicMaterial({ color: COLOR[step.color], transparent: true, opacity: 0.38, depthWrite: false }));
-      ghost.renderOrder = 4;
-      solution.add(ghost);
-    } else if (step.kind === "lead" || step.kind === "probe") {
-      if (!solutionRings[ring]) solutionRings[ring] = makeRing("#4ade80");
-      const r = solutionRings[ring++];
-      board.remove(r);
-      solution.add(r);
-      ringAt(r, step.target);
-    }
-  }
+// the solution: the selected circuit built complete, with real wires, leads and
+// probes the student can then change, measure and undo like their own work
+function buildSolution() {
+  pushHistory();
+  closeMenu();
+  cancelWire();
+  clearWires();
+  const config = CONFIGS[state.config];
+  for (const j of config.jumpers) new Wire({ a: j.a, b: j.b, color: j.color });
+  syncWires();
+  for (const id of Object.keys(state.leads)) state.leads[id] = id !== "gen2" || config.usesVin2 ? LEADS[id].target : null;
+  for (const step of steps(state)) if (step.kind === "probe") state.probes[step.id] = step.target;
+  state.supply.on = true;
+  changed();
+  for (const m of movers) if (m instanceof Plug) m.sync();
 }
 
 const hovered = new Set();
@@ -1590,7 +1575,6 @@ onChange(() => {
   drawMeter();
   drawGuide();
   updateGuide();
-  updateSolution();
 });
 
 // ---------- desktop interaction ----------
