@@ -78,11 +78,11 @@ assert.match(
 assert.doesNotMatch(deployWorkflow, /^\s+timezone:/m, "deploy uses GitHub Actions' UTC cron syntax");
 assert.match(
   deployWorkflow,
-  /- name: Sync Goodreads reading data\s+if: github\.event_name != 'pull_request'\s+run: npm run sync:reading/,
-  "deploy syncs Goodreads for publishable builds without making pull requests depend on the live feed"
+  /- name: Sync Goodreads reading data\s+if: github\.event_name != 'pull_request'\s+run: \|\s+if ! npm run sync:reading; then\s+echo "::warning title=Goodreads sync skipped::[^"]+"\s+fi/,
+  "deploy syncs Goodreads for publishable builds, without making pull requests depend on the live feed or failing the deploy when the feed is down"
 );
 assert.ok(
-  deployWorkflow.indexOf("run: npm run sync:reading") < deployWorkflow.indexOf("run: bundle exec jekyll build --trace"),
+  deployWorkflow.indexOf("npm run sync:reading") > 0 && deployWorkflow.indexOf("npm run sync:reading") < deployWorkflow.indexOf("run: bundle exec jekyll build --trace"),
   "Goodreads data is refreshed before Jekyll builds the site"
 );
 assert.doesNotMatch(
