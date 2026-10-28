@@ -184,7 +184,7 @@ Jekyll normally serves at `http://127.0.0.1:4000/`. `_config.yml` controls colle
 
 ## Maintenance and deployment
 
-- `npm run sync:reading` fetches Goodreads and writes the reading YAML files. Deployment runs it before publishable builds, but skips live fetching for pull requests. Do not run it during unrelated edits.
+- `npm run sync:reading` fetches Goodreads and writes the reading YAML files. Deployment runs it before publishable builds, but skips live fetching for pull requests; if Goodreads cannot be read, the deploy keeps the last committed reading data and the run carries a warning instead of failing. Do not run it during unrelated edits.
 - `npm run build:project-previews` generates preview assets using model data and `sharp`. Review output before replacing approved captures; this is not a routine build step.
 - `.github/workflows/deploy.yml` builds on relevant main-branch pushes and pull requests, daily at 08:17 Asia/Dubai, and on manual dispatch. Only non-PR runs publish `_site/` to the GitHub Pages branch, after CSS purging and verification.
 - `.github/workflows/axe.yml` checks accessibility on a route matrix. `.github/scripts/run-axe.mjs` is its runner. Other workflows handle scheduled posts, CodeQL, and manually triggered TOC updates.

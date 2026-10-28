@@ -104,9 +104,15 @@ jobs:
       - name: Install Node dependencies
         run: npm ci
 
+      # A Goodreads outage must not block the site: the sync writes nothing
+      # unless both shelves fetch and validate, so on failure the build keeps
+      # the last committed reading data and the run carries a warning.
       - name: Sync Goodreads reading data
         if: github.event_name != 'pull_request'
-        run: npm run sync:reading
+        run: |
+          if ! npm run sync:reading; then
+            echo "::warning title=Goodreads sync skipped::Goodreads could not be read; publishing the last committed reading data."
+          fi
 
       - name: Prepare build config
         run: |
