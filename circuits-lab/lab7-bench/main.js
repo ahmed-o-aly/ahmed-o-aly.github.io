@@ -1390,7 +1390,7 @@ function openMenu(wire, at = wire.bead.mesh.position) {
   for (const item of menuItems) item.outline.visible = item.action === wire.color;
   menu.visible = true;
 }
-function closeMenu() { menuWire = null; menu.visible = false; }
+function closeMenu() { menuWire = null; menu.visible = false; palette.visible = false; palette.hand = null; palette.hover = null; }
 function applyMenu(item) {
   const wire = menuWire;
   if (!wire) return;
@@ -1514,7 +1514,8 @@ function updateGlow(time) {
   for (const target of glowTargets) {
     const m = target.glow;
     if (!m?.emissive) continue;
-    if (hovered.has(target) || target === menuWire) m.emissive.setRGB(0.22, 0.22, 0.22);
+    if (target === menuWire) m.emissive.setRGB(0.25 + 0.3 * blink, 0.25 + 0.3 * blink, 0.25 + 0.3 * blink); // selected
+    else if (hovered.has(target)) m.emissive.setRGB(0.22, 0.22, 0.22);
     else if (guideTargets.has(target)) m.emissive.setRGB(0.45 * blink, 0.33 * blink, 0.02);
     else if (target instanceof Key && target.name?.startsWith("wave:") && target.name === `wave:${state.gen.wave}`) m.emissive.set("#5a4300");
     else m.emissive.setRGB(0, 0, 0);
@@ -1745,14 +1746,18 @@ window.addEventListener("keydown", (e) => {
 
 // ---------- VR ----------
 // Controllers are drawn as the headset's own models. A short pointer with a bead
-// at its end presses keys by pushing into them. The two buttons never overlap:
-//  trigger  points with the bead, like a mouse click. While the colour wheel is
-//           open it picks a colour or, anywhere else, closes the wheel. Otherwise
-//           it opens the wire the bead touches, else lays wires at the hole the
-//           bead is in, else cancels a half-laid wire. It never picks anything up.
+// at its end presses keys by pushing into them. The buttons never overlap:
+//  trigger  a quick tap selects: the wire the bead is on or near (or whose end
+//           is in that hole), and a tap on nothing deselects. Laying a wire is a
+//           deliberate drag: press in one hole, move to another, let go. A tap on
+//           a hole therefore never starts a wire by accident.
 //  grip     takes hold with the palm: a knob within reach first, then a plug or
 //           probe, and a wire end or bend only when the palm is right on it.
-// Whatever the trigger would act on is highlighted before it is pressed.
+//  B / Y    deselects, or drops a wire being laid.
+// A selected wire glows, and its palette appears above the other controller:
+// touch a colour with the pointing bead, or tilt that hand's thumbstick toward
+// one and pull its trigger. The item under choice grows and is named in the
+// middle; the wire's current colour is ringed.
 const controllerModels = new XRControllerModelFactory();
 const PALM = new THREE.Vector3(0, -0.006, -0.035);
 const POKE_REACH = 0.07;
@@ -1769,30 +1774,33 @@ const holders = [0, 1].map((i) => {
   pointerGroup.add(line, bead);
   pointerGroup.visible = false;
   ctrl.add(pointerGroup);
-  const holder = { ctrl, grip, line, bead, pointerGroup, source: null, grab: null, near: null, armed: new Set(), offset: new THREE.Vector3(), lastRoll: 0 };
+  const holder = { ctrl, grip, line, bead, pointerGroup, source: null, grab: null, press: null, ready: false, backWas: false, offset: new THREE.Vector3(), armed: new Set(), lastRoll: 0 };
   ctrl.addEventListener("connected", (e) => { holder.source = e.data; pointerGroup.visible = e.data.targetRayMode === "tracked-pointer"; });
-  ctrl.addEventListener("disconnected", () => { if (holder.grab) release(holder); holder.source = null; pointerGroup.visible = false; });
+  ctrl.addEventListener("disconnected", () => { if (holder.grab) release(holder); holder.source = null; holder.press = null; pointerGroup.visible = false; if (palette.hand === holder) closeMenu(); });
   ctrl.addEventListener("squeezestart", () => grab(holder));
   ctrl.addEventListener("squeezeend", () => release(holder));
   ctrl.addEventListener("selectstart", () => select(holder));
+  ctrl.addEventListener("selectend", () => selectEnd(holder));
   scene.add(ctrl, grip);
   return holder;
 });
 const palmOf = (holder) => lab.worldToLocal(holder.grip.localToWorld(PALM.clone()));
 const beadOf = (holder) => lab.worldToLocal(holder.bead.getWorldPosition(new THREE.Vector3()));
-/** The contact the bead is in: only when the bead is down at the board's face. */
+const pulse = (holder, strength, ms) => holder?.source?.gamepad?.hapticActuators?.[0]?.pulse?.(strength, ms);
+
+/** The hole the bead is in: only when the bead is down at the board's face. */
 function contactAtBead(holder) {
   const q = toBoard(beadOf(holder));
   if (q.y < -0.01 || q.y > BOARD_H + 0.012) return null;
   return contactAt(q, 0.0065, 0.016);
 }
-/** The wire whose insulation the bead is touching, and the point it touches. */
-function wireAtBead(holder) {
+/** The wire the bead is on or near, and the point on it nearest the bead. */
+function wireAtBead(holder, reach = 0.009) {
   const q = toBoard(beadOf(holder));
   const seg = new THREE.Line3();
   const at = new THREE.Vector3();
   let best = null;
-  let bestD = 0.0045;
+  let bestD = reach;
   for (const w of wires) for (let i = 1; i < w.path.length; i += 1) {
     seg.set(w.path[i - 1], w.path[i]);
     seg.closestPointToPoint(q, true, at);
@@ -1801,7 +1809,7 @@ function wireAtBead(holder) {
   }
   return best;
 }
-/** The wheel segment nearest the bead, within a fingertip of it. */
+/** The board wheel's segment at the bead (used only when there is no second controller for the palette). */
 function menuItemAtBead(holder) {
   const bead = holder.bead.getWorldPosition(new THREE.Vector3());
   let best = null;
@@ -1811,16 +1819,6 @@ function menuItemAtBead(holder) {
     if (d < bestD) { bestD = d; best = item; }
   }
   return best;
-}
-/** What the trigger would do now, so it can be shown before it is pressed. */
-function triggerTarget(holder) {
-  if (menu.visible) { const item = menuItemAtBead(holder); return item ? { kind: "item", item } : { kind: "close" }; }
-  const w = wireAtBead(holder);
-  const c = contactAtBead(holder);
-  // a bead pushed down into a hole under a wire means the hole, not the wire above it
-  if (w && !(c && toBoard(beadOf(holder)).y < w.at.y - 0.0025)) return { kind: "wire", ...w };
-  if (c) return { kind: "contact", contact: c };
-  return wireStart ? { kind: "cancel" } : null;
 }
 /** What the grip would take: knobs first, wire ends and bends only right under the palm. */
 function nearest(holder) {
@@ -1839,21 +1837,153 @@ function controllerRoll(holder, knob) {
   const x = new THREE.Vector3(1, 0, 0).applyQuaternion(q).applyQuaternion(frame);
   return Math.atan2(x.y, x.x);
 }
-const pulse = (holder, strength, ms) => holder.source?.gamepad?.hapticActuators?.[0]?.pulse?.(strength, ms);
+
+// the palette, held above the hand that is not pointing
+const palette = new THREE.Group();
+palette.visible = false;
+palette.hand = null;
+palette.hover = null;
+palette.stick = null;
+scene.add(palette);
+const PALETTE_ACTIONS = [...WIRE_COLORS, "auto", "delete"];
+const PALETTE_R = 0.042;
+const paletteItems = [];
+const paletteLabel = canvasTexture(512, 160);
+{
+  const onTop = (m, order) => { m.renderOrder = order; m.material.depthTest = false; m.material.transparent = true; return m; };
+  palette.add(onTop(new THREE.Mesh(new THREE.CircleGeometry(0.062, 64), new THREE.MeshBasicMaterial({ color: "#14171a", opacity: 0.9 })), 30));
+  const label = onTop(new THREE.Mesh(new THREE.PlaneGeometry(0.052, 0.01625), new THREE.MeshBasicMaterial({ map: paletteLabel.texture, toneMapped: false })), 31);
+  label.position.z = 0.0005;
+  palette.add(label);
+  PALETTE_ACTIONS.forEach((action, i) => {
+    const angle = (i / PALETTE_ACTIONS.length) * Math.PI * 2; // clockwise from the top
+    const x = Math.sin(angle) * PALETTE_R, y = Math.cos(angle) * PALETTE_R;
+    const view = canvasTexture(128, 128);
+    const { ctx } = view;
+    const disc = (fill) => { ctx.fillStyle = fill; ctx.beginPath(); ctx.arc(64, 64, 62, 0, Math.PI * 2); ctx.fill(); };
+    if (action === "delete") {
+      disc("#b8322b");
+      ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 12; ctx.lineCap = "round";
+      ctx.beginPath(); ctx.moveTo(42, 42); ctx.lineTo(86, 86); ctx.moveTo(86, 42); ctx.lineTo(42, 86); ctx.stroke();
+    } else if (action === "auto") {
+      disc("#3a4048");
+      text(ctx, "AUTO", 64, 66, 30, { color: "#f4f1ea", weight: 800 });
+    } else {
+      disc(COLOR[action]);
+      if (action === "black") { ctx.strokeStyle = "#8a9096"; ctx.lineWidth = 6; ctx.stroke(); }
+    }
+    view.texture.needsUpdate = true;
+    const mesh = onTop(new THREE.Mesh(new THREE.CircleGeometry(0.0105, 40), new THREE.MeshBasicMaterial({ map: view.texture, toneMapped: false })), 32);
+    const ring = onTop(new THREE.Mesh(new THREE.RingGeometry(0.0128, 0.0148, 40), new THREE.MeshBasicMaterial({ color: "#ffffff" })), 32);
+    const current = onTop(new THREE.Mesh(new THREE.RingGeometry(0.0118, 0.0128, 40), new THREE.MeshBasicMaterial({ color: "#4ade80" })), 32);
+    for (const m of [mesh, ring, current]) m.position.set(x, y, 0.001);
+    ring.visible = current.visible = false;
+    palette.add(mesh, ring, current);
+    paletteItems.push({ action, angle, mesh, ring, current, get label() { return action === "delete" ? "Delete wire" : action === "auto" ? "Re-route" : `${action[0].toUpperCase()}${action.slice(1)}`; }, get role() { return action === "delete" ? "removes it" : action === "auto" ? "automatically" : ROLE[action]; } });
+  });
+}
+let paletteKey = "";
+function drawPaletteLabel() {
+  const item = palette.hover;
+  const key = item ? item.action : menuWire ? `wire:${menuWire.color}` : "";
+  if (key === paletteKey) return;
+  paletteKey = key;
+  const { ctx, canvas, texture } = paletteLabel;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  if (item) {
+    text(ctx, item.label, 256, 58, 64, { color: "#ffffff", weight: 800 });
+    text(ctx, item.role, 256, 122, 40, { color: "#b9c4cc", weight: 600 });
+  } else if (menuWire) {
+    text(ctx, "Point or tilt the stick", 256, 58, 38, { color: "#e4e1d9", weight: 700 });
+    text(ctx, "B / Y closes", 256, 118, 34, { color: "#9aa3ab", weight: 600 });
+  }
+  texture.needsUpdate = true;
+}
+
+/** Select a wire: it glows, and its palette opens over the other hand (or on the board if there is none). */
+function selectWire(wire, by, at) {
+  const other = holders.find((h) => h !== by && h.source);
+  if (!other) { openMenu(wire, at); return; }
+  cancelWire();
+  menuWire = wire;
+  menu.visible = false;
+  palette.hand = other;
+  palette.hover = null;
+  palette.stick = null;
+  palette.visible = true;
+  pulse(other, 0.3, 30);
+}
+function applyPalette(item, by) {
+  pulse(by, 0.5, 30);
+  applyMenu(item);
+}
+const paletteAnchor = new THREE.Vector3();
+/** Hold the palette above its hand, facing the student, and work out what is under choice. */
+function updatePalette(head) {
+  if (!palette.visible || !palette.hand?.source) return;
+  palette.hand.grip.getWorldPosition(paletteAnchor);
+  palette.position.copy(paletteAnchor).add(new THREE.Vector3(0, 0.1, 0));
+  head.getWorldQuaternion(palette.quaternion);
+  // the pointing bead wins; otherwise the palette hand's thumbstick chooses
+  let pointed = null;
+  for (const holder of holders) {
+    if (holder === palette.hand || !holder.source) continue;
+    const bead = holder.bead.getWorldPosition(new THREE.Vector3());
+    for (const item of paletteItems) if (item.mesh.getWorldPosition(new THREE.Vector3()).distanceTo(bead) < 0.016) pointed = { item, by: holder };
+  }
+  const axes = palette.hand.source.gamepad?.axes ?? [];
+  const sx = axes[2] ?? 0, sy = -(axes[3] ?? 0);
+  if (Math.hypot(sx, sy) > 0.55) {
+    const turn = (Math.atan2(sx, sy) + Math.PI * 2) % (Math.PI * 2);
+    palette.stick = paletteItems[Math.round((turn / (Math.PI * 2)) * paletteItems.length) % paletteItems.length];
+  }
+  const next = pointed?.item ?? palette.stick;
+  if (next !== palette.hover) pulse(pointed?.by ?? palette.hand, 0.15, 12);
+  palette.hover = next;
+  palette.pointedBy = pointed?.by ?? null;
+  for (const item of paletteItems) {
+    const on = item === palette.hover;
+    item.mesh.scale.setScalar(on ? 1.3 : 1);
+    item.ring.scale.setScalar(on ? 1.3 : 1);
+    item.ring.visible = on;
+    item.current.visible = item.action === menuWire?.color;
+  }
+  drawPaletteLabel();
+}
+
 function select(holder) {
   if (holder.grab) return;
-  const t = triggerTarget(holder);
-  if (!t) return;
-  if (t.kind === "item") applyMenu(t.item);
-  else if (t.kind === "close") closeMenu();
-  else if (t.kind === "wire") openMenu(t.wire, t.at);
-  else if (t.kind === "contact") contactClicked(t.contact);
-  else cancelWire();
-  pulse(holder, t.kind === "close" || t.kind === "cancel" ? 0.15 : 0.35, 20);
+  // the palette hand's trigger confirms what its stick (or the other bead) has chosen
+  if (palette.visible && holder === palette.hand) { if (palette.hover) applyPalette(palette.hover, holder); return; }
+  if (palette.visible && palette.pointedBy === holder && palette.hover) { applyPalette(palette.hover, holder); return; }
+  if (menu.visible) { const item = menuItemAtBead(holder); if (item) { applyMenu(item); pulse(holder, 0.4, 20); return; } }
+  const c = contactAtBead(holder);
+  holder.press = {
+    from: beadOf(holder),
+    hole: c && canWire(c) ? c : null, // where a wire could be drawn from
+    owner: c ? wireAt(c) : null, // a wire whose end sits in that hole
+    near: wireAtBead(holder),
+    drawing: false,
+  };
+}
+function selectEnd(holder) {
+  const press = holder.press;
+  holder.press = null;
+  if (!press) return;
+  if (press.drawing) {
+    const c = contactAtBead(holder);
+    if (c && c !== press.hole && canWire(c)) { addWire(press.hole, c); pulse(holder, 0.5, 30); }
+    cancelWire();
+    return;
+  }
+  // a tap: select what is under the bead, or deselect
+  if (press.near) { selectWire(press.near.wire, holder, press.near.at); pulse(holder, 0.35, 20); }
+  else if (press.owner) { selectWire(press.owner, holder); pulse(holder, 0.35, 20); }
+  else { closeMenu(); cancelWire(); }
 }
 function grab(holder) {
   if (holder.grab) return;
-  closeMenu();
+  if (holder !== palette.hand) closeMenu();
   const ref = nearest(holder);
   if (!ref) return;
   if (ref instanceof Knob) {
@@ -1877,20 +2007,38 @@ const beadWorld = new THREE.Vector3();
 function updateHands() {
   hovered.clear();
   let pointed = null;
-  for (const item of menuItems) item.mesh.scale.setScalar(1);
   for (const holder of holders) {
     if (!holder.source) continue;
     holder.line.material.opacity = holder.grab ? 0.12 : 0.45;
     holder.bead.visible = !holder.grab;
+    // B or Y deselects, or drops a wire being laid
+    const back = Boolean(holder.source.gamepad?.buttons?.[5]?.pressed);
+    if (back && !holder.backWas) { closeMenu(); cancelWire(); if (holder.press) holder.press = null; pulse(holder, 0.2, 15); }
+    holder.backWas = back;
+    holder.ready = false;
     const g = holder.grab;
     if (!g) {
       const n = nearest(holder);
       if (n) { hovered.add(n); if (n.wire) hovered.add(n.wire); }
-      const t = triggerTarget(holder);
-      holder.target = t;
-      if (t?.kind === "item") t.item.mesh.scale.setScalar(1.3);
-      else if (t?.kind === "wire") hovered.add(t.wire);
-      else if (t?.kind === "contact") pointed = t.contact;
+      if (holder === palette.hand) continue;
+      const press = holder.press;
+      if (press?.hole && !press.drawing && beadOf(holder).distanceTo(press.from) > 0.008) {
+        // the bead has left the hole it was pressed in: this is a wire being drawn
+        press.drawing = true;
+        closeMenu();
+        wireStart = press.hole;
+        ringAt(startRing, press.hole);
+        pulse(holder, 0.3, 15);
+      }
+      if (press?.drawing) {
+        const c = contactAtBead(holder);
+        if (c && c !== press.hole && canWire(c)) { pointed = c; holder.ready = true; }
+        continue;
+      }
+      const w = wireAtBead(holder);
+      const c = contactAtBead(holder);
+      if (w) { hovered.add(w.wire); holder.ready = true; }
+      else if (c && (canWire(c) || wireAt(c))) { pointed = c; holder.ready = true; }
       continue;
     }
     if (g.kind === "knob") {
@@ -1909,19 +2057,20 @@ function updateHands() {
     hovered.add(g.mover);
     dirty();
   }
-  if (pointed) { ringAt(snapRing, pointed); showPreview(pointed !== wireStart ? { id: pointed } : null); }
+  if (pointed) { ringAt(snapRing, pointed); showPreview(wireStart && pointed !== wireStart ? { id: pointed } : null); }
   else if (!holders.some((h) => h.grab?.kind === "mover")) { snapRing.visible = false; showPreview(null); }
+  updatePalette(renderer.xr.getCamera());
   // bead pokes: each key takes the deepest press from either free hand
   for (const key of keys) {
     let depth = 0, by = null;
     for (const holder of holders) {
-      if (!holder.source || holder.grab) continue;
+      if (!holder.source || holder.grab || holder.press) continue;
       const d = key.pokeDepth(holder.bead.getWorldPosition(beadWorld), holder.armed);
       if (d > depth) { depth = d; by = holder; }
     }
     if (by || key.cap.position.z !== key.rest) if (key.setDepth(depth) && by) pulse(by, 0.5, 25);
   }
-  for (const holder of holders) holder.bead.material.color.copy(holder.armed.size || ["item", "wire", "contact"].includes(holder.target?.kind) ? BEAD_READY : BEAD_IDLE);
+  for (const holder of holders) holder.bead.material.color.copy(holder.armed.size || holder.ready ? BEAD_READY : BEAD_IDLE);
 }
 
 // the bench rises or falls to meet the student once the headset has settled
@@ -2000,6 +2149,6 @@ renderer.setAnimationLoop((time) => {
 // exposed for automated checks only
 window.__lab7 = {
   get state() { return state; }, get model() { return model; }, get steps() { return stepList; }, get wireStart() { return wireStart; }, get menuWire() { return menuWire; },
-  plugs, wires, knobs, keys, rangeKeys, camera, contactPoint, toLab, toBoard, nearestContact, contactClicked, openMenu, applyMenu, menuItems, lab, board,
-  configKnob, powerKey, solutionKey, controls, holders, vr: { grab, release, select, updateHands, fitHeight },
+  plugs, wires, knobs, keys, rangeKeys, camera, contactPoint, toLab, toBoard, nearestContact, contactClicked, openMenu, applyMenu, menuItems, palette, paletteItems, lab, board,
+  configKnob, powerKey, solutionKey, controls, holders, vr: { grab, release, select, selectEnd, updateHands, updatePalette, fitHeight },
 };
