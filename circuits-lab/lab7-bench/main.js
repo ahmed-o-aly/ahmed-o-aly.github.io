@@ -1117,6 +1117,7 @@ class Wire {
     this.route = routeBetween(a, b, [this.a, this.b], { via: this.bend, except: this });
     const height = BOARD_H + 0.0035 + this.layer * 0.0013 + (this.route.over ? 0.012 : 0);
     const points = wirePoints(this.route, a, b, this.endY(0), this.endY(1), height);
+    this.path = points;
     this.mesh.geometry.dispose();
     this.mesh.geometry = tubeAlong(points, WIRE_R);
     this.hit.geometry.dispose();
@@ -1405,6 +1406,7 @@ function applyMenu(item) {
 const menuQuat = new THREE.Quaternion();
 function faceMenu(cam) {
   if (!menu.visible) return;
+  menu.scale.setScalar(renderer.xr.isPresenting ? 1.5 : 1); // easier to poke in the headset
   board.getWorldQuaternion(menuQuat).invert();
   menu.quaternion.copy(menuQuat.multiply(cam.getWorldQuaternion(new THREE.Quaternion())));
 }
@@ -1743,10 +1745,14 @@ window.addEventListener("keydown", (e) => {
 
 // ---------- VR ----------
 // Controllers are drawn as the headset's own models. A short pointer with a bead
-// at its end presses keys by pushing into them. The trigger, with the bead at a
-// contact, lays wires the way a click does, and opens a wire's colour wheel; the
-// grip (or a trigger away from any contact) takes the nearest knob, plug, probe,
-// wire end or wire bend within reach of the palm.
+// at its end presses keys by pushing into them. The two buttons never overlap:
+//  trigger  points with the bead, like a mouse click. While the colour wheel is
+//           open it picks a colour or, anywhere else, closes the wheel. Otherwise
+//           it opens the wire the bead touches, else lays wires at the hole the
+//           bead is in, else cancels a half-laid wire. It never picks anything up.
+//  grip     takes hold with the palm: a knob within reach first, then a plug or
+//           probe, and a wire end or bend only when the palm is right on it.
+// Whatever the trigger would act on is highlighted before it is pressed.
 const controllerModels = new XRControllerModelFactory();
 const PALM = new THREE.Vector3(0, -0.006, -0.035);
 const POKE_REACH = 0.07;
@@ -1769,25 +1775,62 @@ const holders = [0, 1].map((i) => {
   ctrl.addEventListener("squeezestart", () => grab(holder));
   ctrl.addEventListener("squeezeend", () => release(holder));
   ctrl.addEventListener("selectstart", () => select(holder));
-  ctrl.addEventListener("selectend", () => release(holder));
   scene.add(ctrl, grip);
   return holder;
 });
 const palmOf = (holder) => lab.worldToLocal(holder.grip.localToWorld(PALM.clone()));
 const beadOf = (holder) => lab.worldToLocal(holder.bead.getWorldPosition(new THREE.Vector3()));
-/** The contact at the bead's end, when the bead is down at the board. */
+/** The contact the bead is in: only when the bead is down at the board's face. */
 function contactAtBead(holder) {
   const q = toBoard(beadOf(holder));
-  if (q.y < -0.01 || q.y > BOARD_H + 0.025) return null;
-  return contactAt(q, 0.0075, 0.016);
+  if (q.y < -0.01 || q.y > BOARD_H + 0.012) return null;
+  return contactAt(q, 0.0065, 0.016);
 }
+/** The wire whose insulation the bead is touching, and the point it touches. */
+function wireAtBead(holder) {
+  const q = toBoard(beadOf(holder));
+  const seg = new THREE.Line3();
+  const at = new THREE.Vector3();
+  let best = null;
+  let bestD = 0.0045;
+  for (const w of wires) for (let i = 1; i < w.path.length; i += 1) {
+    seg.set(w.path[i - 1], w.path[i]);
+    seg.closestPointToPoint(q, true, at);
+    const d = at.distanceTo(q);
+    if (d < bestD) { bestD = d; best = { wire: w, at: at.clone() }; }
+  }
+  return best;
+}
+/** The wheel segment nearest the bead, within a fingertip of it. */
+function menuItemAtBead(holder) {
+  const bead = holder.bead.getWorldPosition(new THREE.Vector3());
+  let best = null;
+  let bestD = 0.012 * menu.scale.x;
+  for (const item of menuItems) {
+    const d = item.mesh.getWorldPosition(new THREE.Vector3()).distanceTo(bead);
+    if (d < bestD) { bestD = d; best = item; }
+  }
+  return best;
+}
+/** What the trigger would do now, so it can be shown before it is pressed. */
+function triggerTarget(holder) {
+  if (menu.visible) { const item = menuItemAtBead(holder); return item ? { kind: "item", item } : { kind: "close" }; }
+  const w = wireAtBead(holder);
+  const c = contactAtBead(holder);
+  // a bead pushed down into a hole under a wire means the hole, not the wire above it
+  if (w && !(c && toBoard(beadOf(holder)).y < w.at.y - 0.0025)) return { kind: "wire", ...w };
+  if (c) return { kind: "contact", contact: c };
+  return wireStart ? { kind: "cancel" } : null;
+}
+/** What the grip would take: knobs first, wire ends and bends only right under the palm. */
 function nearest(holder) {
   const palm = palmOf(holder);
   let best = null;
-  let bestD = 0.06;
-  const consider = (ref, point, reach = 0.06) => { const d = point.distanceTo(palm); if (d < Math.min(bestD, reach)) { best = ref; bestD = d; } };
-  for (const m of movers) if (!m.held) consider(m, m.grabPoint(), m instanceof Plug ? 0.06 : 0.025);
-  for (const k of knobs) consider(k, lab.worldToLocal(k.group.getWorldPosition(new THREE.Vector3())), 0.045);
+  let bestD = Infinity;
+  const consider = (ref, point, reach) => { const d = point.distanceTo(palm); if (d < reach && d < bestD) { best = ref; bestD = d; } };
+  for (const k of knobs) consider(k, lab.worldToLocal(k.group.getWorldPosition(new THREE.Vector3())), 0.05);
+  if (best) return best;
+  for (const m of movers) if (!m.held) consider(m, m.grabPoint(), m instanceof Plug ? 0.06 : 0.016);
   return best;
 }
 function controllerRoll(holder, knob) {
@@ -1799,20 +1842,18 @@ function controllerRoll(holder, knob) {
 const pulse = (holder, strength, ms) => holder.source?.gamepad?.hapticActuators?.[0]?.pulse?.(strength, ms);
 function select(holder) {
   if (holder.grab) return;
-  const bead = holder.bead.getWorldPosition(new THREE.Vector3());
-  if (menu.visible) {
-    const item = menuItems.find((i) => i.mesh.getWorldPosition(new THREE.Vector3()).distanceTo(bead) < 0.01);
-    if (item) { applyMenu(item); pulse(holder, 0.4, 20); return; }
-  }
-  const c = contactAtBead(holder);
-  if (c) { contactClicked(c); pulse(holder, 0.35, 20); return; }
-  const local = beadOf(holder);
-  const w = wires.find((wire) => wire.bead.grabPoint().distanceTo(local) < 0.012);
-  if (w) { openMenu(w); pulse(holder, 0.3, 20); return; }
-  grab(holder);
+  const t = triggerTarget(holder);
+  if (!t) return;
+  if (t.kind === "item") applyMenu(t.item);
+  else if (t.kind === "close") closeMenu();
+  else if (t.kind === "wire") openMenu(t.wire, t.at);
+  else if (t.kind === "contact") contactClicked(t.contact);
+  else cancelWire();
+  pulse(holder, t.kind === "close" || t.kind === "cancel" ? 0.15 : 0.35, 20);
 }
 function grab(holder) {
   if (holder.grab) return;
+  closeMenu();
   const ref = nearest(holder);
   if (!ref) return;
   if (ref instanceof Knob) {
@@ -1836,6 +1877,7 @@ const beadWorld = new THREE.Vector3();
 function updateHands() {
   hovered.clear();
   let pointed = null;
+  for (const item of menuItems) item.mesh.scale.setScalar(1);
   for (const holder of holders) {
     if (!holder.source) continue;
     holder.line.material.opacity = holder.grab ? 0.12 : 0.45;
@@ -1844,7 +1886,11 @@ function updateHands() {
     if (!g) {
       const n = nearest(holder);
       if (n) { hovered.add(n); if (n.wire) hovered.add(n.wire); }
-      pointed = contactAtBead(holder) ?? pointed;
+      const t = triggerTarget(holder);
+      holder.target = t;
+      if (t?.kind === "item") t.item.mesh.scale.setScalar(1.3);
+      else if (t?.kind === "wire") hovered.add(t.wire);
+      else if (t?.kind === "contact") pointed = t.contact;
       continue;
     }
     if (g.kind === "knob") {
@@ -1875,7 +1921,7 @@ function updateHands() {
     }
     if (by || key.cap.position.z !== key.rest) if (key.setDepth(depth) && by) pulse(by, 0.5, 25);
   }
-  for (const holder of holders) holder.bead.material.color.copy(holder.armed.size || contactAtBead(holder) ? BEAD_READY : BEAD_IDLE);
+  for (const holder of holders) holder.bead.material.color.copy(holder.armed.size || ["item", "wire", "contact"].includes(holder.target?.kind) ? BEAD_READY : BEAD_IDLE);
 }
 
 // the bench rises or falls to meet the student once the headset has settled
