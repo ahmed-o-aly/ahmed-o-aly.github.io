@@ -1820,16 +1820,60 @@ function menuItemAtBead(holder) {
   }
   return best;
 }
-/** What the grip would take: knobs first, wire ends and bends only right under the palm. */
+/**
+ * What the grip would take. It reaches from the pointer bead, which stays in
+ * view in front of the controller, and only falls back to the palm when nothing
+ * is near the bead. Reaches suit each thing: knobs and plugs are easy to catch,
+ * wire ends and bends need the bead right on them.
+ */
+const GRAB_REACH = { knob: [0.03, 0.05], plug: [0.04, 0.06], wire: [0.014, 0.016] };
+function grabPoint(ref) {
+  if (ref instanceof Knob) return lab.worldToLocal(ref.group.localToWorld(new THREE.Vector3(0, 0, ref.radius * 1.1)));
+  return ref.grabPoint();
+}
 function nearest(holder) {
-  const palm = palmOf(holder);
-  let best = null;
-  let bestD = Infinity;
-  const consider = (ref, point, reach) => { const d = point.distanceTo(palm); if (d < reach && d < bestD) { best = ref; bestD = d; } };
-  for (const k of knobs) consider(k, lab.worldToLocal(k.group.getWorldPosition(new THREE.Vector3())), 0.05);
-  if (best) return best;
-  for (const m of movers) if (!m.held) consider(m, m.grabPoint(), m instanceof Plug ? 0.06 : 0.016);
-  return best;
+  const from = (origin, which) => {
+    let best = null;
+    let bestScore = 1;
+    const consider = (ref, kind) => {
+      const score = grabPoint(ref).distanceTo(origin) / GRAB_REACH[kind][which];
+      if (score < bestScore) { best = ref; bestScore = score; }
+    };
+    for (const k of knobs) consider(k, "knob");
+    for (const m of movers) if (!m.held) consider(m, m instanceof Plug ? "plug" : "wire");
+    return best;
+  };
+  if (holder.pointerGroup.visible) { const atBead = from(beadOf(holder), 0); if (atBead) return atBead; }
+  return from(palmOf(holder), 1);
+}
+// a halo on whatever each hand's grip would take
+const grabMarkers = [0, 1].map(() => {
+  const m = new THREE.Mesh(new THREE.SphereGeometry(1, 20, 14), new THREE.MeshBasicMaterial({ color: "#4ade80", transparent: true, opacity: 0.28, depthTest: false, depthWrite: false }));
+  m.renderOrder = 25;
+  m.visible = false;
+  lab.add(m);
+  return m;
+});
+const GRAB_SIZE = (ref) => (ref instanceof Knob ? ref.radius * 1.35 : ref instanceof Plug ? 0.011 : 0.006);
+// over the trainer the controllers turn see-through, so what is under the hand stays visible
+function fadeController(holder, faded) {
+  if (holder.faded === faded) return;
+  let found = false;
+  holder.grip.traverse((o) => {
+    if (!o.isMesh) return;
+    found = true;
+    for (const m of [o.material].flat()) {
+      m.userData.wasTransparent ??= m.transparent;
+      m.transparent = faded || m.userData.wasTransparent;
+      m.opacity = faded ? 0.3 : 1;
+      m.depthWrite = !faded;
+    }
+  });
+  if (found) holder.faded = faded; // the model loads after the controller connects
+}
+function overTrainer(holder) {
+  const q = toBoard(palmOf(holder));
+  return Math.abs(q.x) < TRAINER_W / 2 + 0.06 && q.z > FACE_Z0 - 0.06 && q.z < FACE_Z1 + 0.06 && q.y < 0.22;
 }
 function controllerRoll(holder, knob) {
   const q = holder.grip.getWorldQuaternion(new THREE.Quaternion());
@@ -2008,8 +2052,10 @@ function updateHands() {
   hovered.clear();
   let pointed = null;
   for (const holder of holders) {
-    if (!holder.source) continue;
+    if (!holder.source) { grabMarkers[holders.indexOf(holder)].visible = false; continue; }
     holder.line.material.opacity = holder.grab ? 0.12 : 0.45;
+    fadeController(holder, overTrainer(holder));
+    if (holder.grab) grabMarkers[holders.indexOf(holder)].visible = false;
     holder.bead.visible = !holder.grab;
     // B or Y deselects, or drops a wire being laid
     const back = Boolean(holder.source.gamepad?.buttons?.[5]?.pressed);
@@ -2020,6 +2066,10 @@ function updateHands() {
     if (!g) {
       const n = nearest(holder);
       if (n) { hovered.add(n); if (n.wire) hovered.add(n.wire); }
+      if (n !== holder.grabTarget) { holder.grabTarget = n; if (n) pulse(holder, 0.12, 10); }
+      const marker = grabMarkers[holders.indexOf(holder)];
+      marker.visible = Boolean(n);
+      if (n) { marker.position.copy(grabPoint(n)); marker.scale.setScalar(GRAB_SIZE(n)); }
       if (holder === palette.hand) continue;
       const press = holder.press;
       if (press?.hole && !press.drawing && beadOf(holder).distanceTo(press.from) > 0.008) {

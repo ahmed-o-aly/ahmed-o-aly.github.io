@@ -93,6 +93,7 @@ export class Display {
 export class Knob {
   constructor(parent, { x, y, z = 0, radius = 0.014, values, index = 0, sweep = 270, color = "#2b2e33", cap = "#3a3e44", marker = "#f4f1ea", onChange, name }) {
     this.values = values;
+    this.radius = radius;
     this.index = index;
     this.sweep = (sweep * Math.PI) / 180;
     this.onChange = onChange;
