@@ -142,6 +142,7 @@ test("steps complete in order as the circuit is built", () => {
   for (const config of CONFIG_ORDER) {
     const state = built(config);
     state.gen.wave = "dc";
+    state.gen.two.wave = "dc";
     assert.ok(steps(state).every((s) => s.done), config);
   }
   // any hole in the same strip satisfies a jumper step
@@ -173,11 +174,16 @@ test("VIN 2 is a full second input: its waveform and level both reach the circui
   assert.equal(activeFrequency(built("inverting", { gen: { wave: "dc", amp: 1, freq: 1000, two: { wave: "sine", amp: 1, freq: 500 } } })), null); // VIN 2 not in this circuit
 });
 
-test("circuit 1 is measured by multimeter on DC; the scope stays out of its steps", () => {
-  const ids = steps(built("inverting")).map((s) => s.id);
-  assert.ok(ids.includes("dc") && ids.includes("red") && ids.includes("black"));
-  assert.ok(!ids.includes("ch1") && !ids.includes("ch2"));
-  assert.ok(steps(built("noninverting")).some((s) => s.id === "ch1"));
+test("every circuit is measured by multimeter on DC; the scope stays out of the steps", () => {
+  for (const config of CONFIG_ORDER) {
+    const ids = steps(built(config)).map((s) => s.id);
+    assert.ok(ids.includes("dc") && ids.includes("red") && ids.includes("black"), config);
+    assert.ok(!ids.includes("ch1") && !ids.includes("ch2"), config);
+  }
+  const sine = built("adder");
+  sine.gen.wave = "dc";
+  sine.gen.two.wave = "sine";
+  assert.equal(steps(sine).find((s) => s.id === "dc").done, false); // VIN 2 must be DC too
   const state = built("inverting", { gen: { wave: "dc", amp: 1, freq: 1000, two: { wave: "dc", amp: 1, freq: 1000 } } });
   assert.ok(Math.abs(buildModel(state).at("postout", 0) - -2) < 0.01);
 });

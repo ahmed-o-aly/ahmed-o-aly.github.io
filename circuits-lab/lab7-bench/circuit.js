@@ -131,7 +131,6 @@ export const CONFIGS = {
     ],
     usesVin2: false,
     formula: "Vout = −Vin (Rf / Rin)",
-    usesScope: false, // this circuit is measured with the multimeter on a DC input; the scope stays on the bench, unused
   },
   noninverting: {
     title: "Non-inverting amplifier",
@@ -461,12 +460,11 @@ export function steps(state, model = buildModel(state)) {
   for (const j of config.jumpers) list.push({ kind: "jumper", ...j, done: joined(j.a, j.b) });
   const leadIds = ["sup+", "supg", "sup-", "gen", "genc", ...(config.usesVin2 ? ["gen2"] : [])];
   for (const id of leadIds) list.push({ kind: "lead", id, ...LEADS[id], done: Boolean(state.leads[id]) && model.connected(LEADS[id].from, LEADS[id].target) });
-  const scopeUsed = config.usesScope !== false;
-  if (!scopeUsed) list.push({ kind: "wave", id: "dc", text: "Press the generator's DC key: this circuit is measured with the multimeter", done: state.gen.wave === "dc" });
+  // the course measures every circuit with the multimeter on DC inputs; the scope stays on the bench, unused
+  const dc = state.gen.wave === "dc" && (!config.usesVin2 || state.gen.two.wave === "dc");
+  list.push({ kind: "wave", id: "dc", text: config.usesVin2 ? "Set VIN 1 and VIN 2 to DC on the generator: the circuit is measured with the multimeter" : "Press the generator's DC key: the circuit is measured with the multimeter", done: dc });
   list.push({ kind: "power", id: "power", text: "Switch the power supply on", done: model.supplyOn });
   const onNet = (probe, net) => Boolean(state.probes[probe]) && netOf(state.probes[probe]) !== null && model.root(state.probes[probe]) === model.root(net);
-  if (scopeUsed) list.push({ kind: "probe", id: "ch1", text: "Clip scope CH1 onto VIN", target: "vin1", done: onNet("ch1", "postin") });
-  if (scopeUsed) list.push({ kind: "probe", id: "ch2", text: "Clip scope CH2 onto VOUT", target: "vout1", done: onNet("ch2", "postout") });
   list.push({ kind: "probe", id: "red", text: "Multimeter red probe on VOUT", target: "vout3", done: onNet("red", "postout") });
   list.push({ kind: "probe", id: "black", text: "Multimeter black probe on the GND beside VOUT", target: "gout1", done: onNet("black", "postgout") });
   return list;

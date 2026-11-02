@@ -894,18 +894,14 @@ function drawGuide() {
   const vin = measure(model, state.probes.ch1, state);
   let vout = measure(model, state.probes.ch2, state);
   let measured = "";
-  // measured with the multimeter: its probes across VOUT and ground, on a DC input
-  if (config.usesScope === false && !vout) {
-    vout = measure(model, "postout", state);
-    const onOutput = state.probes.red && state.probes.black && model.connected(state.probes.red, "postout") && model.grounded(state.probes.black);
-    const input = measure(model, "postin", state);
-    if (onOutput && state.gen.wave === "dc" && Math.abs(input.mean) > 1e-6) measured = `measured  Vout = ${vout.mean.toFixed(2)} V  =  ${(vout.mean / input.mean).toFixed(2)}·Vin`;
-  } else if (vin && vout && model.connected(state.probes.ch1, "postin") && model.connected(state.probes.ch2, "postout")) {
-    if (!config.usesVin2 && state.gen.wave !== "dc" && vin.pp > 1e-6) {
-      const sign = Math.sign(vin.values.reduce((s, v, i) => s + (v - vin.mean) * (vout.values[i] - vout.mean), 0)) || 1;
-      measured = `measured  CH2/CH1 = ${((sign * vout.pp) / vin.pp).toFixed(2)}`;
-    } else if (!config.usesVin2) measured = `measured  Vout = ${vout.mean.toFixed(2)} V`;
-    else measured = `measured  Vout ${vout.pp.toFixed(2)} Vpp about ${vout.mean >= 0 ? "+" : "−"}${Math.abs(vout.mean).toFixed(2)} V`;
+  // measured with the multimeter: its probes across VOUT and ground, on DC inputs (the scope is free for students to use)
+  if (!vout) vout = measure(model, "postout", state);
+  const onOutput = state.probes.red && state.probes.black && model.connected(state.probes.red, "postout") && model.grounded(state.probes.black);
+  const input = measure(model, "postin", state);
+  const dc = state.gen.wave === "dc" && (!config.usesVin2 || state.gen.two.wave === "dc");
+  if (onOutput && dc) {
+    measured = `measured  Vout = ${vout.mean.toFixed(2)} V`;
+    if (!config.usesVin2 && Math.abs(input.mean) > 1e-6) measured += `  =  ${(vout.mean / input.mean).toFixed(2)}·Vin`;
   }
   const clipped = vout && model.supplyOn && (Math.max(...vout.values) > state.supply.level - 1.6 || Math.min(...vout.values) < -state.supply.level + 1.6);
   const stray = strayJumpers(state);
@@ -1536,7 +1532,10 @@ function buildSolution() {
   syncWires();
   for (const id of Object.keys(state.leads)) state.leads[id] = id !== "gen2" || config.usesVin2 ? LEADS[id].target : null;
   // only the instruments this circuit uses are connected; the others stay on the bench
-  if (config.usesScope === false) { state.gen.wave = "dc"; state.gen.amp = 1; syncGenControls(); }
+  state.gen.wave = "dc";
+  state.gen.amp = 1;
+  if (config.usesVin2 && state.gen.two.wave !== "dc") { state.gen.two.wave = "dc"; state.gen.two.amp = 1; }
+  syncGenControls();
   for (const id of Object.keys(state.probes)) state.probes[id] = null;
   for (const step of steps(state)) if (step.kind === "probe") state.probes[step.id] = step.target;
   state.supply.on = true;
