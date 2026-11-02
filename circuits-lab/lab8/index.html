@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f6f0e3">
+  <title>Lab 8 · RC and RL transient response · Circuits Lab</title>
+  <meta name="description" content="A standing lab bench for first-order transients: wire RC and RL circuits on a breadboard, charge and discharge them with a switch or a square wave, and measure the time constant on a three-channel scope, on desktop or in VR.">
+  <style>
+    html, body { margin: 0; height: 100%; overflow: hidden; background: #c9ccc8; }
+    body { display: flex; flex-direction: column; }
+    #stage { position: relative; flex: 1; min-height: 0; overflow: hidden; }
+    #stage canvas { display: block; touch-action: none; }
+  </style>
+</head>
+<body>
+  <header id="lab8-bar"></header>
+  <div id="stage" aria-label="Lab 8 bench: click two holes to lay a wire, drag leads and probes, drag a dial to turn it, click S1 or a button to press it"></div>
+  <script type="module" src="./main.js"></script>
+</body>
+</html>

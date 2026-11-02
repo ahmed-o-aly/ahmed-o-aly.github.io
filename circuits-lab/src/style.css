@@ -999,6 +999,8 @@ textarea {
   margin-top: 14px;
 }
 .lab7-choice {
+  text-align: left;
+  font: inherit;
   display: grid;
   gap: 4px;
   padding: 14px 16px;

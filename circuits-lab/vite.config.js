@@ -12,7 +12,7 @@ export default defineConfig({
     chunkSizeWarningLimit: 900,
     // Lab 7 is its own room-scale page at /circuits-lab/lab7/; its breadboard-bench
     // alternative sits beside it at /circuits-lab/lab7-bench/ for instructors to compare
-    rollupOptions: { input: { main: `${root}index.html`, lab7: `${root}lab7/index.html`, lab7bench: `${root}lab7-bench/index.html` } },
+    rollupOptions: { input: { main: `${root}index.html`, lab7: `${root}lab7/index.html`, lab7bench: `${root}lab7-bench/index.html`, lab8: `${root}lab8/index.html` } },
   },
   plugins: [
     {

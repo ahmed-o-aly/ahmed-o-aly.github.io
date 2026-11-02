@@ -12,8 +12,8 @@ import "../../assets/css/metahub-app-shell.css";
 import "../../assets/css/metahub-lab-theme.css";
 import { mountLabShell } from "../../assets/js/metahub-app-shell.js";
 import {
-  AMPLITUDES, BLOCKS, CHIP_ROW, CONFIGS, CONFIG_ORDER, DC2_LEVELS, FREQUENCIES, LEADS, LEFT_COLS, PINS, POT_VALUES, RIGHT_COLS,
-  ROWS, SUPPLY_LEVELS, TDIV, VDIV, WAVES, WIRE_COLORS, allHoles, buildModel, contactName, initialState, measure, partsFor, period, steps,
+  AMPLITUDES, BLOCKS, CHIP_ROW, CONFIGS, CONFIG_ORDER, DC_LEVELS, FREQUENCIES, LEADS, LEFT_COLS, PINS, POT_VALUES, RIGHT_COLS,
+  ROWS, SUPPLY_LEVELS, TDIV, VDIV, WAVES, WIRE_COLORS, activeFrequency, allHoles, buildModel, contactName, initialState, measure, partsFor, period, steps,
   strayJumpers, suggestColor, theory,
 } from "./circuit.js";
 import { BLOCK_AT, BOARD, CHIP, COL_X, LANES_X, LANES_Z, POST_AT, RAIL_X, contactXZ, contacts, endObstacle, partObstacles, partPose, rowZ } from "./layout.js";
@@ -283,6 +283,7 @@ let solutionKey;
         if (c === "black") { ctx.strokeStyle = "#9aa0a6"; ctx.lineWidth = 2; ctx.strokeRect(px, py - 9, 34, 18); }
         say(ROLE[c], x + 0.0135, z, 19, { align: "left", weight: 600, color: "#e1ded6" });
       });
+      say("All GND points (rails, terminals and posts) are connected internally.", -0.2, keyZ + 0.037, 16, { align: "left", weight: 700, color: "#f1eee6" });
       say("741 PINOUT (notch at top)", 0.005, keyZ - 0.009, 19, { color: "#b9bdc2", align: "left", weight: 800 });
       const pinout = [["1 offset", "8 NC"], ["2 −IN", "7 V+"], ["3 +IN", "6 OUT"], ["4 V−", "5 offset"]];
       pinout.forEach(([l, r], i) => {
@@ -573,7 +574,20 @@ function drawSupply() {
 // Function generator, to the left
 const gen = instrument({ w: 0.28, h: 0.12, d: 0.22, x: -0.56, z: -0.6, color: "#dfe3e6" });
 const genJacks = {};
-let genDisplay, ampKnob, freqKnob, dc2Knob;
+let genDisplay, ampKnob, freqKnob;
+const channelKeys = {};
+/** The output the generator's controls are adjusting. */
+const genChannel = () => (state.genSelected === "vin2" ? state.gen.two : state.gen);
+/** Point the amplitude and frequency dials at the selected output. A DC level can go negative; a waveform has only a size. */
+function syncGenControls() {
+  const ch = genChannel();
+  const values = ch.wave === "dc" ? DC_LEVELS : AMPLITUDES;
+  if (!values.includes(ch.amp)) ch.amp = Math.abs(ch.amp) || values.find((v) => v > 0);
+  ampKnob.values = values;
+  ampKnob.setValue(ch.amp);
+  ampKnob.place();
+  freqKnob.setValue(ch.freq);
+}
 const waveKeys = {};
 function waveIcon(type, ctx, w, h, color) {
   ctx.strokeStyle = color;
@@ -597,12 +611,12 @@ function waveIcon(type, ctx, w, h, color) {
     draw: (ctx, at) => {
       silk(ctx, at, "FUNCTION GENERATOR", -0.128, 0.047, 28, { align: "left", weight: 800 });
       silk(ctx, at, "WAVEFORM", -0.077, -0.012, 20, { color: "#c9c6bf", weight: 700 });
-      silk(ctx, at, "AMPL Vpp", 0.05, -0.004, 20, { color: "#c9c6bf", weight: 700 });
+      silk(ctx, at, "AMPL", 0.05, -0.004, 20, { color: "#c9c6bf", weight: 700 });
       silk(ctx, at, "FREQ", 0.1, -0.004, 20, { color: "#c9c6bf", weight: 700 });
-      silk(ctx, at, "OUTPUT", -0.011, -0.053, 20, { color: COLOR.yellow, weight: 800 });
+      silk(ctx, at, "VIN 1", -0.011, -0.053, 20, { color: COLOR.yellow, weight: 800 });
       silk(ctx, at, "COM", 0.016, -0.053, 18, { weight: 800 });
-      silk(ctx, at, "OUT 2 LEVEL", 0.05, -0.056, 18, { color: "#c9c6bf", weight: 700 });
-      silk(ctx, at, "DC OUT 2", 0.105, -0.053, 18, { color: "#c3a1ff", weight: 800 });
+      silk(ctx, at, "ADJUST", 0.054, -0.016, 18, { color: "#c9c6bf", weight: 700 });
+      silk(ctx, at, "VIN 2", 0.105, -0.053, 20, { color: "#c3a1ff", weight: 800 });
     },
   });
   genDisplay = new Display(f, -0.06, 0.015, 0.13, 0.04);
@@ -610,28 +624,37 @@ function waveIcon(type, ctx, w, h, color) {
     waveKeys[type] = addKey(f, {
       x: -0.115 + i * 0.025, y: -0.03, w: 0.021, h: 0.014, color: "#d9d5cb", name: `wave:${type}`,
       draw: (ctx, w, h) => waveIcon(type, ctx, w, h, "#1d1f22"),
-      onPress: () => { state.gen.wave = type; changed(); },
+      onPress: () => { genChannel().wave = type; syncGenControls(); changed(); },
     });
   });
-  ampKnob = addKnob(f, { x: 0.05, y: 0.018, radius: 0.013, values: AMPLITUDES, index: AMPLITUDES.indexOf(state.gen.amp), name: "amp", onChange: (v) => { state.gen.amp = v; changed(); } });
-  freqKnob = addKnob(f, { x: 0.1, y: 0.018, radius: 0.013, values: FREQUENCIES, index: FREQUENCIES.indexOf(state.gen.freq), name: "freq", onChange: (v) => { state.gen.freq = v; changed(); } });
-  dc2Knob = addKnob(f, { x: 0.05, y: -0.036, radius: 0.011, values: DC2_LEVELS, index: DC2_LEVELS.indexOf(state.gen.dc2), name: "dc2", onChange: (v) => { state.gen.dc2 = v; changed(); } });
+  ampKnob = addKnob(f, { x: 0.05, y: 0.018, radius: 0.013, values: AMPLITUDES, index: AMPLITUDES.indexOf(state.gen.amp), name: "amp", onChange: (v) => { genChannel().amp = v; changed(); } });
+  freqKnob = addKnob(f, { x: 0.1, y: 0.018, radius: 0.013, values: FREQUENCIES, index: FREQUENCIES.indexOf(state.gen.freq), name: "freq", onChange: (v) => { genChannel().freq = v; changed(); } });
+  // the selector: the dials and waveform keys above adjust whichever input is lit
+  for (const [id, label, x] of [["vin1", "VIN 1", 0.04], ["vin2", "VIN 2", 0.068]]) {
+    channelKeys[id] = addKey(f, { x, y: -0.04, w: 0.025, h: 0.014, label, color: "#d9d5cb", led: id === "vin1" ? COLOR.yellow : "#c3a1ff", name: `channel:${id}`, onPress: () => { state.genSelected = id; syncGenControls(); changed(); } });
+  }
   genJacks.gen = jack(f, -0.011, -0.036, COLOR.yellow);
   genJacks.genc = jack(f, 0.016, -0.036, COLOR.black);
   genJacks.gen2 = jack(f, 0.105, -0.036, COLOR.purple);
 }
 const hz = (f) => (f >= 1000 ? `${(f / 1000).toFixed(f % 1000 ? 1 : 0)} kHz` : `${f} Hz`);
 function drawGenerator() {
-  const g = state.gen;
-  genDisplay.draw(JSON.stringify(g), (ctx, w, h) => {
-    waveIcon(g.wave, ctx, w * 0.26, h * 0.8, "#ffd65a");
+  const g = genChannel();
+  const second = state.genSelected === "vin2";
+  const other = second ? state.gen : state.gen.two;
+  const level = (c) => (c.wave === "dc" ? `${c.amp > 0 ? "+" : c.amp < 0 ? "−" : ""}${Math.abs(c.amp).toFixed(2)} V` : `${c.amp.toFixed(2)} Vpp`);
+  const accent = second ? "#c3a1ff" : "#ffd65a";
+  genDisplay.draw(JSON.stringify([state.gen, state.genSelected]), (ctx, w, h) => {
+    waveIcon(g.wave, ctx, w * 0.26, h * 0.8, accent);
     const wave = { dc: "DC", sine: "SINE", square: "SQUARE", triangle: "TRIANGLE" }[g.wave];
-    text(ctx, wave, w * 0.13, h * 0.86, h * 0.13, { color: "#ffd65a", font: MONO, weight: 600 });
-    text(ctx, g.wave === "dc" ? `${g.amp.toFixed(2)} V` : `${g.amp.toFixed(2)} Vpp`, w * 0.96, h * 0.25, h * 0.24, { color: "#f6f3ea", font: MONO, align: "right" });
+    text(ctx, wave, w * 0.13, h * 0.86, h * 0.13, { color: accent, font: MONO, weight: 600 });
+    text(ctx, second ? "VIN 2" : "VIN 1", w * 0.3, h * 0.25, h * 0.2, { color: accent, font: MONO, weight: 700, align: "left" });
+    text(ctx, level(g), w * 0.96, h * 0.25, h * 0.24, { color: "#f6f3ea", font: MONO, align: "right" });
     text(ctx, g.wave === "dc" ? "—" : hz(g.freq), w * 0.96, h * 0.55, h * 0.24, { color: "#f6f3ea", font: MONO, align: "right" });
-    text(ctx, `OUT 2  ${g.dc2 >= 0 ? "+" : "−"}${Math.abs(g.dc2).toFixed(1)} V`, w * 0.96, h * 0.84, h * 0.17, { color: "#c3a1ff", font: MONO, align: "right" });
+    text(ctx, `${second ? "VIN 1" : "VIN 2"}  ${level(other)}${other.wave === "dc" ? "" : ` ${hz(other.freq)}`}`, w * 0.96, h * 0.84, h * 0.15, { color: second ? "#ffd65a" : "#c3a1ff", font: MONO, align: "right" });
   });
   for (const [type, key] of Object.entries(waveKeys)) key.glow.emissive.set(type === g.wave ? "#5a4300" : "#000000");
+  for (const [id, key] of Object.entries(channelKeys)) key.setLit(id === state.genSelected);
 }
 
 // Oscilloscope, to the right
@@ -669,8 +692,9 @@ function autoset() {
     const i = VDIV.findIndex((v) => v * 6 >= span);
     knob.setIndex(i === -1 ? VDIV.length - 1 : i, true);
   }
-  if (state.gen.wave !== "dc") {
-    const i = TDIV.findIndex((t) => t * 10 >= 2.5 / state.gen.freq);
+  const freq = activeFrequency(state);
+  if (freq) {
+    const i = TDIV.findIndex((t) => t * 10 >= 2.5 / freq);
     timeKnob.setIndex(i === -1 ? TDIV.length - 1 : i, true);
   }
   changed();
@@ -867,9 +891,16 @@ function drawGuide() {
   const next = stepList.find((s) => !s.done);
   const doneCount = stepList.filter((s) => s.done).length;
   const t = theory(state);
-  const vin = measure(model, state.probes.ch1, state), vout = measure(model, state.probes.ch2, state);
+  const vin = measure(model, state.probes.ch1, state);
+  let vout = measure(model, state.probes.ch2, state);
   let measured = "";
-  if (vin && vout && model.connected(state.probes.ch1, "postin") && model.connected(state.probes.ch2, "postout")) {
+  // measured with the multimeter: its probes across VOUT and ground, on a DC input
+  if (config.usesScope === false && !vout) {
+    vout = measure(model, "postout", state);
+    const onOutput = state.probes.red && state.probes.black && model.connected(state.probes.red, "postout") && model.grounded(state.probes.black);
+    const input = measure(model, "postin", state);
+    if (onOutput && state.gen.wave === "dc" && Math.abs(input.mean) > 1e-6) measured = `measured  Vout = ${vout.mean.toFixed(2)} V  =  ${(vout.mean / input.mean).toFixed(2)}·Vin`;
+  } else if (vin && vout && model.connected(state.probes.ch1, "postin") && model.connected(state.probes.ch2, "postout")) {
     if (!config.usesVin2 && state.gen.wave !== "dc" && vin.pp > 1e-6) {
       const sign = Math.sign(vin.values.reduce((s, v, i) => s + (v - vin.mean) * (vout.values[i] - vout.mean), 0)) || 1;
       measured = `measured  CH2/CH1 = ${((sign * vout.pp) / vin.pp).toFixed(2)}`;
@@ -883,7 +914,7 @@ function drawGuide() {
     title: `${config.title}`,
     progress: `${next ? `Step ${doneCount + 1} of ${stepList.length}` : "Circuit complete"}  ·  ±${state.supply.level} V`,
     step: next ? next.text : "Adjust Rin, Rf and the input; compare measured with theory",
-    theory: `theory  ${t.text}`,
+    theory: t.text,
     measured, warning, guided,
   };
   guideDisplay.draw(JSON.stringify(lines), (ctx, w, h) => {
@@ -1483,6 +1514,8 @@ function updateGuide() {
   } else if (next.kind === "lead") {
     ringAt(guideRings[0], next.target);
     guideTargets.add(plugs[next.id]);
+  } else if (next.kind === "wave") {
+    guideTargets.add(waveKeys.dc);
   } else if (next.kind === "power") {
     guideTargets.add(powerKey);
   } else if (next.kind === "probe") {
@@ -1502,6 +1535,9 @@ function buildSolution() {
   for (const j of config.jumpers) new Wire({ a: j.a, b: j.b, color: j.color });
   syncWires();
   for (const id of Object.keys(state.leads)) state.leads[id] = id !== "gen2" || config.usesVin2 ? LEADS[id].target : null;
+  // only the instruments this circuit uses are connected; the others stay on the bench
+  if (config.usesScope === false) { state.gen.wave = "dc"; state.gen.amp = 1; syncGenControls(); }
+  for (const id of Object.keys(state.probes)) state.probes[id] = null;
   for (const step of steps(state)) if (step.kind === "probe") state.probes[step.id] = step.target;
   state.supply.on = true;
   changed();
@@ -1517,7 +1553,7 @@ function updateGlow(time) {
     if (target === menuWire) m.emissive.setRGB(0.25 + 0.3 * blink, 0.25 + 0.3 * blink, 0.25 + 0.3 * blink); // selected
     else if (hovered.has(target)) m.emissive.setRGB(0.22, 0.22, 0.22);
     else if (guideTargets.has(target)) m.emissive.setRGB(0.45 * blink, 0.33 * blink, 0.02);
-    else if (target instanceof Key && target.name?.startsWith("wave:") && target.name === `wave:${state.gen.wave}`) m.emissive.set("#5a4300");
+    else if (target instanceof Key && target.name?.startsWith("wave:") && target.name === `wave:${genChannel().wave}`) m.emissive.set("#5a4300");
     else m.emissive.setRGB(0, 0, 0);
   }
   // a wire shows its bend bead while it is pointed at, held or open
@@ -1561,9 +1597,7 @@ function resetLab() {
   pushHistory();
   const keep = state.config;
   state = { ...initialState(), config: keep };
-  ampKnob.setValue(state.gen.amp);
-  freqKnob.setValue(state.gen.freq);
-  dc2Knob.setValue(state.gen.dc2);
+  syncGenControls();
   meterKnob.setValue(state.meter);
   ch1Knob.setValue(0.5); ch2Knob.setValue(1); timeKnob.setValue(200e-6);
   closeMenu();

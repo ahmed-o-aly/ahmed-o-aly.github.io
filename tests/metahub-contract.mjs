@@ -40,7 +40,7 @@ function bundleWithImports(dir, entry) {
   };
   return visit(entry);
 }
-for (const page of ["protein-structures", "circuits-lab", "circuits-lab/lab7", "circuits-lab/lab7-bench", "bloch-lab", "power-systems-lab"]) {
+for (const page of ["protein-structures", "circuits-lab", "circuits-lab/lab7", "circuits-lab/lab7-bench", "circuits-lab/lab8", "bloch-lab", "power-systems-lab"]) {
   const html = readRoute(`/${page}/`);
   const script = html.match(/<script\b[^>]*src="([^\"]+)"/)?.[1];
   assert.ok(script, `${page} loads a script`);

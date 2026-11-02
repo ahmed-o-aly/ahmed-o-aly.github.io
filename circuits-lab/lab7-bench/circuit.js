@@ -72,6 +72,10 @@ const POST_NAMES = {
 
 /** What a contact is, for the hover label. */
 export function contactName(id) {
+  if (netOf(id) === "GND") return `${describeContact(id)} · all GND points are connected`;
+  return describeContact(id);
+}
+function describeContact(id) {
   if (POSTS[id]) return POST_NAMES[id];
   const pin = /^pin([1-8])$/.exec(id);
   if (pin) return `Pin ${pin[1]} · ${PIN_NAMES[pin[1]]}`;
@@ -126,7 +130,8 @@ export const CONFIGS = {
       OUTPUT,
     ],
     usesVin2: false,
-    formula: "Av = −Rf / Rin",
+    formula: "Vout = −Vin (Rf / Rin)",
+    usesScope: false, // this circuit is measured with the multimeter on a DC input; the scope stays on the bench, unused
   },
   noninverting: {
     title: "Non-inverting amplifier",
@@ -140,7 +145,7 @@ export const CONFIGS = {
       OUTPUT,
     ],
     usesVin2: false,
-    formula: "Av = 1 + Rf / Rin",
+    formula: "Vout = Vin (1 + Rf / Rin)",
   },
   adder: {
     title: "Summing amplifier",
@@ -200,9 +205,9 @@ export const LEADS = {
   "sup+": { from: "S+", target: "j13", color: "red", text: "Supply +V lead straight into pin 7's row (V+)" },
   supg: { from: "EARTH", target: "postg", color: "black", text: "Supply COM lead to the GND post (common ground)" },
   "sup-": { from: "S-", target: "a15", color: "blue", text: "Supply −V lead straight into pin 4's row (V−)" },
-  gen: { from: "GEN", target: "postin", color: "yellow", text: "Generator OUTPUT to the VIN post" },
+  gen: { from: "GEN", target: "postin", color: "yellow", text: "Generator VIN 1 output to the VIN post" },
   genc: { from: "GENC", target: "postgin", color: "black", text: "Generator COM to the GND post beside VIN" },
-  gen2: { from: "GEN2", target: "postin2", color: "purple", text: "Generator DC OUT 2 to the VIN2 post" },
+  gen2: { from: "GEN2", target: "postin2", color: "purple", text: "Generator VIN 2 output to the VIN2 post" },
 };
 
 // ---------- the instruments' settings ----------
@@ -210,7 +215,8 @@ export const SUPPLY_LEVELS = [8, 12, 15];
 export const WAVES = ["dc", "sine", "square", "triangle"];
 export const AMPLITUDES = [0.1, 0.2, 0.5, 1, 2, 5, 10];
 export const FREQUENCIES = [10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 50000, 100000];
-export const DC2_LEVELS = Array.from({ length: 21 }, (_, i) => -5 + i * 0.5);
+// a DC output also goes negative
+export const DC_LEVELS = [...[...AMPLITUDES].reverse().map((v) => -v), 0, ...AMPLITUDES];
 export const VDIV = [0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10];
 export const TDIV = [10e-6, 20e-6, 50e-6, 100e-6, 200e-6, 500e-6, 1e-3, 2e-3, 5e-3, 10e-3, 20e-3];
 
@@ -220,7 +226,8 @@ export function initialState() {
     rin: 10000,
     rf: 20000,
     supply: { level: 12, on: false },
-    gen: { wave: "sine", amp: 1, freq: 1000, dc2: 1 },
+    gen: { wave: "sine", amp: 1, freq: 1000, two: { wave: "dc", amp: 1, freq: 1000 } }, // VIN 1, with VIN 2 inside
+    genSelected: "vin1", // which output the generator's controls are adjusting
     jumpers: [], // { id, a, b, color, bend } with a/b contact ids (holes, pins or posts)
     leads: { "sup+": null, supg: null, "sup-": null, gen: null, genc: null, gen2: null }, // post or hole id, or null
     probes: { ch1: null, ch2: null, red: null, black: null }, // hole/post id or null
@@ -291,7 +298,7 @@ export function buildModel(state) {
   const level = state.supply.level;
   const sources = [["EARTH", () => 0], ["GENC", () => 0]];
   // the generator drives its outputs against its COM; with that lead unplugged they float
-  if (u.find("GENC") !== "GENC") sources.push(["GEN", (t) => waveAt(state.gen, t)], ["GEN2", () => state.gen.dc2]);
+  if (u.find("GENC") !== "GENC") sources.push(["GEN", (t) => waveAt(state.gen, t)], ["GEN2", (t) => waveAt(state.gen.two, t)]);
   if (state.supply.on) sources.push(["S+", () => level], ["S-", () => -level]);
 
   // a node held by two different sources is a short; the supply's current limit trips
@@ -398,13 +405,21 @@ export function buildModel(state) {
 
 function describeShort(pair) {
   pair.sort((x, y) => Number(y.startsWith("S")) - Number(x.startsWith("S"))); // name the supply rail first
-  const name = { "S+": "+V", "S-": "−V", EARTH: "ground", GENC: "the generator COM", GEN: "the generator output", GEN2: "DC OUT 2" };
+  const name = { "S+": "+V", "S-": "−V", EARTH: "ground", GENC: "the generator COM", GEN: "the generator output", GEN2: "the generator VIN 2 output" };
   return `${name[pair[0]]} is shorted to ${name[pair[1]]}`;
 }
 
 // ---------- measurement ----------
+/** The slowest changing input in use, or null when every input is DC. */
+export function activeFrequency(state) {
+  const inputs = CONFIGS[state.config].usesVin2 ? [state.gen, state.gen.two] : [state.gen];
+  const changing = inputs.filter((g) => g.wave !== "dc").map((g) => g.freq);
+  return changing.length ? Math.min(...changing) : null;
+}
+
 export function period(state) {
-  return state.gen.wave === "dc" ? 1e-3 : 1 / state.gen.freq;
+  const freq = activeFrequency(state);
+  return freq ? 1 / freq : 1e-3;
 }
 
 /** Sample a node over one period: mean, peak-to-peak, AC rms and the samples themselves. */
@@ -422,16 +437,16 @@ export function measure(model, id, state, n = 96) {
 /** Theory for the current configuration and settings. */
 export function theory(state) {
   const { rin, rf } = state;
-  const v1 = state.gen;
+  const two = state.gen.two.amp;
   const k = { inverting: -rf / rin, noninverting: 1 + rf / rin }[state.config];
-  if (k !== undefined) return { gain: k, text: `${CONFIGS[state.config].formula} = ${k.toFixed(2)}`, expect: (vin) => k * vin };
+  if (k !== undefined) return { gain: k, text: `${CONFIGS[state.config].formula} = ${k.toFixed(2)}·Vin`, expect: (vin) => k * vin };
   if (state.config === "adder") {
     const a = -rf / rin, b = -rf / PARTS.r2.value;
-    return { a, b, text: `Vout = ${a.toFixed(2)}·Vin ${b < 0 ? "−" : "+"} ${Math.abs(b).toFixed(2)}·Vin2`, expect: (vin) => a * vin + b * v1.dc2 };
+    return { a, b, text: `Vout = ${a.toFixed(2)}·Vin ${b < 0 ? "−" : "+"} ${Math.abs(b).toFixed(2)}·Vin2`, expect: (vin, vin2 = two) => a * vin + b * vin2 };
   }
   const a = -rf / rin;
   const b = (1 + rf / rin) * (PARTS.r4.value / (PARTS.r3.value + PARTS.r4.value));
-  return { a, b, text: `Vout = ${a.toFixed(2)}·Vin + ${b.toFixed(2)}·Vin2`, expect: (vin) => a * vin + b * v1.dc2 };
+  return { a, b, text: `Vout = ${a.toFixed(2)}·Vin + ${b.toFixed(2)}·Vin2`, expect: (vin, vin2 = two) => a * vin + b * vin2 };
 }
 
 // ---------- guided steps ----------
@@ -446,10 +461,12 @@ export function steps(state, model = buildModel(state)) {
   for (const j of config.jumpers) list.push({ kind: "jumper", ...j, done: joined(j.a, j.b) });
   const leadIds = ["sup+", "supg", "sup-", "gen", "genc", ...(config.usesVin2 ? ["gen2"] : [])];
   for (const id of leadIds) list.push({ kind: "lead", id, ...LEADS[id], done: Boolean(state.leads[id]) && model.connected(LEADS[id].from, LEADS[id].target) });
+  const scopeUsed = config.usesScope !== false;
+  if (!scopeUsed) list.push({ kind: "wave", id: "dc", text: "Press the generator's DC key: this circuit is measured with the multimeter", done: state.gen.wave === "dc" });
   list.push({ kind: "power", id: "power", text: "Switch the power supply on", done: model.supplyOn });
   const onNet = (probe, net) => Boolean(state.probes[probe]) && netOf(state.probes[probe]) !== null && model.root(state.probes[probe]) === model.root(net);
-  list.push({ kind: "probe", id: "ch1", text: "Clip scope CH1 onto VIN", target: "vin1", done: onNet("ch1", "postin") });
-  list.push({ kind: "probe", id: "ch2", text: "Clip scope CH2 onto VOUT", target: "vout1", done: onNet("ch2", "postout") });
+  if (scopeUsed) list.push({ kind: "probe", id: "ch1", text: "Clip scope CH1 onto VIN", target: "vin1", done: onNet("ch1", "postin") });
+  if (scopeUsed) list.push({ kind: "probe", id: "ch2", text: "Clip scope CH2 onto VOUT", target: "vout1", done: onNet("ch2", "postout") });
   list.push({ kind: "probe", id: "red", text: "Multimeter red probe on VOUT", target: "vout3", done: onNet("red", "postout") });
   list.push({ kind: "probe", id: "black", text: "Multimeter black probe on the GND beside VOUT", target: "gout1", done: onNet("black", "postgout") });
   return list;

@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { CONFIGS, CONFIG_ORDER, LEADS, PINS, buildModel, contactName, initialState, measure, netOf, partsFor, steps, strayJumpers, suggestColor, theory } from "../lab7-bench/circuit.js";
+import { CONFIGS, CONFIG_ORDER, LEADS, PINS, activeFrequency, buildModel, contactName, initialState, measure, netOf, partsFor, steps, strayJumpers, suggestColor, theory } from "../lab7-bench/circuit.js";
 import { LANES_X, LANES_Z, contactXZ, contacts, endObstacle, partObstacles } from "../lab7-bench/layout.js";
 import { routeWire } from "../lab7-bench/routing.js";
 
@@ -61,7 +61,7 @@ test("the non-inverting amplifier measures 1 + Rf/Rin", () => {
 });
 
 test("the summing amplifier adds both inputs through Rf", () => {
-  const state = built("adder", { gen: { wave: "dc", amp: 1, freq: 1000, dc2: 2 } });
+  const state = built("adder", { gen: { wave: "dc", amp: 1, freq: 1000, two: { wave: "dc", amp: 2, freq: 1000 } } });
   const vout = buildModel(state).at("postout", 0);
   // −20k (1/10k + 2/10k) = −6 V
   assert.ok(Math.abs(vout - -6) < 0.01);
@@ -69,7 +69,7 @@ test("the summing amplifier adds both inputs through Rf", () => {
 });
 
 test("the difference amplifier outputs (Rf/Rin)(Vin2 − Vin) when matched", () => {
-  const state = built("subtractor", { gen: { wave: "dc", amp: 1, freq: 1000, dc2: 3 } });
+  const state = built("subtractor", { gen: { wave: "dc", amp: 1, freq: 1000, two: { wave: "dc", amp: 3, freq: 1000 } } });
   const vout = buildModel(state).at("postout", 0);
   assert.ok(Math.abs(vout - 4) < 0.01); // 2 × (3 − 1)
 });
@@ -139,7 +139,11 @@ test("a jumper from +V to ground trips the supply instead of solving nonsense", 
 test("steps complete in order as the circuit is built", () => {
   const empty = { ...initialState() };
   assert.equal(steps(empty).findIndex((s) => !s.done), 0);
-  for (const config of CONFIG_ORDER) assert.ok(steps(built(config)).every((s) => s.done), config);
+  for (const config of CONFIG_ORDER) {
+    const state = built(config);
+    state.gen.wave = "dc";
+    assert.ok(steps(state).every((s) => s.done), config);
+  }
   // any hole in the same strip satisfies a jumper step
   const moved = built("inverting");
   moved.jumpers = moved.jumpers.map((j) => (j.id === "in" ? { ...j, b: "c27" } : j));
@@ -157,6 +161,32 @@ test("the default Rin and Rf sit on detents of the potentiometers", async () => 
   const s = initialState();
   assert.ok(POT_VALUES.includes(s.rin));
   assert.ok(POT_VALUES.includes(s.rf));
+});
+
+test("VIN 2 is a full second input: its waveform and level both reach the circuit", () => {
+  const level = built("adder", { gen: { wave: "dc", amp: 1, freq: 1000, two: { wave: "dc", amp: -2, freq: 1000 } } });
+  assert.ok(Math.abs(buildModel(level).at("postout", 0) - 2) < 0.01); // −2 (1) − 2 (−2)
+  const wave = built("adder", { gen: { wave: "dc", amp: 0, freq: 1000, two: { wave: "square", amp: 2, freq: 500 } } });
+  const out = measure(buildModel(wave), "postout", wave);
+  assert.ok(Math.abs(out.pp - 4) < 0.01); // gain −2 on a 2 Vpp square
+  assert.equal(activeFrequency(wave), 500);
+  assert.equal(activeFrequency(built("inverting", { gen: { wave: "dc", amp: 1, freq: 1000, two: { wave: "sine", amp: 1, freq: 500 } } })), null); // VIN 2 not in this circuit
+});
+
+test("circuit 1 is measured by multimeter on DC; the scope stays out of its steps", () => {
+  const ids = steps(built("inverting")).map((s) => s.id);
+  assert.ok(ids.includes("dc") && ids.includes("red") && ids.includes("black"));
+  assert.ok(!ids.includes("ch1") && !ids.includes("ch2"));
+  assert.ok(steps(built("noninverting")).some((s) => s.id === "ch1"));
+  const state = built("inverting", { gen: { wave: "dc", amp: 1, freq: 1000, two: { wave: "dc", amp: 1, freq: 1000 } } });
+  assert.ok(Math.abs(buildModel(state).at("postout", 0) - -2) < 0.01);
+});
+
+test("formulas read Vout first, and every ground point says it is common", () => {
+  assert.equal(CONFIGS.noninverting.formula, "Vout = Vin (1 + Rf / Rin)");
+  assert.match(theory(built("noninverting")).text, /^Vout = Vin \(1 \+ Rf \/ Rin\) = 3\.00·Vin$/);
+  for (const id of ["postg", "postgin", "postgout", "gin0", "gout1", "lg3", "rg3"]) assert.match(contactName(id), /all GND points are connected/);
+  assert.doesNotMatch(contactName("post+"), /GND/);
 });
 
 test("new wires take the guide's colour, else the colour of what they carry", () => {
