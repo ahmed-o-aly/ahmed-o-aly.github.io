@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { C_VALUES, L_VALUES, LEADS, R_VALUES, S1, SOURCES, buildModel, contactName, energy, initialState, jumpersFor, legsFor, measureTau, netOf, steps, strayJumpers, suggestColor, theory } from "../lab8/circuit.js";
+import { C_VALUES, L_VALUES, LEADS, R_VALUES, S1, SOURCES, buildModel, contactName, energy, initialState, jumpersFor, legsFor, measureTau, netOf, partDefaults, steps, strayJumpers, suggestColor, theory } from "../lab8/circuit.js";
 import { LANES_X, LANES_Z, contactXZ, contacts, endObstacle, partObstacles } from "../lab8/layout.js";
 import { routeWire } from "../lab7-bench/routing.js";
 
@@ -10,7 +10,7 @@ function built(kind = "RC", source = "s1", changes = {}) {
   state.jumpers = jumpersFor(source).map((j) => ({ id: j.id, a: j.a, b: j.b }));
   for (const id of SOURCES[source].leads) state.leads[id] = LEADS[id].target;
   state.supply = { level: 5, on: true };
-  state.probes = { ch1: "vmon1", ch2: "vout2", red: "vout3", black: "gout1" };
+  state.probes = { ch1: "vmon1", ch2: "vout2", probegnd: "gout1" };
   return state;
 }
 const close = (actual, expected, tolerance = 1e-3) => assert.ok(Math.abs(actual - expected) <= Math.abs(expected) * tolerance + 1e-12, `${actual} is not ${expected}`);
@@ -153,10 +153,25 @@ test("steps complete as the circuit is built, for each circuit and source", () =
   assert.ok(steps(built("RC", "gen")).every((s) => s.id !== "s1" && s.id !== "power"));
 });
 
-test("the scope measures this lab: the multimeter stays out of the steps", () => {
+test("the scope measures this lab: two probes and its ground lead, no multimeter", () => {
   const ids = steps(built("RC")).map((s) => s.id);
-  assert.ok(ids.includes("ch1") && ids.includes("ch2"));
-  assert.ok(!ids.includes("red") && !ids.includes("black"));
+  assert.deepEqual(ids.filter((id) => ["ch1", "ch2", "probegnd", "red", "black"].includes(id)), ["ch1", "ch2", "probegnd"]);
+  assert.deepEqual(Object.keys(initialState().probes), ["ch1", "ch2", "probegnd"]);
+  const floating = built("RC");
+  floating.probes.probegnd = "vout3"; // clipped somewhere other than ground
+  assert.equal(steps(floating).find((s) => s.id === "probegnd").done, false);
+});
+
+test("the generator's circuits open in the kHz range; S1 keeps the manual's values", () => {
+  for (const kind of ["RC", "RL"]) {
+    const gen = theory({ ...built(kind, "gen"), ...partDefaults(kind, "gen") });
+    close(gen.tau, 1e-4);
+    assert.ok(1 / (10 * gen.tau) >= 1000, kind); // a 1 kHz square wave settles each half period
+    close(theory({ ...built(kind), ...partDefaults(kind, "s1") }).tau, kind === "RC" ? 0.1 : 1e-3); // the manual's values
+  }
+  assert.equal(initialState().gen.freq, 1000);
+  const v = partDefaults("RC", "gen");
+  assert.ok(R_VALUES.includes(v.r) && C_VALUES.includes(v.c) && L_VALUES.includes(partDefaults("RL", "gen").l));
 });
 
 test("the response reads with the output first, and every ground point says it is common", () => {

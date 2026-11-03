@@ -137,6 +137,16 @@ export const IDIV = scale(1e-6, [10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10
 export const TDIV = scale(1e-6, [1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 50000, 100000, 200000, 500000, 1000000, 2000000]);
 export const SPEEDS = [0.1, 0.2, 0.5, 1, 2]; // scope screens per second of real time
 
+/**
+ * The values a circuit opens on. S1 follows the lab manual (1 kΩ with 100 µF,
+ * τ = 100 ms; 100 Ω with 100 mH, τ = 1 ms); the generator's
+ * square wave works in the kHz range, so its circuits open on τ = 100 µs.
+ */
+export function partDefaults(kind, source) {
+  if (source === "gen") return kind === "RC" ? { r: 1000, c: 1e-7 } : { r: 100, l: 0.01 };
+  return kind === "RC" ? { r: 1000, c: 1e-4 } : { r: 100, l: 0.1 };
+}
+
 export function initialState() {
   return {
     kind: "RC",
@@ -146,11 +156,10 @@ export function initialState() {
     c: 1e-4,
     l: 0.1,
     supply: { level: 5, on: false },
-    gen: { amp: 5, freq: 1 },
+    gen: { amp: 5, freq: 1000 },
     jumpers: [], // { id, a, b, color, bend }
     leads: { "sup+": null, supg: null, gen: null, genc: null }, // post or hole id, or null
-    probes: { ch1: null, ch2: null, red: null, black: null },
-    meter: "dcv",
+    probes: { ch1: null, ch2: null, probegnd: null }, // the scope's two probes and its ground lead
     started: false,
     charged: false,
   };
@@ -389,6 +398,7 @@ export function steps(state, model = buildModel(state)) {
   const onNet = (probe, net) => Boolean(state.probes[probe]) && model.root(state.probes[probe]) === model.root(net);
   list.push({ kind: "probe", id: "ch1", text: "Clip scope CH1 onto VIN", target: "vmon1", done: onNet("ch1", "postin") });
   list.push({ kind: "probe", id: "ch2", text: "Clip scope CH2 onto VOUT, node A", target: "vout2", done: onNet("ch2", "postout") });
+  list.push({ kind: "probe", id: "probegnd", text: "Clip the scope's ground lead onto the GND beside VOUT", target: "gout1", done: onNet("probegnd", "postg") });
   if (state.source === "s1") list.push({ kind: "power", id: "power", text: "Switch the power supply on", done: model.supplyOn });
   list.push({ kind: "start", id: "start", text: "Press START to run the clock", done: state.started });
   if (state.source === "s1") list.push({ kind: "switch", id: "s1", text: "Flip S1 to CHARGE and watch the response", done: state.charged });

@@ -1,6 +1,6 @@
 // Lab 8 · RC and RL transient response. A standing lab bench built like the Lab 7
 // breadboard bench: a portrait breadboard on a trainer leaning toward the student,
-// the supply on a shelf, the generator, scope and multimeter within reach, and every
+// the supply on a shelf, the generator and scope within reach, and every
 // control a physical part. The student wires the circuit by clicking two holes (the
 // wire routes itself), then charges and discharges it with S1 or drives it with a
 // square wave, and measures the time constant on the scope. Units are metres; +z faces the student.
@@ -13,7 +13,7 @@ import "../../assets/css/metahub-lab-theme.css";
 import { mountLabShell } from "../../assets/js/metahub-app-shell.js";
 import {
   AMPLITUDES, BLOCKS, FREQUENCIES, IDIV, LEADS, LEFT_COLS, RIGHT_COLS, ROWS, S1, SOURCES, SPEEDS, SUPPLY_LEVELS, TDIV, VDIV, WIRE_COLORS,
-  allHoles, buildModel, contactName, energy, initialState, jumpersFor, legsFor, measureTau, netOf, partsFor, steps, strayJumpers, suggestColor, theory, waveAt,
+  allHoles, buildModel, contactName, energy, initialState, jumpersFor, partDefaults, legsFor, measureTau, netOf, partsFor, steps, strayJumpers, suggestColor, theory, waveAt,
 } from "./circuit.js";
 import { BLOCK_AT, BOARD, COL_X, LANES_X, LANES_Z, POST_AT, RAIL_X, S1_BODY, contactXZ, contacts, endObstacle, partObstacles, partPose, rowZ } from "./layout.js";
 import { routeWire } from "../lab7-bench/routing.js";
@@ -614,10 +614,18 @@ function drawGenerator() {
   });
 }
 
-// Oscilloscope, to the right: CH1 and CH2 take probes, CH3 reads the circuit's current through R
+// Oscilloscope, to the right: CH1 and CH2 take probes, measured against the ground
+// lead, and CH3 is the math channel (CH1 − CH2) / R, the current through R. Each
+// channel turns on and off, and two cursors measure time or voltage on the traces.
 const scope = instrument({ w: 0.34, h: 0.19, d: 0.24, x: 0.57, z: -0.6, color: "#e2e4e6" });
 const scopeJacks = {};
-let scopeScreen, ch1Knob, ch2Knob, ch3Knob, timeKnob;
+const CURSOR_STEPS = 101; // positions across the screen, a tenth of a division apart in time
+const view = { on: { ch1: true, ch2: true, ch3: false }, cursor: "off", sel: 0, at: { t: [10, 30], v: [75, 25] } };
+const cursorTime = (i) => (i / (CURSOR_STEPS - 1)) * 10; // divisions from the left edge
+const cursorLevel = (i) => (i / (CURSOR_STEPS - 1)) * 8 - 4; // divisions above the centre line
+let scopeScreen, ch1Knob, ch2Knob, ch3Knob, timeKnob, cursorKnob;
+const channelKeys = {};
+let cursorKey, selectKey;
 {
   const f = scope.front;
   printedFace(f, scope.w, scope.h, {
@@ -626,10 +634,12 @@ let scopeScreen, ch1Knob, ch2Knob, ch3Knob, timeKnob;
       silk(ctx, at, "OSCILLOSCOPE", -0.155, 0.083, 28, { align: "left", weight: 800 });
       silk(ctx, at, "CH1 V", 0.071, 0.077, 18, { color: COLOR.yellow, weight: 800 });
       silk(ctx, at, "CH2 V", 0.11, 0.077, 18, { color: COLOR.cyan, weight: 800 });
-      silk(ctx, at, "CH3 I", 0.149, 0.077, 18, { color: "#7be08f", weight: 800 });
+      silk(ctx, at, "CH3 MATH", 0.149, 0.077, 18, { color: "#7be08f", weight: 800 });
+      silk(ctx, at, "POSITION", 0.153, 0.008, 16, { color: "#c9c6bf", weight: 700 });
       silk(ctx, at, "TIME/div", 0.11, 0.018, 20, { color: "#c9c6bf", weight: 700 });
       silk(ctx, at, "CH1", -0.13, -0.083, 22, { color: COLOR.yellow, weight: 800 });
       silk(ctx, at, "CH2", -0.085, -0.083, 22, { color: COLOR.cyan, weight: 800 });
+      silk(ctx, at, "GND", -0.04, -0.083, 22, { weight: 800 });
     },
   });
   scopeScreen = new Display(f, -0.055, 0.012, 0.2, 0.125, { pxPerM: 5000, glass: "#0a1210" });
@@ -637,10 +647,32 @@ let scopeScreen, ch1Knob, ch2Knob, ch3Knob, timeKnob;
   ch2Knob = addKnob(f, { x: 0.11, y: 0.052, radius: 0.0115, values: VDIV, index: VDIV.indexOf(2), name: "ch2", marker: COLOR.cyan, onChange: () => changed() });
   ch3Knob = addKnob(f, { x: 0.149, y: 0.052, radius: 0.0115, values: IDIV, index: IDIV.indexOf(0.002), name: "ch3", marker: "#7be08f", onChange: () => changed() });
   timeKnob = addKnob(f, { x: 0.11, y: -0.008, radius: 0.016, values: TDIV, index: TDIV.indexOf(0.05), name: "time", onChange: () => changed() });
+  for (const [id, x, led] of [["ch1", 0.071, COLOR.yellow], ["ch2", 0.11, COLOR.cyan], ["ch3", 0.149, "#7be08f"]]) {
+    channelKeys[id] = addKey(f, { x, y: 0.029, w: 0.026, h: 0.011, label: "ON", color: "#d9d5cb", name: `${id}-on`, led, onPress: (k) => { view.on[id] = !view.on[id]; k.setLit(view.on[id]); changed(); } });
+    channelKeys[id].setLit(view.on[id]);
+  }
+  cursorKey = addKey(f, { x: 0.066, y: -0.002, w: 0.03, h: 0.012, label: "CURSOR", color: "#d9d5cb", name: "cursor", led: "#ff9b54", onPress: () => setCursorMode() });
+  selectKey = addKey(f, { x: 0.066, y: -0.02, w: 0.03, h: 0.012, label: "A / B", color: "#d9d5cb", name: "cursor-select", onPress: () => { view.sel = 1 - view.sel; syncCursorKnob(); changed(); } });
+  cursorKnob = addKnob(f, { x: 0.153, y: -0.012, radius: 0.011, values: [...Array(CURSOR_STEPS).keys()], index: view.at.t[0], name: "cursor-position", marker: "#ff9b54", onChange: (v) => { if (view.cursor !== "off") view.at[view.cursor][view.sel] = v; changed(); } });
+  cursorKnob.px = 3; // a short drag crosses the screen
   addKey(f, { x: 0.11, y: -0.052, w: 0.034, h: 0.016, label: "AUTO", color: "#d9d5cb", name: "auto", onPress: () => { autoset(); changed(); } });
   scopeJacks.ch1 = jack(f, -0.13, -0.066, COLOR.yellow);
   scopeJacks.ch2 = jack(f, -0.085, -0.066, COLOR.cyan);
+  scopeJacks.gnd = jack(f, -0.04, -0.066, COLOR.black);
 }
+/** CURSOR steps off → time cursors → voltage cursors → off. */
+function setCursorMode(mode = { off: "t", t: "v", v: "off" }[view.cursor]) {
+  view.cursor = mode;
+  cursorKey.setLit(mode !== "off");
+  syncCursorKnob();
+  changed();
+}
+function syncCursorKnob() {
+  if (view.cursor === "off") return;
+  cursorKnob.setIndex(view.at[view.cursor][view.sel], true);
+}
+/** The scope reads only once its ground lead is on the circuit's ground. */
+const scopeGrounded = () => Boolean(state.probes.probegnd) && model.connected(state.probes.probegnd, "postg");
 const vdivLabel = (v) => engineering(v, "V");
 const idivLabel = (v) => engineering(v, "A");
 const tdivLabel = (t) => engineering(t, "s");
@@ -648,7 +680,7 @@ const firstFit = (values, enough) => { const i = values.findIndex(enough); retur
 /** Fit the time constant and both channels to the screen. */
 function autoset() {
   const t = theory(state);
-  const want = state.source === "gen" ? 2 / state.gen.freq : 5 * t.tau;
+  const want = state.source === "gen" ? 1 / state.gen.freq : 5 * t.tau; // a full period of the square wave, or five τ
   timeKnob.setIndex(firstFit(TDIV, (d) => d * 9 >= want), true);
   ch1Knob.setIndex(firstFit(VDIV, (d) => d * 4 >= t.drive * 1.02), true);
   ch2Knob.setIndex(firstFit(VDIV, (d) => d * 4 >= t.drive * 1.02), true);
@@ -656,7 +688,8 @@ function autoset() {
 }
 function drawScope() {
   const sweep = run.sweep;
-  const key = JSON.stringify([run.drawTick, ch1Knob.index, ch2Knob.index, ch3Knob.index, timeKnob.index, run.active, state.kind, sweep?.samples.length ?? -1, state.probes.ch1, state.probes.ch2]);
+  const grounded = scopeGrounded();
+  const key = JSON.stringify([run.drawTick, ch1Knob.index, ch2Knob.index, ch3Knob.index, timeKnob.index, run.active, state.kind, sweep?.samples.length ?? -1, state.probes, view, grounded]);
   scopeScreen.draw(key, (ctx, w, h) => {
     ctx.strokeStyle = "#1d3a32";
     ctx.lineWidth = 2;
@@ -669,95 +702,105 @@ function drawScope() {
     const Y = (v, div) => THREE.MathUtils.clamp(h / 2 - (v / div) * (h / 8), 2, h - 2);
     const div = timeKnob.value;
     const X = (t) => w / 10 + (((t - sweep.t0) / div) * w) / 10;
+    const scale = { ch1: ch1Knob.value, ch2: ch2Knob.value, i: ch3Knob.value };
+    const shown = { ch1: grounded && view.on.ch1, ch2: grounded && view.on.ch2, i: grounded && view.on.ch3 };
+    // a trace's value at a time after the trigger, from the sweep's samples
+    const valueAt = (field, t) => {
+      if (!sweep) return null;
+      if (t <= sweep.t0) return sweep.pre[field] ?? null;
+      const k = sweep.samples.findIndex((s) => s.t >= t);
+      if (k === -1) return null;
+      const q = sweep.samples[k], p = sweep.samples[k - 1] ?? { ...sweep.pre, t: sweep.t0 };
+      if (q[field] === null || p[field] === null) return null;
+      return q.t === p.t ? q[field] : p[field] + ((q[field] - p[field]) * (t - p.t)) / (q.t - p.t);
+    };
     if (sweep) {
-      const trace = (field, scale, color) => {
-        if (sweep.pre[field] === null || sweep.pre[field] === undefined) return;
+      const trace = (field, color) => {
+        if (!shown[field] || sweep.pre[field] === null || sweep.pre[field] === undefined) return;
         ctx.strokeStyle = color;
         ctx.lineWidth = 4;
         ctx.shadowColor = color;
         ctx.shadowBlur = 8;
         ctx.beginPath();
-        ctx.moveTo(0, Y(sweep.pre[field], scale));
-        ctx.lineTo(w / 10, Y(sweep.pre[field], scale));
-        for (const s of sweep.samples) ctx.lineTo(X(s.t), Y(s[field], scale));
+        ctx.moveTo(0, Y(sweep.pre[field], scale[field]));
+        ctx.lineTo(w / 10, Y(sweep.pre[field], scale[field]));
+        for (const s of sweep.samples) ctx.lineTo(X(s.t), Y(s[field], scale[field]));
         ctx.stroke();
         ctx.shadowBlur = 0;
       };
-      trace("ch1", ch1Knob.value, COLOR.yellow);
-      trace("i", ch3Knob.value, "#7be08f");
-      trace("ch2", ch2Knob.value, COLOR.cyan);
-      // the 63.2% cursors, on the stored quantity's own trace
+      trace("ch1", COLOR.yellow);
+      trace("i", "#7be08f");
+      trace("ch2", COLOR.cyan);
+      // the 63.2% marks, at τ on the CH2 trace, while the hand cursors are off
       const m = sweep.measured;
-      if (m) {
+      if (m && grounded && view.cursor === "off") {
         ctx.setLineDash([12, 10]);
         ctx.strokeStyle = "#ff9b54";
         ctx.lineWidth = 3;
         const cx = X(sweep.t0 + m.tau);
-        const cy = Y(m.level, rc ? ch2Knob.value : ch3Knob.value);
-        ctx.beginPath(); ctx.moveTo(cx, 0); ctx.lineTo(cx, h); ctx.moveTo(0, cy); ctx.lineTo(w, cy); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(cx, 0); ctx.lineTo(cx, h); ctx.stroke();
+        const level = shown.ch2 ? valueAt("ch2", sweep.t0 + m.tau) : null;
+        if (level !== null) {
+          const cy = Y(level, scale.ch2);
+          ctx.beginPath(); ctx.moveTo(0, cy); ctx.lineTo(w, cy); ctx.stroke();
+          text(ctx, "63.2%", w - 10, cy - size * 0.75, size * 0.85, { color: "#ff9b54", font: MONO, weight: 700, align: "right" });
+        }
         ctx.setLineDash([]);
-        text(ctx, "63.2%", 10, cy - size * 0.75, size * 0.85, { color: "#ff9b54", font: MONO, weight: 700, align: "left" });
-        text(ctx, "τ", cx + 8, size * 1.1, size * 1.1, { color: "#ff9b54", font: MONO, weight: 700, align: "left" });
+        text(ctx, "τ", cx + 8, size * 5.2, size * 1.1, { color: "#ff9b54", font: MONO, weight: 700, align: "left" });
+      }
+    }
+    // hand cursors: A solid, B dashed, the one the knob moves drawn brighter
+    let readout = [];
+    if (view.cursor !== "off") {
+      const vertical = view.cursor === "t";
+      const [a, b] = view.at[view.cursor];
+      for (const k of [0, 1]) {
+        const at = view.at[view.cursor][k];
+        const x = (cursorTime(at) * w) / 10, y = h / 2 - (cursorLevel(at) * h) / 8;
+        ctx.strokeStyle = k === view.sel ? "#ffb27a" : "rgba(255, 155, 84, 0.55)";
+        ctx.lineWidth = k === view.sel ? 3.5 : 2.5;
+        ctx.setLineDash(k ? [14, 9] : []);
+        ctx.beginPath();
+        if (vertical) { ctx.moveTo(x, 0); ctx.lineTo(x, h); } else { ctx.moveTo(0, y); ctx.lineTo(w, y); }
+        ctx.stroke();
+        ctx.setLineDash([]);
+        const name = k ? "B" : "A";
+        if (vertical) text(ctx, name, x + 8, size * 5.2, size, { color: "#ffb27a", font: MONO, weight: 800, align: "left" });
+        else text(ctx, name, w * 0.55, y - size * 0.6, size, { color: "#ffb27a", font: MONO, weight: 800, align: "left" });
+      }
+      if (vertical) {
+        // times after the trigger, which sits one division in; CH2 read at each
+        const ta = (cursorTime(a) - 1) * div, tb = (cursorTime(b) - 1) * div;
+        const v = (t) => { const x = shown.ch2 && sweep ? valueAt("ch2", sweep.t0 + t) : null; return x === null ? "—" : `${x.toFixed(2)} V`; };
+        readout = [`A ${tdivLabel(ta)}  CH2 ${v(ta)}`, `B ${tdivLabel(tb)}  CH2 ${v(tb)}`, `ΔT ${tdivLabel(Math.abs(tb - ta))}`];
+      } else {
+        const va = cursorLevel(a) * scale.ch2, vb = cursorLevel(b) * scale.ch2;
+        readout = [`A ${va.toFixed(2)} V`, `B ${vb.toFixed(2)} V`, `ΔV ${Math.abs(vb - va).toFixed(2)} V  on CH2`];
       }
     }
     // the legend sits on its own panels so traces never run through it
     ctx.fillStyle = "rgba(10, 18, 16, 0.78)";
-    ctx.fillRect(0, 0, size * 8.6, size * 4.1);
+    ctx.fillRect(0, 0, size * 14, size * 4.1);
     ctx.fillRect(0, h - size * 2.9, size * 11, size * 2.9);
     ctx.fillRect(w - size * 6.2, 0, size * 6.2, size * 2.9);
-    text(ctx, `CH1 Vin ${vdivLabel(ch1Knob.value)}`, 14, size, size, { color: COLOR.yellow, font: MONO, weight: 600, align: "left" });
-    text(ctx, `CH2 ${rc ? "Vc" : "VL"}  ${vdivLabel(ch2Knob.value)}`, 14, size * 2.2, size, { color: COLOR.cyan, font: MONO, weight: 600, align: "left" });
-    text(ctx, `CH3 I   ${idivLabel(ch3Knob.value)}`, 14, size * 3.4, size, { color: "#7be08f", font: MONO, weight: 600, align: "left" });
+    if (readout.length) ctx.fillRect(w - size * 14.5, h - size * 4.1, size * 14.5, size * 4.1);
+    const off = (id) => (view.on[id] ? "" : "  OFF");
+    text(ctx, `CH1 Vin ${vdivLabel(ch1Knob.value)}${off("ch1")}`, 14, size, size, { color: COLOR.yellow, font: MONO, weight: 600, align: "left" });
+    text(ctx, `CH2 ${rc ? "Vc" : "VL"}  ${vdivLabel(ch2Knob.value)}${off("ch2")}`, 14, size * 2.2, size, { color: COLOR.cyan, font: MONO, weight: 600, align: "left" });
+    text(ctx, `CH3 (CH1−CH2)/R ${idivLabel(ch3Knob.value)}${off("ch3")}`, 14, size * 3.4, size, { color: "#7be08f", font: MONO, weight: 600, align: "left" });
     text(ctx, `${tdivLabel(div)}/div`, w - 14, size, size, { color: "#b9c7c0", font: MONO, weight: 600, align: "right" });
     text(ctx, run.active ? "RUN" : "PAUSED", w - 14, size * 2.2, size, { color: run.active ? "#7be08f" : "#ffb347", font: MONO, weight: 700, align: "right" });
     text(ctx, `τ theory  ${tdivLabel(theory(state).tau)}`, 14, h - size * 2.1, size * 0.95, { color: "#dfe7e3", font: MONO, weight: 600, align: "left" });
-    text(ctx, `τ 63.2%   ${sweep?.measured ? tdivLabel(sweep.measured.tau) : "—"}`, 14, h - size * 0.9, size * 0.95, { color: "#ff9b54", font: MONO, weight: 600, align: "left" });
+    text(ctx, `τ 63.2%   ${grounded && sweep?.measured ? tdivLabel(sweep.measured.tau) : "—"}`, 14, h - size * 0.9, size * 0.95, { color: "#ff9b54", font: MONO, weight: 600, align: "left" });
+    readout.forEach((line, k) => text(ctx, line, w - 14, h - size * (3.1 - k * 1.1), size * 0.9, { color: "#ffb27a", font: MONO, weight: 600, align: "right" }));
+    if (!grounded) {
+      ctx.fillStyle = "rgba(10, 18, 16, 0.85)";
+      ctx.fillRect(w * 0.16, h * 0.42, w * 0.68, h * 0.16);
+      text(ctx, "Clip the probe ground lead onto GND", w / 2, h / 2, size * 1.05, { color: "#ffb347", font: MONO, weight: 700 });
+    }
   });
 }
 
-// Handheld multimeter on a stand, front right
-const meter = new THREE.Group();
-meter.position.set(0.36, TOP, -0.33);
-meter.rotation.y = Math.atan2(-0.36, 0.33) * 0.6;
-lab.add(meter);
-const meterJacks = {};
-let meterDisplay, meterKnob;
-{
-  const tilt = new THREE.Group();
-  tilt.position.set(0, 0.075, 0);
-  tilt.rotation.x = -0.55;
-  meter.add(tilt);
-  const holster = new THREE.Mesh(rounded(0.094, 0.18, 0.042, 0.012), mat.rubber("#e0a526"));
-  holster.castShadow = true;
-  tilt.add(holster);
-  const stand = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.12, 0.004), mat.metal("#9aa0a6"));
-  stand.position.set(0, -0.025, -0.045);
-  stand.rotation.x = 0.55;
-  meter.add(stand);
-  stand.position.y = 0.06;
-  const f = new THREE.Group();
-  f.position.z = 0.0215;
-  tilt.add(f);
-  const plate = new THREE.Mesh(rounded(0.08, 0.164, 0.002, 0.006), mat.plastic("#2a2e33"));
-  f.add(plate);
-  printedFace(f, 0.078, 0.16, {
-    pxPerM: 5000, background: "#2a2e33", z: 0.0012,
-    draw: (ctx, at) => {
-      silk(ctx, at, "MULTIMETER", 0, 0.072, 26, { weight: 800 });
-      [["OFF", 45], ["V⎓", -45]].forEach(([s, deg]) => {
-        const a = ((90 + deg) * Math.PI) / 180;
-        silk(ctx, at, s, Math.cos(a) * 0.027, -0.012 + Math.sin(a) * 0.027, 28, { weight: 800 });
-      });
-      silk(ctx, at, "COM", -0.022, -0.074, 24, { weight: 800 });
-      silk(ctx, at, "V", 0.022, -0.074, 26, { color: "#ff8a80", weight: 800 });
-    },
-  });
-  meterDisplay = new Display(f, 0, 0.042, 0.066, 0.034, { pxPerM: 6000, glass: "#b8c4a8", z: 0.0016 });
-  meterKnob = addKnob(f, { x: 0, y: -0.012, z: 0.0012, radius: 0.016, values: ["off", "dcv"], index: 1, sweep: 90, name: "meter", color: "#1d1f22", onChange: (v) => { state.meter = v; changed(); } });
-  meterJacks.black = jack(f, -0.022, -0.06, COLOR.black);
-  meterJacks.red = jack(f, 0.022, -0.06, COLOR.red);
-  for (const j of Object.values(meterJacks)) j.group.position.z = 0.0012;
-}
 // ---------- the run: a clock, a stored quantity and the sweep being drawn ----------
 // The simulation time on screen is scaled, so a 1 µs response and a 10 s response
 // both take the same few seconds to watch: SPEED sets screens per real second.
@@ -768,7 +811,9 @@ const run = { x: 0, t: 0, active: false, sweep: null, next: 0, last: null, sig: 
 function readings() {
   const s = model.solve(run.x, run.t);
   const at = (id) => { if (!id) return null; const r = model.root(id); return r === null ? null : s.v.get(r) ?? 0; };
-  return { t: run.t, x: run.x, ch1: at(state.probes.ch1), ch2: at(state.probes.ch2), i: s.current };
+  const ch1 = at(state.probes.ch1), ch2 = at(state.probes.ch2);
+  // CH3 is math on the two probes, so it reads only when both are on the circuit
+  return { t: run.t, x: run.x, ch1, ch2, i: ch1 === null || ch2 === null ? null : (ch1 - ch2) / state.r };
 }
 function startSweep() {
   const start = run.t + 1e-12;
@@ -803,7 +848,6 @@ function tickRun(dt) {
   if (run.frame % 3 === 0) {
     if (run.active) run.drawTick += 1;
     drawScope();
-    drawMeter();
     drawGuide();
   }
 }
@@ -864,25 +908,6 @@ function updateFlow(dt) {
   flowBeads.instanceMatrix.needsUpdate = true;
 }
 
-// Handheld-meter reading: the voltage between its probes at this instant
-function drawMeter() {
-  let reading = "";
-  if (state.meter !== "off") {
-    const { red, black } = state.probes;
-    if (!red || !black) reading = "--.--";
-    else {
-      const s = model.solve(run.x, run.t);
-      const v = (s.v.get(model.root(red)) ?? 0) - (s.v.get(model.root(black)) ?? 0);
-      reading = `${v < -0.005 ? "−" : " "}${Math.abs(v).toFixed(2)}`;
-    }
-  }
-  meterDisplay.draw(`${reading}|${state.meter}`, (ctx, w, h) => {
-    if (!reading) return;
-    text(ctx, reading, w * 0.79, h * 0.56, h * 0.48, { color: "#1b1f18", font: MONO, weight: 700, align: "right" });
-    text(ctx, "V⎓", w * 0.93, h * 0.62, h * 0.24, { color: "#1b1f18", font: MONO, weight: 700, align: "right" });
-  });
-}
-
 // ---------- the trainer console: circuit, source, speed, guide and the run's controls ----------
 const consoleFace = new THREE.Group();
 consoleFace.position.set(0, TOP + 0.03, HINGE_Z + 0.072);
@@ -911,8 +936,8 @@ let guideDisplay, kindKnob, sourceKnob, speedKnob, startKey, pauseKey;
   });
   kindKnob = addKnob(consoleFace, {
     x: -0.235, y: 0.008, radius: 0.0125, values: ["RC", "RL"], index: 0, sweep: 90, name: "kind",
-    // each circuit opens on the lab manual's values: 1 kΩ with 100 µF, 100 Ω with 100 mH
-    onChange: (v) => { pushHistory(); state.kind = v; state.r = v === "RC" ? 1000 : 100; newRun(); placeParts(); fitGenerator(); autoset(); changed(); },
+    // each circuit opens on its source's values (partDefaults): the manual's with S1, kHz ones with the generator
+    onChange: (v) => { pushHistory(); state.kind = v; Object.assign(state, partDefaults(v, state.source)); newRun(); placeParts(); fitGenerator(); autoset(); changed(); },
   });
   sourceKnob = addKnob(consoleFace, {
     x: -0.165, y: 0.008, radius: 0.0125, values: ["s1", "gen"], index: 0, sweep: 90, name: "source",
@@ -945,6 +970,9 @@ function setSource(next) {
   for (const id of SOURCES[other].leads) state.leads[id] = null;
   state.source = next;
   state.s1 = "discharge";
+  Object.assign(state, partDefaults(state.kind, next));
+  newRun();
+  placeParts();
   s1Switch.place();
   if (next === "gen") fitGenerator();
   autoset();
@@ -1176,9 +1204,7 @@ plugs.genc = new Plug({ kind: "lead", id: "genc", color: COLOR.black, from: genJ
 scope.group.updateMatrixWorld(true);
 plugs.ch1 = new Plug({ kind: "probe", id: "ch1", color: COLOR.yellow, from: scopeJacks.ch1, park: leadPark(scope, -0.13), parkYaw: leadYaw(scope) });
 plugs.ch2 = new Plug({ kind: "probe", id: "ch2", color: COLOR.cyan, from: scopeJacks.ch2, park: leadPark(scope, -0.07), parkYaw: leadYaw(scope) });
-meter.updateMatrixWorld(true);
-plugs.red = new Plug({ kind: "probe", id: "red", color: COLOR.red, from: meterJacks.red, park: new THREE.Vector3(0.42, TOP + 0.0055, -0.25), parkYaw: meter.rotation.y });
-plugs.black = new Plug({ kind: "probe", id: "black", color: COLOR.black, from: meterJacks.black, park: new THREE.Vector3(0.3, TOP + 0.0055, -0.25), parkYaw: meter.rotation.y });
+plugs.probegnd = new Plug({ kind: "probe", id: "probegnd", color: COLOR.black, from: scopeJacks.gnd, park: leadPark(scope, -0.01), parkYaw: leadYaw(scope) });
 
 // ---------- wires ----------
 // A wire joins two contacts and routes itself square across the board. Its ends
@@ -1650,7 +1676,7 @@ function buildSolution() {
   for (const j of jumpersFor(state.source)) new Wire({ a: j.a, b: j.b, color: j.color });
   syncWires();
   for (const id of Object.keys(state.leads)) state.leads[id] = SOURCES[state.source].leads.includes(id) ? LEADS[id].target : null;
-  // only the instruments this lab uses are connected: the scope measures it, the multimeter stays on the bench
+  // the scope measures it: both probes and its ground lead
   for (const id of Object.keys(state.probes)) state.probes[id] = null;
   for (const step of steps(state)) if (step.kind === "probe") state.probes[step.id] = step.target;
   state.supply.on = state.source === "s1";
@@ -1690,6 +1716,8 @@ function snapshot() {
     source: state.source,
     s1: state.s1,
     r: state.r,
+    c: state.c,
+    l: state.l,
     supplyOn: state.supply.on,
     wires: wires.map((w) => ({ a: w.a, b: w.b, color: w.color, bend: w.bend })),
     leads: { ...state.leads },
@@ -1706,6 +1734,8 @@ function applySnapshot(s) {
   state.source = s.source;
   state.s1 = s.s1;
   state.r = s.r;
+  state.c = s.c;
+  state.l = s.l;
   state.supply.on = s.supplyOn;
   state.leads = { ...s.leads };
   state.probes = { ...s.probes };
@@ -1727,11 +1757,10 @@ function undo() {
 function resetLab() {
   pushHistory();
   const keep = { kind: state.kind, source: state.source };
-  state = { ...initialState(), ...keep };
+  state = { ...initialState(), ...keep, ...partDefaults(keep.kind, keep.source) };
   newRun();
   ampKnob.setValue(state.gen.amp);
   freqKnob.setValue(state.gen.freq);
-  meterKnob.setValue(state.meter);
   s1Switch.place();
   closeMenu();
   cancelWire();
@@ -1755,7 +1784,6 @@ onChange(() => {
   drawGenerator();
   drawModules();
   drawScope();
-  drawMeter();
   drawGuide();
   updateGuide();
   startKey.setLit(run.active);
@@ -1883,7 +1911,7 @@ renderer.domElement.addEventListener("pointermove", (e) => {
   }
   showTip(e, null);
   if (drag.kind === "knob") {
-    const n = Math.round(((e.clientX - drag.x) - (e.clientY - drag.y)) / 24);
+    const n = Math.round(((e.clientX - drag.x) - (e.clientY - drag.y)) / (drag.knob.px ?? 24));
     drag.knob.setIndex(drag.start + n);
     return;
   }
