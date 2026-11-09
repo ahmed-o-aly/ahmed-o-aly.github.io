@@ -443,7 +443,7 @@ assertContains(
   /<iframe[\s\S]*?src="https:\/\/ahmed-o-aly\.github\.io\/circuits-lab\/"/,
   "Circuits Lab embeds the permanent same-origin app route"
 );
-assertContains(circuitsInteractive, /title="Circuits Lab interactive electrical circuit bench"/, "the circuit bench has an accessible title");
+assertContains(circuitsInteractive, /title="Circuits Lab interactive breadboard benches"/, "the circuit bench has an accessible title");
 assertContains(circuitsInteractive, /allow="fullscreen; xr-spatial-tracking"/, "the circuit bench permits fullscreen and WebXR");
 assertContains(circuitsInteractive, /loading="lazy"/, "the circuit bench defers its application payload");
 assertContains(
