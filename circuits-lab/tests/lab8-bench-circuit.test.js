@@ -1,13 +1,13 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { C_VALUES, L_VALUES, LEADS, R_VALUES, S1, SOURCES, buildModel, contactName, energy, initialState, jumpersFor, legsFor, measureTau, netOf, partDefaults, steps, strayJumpers, suggestColor, theory } from "../lab8/circuit.js";
+import { C_VALUES, L_VALUES, LEADS, RS, R_VALUES, S1, SOURCES, buildModel, contactName, energy, initialState, jumpersFor, legsFor, measureTau, netOf, partDefaults, steps, strayJumpers, suggestColor, theory } from "../lab8/circuit.js";
 import { LANES_X, LANES_Z, contactXZ, contacts, endObstacle, partObstacles } from "../lab8/layout.js";
 import { routeWire } from "../lab7-bench/routing.js";
 
 // wire a circuit exactly as the guide asks, then power it
 function built(kind = "RC", source = "s1", changes = {}) {
   const state = { ...initialState(), kind, source, ...changes };
-  state.jumpers = jumpersFor(source).map((j) => ({ id: j.id, a: j.a, b: j.b }));
+  state.jumpers = jumpersFor(source, kind).map((j) => ({ id: j.id, a: j.a, b: j.b }));
   for (const id of SOURCES[source].leads) state.leads[id] = LEADS[id].target;
   state.supply = { level: 5, on: true };
   state.probes = { ch1: "vmon1", ch2: "vout2", probegnd: "gout1" };
@@ -44,19 +44,35 @@ test("doubling R doubles the RC time constant", () => {
   close(buildModel(charging(built("RC", "s1", { r: 2000, c: 1e-4 }))).tau(0), 0.2);
 });
 
-test("the manual's RL case: 5 V, 100 Ω, 100 mH", () => {
+test("the manual's RL case: 5 V, 100 Ω, 100 mH, with the 1 Ω sense resistor in series", () => {
+  assert.equal(RS, 1);
   const state = charging(built("RL", "s1", { r: 100, l: 0.1 }));
   const model = buildModel(state);
-  close(model.tau(0), 1e-3);
-  const x = model.advance(0, 0, 1e-3);
-  close(x, 31.606e-3);
-  close(model.solve(x, 1e-3).v.get(model.root("postout")), 1.8394);
-  close(energy(state, x), 0.049947e-3);
-  close(energy(state, model.settle(0)), 0.125e-3);
-  // doubling R halves τ and halves the final current
+  const tau = 0.1 / 101; // τ = L / (R + Rs)
+  close(model.tau(0), tau);
+  close(theory(state).tau, tau);
+  const final = 5 / 101;
+  close(model.settle(0), final);
+  const x = model.advance(0, 0, tau);
+  close(x, final * (1 - Math.exp(-1)));
+  // VOUT is node B, across Rs: 1 V per ampere of inductor current
+  close(model.solve(x, tau).v.get(model.root("postout")), x * RS);
+  close(energy(state, model.settle(0)), 0.5 * 0.1 * final * final);
+  // doubling R nearly halves τ and the final current
   const doubled = buildModel(charging(built("RL", "s1", { r: 200, l: 0.1 })));
-  close(doubled.tau(0), 0.5e-3);
-  close(doubled.settle(0), 25e-3);
+  close(doubled.tau(0), 0.1 / 201);
+  close(doubled.settle(0), 5 / 201);
+});
+
+test("RL puts Rs between L and ground and takes VOUT from across it", () => {
+  const rl = jumpersFor("s1", "RL");
+  assert.deepEqual(rl.find((j) => j.id === "gnd") && [rl.find((j) => j.id === "gnd").a, rl.find((j) => j.id === "out").a], ["i28", "j24"]);
+  assert.equal(jumpersFor("s1", "RC").find((j) => j.id === "out").a, "j16");
+  assert.match(steps(built("RL")).find((s) => s.id === "ch2").text, /1 Ω/);
+  // the RC wiring on an RL board shorts Rs out, so it reads nothing across it
+  const shorted = charging(built("RL"));
+  shorted.jumpers = jumpersFor("s1", "RC").map((j) => ({ id: j.id, a: j.a, b: j.b }));
+  assert.ok(steps(shorted).some((s) => !s.done && s.id === "gnd"));
 });
 
 test("capacitor voltage and inductor current stay continuous through S1; the other quantity reverses", () => {
@@ -67,11 +83,12 @@ test("capacitor voltage and inductor current stay continuous through S1; the oth
   close(back.current, -vc / 1000);
   close(buildModel(rc).advance(vc, 0, 0.1), vc * Math.exp(-1));
   const rl = built("RL", "s1", { r: 100, l: 0.1 });
-  const il = buildModel(charging(rl)).advance(0, 0, 1e-3);
+  const tau = 0.1 / 101;
+  const il = buildModel(charging(rl)).advance(0, 0, tau);
   const decay = buildModel(rl).solve(il, 0);
   close(decay.current, il);
-  close(decay.v.get(buildModel(rl).root("postout")), -il * 100);
-  close(buildModel(rl).advance(il, 0, 1e-3), il * Math.exp(-1));
+  close(decay.v.get(buildModel(rl).root("postout")), il * RS); // the current keeps its direction through Rs
+  close(buildModel(rl).advance(il, 0, tau), il * Math.exp(-1));
 });
 
 test("a square wave charges in the high half and discharges in the low half", () => {
@@ -165,9 +182,9 @@ test("the scope measures this lab: two probes and its ground lead, no multimeter
 test("the generator's circuits open in the kHz range; S1 keeps the manual's values", () => {
   for (const kind of ["RC", "RL"]) {
     const gen = theory({ ...built(kind, "gen"), ...partDefaults(kind, "gen") });
-    close(gen.tau, 1e-4);
+    close(gen.tau, 1e-4, 0.011); // RL's Rs makes it 99 µs
     assert.ok(1 / (10 * gen.tau) >= 1000, kind); // a 1 kHz square wave settles each half period
-    close(theory({ ...built(kind), ...partDefaults(kind, "s1") }).tau, kind === "RC" ? 0.1 : 1e-3); // the manual's values
+    close(theory({ ...built(kind), ...partDefaults(kind, "s1") }).tau, kind === "RC" ? 0.1 : 1e-3, 0.011); // the manual's values
   }
   assert.equal(initialState().gen.freq, 1000);
   const v = partDefaults("RC", "gen");
@@ -177,7 +194,7 @@ test("the generator's circuits open in the kHz range; S1 keeps the manual's valu
 test("the response reads with the output first, and every ground point says it is common", () => {
   assert.equal(theory(charging(built("RC"))).response, "Vc(t) = Vin (1 − e^(−t/τ))");
   assert.equal(theory(built("RC")).response, "Vc(t) = V0 e^(−t/τ)");
-  assert.equal(theory(charging(built("RL"))).response, "I(t) = (Vin / R) (1 − e^(−t/τ))");
+  assert.equal(theory(charging(built("RL"))).response, "I(t) = (Vin / (R + Rs)) (1 − e^(−t/τ))");
   for (const id of ["postg", "postgin", "postgout", "gin0", "gout1", "lg3", "rg3"]) assert.match(contactName(id), /all GND points are connected/);
 });
 
@@ -186,6 +203,8 @@ test("new wires take the guide's colour, else the colour of what they carry", ()
   assert.equal(suggestColor("s1", "j16", "vout1"), "cyan");
   assert.equal(suggestColor("s1", "lp3", "a2"), "red");
   assert.equal(suggestColor("s1", "a2", "a20"), "orange");
+  assert.equal(suggestColor("s1", "i28", "rg28", "RL"), "black");
+  assert.equal(suggestColor("s1", "j24", "vout1", "RL"), "cyan");
 });
 
 test("every guided hole is free, exists and is used once", () => {
@@ -193,7 +212,7 @@ test("every guided hole is free, exists and is used once", () => {
   for (const kind of ["RC", "RL"]) for (const source of ["s1", "gen"]) {
     const legs = new Set(legsFor(kind));
     const used = new Set();
-    for (const j of jumpersFor(source)) for (const end of [j.a, j.b]) {
+    for (const j of jumpersFor(source, kind)) for (const end of [j.a, j.b]) {
       assert.ok(ids.has(end), `${end} is not a contact`);
       assert.ok(!legs.has(end), `${end} holds a leg`);
       assert.ok(!end.startsWith("post"), `wires go into holes, not ${end}`);
@@ -208,7 +227,7 @@ test("every guided hole is free, exists and is used once", () => {
 test("the guided wires route square and clear of the parts and each other's ends", () => {
   for (const kind of ["RC", "RL"]) for (const source of ["s1", "gen"]) {
     const placed = [];
-    for (const j of jumpersFor(source)) {
+    for (const j of jumpersFor(source, kind)) {
       const mine = new Set([j.a, j.b]);
       const obstacles = [
         ...partObstacles(kind).filter((o) => !mine.has(o.what)),

@@ -12,7 +12,7 @@ import "../../assets/css/metahub-app-shell.css";
 import "../../assets/css/metahub-lab-theme.css";
 import { mountLabShell } from "../../assets/js/metahub-app-shell.js";
 import {
-  AMPLITUDES, BLOCKS, FREQUENCIES, IDIV, LEADS, LEFT_COLS, RIGHT_COLS, ROWS, S1, SOURCES, SPEEDS, SUPPLY_LEVELS, TDIV, VDIV, WIRE_COLORS,
+  AMPLITUDES, BLOCKS, FREQUENCIES, IDIV, LEADS, RS, LEFT_COLS, RIGHT_COLS, ROWS, S1, SOURCES, SPEEDS, SUPPLY_LEVELS, TDIV, VDIV, WIRE_COLORS,
   allHoles, buildModel, contactName, energy, initialState, jumpersFor, partDefaults, legsFor, measureTau, netOf, partsFor, steps, strayJumpers, suggestColor, theory, waveAt,
 } from "./circuit.js";
 import { BLOCK_AT, BOARD, COL_X, LANES_X, LANES_Z, POST_AT, RAIL_X, S1_BODY, contactXZ, contacts, endObstacle, partObstacles, partPose, rowZ } from "./layout.js";
@@ -235,7 +235,7 @@ function contactPoint(id) {
 const CONTACT_POINT = new Map(CONTACTS.map((id) => [id, contactPoint(id)]));
 const POST_COLOR = { "post+": COLOR.red, postg: COLOR.black, postin: COLOR.yellow, postgin: COLOR.black, postout: COLOR.cyan, postgout: COLOR.black };
 const POST_LABEL = { "post+": "+V", postg: "GND", postin: "VIN", postgin: "GND", postout: "VOUT", postgout: "GND" };
-const ROLE = { red: "+V", black: "ground", yellow: "input", cyan: "node A", orange: "link", green: "spare", blue: "spare", purple: "spare" };
+const ROLE = { red: "+V", black: "ground", yellow: "input", cyan: "output", orange: "link", green: "spare", blue: "spare", purple: "spare" };
 const postDisplays = {};
 let solutionKey;
 
@@ -282,7 +282,7 @@ let solutionKey;
       });
       say("All GND points (rails, terminals and posts) are connected internally.", -0.2, keyZ + 0.037, 16, { align: "left", weight: 700, color: "#f1eee6" });
       say("TIME CONSTANT", 0.005, keyZ - 0.009, 19, { color: "#b9bdc2", align: "left", weight: 800 });
-      ["RC:  τ = R × C", "RL:  τ = L / R", "At t = τ the response has", "covered 63.2% of its change"].forEach((s, i) => say(s, 0.005, keyZ + 0.003 + i * 0.0085, 17, { align: "left", weight: 600, color: "#e1ded6" }));
+      ["RC:  τ = R × C", "RL:  τ = L / (R + Rs)", "At t = τ the response has", "covered 63.2% of its change"].forEach((s, i) => say(s, 0.005, keyZ + 0.003 + i * 0.0085, 17, { align: "left", weight: 600, color: "#e1ded6" }));
       say("WIRING", 0.118, keyZ - 0.009, 19, { color: "#b9bdc2", align: "left", weight: 800 });
       ["Click two holes", "to lay a wire.", "Click a wire: colour", "or delete. Drag its", "bead to re-route."].forEach((s, i) => say(s, 0.118, keyZ + 0.002 + i * 0.0072, 15, { align: "left", weight: 600, color: "#a9aeb4" }));
       say("ELEN 221 TRANSIENT TRAINER", -0.21, FACE_Z0 + 0.008, 16, { color: "#8d9298", align: "left", weight: 600 });
@@ -451,16 +451,17 @@ const engineering = (v, unit) => {
   for (const [f, p] of steps) if (Math.abs(v) >= f * 0.9999) return `${Number((v / f).toPrecision(3))} ${p}${unit}`;
   return `${Number(v.toPrecision(3))} ${unit}`;
 };
-const PART_UNIT = { r: "Ω", c: "F", l: "H" };
-const PART_COLOR = { r: "#2f6db5", c: "#1f8a7a", l: "#b5702f" };
-const partText = (id, v = state[id]) => engineering(v, PART_UNIT[id]);
+const PART_UNIT = { r: "Ω", c: "F", l: "H", rs: "Ω" };
+const PART_COLOR = { r: "#2f6db5", c: "#1f8a7a", l: "#b5702f", rs: "#6b4fa0" };
+const partValue = (id) => (id === "rs" ? RS : state[id]);
+const partText = (id, v = partValue(id)) => engineering(v, PART_UNIT[id]);
 const parts = new THREE.Group();
 board.add(parts);
 const potModules = {};
 let gauge = null; // the stored-energy indicator beside C or L
 function placeParts() {
   for (const child of [...parts.children]) parts.remove(child);
-  for (const m of Object.values(potModules)) { knobs.splice(knobs.indexOf(m.knob), 1); unpick(m.knob.pickable); glowTargets.delete(m.knob); }
+  for (const m of Object.values(potModules)) { if (!m.knob) continue; knobs.splice(knobs.indexOf(m.knob), 1); unpick(m.knob.pickable); glowTargets.delete(m.knob); }
   for (const id of Object.keys(potModules)) delete potModules[id];
   const legMat = mat.metal("#c4c7cb", 0.3);
   const pin = (x, z) => { const m = new THREE.Mesh(new THREE.CylinderGeometry(0.0007, 0.0007, 0.009, 8), legMat); m.position.set(x, BOARD_H - 0.0005, z); parts.add(m); };
@@ -491,6 +492,7 @@ function placeParts() {
       draw: (ctx, at) => silk(ctx, at, part.label, 0, 0.0075, 64, { color: "#ffffff", weight: 800 }),
     });
     const display = new Display(front, 0, -0.004, 0.024, 0.01, { pxPerM: 12000, z: 0.0004 });
+    if (part.fixed) { potModules[part.id] = { display }; continue; } // the 1 Ω sense resistor has no dial
     const knobHolder = new THREE.Group();
     knobHolder.rotation.x = -Math.PI / 2;
     knobHolder.position.y = 0.0302;
@@ -500,7 +502,7 @@ function placeParts() {
       onChange: (v) => { state[part.id] = v; changed(); },
     });
     potModules[part.id] = { display, knob };
-    if (part.id !== "r") gauge = makeGauge(part.id, pose.mid);
+    if (part.id === "c" || part.id === "l") gauge = makeGauge(part.id, pose.mid);
   }
   drawModules();
   dirty();
@@ -529,7 +531,7 @@ function makeGauge(id, mid) {
   return { kind: "l", rings };
 }
 function drawModules() {
-  for (const [id, m] of Object.entries(potModules)) m.display.draw(state[id], (ctx, w, h) => text(ctx, partText(id), w / 2, h / 2 + 2, h * 0.66, { color: "#7df0c4", font: MONO, weight: 600 }));
+  for (const [id, m] of Object.entries(potModules)) m.display.draw(partValue(id), (ctx, w, h) => text(ctx, partText(id), w / 2, h / 2 + 2, h * 0.66, { color: "#7df0c4", font: MONO, weight: 600 }));
   s1Switch.draw();
 }
 
@@ -692,7 +694,8 @@ function autoset() {
   const t = theory(state);
   const want = state.source === "gen" ? 1 / state.gen.freq : 5 * t.tau; // a full period of the square wave, or five τ
   timeKnob.setIndex(firstFit(TDIV, (d) => d * 9 >= want), true);
-  // signals that stay at or above 0 V start near the bottom and use most of the screen; VL and I swing both ways
+  // signals that stay at or above 0 V start near the bottom and use most of the screen; RC's current swings both ways.
+  // RL's CH2 is the voltage across the 1 Ω Rs, the inductor current, which stays positive
   const rc = state.kind === "RC";
   const place = (id, knob, values, peak, oneSided) => {
     knob.setIndex(firstFit(values, (d) => d * (oneSided ? 6.5 : 3.6) >= peak * 1.02), true);
@@ -700,8 +703,8 @@ function autoset() {
     posKnobs[id].setIndex(POSITIONS.indexOf(view.pos[id]), true);
   };
   place("ch1", ch1Knob, VDIV, t.drive, true);
-  place("ch2", ch2Knob, VDIV, t.drive, rc);
-  place("ch3", ch3Knob, IDIV, t.peakCurrent, false);
+  place("ch2", ch2Knob, VDIV, rc ? t.drive : t.peakCurrent * RS, true);
+  place("ch3", ch3Knob, IDIV, t.peakCurrent, !rc);
 }
 function drawScope() {
   const sweep = run.sweep;
@@ -803,23 +806,23 @@ function drawScope() {
       if (vertical) {
         // times after the trigger, which sits one division in; CH2 read at each
         const ta = (cursorTime(a) - 1) * div, tb = (cursorTime(b) - 1) * div;
-        const v = (t) => { const x = shown.ch2 && sweep ? valueAt("ch2", sweep.t0 + t) : null; return x === null ? "—" : `${x.toFixed(2)} V`; };
+        const v = (t) => { const x = shown.ch2 && sweep ? valueAt("ch2", sweep.t0 + t) : null; return x === null ? "—" : vdivLabel(x); };
         readout = [`A ${tdivLabel(ta)} ${v(ta)}   B ${tdivLabel(tb)} ${v(tb)}`, `ΔT ${tdivLabel(Math.abs(tb - ta))}  (CH2)`];
       } else {
         // levels measured from CH2's ground marker, on CH2's scale
         const va = (cursorLevel(a) - pos.ch2) * scale.ch2, vb = (cursorLevel(b) - pos.ch2) * scale.ch2;
-        readout = [`A ${va.toFixed(2)} V   B ${vb.toFixed(2)} V`, `ΔV ${Math.abs(vb - va).toFixed(2)} V  (CH2)`];
+        readout = [`A ${vdivLabel(va)}   B ${vdivLabel(vb)}`, `ΔV ${vdivLabel(Math.abs(vb - va))}  (CH2)`];
       }
     }
     ctx.restore();
     // top strip: the channels and the time base
     // a channel that is off keeps its label, greyed
     const ink = (id, c) => (view.on[id] ? c : "#55625d");
-    const row = top * 0.5;
-    text(ctx, `1 Vin ${vdivLabel(scale.ch1)}`, 10, row, size, { color: ink("ch1", COLOR.yellow), font: MONO, weight: 600, align: "left" });
-    text(ctx, `2 ${rc ? "Vc" : "VL"} ${vdivLabel(scale.ch2)}`, w * 0.23, row, size, { color: ink("ch2", COLOR.cyan), font: MONO, weight: 600, align: "left" });
-    text(ctx, `3 (1−2)/R ${idivLabel(scale.i)}`, w * 0.45, row, size, { color: ink("ch3", "#7be08f"), font: MONO, weight: 600, align: "left" });
-    text(ctx, `${tdivLabel(div)} ${run.active ? "RUN" : "STOP"}`, w - 10, row, size, { color: run.active ? "#7be08f" : "#ffb347", font: MONO, weight: 700, align: "right" });
+    const row = top * 0.5, label = size * 0.9;
+    text(ctx, `1 Vin ${vdivLabel(scale.ch1)}`, 10, row, label, { color: ink("ch1", COLOR.yellow), font: MONO, weight: 600, align: "left" });
+    text(ctx, `2 ${rc ? "Vc" : "VRs"} ${vdivLabel(scale.ch2)}`, w * 0.235, row, label, { color: ink("ch2", COLOR.cyan), font: MONO, weight: 600, align: "left" });
+    text(ctx, `3 ${rc ? "(1−2)/R" : "2/Rs"} ${idivLabel(scale.i)}`, w * 0.47, row, label, { color: ink("ch3", "#7be08f"), font: MONO, weight: 600, align: "left" });
+    text(ctx, `${tdivLabel(div)} ${run.active ? "RUN" : "STOP"}`, w - 10, row, label, { color: run.active ? "#7be08f" : "#ffb347", font: MONO, weight: 700, align: "right" });
     // bottom strip: the time constant, and the cursors' readout
     const r1 = bottom + size * 0.75, r2 = bottom + size * 1.95;
     text(ctx, `τ theory ${tdivLabel(theory(state).tau)}`, 10, r1, size * 0.95, { color: "#dfe7e3", font: MONO, weight: 600, align: "left" });
@@ -845,7 +848,9 @@ function readings() {
   const s = model.solve(run.x, run.t);
   const at = (id) => { if (!id) return null; const r = model.root(id); return r === null ? null : s.v.get(r) ?? 0; };
   const ch1 = at(state.probes.ch1), ch2 = at(state.probes.ch2);
-  // CH3 is math on the two probes, so it reads only when both are on the circuit
+  // CH3 is math on the probes, so it reads only when they are on the circuit: RC's
+  // current through R is (CH1 − CH2)/R; RL's CH2 sits across the 1 Ω Rs, so CH2/Rs
+  if (state.kind === "RL") return { t: run.t, x: run.x, ch1, ch2, i: ch2 === null ? null : ch2 / RS };
   return { t: run.t, x: run.x, ch1, ch2, i: ch1 === null || ch2 === null ? null : (ch1 - ch2) / state.r };
 }
 function startSweep() {
@@ -920,7 +925,7 @@ function updateFlow(dt) {
   let n = 0;
   if (strength > 0.005 && model.supplyOn !== undefined) {
     for (const wire of wires) {
-      const plan = jumpersFor(state.source).find((j) => j.flow && ((netOf(j.a) === netOf(wire.a) && netOf(j.b) === netOf(wire.b)) || (netOf(j.a) === netOf(wire.b) && netOf(j.b) === netOf(wire.a))));
+      const plan = jumpersFor(state.source, state.kind).find((j) => j.flow && ((netOf(j.a) === netOf(wire.a) && netOf(j.b) === netOf(wire.b)) || (netOf(j.a) === netOf(wire.b) && netOf(j.b) === netOf(wire.a))));
       if (!plan || (plan.flow === "discharge" && state.s1 !== "discharge")) continue;
       const sign = netOf(plan.a) === netOf(wire.a) ? 1 : -1;
       const pts = wire.path;
@@ -1052,9 +1057,11 @@ function schematic(ctx, x0, y0, h, kind, source) {
   text(ctx, "R", X(71), Y(top - 11), 9 * s, { weight: 800, color: ink });
   dot(100, top);
   text(ctx, "A", X(100), Y(top - 11), 9 * s, { color: COLOR.cyan, weight: 800 });
-  line([100, top], [116, top]);
-  dot(116, top, 2.4);
-  text(ctx, kind === "RC" ? "Vc" : "VL", X(127), Y(top), 8.5 * s, { color: COLOR.cyan, weight: 800 });
+  if (kind === "RC") {
+    line([100, top], [116, top]);
+    dot(116, top, 2.4);
+    text(ctx, "Vc", X(127), Y(top), 8.5 * s, { color: COLOR.cyan, weight: 800 });
+  }
   // C or L
   if (kind === "RC") {
     line([100, top], [100, 47]);
@@ -1063,10 +1070,20 @@ function schematic(ctx, x0, y0, h, kind, source) {
     line([100, 53], [100, bottom]);
     text(ctx, "C", X(116), Y(50), 9 * s, { weight: 800, color: ink });
   } else {
-    line([100, top], [100, 38]);
-    for (let i = 0; i < 4; i += 1) { ctx.beginPath(); ctx.arc(X(100), Y(42 + i * 6), 3 * s, -Math.PI / 2, Math.PI / 2); ctx.stroke(); }
-    line([100, 60], [100, bottom]);
-    text(ctx, "L", X(115), Y(50), 9 * s, { weight: 800, color: ink });
+    // L from node A to node B, then the 1 Ω Rs to ground; VOUT is taken across Rs
+    line([100, top], [100, 31]);
+    for (let i = 0; i < 4; i += 1) { ctx.beginPath(); ctx.arc(X(100), Y(34 + i * 5), 2.5 * s, -Math.PI / 2, Math.PI / 2); ctx.stroke(); }
+    line([100, 51], [100, 53]);
+    text(ctx, "L", X(112), Y(41), 9 * s, { weight: 800, color: ink });
+    dot(100, 53);
+    text(ctx, "B", X(91), Y(53), 8 * s, { color: COLOR.cyan, weight: 800 });
+    line([100, 53], [116, 53]);
+    dot(116, 53, 2.4);
+    text(ctx, "VRs", X(129), Y(53), 8.5 * s, { color: COLOR.cyan, weight: 800 });
+    line([100, 53], [100, 57]);
+    ctx.strokeRect(X(96.5), Y(57), 7 * s, 12 * s);
+    line([100, 69], [100, bottom]);
+    text(ctx, "Rs 1Ω", X(116), Y(64), 7.5 * s, { weight: 800, color: ink });
   }
   const left = source === "s1" ? 60 : 24;
   line([left, bottom], [100, bottom]);
@@ -1092,7 +1109,7 @@ function drawGuide() {
     progress: `${next ? `Step ${doneCount + 1} of ${stepList.length}` : "Circuit complete"}  ·  ${state.source === "gen" ? `${t.drive} V ${hz(state.gen.freq)}` : `${t.drive} V`}`,
     step: next ? next.text : state.source === "s1" ? "Flip S1, change R, press AUTO, and compare measured τ with theory" : "Change R or FREQ, press AUTO, and compare measured τ with theory",
     response: t.response,
-    tau: `${t.formula} = ${seconds(t.tau)}   measured ${measured ? seconds(measured.tau) : "—"}`,
+    tau: `${t.formula} = ${seconds(t.tau)}  measured ${measured ? seconds(measured.tau) : "—"}`,
     finals: `final ${rc ? `Vc ${t.finalValue.toFixed(2)} V` : `I ${engineering(t.finalValue, "A")}`}   peak I ${engineering(t.peakCurrent, "A")}`,
     now: `now ${rc ? `Vc ${live.x.toFixed(2)} V` : `I ${engineering(Math.abs(live.x), "A")}`}   E ${engineering(energy(state, live.x), "J")}`,
     warning, guided, kind: state.kind, source: state.source, s1: state.s1,
@@ -1483,7 +1500,7 @@ function takenHoles(except) {
 /** Lay a wire between two contacts, coloured for the job it does. */
 function addWire(a, b) {
   pushHistory();
-  const wire = new Wire({ a, b, color: suggestColor(state.source, a, b) });
+  const wire = new Wire({ a, b, color: suggestColor(state.source, a, b, state.kind) });
   syncWires();
   changed();
   return wire;
@@ -1506,7 +1523,7 @@ function showPreview(to) {
   const points = wirePoints(route, a, b, endHeight(wireStart), to.id ? endHeight(to.id) : BOARD_H + 0.006, BOARD_H + 0.0035 + (route.over ? 0.012 : 0));
   preview.geometry.dispose();
   preview.geometry = tubeAlong(points, WIRE_R * 1.1);
-  preview.material.color.set(COLOR[to.id ? suggestColor(state.source, wireStart, to.id) : "white"]);
+  preview.material.color.set(COLOR[to.id ? suggestColor(state.source, wireStart, to.id, state.kind) : "white"]);
   preview.visible = true;
 }
 /** Whether a click on this contact can start or finish a wire. */
@@ -1706,7 +1723,7 @@ function buildSolution() {
   cancelWire();
   clearWires();
   newRun();
-  for (const j of jumpersFor(state.source)) new Wire({ a: j.a, b: j.b, color: j.color });
+  for (const j of jumpersFor(state.source, state.kind)) new Wire({ a: j.a, b: j.b, color: j.color });
   syncWires();
   for (const id of Object.keys(state.leads)) state.leads[id] = SOURCES[state.source].leads.includes(id) ? LEADS[id].target : null;
   // the scope measures it: both probes and its ground lead

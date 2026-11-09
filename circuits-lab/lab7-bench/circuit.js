@@ -99,7 +99,7 @@ function describeContact(id) {
 export const POT_VALUES = [1, 2.2, 4.7, 5, 10, 15, 20, 22, 33, 47, 68, 100].map((k) => k * 1000);
 
 export const PARTS = {
-  rin: { kind: "pot", label: "Rin", legs: ["b21", "b27"] },
+  rin: { kind: "pot", label: "Rin", legs: ["d20", "g20"] }, // across the channel, like Rf
   rf: { kind: "pot", label: "Rf", legs: ["d5", "g5"] },
   r2: { kind: "resistor", label: "R2", value: 10000, legs: ["b8", "b13"] },
   r3: { kind: "resistor", label: "R3", value: 10000, legs: ["b6", "b10"] },
@@ -109,7 +109,7 @@ export const PARTS = {
 // Colour convention: +V red, −V blue, ground black, input yellow, second input
 // purple, feedback green, output cyan, links inside the circuit orange.
 export const WIRE_COLORS = ["red", "blue", "black", "yellow", "purple", "green", "cyan", "orange"];
-const RIN_LINK = { id: "rin-link", a: "a21", b: "c13", color: "orange", text: "Rin to pin 2 (−IN)" };
+const RIN_LINK = { id: "rin-link", a: "i20", b: "c13", color: "orange", text: "Rin to pin 2 (−IN)" };
 const FEEDBACK = [
   { id: "feedback", a: "d13", b: "c5", color: "green", text: "Pin 2 (−IN) to Rf: the feedback path" },
   { id: "feedback-out", a: "i5", b: "i14", color: "green", text: "Rf to pin 6 (OUT): closes the feedback loop" },
@@ -123,7 +123,7 @@ export const CONFIGS = {
     short: "INV",
     parts: ["rin", "rf"],
     jumpers: [
-      { id: "in", a: "vin3", b: "a27", color: "yellow", text: "VIN terminal to Rin" },
+      { id: "in", a: "vin3", b: "a20", color: "yellow", text: "VIN terminal to Rin" },
       RIN_LINK,
       ...FEEDBACK,
       PLUS_GND,
@@ -137,7 +137,7 @@ export const CONFIGS = {
     short: "NON-INV",
     parts: ["rin", "rf"],
     jumpers: [
-      { id: "rin-gnd", a: "a27", b: "lg27", color: "black", text: "Rin to the GND rail" },
+      { id: "rin-gnd", a: "a20", b: "lg20", color: "black", text: "Rin to the GND rail" },
       RIN_LINK,
       ...FEEDBACK,
       { id: "in", a: "vin0", b: "a14", color: "yellow", text: "VIN terminal to pin 3 (+IN)" },
@@ -151,7 +151,7 @@ export const CONFIGS = {
     short: "ADDER",
     parts: ["rin", "rf", "r2"],
     jumpers: [
-      { id: "in", a: "vin3", b: "a27", color: "yellow", text: "VIN terminal to Rin" },
+      { id: "in", a: "vin3", b: "a20", color: "yellow", text: "VIN terminal to Rin" },
       RIN_LINK,
       { id: "in2", a: "vtwo1", b: "a8", color: "purple", text: "VIN2 terminal to R2, which feeds pin 2" },
       ...FEEDBACK,
@@ -166,7 +166,7 @@ export const CONFIGS = {
     short: "SUBTR",
     parts: ["rin", "rf", "r3", "r4"],
     jumpers: [
-      { id: "in", a: "vin3", b: "a27", color: "yellow", text: "VIN terminal to Rin" },
+      { id: "in", a: "vin3", b: "a20", color: "yellow", text: "VIN terminal to Rin" },
       { ...RIN_LINK, b: "b13" },
       ...FEEDBACK,
       { id: "in2", a: "vtwo0", b: "a6", color: "purple", text: "VIN2 terminal to R3" },

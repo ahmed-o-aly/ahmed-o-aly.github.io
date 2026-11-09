@@ -147,7 +147,7 @@ test("steps complete in order as the circuit is built", () => {
   }
   // any hole in the same strip satisfies a jumper step
   const moved = built("inverting");
-  moved.jumpers = moved.jumpers.map((j) => (j.id === "in" ? { ...j, b: "c27" } : j));
+  moved.jumpers = moved.jumpers.map((j) => (j.id === "in" ? { ...j, b: "b20" } : j));
   assert.ok(steps(moved).find((s) => s.id === "in").done);
 });
 

@@ -52,14 +52,18 @@ export const R_VALUES = scale(1, [100, 220, 470, 1000, 2200, 4700, 10000, 22000,
 export const C_VALUES = scale(1e-6, [0.01, 0.022, 0.047, 0.1, 0.22, 0.47, 1, 2.2, 4.7, 10, 22, 47, 100]);
 export const L_VALUES = scale(1e-3, [10, 22, 47, 100, 220, 470, 1000]);
 
+// The RL circuit has a fixed 1 Ω sense resistor Rs between the inductor and
+// ground: the voltage across it is the inductor current, 1 V per ampere.
+export const RS = 1;
 export const PARTS = {
   r: { label: "R", values: R_VALUES, legs: ["d12", "g12"] },
   c: { label: "C", values: C_VALUES, legs: ["h16", "h24"] },
   l: { label: "L", values: L_VALUES, legs: ["h16", "h24"] },
+  rs: { label: "Rs", values: [RS], fixed: true, legs: ["g24", "g28"] },
 };
 const storageId = (kind) => (kind === "RC" ? "c" : "l");
 export function partsFor(kind) {
-  return ["r", storageId(kind)].map((id) => ({ id, ...PARTS[id] }));
+  return (kind === "RC" ? ["r", "c"] : ["r", "l", "rs"]).map((id) => ({ id, ...PARTS[id] }));
 }
 /** Every leg that occupies a hole, S1's included. */
 export const legsFor = (kind) => [...partsFor(kind).flatMap((p) => p.legs), ...Object.values(S1)];
@@ -71,9 +75,20 @@ export const WIRE_COLORS = ["red", "black", "yellow", "cyan", "orange", "green",
 const COMMON = [
   { id: "in", a: "vin3", b: "b12", color: "yellow", flow: true, text: "VIN terminal to R" },
   { id: "node", a: "i12", b: "i16", color: "orange", flow: true, text: "R to node A, the top of the storage part" },
-  { id: "gnd", a: "i24", b: "rg24", color: "black", flow: true, text: "Bottom of the storage part to the GND rail" },
-  { id: "out", a: "j16", b: "vout1", color: "cyan", text: "Node A to the VOUT terminal" },
 ];
+// RC: C runs from node A to ground and VOUT is node A, the capacitor voltage.
+// RL: L runs from node A to node B, Rs from node B to ground, and VOUT is node B,
+// the voltage across Rs, so the scope reads the inductor current.
+const OUTPUT = {
+  RC: [
+    { id: "gnd", a: "i24", b: "rg24", color: "black", flow: true, text: "Bottom of C to the GND rail" },
+    { id: "out", a: "j16", b: "vout1", color: "cyan", text: "Node A to the VOUT terminal" },
+  ],
+  RL: [
+    { id: "gnd", a: "i28", b: "rg28", color: "black", flow: true, text: "Bottom of the 1 Ω Rs to the GND rail" },
+    { id: "out", a: "j24", b: "vout1", color: "cyan", text: "Node B, between L and Rs, to the VOUT terminal" },
+  ],
+};
 export const SOURCES = {
   s1: {
     title: "S1 and DC supply",
@@ -85,7 +100,7 @@ export const SOURCES = {
   },
   gen: { title: "Square wave from the generator", jumpers: [], leads: ["gen", "genc"] },
 };
-export const jumpersFor = (source) => [...SOURCES[source].jumpers, ...COMMON];
+export const jumpersFor = (source, kind = "RC") => [...SOURCES[source].jumpers, ...COMMON, ...OUTPUT[kind]];
 
 // Leads run from instrument jacks into a post or straight into a breadboard hole.
 export const LEADS = {
@@ -96,9 +111,9 @@ export const LEADS = {
 };
 
 /** A sensible colour for a new wire: the guide's, else by what it carries. */
-export function suggestColor(source, a, b) {
+export function suggestColor(source, a, b, kind = "RC") {
   const pair = [netOf(a), netOf(b)].sort().join("|");
-  const planned = jumpersFor(source).find((j) => [netOf(j.a), netOf(j.b)].sort().join("|") === pair);
+  const planned = jumpersFor(source, kind).find((j) => [netOf(j.a), netOf(j.b)].sort().join("|") === pair);
   if (planned) return planned.color;
   const nets = [netOf(a), netOf(b)];
   const byNet = { VP: "red", GND: "black", VIN: "yellow", VOUT: "cyan" };
@@ -122,7 +137,7 @@ function describeContact(id) {
   const main = /^([a-j])(\d+)$/.exec(id);
   if (main) {
     const strip = netOf(id);
-    const legs = { [netOf(S1.charge)]: "S1 charge", [netOf(S1.discharge)]: "S1 discharge", [netOf(S1.common)]: "S1 common", [netOf("d12")]: "R", [netOf("g12")]: "R", [netOf("h16")]: "the top of C / L", [netOf("h24")]: "the bottom of C / L" };
+    const legs = { [netOf(S1.charge)]: "S1 charge", [netOf(S1.discharge)]: "S1 discharge", [netOf(S1.common)]: "S1 common", [netOf("d12")]: "R", [netOf("g12")]: "R", [netOf("h16")]: "the top of C / L", [netOf("h24")]: "the bottom of C / L (node B in RL)", [netOf("g28")]: "the bottom of Rs (RL)" };
     return `Hole ${main[1]}${Number(main[2]) + 1}${legs[strip] ? ` · same strip as ${legs[strip]}` : ""}`;
   }
   return id;
@@ -132,14 +147,14 @@ function describeContact(id) {
 export const SUPPLY_LEVELS = [5, 10, 15];
 export const AMPLITUDES = [1, 2, 5, 10];
 export const FREQUENCIES = [1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 50000];
-export const VDIV = [0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10];
+export const VDIV = [0.002, 0.005, 0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10];
 export const IDIV = scale(1e-6, [10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 50000, 100000]);
 export const TDIV = scale(1e-6, [1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 50000, 100000, 200000, 500000, 1000000, 2000000]);
 export const SPEEDS = [0.1, 0.2, 0.5, 1, 2]; // scope screens per second of real time
 
 /**
  * The values a circuit opens on. S1 follows the lab manual (1 kΩ with 100 µF,
- * τ = 100 ms; 100 Ω with 100 mH, τ = 1 ms); the generator's
+ * τ = 100 ms; 100 Ω with 100 mH and the 1 Ω Rs, τ = 0.99 ms); the generator’s
  * square wave works in the kHz range, so its circuits open on τ = 100 µs.
  */
 export function partDefaults(kind, source) {
@@ -250,6 +265,9 @@ export function buildModel(state) {
   const sLegs = PARTS[storageIdNow].legs.map((leg) => u.find(netOf(leg)));
   const R = state.r;
   const S = state[storageIdNow];
+  // every resistor on the board: R, and in RL the 1 Ω sense resistor
+  const resistors = [{ legs: rLegs, r: R }];
+  if (state.kind === "RL") resistors.push({ legs: PARTS.rs.legs.map((leg) => u.find(netOf(leg))), r: RS });
 
   /** Solve the resistive network with the storage part held at x, the sources at time t. */
   const solve = (x, t) => {
@@ -261,18 +279,19 @@ export function buildModel(state) {
       if (!unknown.has(r)) unknown.set(r, unknown.size);
       return unknown.get(r);
     };
-    for (const r of [...rLegs, ...sLegs]) index(r);
+    for (const r of [...resistors.flatMap((x) => x.legs), ...sLegs]) index(r);
     const shorted = sLegs[0] === sLegs[1];
     const isC = state.kind === "RC";
     const branch = isC && !shorted;
     const n = unknown.size + (branch ? 1 : 0);
     const A = Array.from({ length: n }, () => new Array(n).fill(0));
     const b = new Array(n).fill(0);
-    if (rLegs[0] !== rLegs[1]) {
-      const g = 1 / R;
-      const [ia, ib] = rLegs.map(index);
-      if (ia >= 0) { A[ia][ia] += g; if (ib >= 0) A[ia][ib] -= g; else b[ia] += g * known.get(rLegs[1]); }
-      if (ib >= 0) { A[ib][ib] += g; if (ia >= 0) A[ib][ia] -= g; else b[ib] += g * known.get(rLegs[0]); }
+    for (const { legs, r } of resistors) {
+      if (legs[0] === legs[1]) continue;
+      const g = 1 / r;
+      const [ia, ib] = legs.map(index);
+      if (ia >= 0) { A[ia][ia] += g; if (ib >= 0) A[ia][ib] -= g; else b[ia] += g * known.get(legs[1]); }
+      if (ib >= 0) { A[ib][ib] += g; if (ia >= 0) A[ib][ia] -= g; else b[ib] += g * known.get(legs[0]); }
     }
     for (const [, i] of unknown) A[i][i] += GMIN;
     const [sa, sb] = sLegs.map(index);
@@ -353,17 +372,18 @@ export function energy(state, x) {
 /** Theory for the current settings. */
 export function theory(state) {
   const rc = state.kind === "RC";
-  const tau = rc ? state.r * state.c : state.l / state.r;
+  const loop = rc ? state.r : state.r + RS; // RL's current passes through R and Rs
+  const tau = rc ? state.r * state.c : state.l / loop;
   const drive = state.source === "gen" ? state.gen.amp : state.supply.level;
   return {
     tau,
     drive,
-    formula: rc ? "τ = R C" : "τ = L / R",
+    formula: rc ? "τ = R C" : "τ = L/(R+Rs)",
     response: rc
       ? (state.source === "s1" && state.s1 === "discharge" ? "Vc(t) = V0 e^(−t/τ)" : "Vc(t) = Vin (1 − e^(−t/τ))")
-      : (state.source === "s1" && state.s1 === "discharge" ? "I(t) = I0 e^(−t/τ)" : "I(t) = (Vin / R) (1 − e^(−t/τ))"),
-    peakCurrent: drive / state.r,
-    finalValue: rc ? drive : drive / state.r,
+      : (state.source === "s1" && state.s1 === "discharge" ? "I(t) = I0 e^(−t/τ)" : "I(t) = (Vin / (R + Rs)) (1 − e^(−t/τ))"),
+    peakCurrent: drive / loop,
+    finalValue: rc ? drive : drive / loop,
   };
 }
 
@@ -393,11 +413,11 @@ export function measureTau(samples, target) {
 export function steps(state, model = buildModel(state)) {
   const list = [];
   const joined = (a, b) => state.jumpers.some((j) => j.a && j.b && ((netOf(j.a) === netOf(a) && netOf(j.b) === netOf(b)) || (netOf(j.a) === netOf(b) && netOf(j.b) === netOf(a))));
-  for (const j of jumpersFor(state.source)) list.push({ kind: "jumper", ...j, done: joined(j.a, j.b) });
+  for (const j of jumpersFor(state.source, state.kind)) list.push({ kind: "jumper", ...j, done: joined(j.a, j.b) });
   for (const id of SOURCES[state.source].leads) list.push({ kind: "lead", id, ...LEADS[id], done: Boolean(state.leads[id]) && model.connected(LEADS[id].from, LEADS[id].target) });
   const onNet = (probe, net) => Boolean(state.probes[probe]) && model.root(state.probes[probe]) === model.root(net);
   list.push({ kind: "probe", id: "ch1", text: "Clip scope CH1 onto VIN", target: "vmon1", done: onNet("ch1", "postin") });
-  list.push({ kind: "probe", id: "ch2", text: "Clip scope CH2 onto VOUT, node A", target: "vout2", done: onNet("ch2", "postout") });
+  list.push({ kind: "probe", id: "ch2", text: state.kind === "RC" ? "Clip scope CH2 onto VOUT, node A" : "Clip scope CH2 onto VOUT, across the 1 Ω Rs", target: "vout2", done: onNet("ch2", "postout") });
   list.push({ kind: "probe", id: "probegnd", text: "Clip the scope's ground lead onto the GND beside VOUT", target: "gout1", done: onNet("probegnd", "postg") });
   if (state.source === "s1") list.push({ kind: "power", id: "power", text: "Switch the power supply on", done: model.supplyOn });
   list.push({ kind: "start", id: "start", text: "Press START to run the clock", done: state.started });
@@ -407,6 +427,6 @@ export function steps(state, model = buildModel(state)) {
 
 /** Wires on the board that are not part of the selected circuit. */
 export function strayJumpers(state) {
-  const planned = jumpersFor(state.source).map((j) => [netOf(j.a), netOf(j.b)].sort().join("|"));
+  const planned = jumpersFor(state.source, state.kind).map((j) => [netOf(j.a), netOf(j.b)].sort().join("|"));
   return state.jumpers.filter((j) => j.a && j.b && !planned.includes([netOf(j.a), netOf(j.b)].sort().join("|")));
 }
