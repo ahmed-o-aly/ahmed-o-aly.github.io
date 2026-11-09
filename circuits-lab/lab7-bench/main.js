@@ -1,9 +1,8 @@
-// Lab 7 · operational amplifiers, breadboard-bench alternative to the instrument
-// wall in ../lab7/, published beside it for instructors to compare. A standing lab bench: a breadboard trainer in
+// Lab 7 · operational amplifiers. A standing lab bench: a breadboard trainer in
 // the middle, leaning toward the student like a lectern, with the instruments around
 // it within reach and every control a physical part. The student picks a configuration
 // on the trainer, wires it by clicking two contacts (the wire routes itself), powers it,
-// and measures it with the scope and multimeter. Units are metres; +z faces the student.
+// and measures it with the multimeter. Units are metres; +z faces the student.
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
@@ -54,8 +53,8 @@ mountLabShell({
   host: document.getElementById("lab7-bar"),
   title: "Circuits Lab",
   notes: "/projects/circuits-lab/",
-  context: Object.assign(document.createElement("span"), { textContent: "Lab 07 / Operational amplifiers · breadboard bench" }),
-  actions: [Object.assign(document.createElement("a"), { href: "../lab7/", textContent: "Instrument-wall version" }), vrButton],
+  context: Object.assign(document.createElement("span"), { textContent: "Lab 07 / Operational amplifiers" }),
+  actions: [Object.assign(document.createElement("a"), { href: "../", textContent: "All labs" }), vrButton],
 });
 
 // a label that follows the pointer: what a contact is, and what a click will do

@@ -1,18 +1,39 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#34383b" />
-    <meta name="description" content="Four interactive electrical circuits laboratories, with a 3D patch bench and immersive VR experiments." />
-    <title>Circuits lab · MetaHub</title>
-    <script type="module" crossorigin src="./assets/main-C5KEnPWR.js"></script>
-    <link rel="modulepreload" crossorigin href="./assets/BufferGeometryUtils-B-eJx6ep.js">
-    <link rel="modulepreload" crossorigin href="./assets/RoundedBoxGeometry-D2kccui_.js">
-    <link rel="stylesheet" crossorigin href="./assets/BufferGeometryUtils-BwWHCeAJ.css">
-    <link rel="stylesheet" crossorigin href="./assets/main-W9UMPrfl.css">
-  </head>
-  <body>
-    <div id="app"></div>
-  </body>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f6f0e3">
+  <title>Circuits Lab · MetaHub</title>
+  <meta name="description" content="Two breadboard lab benches for Electrical Circuits I: operational amplifiers and RC/RL transient response, on desktop or in VR.">
+  <script type="module" crossorigin src="./assets/main-I8Ql6YGe.js"></script>
+  <link rel="modulepreload" crossorigin href="./assets/metahub-app-shell-BU3ShTjA.js">
+  <link rel="stylesheet" crossorigin href="./assets/metahub-app-shell-BwWHCeAJ.css">
+  <link rel="stylesheet" crossorigin href="./assets/main-DhoKLKnl.css">
+</head>
+<body>
+  <header id="circuits-bar"></header>
+  <main class="circuits-home">
+    <p class="circuits-eyebrow">Electrical Circuits I</p>
+    <h1>Choose a lab</h1>
+    <p class="circuits-intro">Each lab is a standing bench with a breadboard trainer and its instruments. Wire the circuit hole to hole, power it, and measure it, on desktop or in a VR headset.</p>
+    <div class="circuits-labs">
+      <a class="circuits-lab" href="./lab7-bench/">
+        <img src="./previews/lab7.webp" alt="Breadboard trainer with a 741 op-amp wired as an inverting amplifier, the supply, generator and multimeter around it." width="1200" height="750">
+        <span class="circuits-number">Lab 07</span>
+        <strong>Operational amplifiers</strong>
+        <span>Wire a 741 as an inverting, non-inverting, summing or difference amplifier, and measure its output with the multimeter on DC inputs.</span>
+        <span class="circuits-open">Open Lab 07 →</span>
+      </a>
+      <a class="circuits-lab" href="./lab8/">
+        <img src="./previews/lab8.webp" alt="Breadboard trainer with an RC circuit, a square-wave generator and an oscilloscope showing the charging curve." width="1200" height="750">
+        <span class="circuits-number">Lab 08</span>
+        <strong>RC and RL transient response</strong>
+        <span>Charge and discharge RC and RL circuits with S1 or a square wave, and measure the time constant on the oscilloscope with its cursors.</span>
+        <span class="circuits-open">Open Lab 08 →</span>
+      </a>
+    </div>
+    <p class="circuits-vr">For VR, open a lab in a WebXR headset browser and select Enter VR.</p>
+  </main>
+</body>
 </html>

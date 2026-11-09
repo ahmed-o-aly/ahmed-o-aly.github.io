@@ -85,7 +85,8 @@ try {
       `${id} uses website headings by default`
     );
     assert.equal(await page.locator(".metahub-app-trail a").getAttribute("href"), "/projects/metahub/");
-    assert.equal(await page.locator("canvas").count(), 1, `${id} retains one renderer`);
+    // Circuits Lab opens on its list of lab benches; each bench page has the renderer
+    assert.equal(await page.locator("canvas").count(), id === "circuits-lab" ? 0 : 1, `${id} retains one renderer`);
     await page.setViewportSize({ width: 390, height: 844 });
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${id} phone layout fits`);
     await page.screenshot({ path: `tmp/metahub/${id}-published-phone.png`, fullPage: true });

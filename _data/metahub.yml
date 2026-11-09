@@ -23,14 +23,14 @@
 - id: circuits-lab
   title: Circuits Lab
   subject: Engineering
-  description: Wire circuits, place probes and read instruments across four electrical experiments.
-  collection: Four Electrical Circuits I experiments
+  description: Wire op-amp and RC/RL circuits on a breadboard bench, then measure them with the multimeter and oscilloscope.
+  collection: Two Electrical Circuits I lab benches
   project: /projects/circuits-lab/
   launch: /circuits-lab/
   image: /assets/img/projects/metahub/circuits-lab.webp
-  image_alt: Circuit bench with power supply, resistance boxes, meter and connected patch leads.
-  controls: Choose an experiment, explore its connected circuit or build your own. Drag leads and probes, turn dials and inspect measurement graphs.
-  limits: Ideal circuit models; amplifier configurations are provisional pending the lab handout. Physical headset verification remains pending.
+  image_alt: Breadboard trainer with a 741 op-amp wired as an inverting amplifier, with the supply, generator and multimeter around it.
+  controls: Choose Lab 07 or Lab 08, click two holes to lay a wire, plug in leads and probes, turn dials and follow the guide on the console.
+  limits: Ideal circuit models (an ideal op-amp with rail clipping; exact first-order transients). Physical headset verification remains pending.
 - id: bloch-lab
   title: Bloch Lab
   subject: Physics

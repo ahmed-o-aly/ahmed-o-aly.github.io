@@ -454,8 +454,8 @@ assertContains(
 const circuitsProse = block(routes.circuits, "folio-prose", "div");
 assertContains(
   circuitsProse,
-  /Thévenin[\s\S]*?superposition[\s\S]*?operational amplifiers[\s\S]*?RC\/RL/,
-  "Circuits Lab describes all four experiments"
+  /operational amplifiers[\s\S]*?RC\/RL transient response[\s\S]*?breadboard/,
+  "Circuits Lab describes its two breadboard experiments"
 );
 assertContains(circuitsProse, /readings, calculations, and answers on paper/, "Circuits Lab keeps written work outside the experiment interface");
 assertContains(circuitsProse, /Physical headset testing remains outstanding/, "the circuit page states its hardware verification boundary");

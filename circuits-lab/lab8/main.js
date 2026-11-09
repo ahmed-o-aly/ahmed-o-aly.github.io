@@ -616,14 +616,17 @@ function drawGenerator() {
 
 // Oscilloscope, to the right: CH1 and CH2 take probes, measured against the ground
 // lead, and CH3 is the math channel (CH1 − CH2) / R, the current through R. Each
-// channel turns on and off, and two cursors measure time or voltage on the traces.
+// channel turns on and off and moves up or down on its POS knob, and two cursors
+// measure time or voltage on the traces.
 const scope = instrument({ w: 0.34, h: 0.19, d: 0.24, x: 0.57, z: -0.6, color: "#e2e4e6" });
 const scopeJacks = {};
 const CURSOR_STEPS = 101; // positions across the screen, a tenth of a division apart in time
-const view = { on: { ch1: true, ch2: true, ch3: false }, cursor: "off", sel: 0, at: { t: [10, 30], v: [75, 25] } };
+const view = { on: { ch1: true, ch2: true, ch3: false }, pos: { ch1: 0, ch2: 0, ch3: 0 }, cursor: "off", sel: 0, at: { t: [10, 30], v: [75, 25] } };
+const POSITIONS = Array.from({ length: 41 }, (_, i) => Math.round((i * 0.2 - 4) * 10) / 10); // divisions, −4 to +4
 const cursorTime = (i) => (i / (CURSOR_STEPS - 1)) * 10; // divisions from the left edge
 const cursorLevel = (i) => (i / (CURSOR_STEPS - 1)) * 8 - 4; // divisions above the centre line
 let scopeScreen, ch1Knob, ch2Knob, ch3Knob, timeKnob, cursorKnob;
+const posKnobs = {};
 const channelKeys = {};
 let cursorKey, selectKey;
 {
@@ -635,7 +638,10 @@ let cursorKey, selectKey;
       silk(ctx, at, "CH1 V", 0.071, 0.077, 18, { color: COLOR.yellow, weight: 800 });
       silk(ctx, at, "CH2 V", 0.11, 0.077, 18, { color: COLOR.cyan, weight: 800 });
       silk(ctx, at, "CH3 MATH", 0.149, 0.077, 18, { color: "#7be08f", weight: 800 });
-      silk(ctx, at, "POSITION", 0.153, 0.008, 16, { color: "#c9c6bf", weight: 700 });
+      silk(ctx, at, "MOVE", 0.153, 0.008, 16, { color: "#c9c6bf", weight: 700 });
+      silk(ctx, at, "POS 1", 0.071, -0.033, 15, { color: COLOR.yellow, weight: 800 });
+      silk(ctx, at, "POS 2", 0.11, -0.033, 15, { color: COLOR.cyan, weight: 800 });
+      silk(ctx, at, "POS 3", 0.149, -0.033, 15, { color: "#7be08f", weight: 800 });
       silk(ctx, at, "TIME/div", 0.11, 0.018, 20, { color: "#c9c6bf", weight: 700 });
       silk(ctx, at, "CH1", -0.13, -0.083, 22, { color: COLOR.yellow, weight: 800 });
       silk(ctx, at, "CH2", -0.085, -0.083, 22, { color: COLOR.cyan, weight: 800 });
@@ -655,7 +661,11 @@ let cursorKey, selectKey;
   selectKey = addKey(f, { x: 0.066, y: -0.02, w: 0.03, h: 0.012, label: "A / B", color: "#d9d5cb", name: "cursor-select", onPress: () => { view.sel = 1 - view.sel; syncCursorKnob(); changed(); } });
   cursorKnob = addKnob(f, { x: 0.153, y: -0.012, radius: 0.011, values: [...Array(CURSOR_STEPS).keys()], index: view.at.t[0], name: "cursor-position", marker: "#ff9b54", onChange: (v) => { if (view.cursor !== "off") view.at[view.cursor][view.sel] = v; changed(); } });
   cursorKnob.px = 3; // a short drag crosses the screen
-  addKey(f, { x: 0.11, y: -0.052, w: 0.034, h: 0.016, label: "AUTO", color: "#d9d5cb", name: "auto", onPress: () => { autoset(); changed(); } });
+  for (const [id, x, marker] of [["ch1", 0.071, COLOR.yellow], ["ch2", 0.11, COLOR.cyan], ["ch3", 0.149, "#7be08f"]]) {
+    posKnobs[id] = addKnob(f, { x, y: -0.049, radius: 0.0085, values: POSITIONS, index: POSITIONS.indexOf(0), name: `${id}-pos`, marker, onChange: (v) => { view.pos[id] = v; changed(); } });
+    posKnobs[id].px = 8;
+  }
+  addKey(f, { x: 0.11, y: -0.076, w: 0.034, h: 0.014, label: "AUTO", color: "#d9d5cb", name: "auto", onPress: () => { autoset(); changed(); } });
   scopeJacks.ch1 = jack(f, -0.13, -0.066, COLOR.yellow);
   scopeJacks.ch2 = jack(f, -0.085, -0.066, COLOR.cyan);
   scopeJacks.gnd = jack(f, -0.04, -0.066, COLOR.black);
@@ -682,27 +692,39 @@ function autoset() {
   const t = theory(state);
   const want = state.source === "gen" ? 1 / state.gen.freq : 5 * t.tau; // a full period of the square wave, or five τ
   timeKnob.setIndex(firstFit(TDIV, (d) => d * 9 >= want), true);
-  ch1Knob.setIndex(firstFit(VDIV, (d) => d * 4 >= t.drive * 1.02), true);
-  ch2Knob.setIndex(firstFit(VDIV, (d) => d * 4 >= t.drive * 1.02), true);
-  ch3Knob.setIndex(firstFit(IDIV, (d) => d * 4 >= t.peakCurrent * 1.02), true);
+  // signals that stay at or above 0 V start near the bottom and use most of the screen; VL and I swing both ways
+  const rc = state.kind === "RC";
+  const place = (id, knob, values, peak, oneSided) => {
+    knob.setIndex(firstFit(values, (d) => d * (oneSided ? 6.5 : 3.6) >= peak * 1.02), true);
+    view.pos[id] = oneSided ? -3 : 0;
+    posKnobs[id].setIndex(POSITIONS.indexOf(view.pos[id]), true);
+  };
+  place("ch1", ch1Knob, VDIV, t.drive, true);
+  place("ch2", ch2Knob, VDIV, t.drive, rc);
+  place("ch3", ch3Knob, IDIV, t.peakCurrent, false);
 }
 function drawScope() {
   const sweep = run.sweep;
   const grounded = scopeGrounded();
   const key = JSON.stringify([run.drawTick, ch1Knob.index, ch2Knob.index, ch3Knob.index, timeKnob.index, run.active, state.kind, sweep?.samples.length ?? -1, state.probes, view, grounded]);
   scopeScreen.draw(key, (ctx, w, h) => {
+    // the labels live in strips above and below the graticule, so nothing covers a trace
+    const size = h * 0.05;
+    const top = size * 1.6, bottom = h - size * 2.7, gh = bottom - top;
     ctx.strokeStyle = "#1d3a32";
     ctx.lineWidth = 2;
-    for (let i = 1; i < 10; i += 1) { ctx.beginPath(); ctx.moveTo((i * w) / 10, 0); ctx.lineTo((i * w) / 10, h); ctx.stroke(); }
-    for (let i = 1; i < 8; i += 1) { ctx.beginPath(); ctx.moveTo(0, (i * h) / 8); ctx.lineTo(w, (i * h) / 8); ctx.stroke(); }
+    for (let i = 1; i < 10; i += 1) { ctx.beginPath(); ctx.moveTo((i * w) / 10, top); ctx.lineTo((i * w) / 10, bottom); ctx.stroke(); }
+    for (let i = 0; i <= 8; i += 1) { ctx.beginPath(); ctx.moveTo(0, top + (i * gh) / 8); ctx.lineTo(w, top + (i * gh) / 8); ctx.stroke(); }
     ctx.strokeStyle = "#2f5a4d";
-    ctx.beginPath(); ctx.moveTo(w / 2, 0); ctx.lineTo(w / 2, h); ctx.moveTo(0, h / 2); ctx.lineTo(w, h / 2); ctx.stroke();
-    const size = h * 0.052;
+    ctx.beginPath(); ctx.moveTo(w / 2, top); ctx.lineTo(w / 2, bottom); ctx.moveTo(0, top + gh / 2); ctx.lineTo(w, top + gh / 2); ctx.stroke();
     const rc = state.kind === "RC";
-    const Y = (v, div) => THREE.MathUtils.clamp(h / 2 - (v / div) * (h / 8), 2, h - 2);
     const div = timeKnob.value;
-    const X = (t) => w / 10 + (((t - sweep.t0) / div) * w) / 10;
     const scale = { ch1: ch1Knob.value, ch2: ch2Knob.value, i: ch3Knob.value };
+    const pos = { ch1: view.pos.ch1, ch2: view.pos.ch2, i: view.pos.ch3 };
+    const color = { ch1: COLOR.yellow, ch2: COLOR.cyan, i: "#7be08f" };
+    const levelY = (divs) => top + gh / 2 - (divs * gh) / 8; // divisions above the centre line
+    const Y = (v, field) => THREE.MathUtils.clamp(levelY(v / scale[field] + pos[field]), top + 2, bottom - 2);
+    const X = (t) => w / 10 + (((t - sweep.t0) / div) * w) / 10;
     const shown = { ch1: grounded && view.on.ch1, ch2: grounded && view.on.ch2, i: grounded && view.on.ch3 };
     // a trace's value at a time after the trigger, from the sweep's samples
     const valueAt = (field, t) => {
@@ -714,23 +736,33 @@ function drawScope() {
       if (q[field] === null || p[field] === null) return null;
       return q.t === p.t ? q[field] : p[field] + ((q[field] - p[field]) * (t - p.t)) / (q.t - p.t);
     };
+    // each channel's ground level, marked at the left edge as a scope does
+    for (const [field, n] of [["ch1", "1"], ["i", "3"], ["ch2", "2"]]) {
+      if (!shown[field]) continue;
+      const y = Y(0, field);
+      ctx.fillStyle = color[field];
+      ctx.beginPath(); ctx.moveTo(0, y - size * 0.45); ctx.lineTo(size * 0.7, y); ctx.lineTo(0, y + size * 0.45); ctx.fill();
+      text(ctx, n, size * 0.95, y, size * 0.75, { color: color[field], font: MONO, weight: 800, align: "left" });
+    }
+    ctx.save();
+    ctx.beginPath(); ctx.rect(0, top, w, gh); ctx.clip();
     if (sweep) {
-      const trace = (field, color) => {
+      const trace = (field) => {
         if (!shown[field] || sweep.pre[field] === null || sweep.pre[field] === undefined) return;
-        ctx.strokeStyle = color;
+        ctx.strokeStyle = color[field];
         ctx.lineWidth = 4;
-        ctx.shadowColor = color;
+        ctx.shadowColor = color[field];
         ctx.shadowBlur = 8;
         ctx.beginPath();
-        ctx.moveTo(0, Y(sweep.pre[field], scale[field]));
-        ctx.lineTo(w / 10, Y(sweep.pre[field], scale[field]));
-        for (const s of sweep.samples) ctx.lineTo(X(s.t), Y(s[field], scale[field]));
+        ctx.moveTo(0, Y(sweep.pre[field], field));
+        ctx.lineTo(w / 10, Y(sweep.pre[field], field));
+        for (const s of sweep.samples) ctx.lineTo(X(s.t), Y(s[field], field));
         ctx.stroke();
         ctx.shadowBlur = 0;
       };
-      trace("ch1", COLOR.yellow);
-      trace("i", "#7be08f");
-      trace("ch2", COLOR.cyan);
+      trace("ch1");
+      trace("i");
+      trace("ch2");
       // the 63.2% marks, at τ on the CH2 trace, while the hand cursors are off
       const m = sweep.measured;
       if (m && grounded && view.cursor === "off") {
@@ -738,61 +770,62 @@ function drawScope() {
         ctx.strokeStyle = "#ff9b54";
         ctx.lineWidth = 3;
         const cx = X(sweep.t0 + m.tau);
-        ctx.beginPath(); ctx.moveTo(cx, 0); ctx.lineTo(cx, h); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(cx, top); ctx.lineTo(cx, bottom); ctx.stroke();
         const level = shown.ch2 ? valueAt("ch2", sweep.t0 + m.tau) : null;
         if (level !== null) {
-          const cy = Y(level, scale.ch2);
+          const cy = Y(level, "ch2");
           ctx.beginPath(); ctx.moveTo(0, cy); ctx.lineTo(w, cy); ctx.stroke();
           text(ctx, "63.2%", w - 10, cy - size * 0.75, size * 0.85, { color: "#ff9b54", font: MONO, weight: 700, align: "right" });
         }
         ctx.setLineDash([]);
-        text(ctx, "τ", cx + 8, size * 5.2, size * 1.1, { color: "#ff9b54", font: MONO, weight: 700, align: "left" });
+        text(ctx, "τ", cx + 8, top + size, size * 1.1, { color: "#ff9b54", font: MONO, weight: 700, align: "left" });
       }
     }
     // hand cursors: A solid, B dashed, the one the knob moves drawn brighter
-    let readout = [];
+    let readout = ["", ""];
     if (view.cursor !== "off") {
       const vertical = view.cursor === "t";
       const [a, b] = view.at[view.cursor];
       for (const k of [0, 1]) {
         const at = view.at[view.cursor][k];
-        const x = (cursorTime(at) * w) / 10, y = h / 2 - (cursorLevel(at) * h) / 8;
+        const x = (cursorTime(at) * w) / 10, y = levelY(cursorLevel(at));
         ctx.strokeStyle = k === view.sel ? "#ffb27a" : "rgba(255, 155, 84, 0.55)";
         ctx.lineWidth = k === view.sel ? 3.5 : 2.5;
         ctx.setLineDash(k ? [14, 9] : []);
         ctx.beginPath();
-        if (vertical) { ctx.moveTo(x, 0); ctx.lineTo(x, h); } else { ctx.moveTo(0, y); ctx.lineTo(w, y); }
+        if (vertical) { ctx.moveTo(x, top); ctx.lineTo(x, bottom); } else { ctx.moveTo(0, y); ctx.lineTo(w, y); }
         ctx.stroke();
         ctx.setLineDash([]);
         const name = k ? "B" : "A";
-        if (vertical) text(ctx, name, x + 8, size * 5.2, size, { color: "#ffb27a", font: MONO, weight: 800, align: "left" });
+        if (vertical) text(ctx, name, x + 8, top + size, size, { color: "#ffb27a", font: MONO, weight: 800, align: "left" });
         else text(ctx, name, w * 0.55, y - size * 0.6, size, { color: "#ffb27a", font: MONO, weight: 800, align: "left" });
       }
       if (vertical) {
         // times after the trigger, which sits one division in; CH2 read at each
         const ta = (cursorTime(a) - 1) * div, tb = (cursorTime(b) - 1) * div;
         const v = (t) => { const x = shown.ch2 && sweep ? valueAt("ch2", sweep.t0 + t) : null; return x === null ? "—" : `${x.toFixed(2)} V`; };
-        readout = [`A ${tdivLabel(ta)}  CH2 ${v(ta)}`, `B ${tdivLabel(tb)}  CH2 ${v(tb)}`, `ΔT ${tdivLabel(Math.abs(tb - ta))}`];
+        readout = [`A ${tdivLabel(ta)} ${v(ta)}   B ${tdivLabel(tb)} ${v(tb)}`, `ΔT ${tdivLabel(Math.abs(tb - ta))}  (CH2)`];
       } else {
-        const va = cursorLevel(a) * scale.ch2, vb = cursorLevel(b) * scale.ch2;
-        readout = [`A ${va.toFixed(2)} V`, `B ${vb.toFixed(2)} V`, `ΔV ${Math.abs(vb - va).toFixed(2)} V  on CH2`];
+        // levels measured from CH2's ground marker, on CH2's scale
+        const va = (cursorLevel(a) - pos.ch2) * scale.ch2, vb = (cursorLevel(b) - pos.ch2) * scale.ch2;
+        readout = [`A ${va.toFixed(2)} V   B ${vb.toFixed(2)} V`, `ΔV ${Math.abs(vb - va).toFixed(2)} V  (CH2)`];
       }
     }
-    // the legend sits on its own panels so traces never run through it
-    ctx.fillStyle = "rgba(10, 18, 16, 0.78)";
-    ctx.fillRect(0, 0, size * 14, size * 4.1);
-    ctx.fillRect(0, h - size * 2.9, size * 11, size * 2.9);
-    ctx.fillRect(w - size * 6.2, 0, size * 6.2, size * 2.9);
-    if (readout.length) ctx.fillRect(w - size * 14.5, h - size * 4.1, size * 14.5, size * 4.1);
-    const off = (id) => (view.on[id] ? "" : "  OFF");
-    text(ctx, `CH1 Vin ${vdivLabel(ch1Knob.value)}${off("ch1")}`, 14, size, size, { color: COLOR.yellow, font: MONO, weight: 600, align: "left" });
-    text(ctx, `CH2 ${rc ? "Vc" : "VL"}  ${vdivLabel(ch2Knob.value)}${off("ch2")}`, 14, size * 2.2, size, { color: COLOR.cyan, font: MONO, weight: 600, align: "left" });
-    text(ctx, `CH3 (CH1−CH2)/R ${idivLabel(ch3Knob.value)}${off("ch3")}`, 14, size * 3.4, size, { color: "#7be08f", font: MONO, weight: 600, align: "left" });
-    text(ctx, `${tdivLabel(div)}/div`, w - 14, size, size, { color: "#b9c7c0", font: MONO, weight: 600, align: "right" });
-    text(ctx, run.active ? "RUN" : "PAUSED", w - 14, size * 2.2, size, { color: run.active ? "#7be08f" : "#ffb347", font: MONO, weight: 700, align: "right" });
-    text(ctx, `τ theory  ${tdivLabel(theory(state).tau)}`, 14, h - size * 2.1, size * 0.95, { color: "#dfe7e3", font: MONO, weight: 600, align: "left" });
-    text(ctx, `τ 63.2%   ${grounded && sweep?.measured ? tdivLabel(sweep.measured.tau) : "—"}`, 14, h - size * 0.9, size * 0.95, { color: "#ff9b54", font: MONO, weight: 600, align: "left" });
-    readout.forEach((line, k) => text(ctx, line, w - 14, h - size * (3.1 - k * 1.1), size * 0.9, { color: "#ffb27a", font: MONO, weight: 600, align: "right" }));
+    ctx.restore();
+    // top strip: the channels and the time base
+    // a channel that is off keeps its label, greyed
+    const ink = (id, c) => (view.on[id] ? c : "#55625d");
+    const row = top * 0.5;
+    text(ctx, `1 Vin ${vdivLabel(scale.ch1)}`, 10, row, size, { color: ink("ch1", COLOR.yellow), font: MONO, weight: 600, align: "left" });
+    text(ctx, `2 ${rc ? "Vc" : "VL"} ${vdivLabel(scale.ch2)}`, w * 0.23, row, size, { color: ink("ch2", COLOR.cyan), font: MONO, weight: 600, align: "left" });
+    text(ctx, `3 (1−2)/R ${idivLabel(scale.i)}`, w * 0.45, row, size, { color: ink("ch3", "#7be08f"), font: MONO, weight: 600, align: "left" });
+    text(ctx, `${tdivLabel(div)} ${run.active ? "RUN" : "STOP"}`, w - 10, row, size, { color: run.active ? "#7be08f" : "#ffb347", font: MONO, weight: 700, align: "right" });
+    // bottom strip: the time constant, and the cursors' readout
+    const r1 = bottom + size * 0.75, r2 = bottom + size * 1.95;
+    text(ctx, `τ theory ${tdivLabel(theory(state).tau)}`, 10, r1, size * 0.95, { color: "#dfe7e3", font: MONO, weight: 600, align: "left" });
+    text(ctx, `τ 63.2%  ${grounded && sweep?.measured ? tdivLabel(sweep.measured.tau) : "—"}`, 10, r2, size * 0.95, { color: "#ff9b54", font: MONO, weight: 600, align: "left" });
+    text(ctx, readout[0], w - 10, r1, size * 0.95, { color: "#ffb27a", font: MONO, weight: 600, align: "right" });
+    text(ctx, readout[1], w - 10, r2, size * 0.95, { color: "#ffb27a", font: MONO, weight: 600, align: "right" });
     if (!grounded) {
       ctx.fillStyle = "rgba(10, 18, 16, 0.85)";
       ctx.fillRect(w * 0.16, h * 0.42, w * 0.68, h * 0.16);
@@ -1057,7 +1090,7 @@ function drawGuide() {
   const lines = {
     title: `${rc ? "RC" : "RL"} circuit · ${state.source === "gen" ? "square wave" : state.s1 === "charge" ? (rc ? "charging" : "current rising") : (rc ? "discharging" : "current decaying")}`,
     progress: `${next ? `Step ${doneCount + 1} of ${stepList.length}` : "Circuit complete"}  ·  ${state.source === "gen" ? `${t.drive} V ${hz(state.gen.freq)}` : `${t.drive} V`}`,
-    step: next ? next.text : "Flip S1, change R, press AUTO, and compare measured τ with theory",
+    step: next ? next.text : state.source === "s1" ? "Flip S1, change R, press AUTO, and compare measured τ with theory" : "Change R or FREQ, press AUTO, and compare measured τ with theory",
     response: t.response,
     tau: `${t.formula} = ${seconds(t.tau)}   measured ${measured ? seconds(measured.tau) : "—"}`,
     finals: `final ${rc ? `Vc ${t.finalValue.toFixed(2)} V` : `I ${engineering(t.finalValue, "A")}`}   peak I ${engineering(t.peakCurrent, "A")}`,
