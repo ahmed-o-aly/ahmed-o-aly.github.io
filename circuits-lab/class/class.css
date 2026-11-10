@@ -1,0 +1,53 @@
+/* The class dialog on a lab's page: start a class, or join one by its code. */
+.class-dialog {
+  box-sizing: border-box;
+  width: min(440px, calc(100vw - 32px));
+  padding: 22px 24px 20px;
+  border: 1px solid var(--garden-line-plate, rgba(93, 70, 50, 0.3));
+  background: var(--garden-surface, #faf5e9);
+  color: var(--garden-ink, #372b1f);
+  font-family: var(--garden-ui, sans-serif);
+}
+.class-dialog::backdrop { background: rgba(43, 33, 24, 0.45); }
+.class-dialog h2 {
+  margin: 0 0 4px;
+  font-family: var(--garden-serif, Georgia, serif);
+  font-size: 1.6rem;
+  font-weight: 500;
+}
+.class-dialog p { margin: 0 0 14px; color: var(--garden-muted, #5c4c39); line-height: 1.45; }
+.class-dialog label { display: block; margin: 0 0 4px; font-family: var(--garden-mono, monospace); font-size: 0.75rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--garden-accent, #8a3b2a); }
+.class-dialog input {
+  box-sizing: border-box;
+  width: 100%;
+  margin: 0 0 14px;
+  padding: 9px 10px;
+  border: 1px solid var(--garden-line-plate, rgba(93, 70, 50, 0.3));
+  background: #fff;
+  color: inherit;
+  font: inherit;
+  font-size: 1rem;
+}
+.class-dialog input.class-code { font-family: var(--garden-mono, monospace); font-size: 1.3rem; letter-spacing: 0.3em; text-transform: uppercase; }
+.class-row { display: flex; gap: 10px; flex-wrap: wrap; }
+.class-row > * { flex: 1 1 auto; }
+.class-dialog button {
+  min-height: 42px;
+  padding: 8px 14px;
+  border: 1px solid var(--garden-ink, #372b1f);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.class-dialog button.class-primary { background: var(--garden-ink, #372b1f); color: var(--garden-canvas, #f6f0e3); }
+.class-dialog button:hover { background: var(--garden-surface-hover, #f1e6cf); }
+.class-dialog button.class-primary:hover { background: var(--garden-espresso, #2b2118); }
+.class-dialog button:focus-visible, .class-dialog input:focus-visible { outline: 2px solid var(--garden-focus, #8a3b2a); outline-offset: 2px; }
+.class-or { margin: 16px 0 12px; border-top: 1px solid var(--garden-line, rgba(93, 70, 50, 0.25)); }
+.class-big { margin: 4px 0 10px; font-family: var(--garden-mono, monospace); font-size: 2.6rem; letter-spacing: 0.25em; color: var(--garden-accent, #8a3b2a); }
+.class-link { word-break: break-all; font-family: var(--garden-mono, monospace); font-size: 0.85rem; }
+.class-roster { margin: 0 0 14px; padding: 0; list-style: none; font-size: 0.95rem; }
+.class-roster li { padding: 3px 0; border-bottom: 1px solid var(--garden-line-soft, rgba(93, 70, 50, 0.2)); }
+.class-error { color: var(--garden-seal, #9b1d1b); }
+.class-close { position: absolute; top: 8px; right: 8px; min-height: 32px !important; padding: 2px 10px !important; border: 0 !important; }

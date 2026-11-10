@@ -35,6 +35,17 @@ S1 charges and discharges the circuit from the DC supply (the manual's 1 kΩ wit
 
 `lab8/circuit.js` owns the nets, S1, the values, guided steps and an exact first-order solver: with the sources held still the wired network is linear, so the stored quantity follows dx/dt = a·x + b exactly. `main.js` was derived from Lab 07's and shares its wiring and VR design.
 
+## Class sessions
+
+An instructor and up to about a dozen students can share a lab. Everyone opens the same lab page; the instructor presses **Class → Start a class as instructor** and reads out the four-character code (or shares the link, `…/lab8/?class=K7QD`); students press **Class**, type their name and the code, then enter VR. A class panel stands left of the console:
+
+- **DEMO** (the class starts here): every student's bench shows the instructor's, read-only, with the instructor's hands and pointer on it.
+- **WORK**: students return to their own benches. With **COPY** lit they start from the instructor's circuit instead.
+- The key beside a student's name visits their bench (read-only), with their hands showing and the instructor's pointer showing on theirs; **MINE** returns. The roster shows each student's guide progress and flags a short.
+- Students can **PEEK** at the instructor's bench while working.
+
+`class/rules.js` decides who views which bench, who is locked and whose hands are drawn; `class/session.js` is one member's connection (presence plus `bench`, `pose` and `want` broadcasts); `class/bench-link.js` keeps a bench showing the right one, keeping the member's own bench aside while they view another; `class/join-ui.js`, `panel.js` and `ghosts.js` are the dialog, the in-world panel and the hands. The relay is Supabase Realtime broadcast and presence (`class/config.js`, the project's publishable key; no database tables), loaded only when someone joins. A bench is sent only while someone else views it and hands only while someone would see them. `?relay=local` runs a class between tabs of one browser without the relay. `tests/class-session.test.js` checks the rules and a whole session over an in-memory relay.
+
 ## Both benches
 
 Click two holes to lay a wire; it routes itself and takes a colour for what it carries. Click a wire for its colour wheel, re-route or delete; drag its ends or bead. Leads go into a post or straight into a hole, and probes clip onto any contact. Every ground point on the trainer is connected internally. An unlabelled white button on the trainer's right-hand edge builds the selected circuit complete for the instructor.

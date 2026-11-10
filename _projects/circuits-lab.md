@@ -24,4 +24,6 @@ Students wire the circuit themselves. A click on two breadboard holes lays a wir
 
 In the operational amplifiers lab, a 741 is wired as an inverting, non-inverting, summing or difference amplifier and measured with the multimeter on DC inputs, as the course does. In the transient lab, S1 charges and discharges an RC or RL circuit from the supply, or the generator drives it with a kHz square wave; R, C and L are dials, the RL circuit's current is read across a 1 Ω sense resistor, and the oscilloscope has a ground lead, a math channel for the current, per-channel position controls and time and voltage cursors for measuring τ.
 
+A class can share a lab across headsets: the instructor starts a class and students join with its code. In demo every student's bench shows the instructor's, with the instructor's hands on it; then each student works on their own bench, and the instructor can visit any of them and point at what they mean. It runs over a small real-time relay, so nothing needs installing.
+
 In VR, a trigger tap selects a wire and a press-and-drag lays one, with the colour palette on the other controller; the grip reaches from the pointer to turn knobs and move leads and probes. The circuits use ideal models: an ideal op-amp with rail clipping, and an exact first-order solution for whatever is wired. Physical headset testing remains outstanding.

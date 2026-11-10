@@ -18,6 +18,10 @@ import {
 import { BLOCK_AT, BOARD, COL_X, LANES_X, LANES_Z, POST_AT, RAIL_X, S1_BODY, contactXZ, contacts, endObstacle, partObstacles, partPose, rowZ } from "./layout.js";
 import { routeWire } from "../lab7-bench/routing.js";
 import { COLOR, Cable, Display, Key, Knob, MONO, SANS, canvasTexture, jack, mat, printedFace, rounded, setAnisotropy, text } from "../lab7-bench/kit.js";
+import { classDialog } from "../class/join-ui.js";
+import { linkBench } from "../class/bench-link.js";
+import { ClassPanel } from "../class/panel.js";
+import { Ghosts } from "../class/ghosts.js";
 
 const TOP = 0.9; // bench height for a standing student
 const TILT = THREE.MathUtils.degToRad(20); // the trainer leans toward the student
@@ -45,6 +49,7 @@ renderer.xr.setFramebufferScaleFactor(1.2);
 stage.appendChild(renderer.domElement);
 setAnisotropy(renderer.capabilities.getMaxAnisotropy());
 
+const classUi = classDialog({ lab: "lab8" }); // start or join a class session
 const vrButton = document.createElement("button");
 vrButton.type = "button";
 vrButton.textContent = "Checking VR…";
@@ -54,7 +59,7 @@ mountLabShell({
   title: "Circuits Lab",
   notes: "/projects/circuits-lab/",
   context: Object.assign(document.createElement("span"), { textContent: "Lab 08 / RC and RL transient response" }),
-  actions: [Object.assign(document.createElement("a"), { href: "../", textContent: "All labs" }), vrButton],
+  actions: [Object.assign(document.createElement("a"), { href: "../", textContent: "All labs" }), classUi.button, vrButton],
 });
 
 // a label that follows the pointer: what a contact is, and what a click will do
@@ -1896,6 +1901,8 @@ renderer.domElement.addEventListener("pointerdown", (e) => {
   if (renderer.xr.isPresenting || e.button !== 0) return;
   const ray = rayFrom(e);
   const h = hit(ray);
+  // viewing someone else's bench: only the class panel answers; a drag still orbits
+  if (locked && !h?.ref?.classKey) { press = null; return; }
   press = { x: e.clientX, y: e.clientY, ref: h?.ref ?? null, point: h ? board.worldToLocal(h.point.clone()) : null, contact: null, id: e.pointerId };
   if (h?.ref instanceof MenuItem) { applyMenu(h.ref); press = null; return; }
   if (h?.ref instanceof Key || h?.ref instanceof Toggle) { h.ref.press(); press = null; return; }
@@ -1922,6 +1929,8 @@ renderer.domElement.addEventListener("pointerdown", (e) => {
 });
 renderer.domElement.addEventListener("pointermove", (e) => {
   if (renderer.xr.isPresenting) return;
+  if (classLink.session) pointerBead = pointerOnBench(rayFrom(e));
+  if (locked) { hovered.clear(); snapRing.visible = false; showPreview(null); showTip(e, "Viewing another bench: read-only"); renderer.domElement.style.cursor = ""; return; }
   if (press && !drag && wireOf(press.ref) && Math.hypot(e.clientX - press.x, e.clientY - press.y) > 4) {
     // a wire pressed and pulled: its end moves, or its run bends
     const mover = press.ref instanceof WireEnd ? press.ref : wireOf(press.ref).bead;
@@ -1992,8 +2001,9 @@ function endPress(e) {
 }
 renderer.domElement.addEventListener("pointerup", endPress);
 renderer.domElement.addEventListener("pointercancel", endPress);
-renderer.domElement.addEventListener("pointerleave", () => { if (!drag) { hovered.clear(); showTip(null, null); } });
+renderer.domElement.addEventListener("pointerleave", () => { pointerBead = null; if (!drag) { hovered.clear(); showTip(null, null); } });
 window.addEventListener("keydown", (e) => {
+  if (locked) return;
   if (e.key === "Escape") { cancelWire(); closeMenu(); }
   if ((e.key === "Delete" || e.key === "Backspace") && menuWire) { e.preventDefault(); applyMenu(menuItems.find((i) => i.action === "delete")); }
 });
@@ -2250,7 +2260,7 @@ function updatePalette(head) {
 }
 
 function select(holder) {
-  if (holder.grab) return;
+  if (holder.grab || locked) return;
   // S1 sits apart from the holes, so a tap on its lever means the switch
   if (!palette.visible && beadOf(holder).distanceTo(s1Switch.point()) < 0.024) { s1Switch.press(); pulse(holder, 0.5, 30); return; }
   // the palette hand's trigger confirms what its stick (or the other bead) has chosen
@@ -2282,7 +2292,7 @@ function selectEnd(holder) {
   else { closeMenu(); cancelWire(); }
 }
 function grab(holder) {
-  if (holder.grab) return;
+  if (holder.grab || locked) return;
   if (holder !== palette.hand) closeMenu();
   const ref = nearest(holder);
   if (!ref) return;
@@ -2369,6 +2379,7 @@ function updateHands() {
   updatePalette(renderer.xr.getCamera());
   // bead pokes: each key takes the deepest press from either free hand
   for (const key of keys) {
+    if (locked && !key.classKey) continue; // another's bench: only the class panel
     let depth = 0, by = null;
     for (const holder of holders) {
       if (!holder.source || holder.grab || holder.press) continue;
@@ -2421,6 +2432,7 @@ let viewTouched = false;
 controls.addEventListener("start", () => { viewTouched = true; });
 const VIEW_DIR = new THREE.Vector3(0, 0.74, 0.67).normalize();
 const VIEW_DIR_TALL = new THREE.Vector3(0, 0.88, 0.47).normalize(); // portrait screens look down on the bench
+let classFraming = false; // in a class the view widens to take in the class panel
 function fitStage() {
   const w = Math.max(stage.clientWidth, 1), h = Math.max(stage.clientHeight, 1);
   camera.aspect = w / h;
@@ -2430,7 +2442,8 @@ function fitStage() {
   const halfV = THREE.MathUtils.degToRad(camera.fov / 2);
   const halfH = Math.atan(Math.tan(halfV) * camera.aspect);
   const tall = camera.aspect < 1;
-  const distance = Math.max((tall ? 0.3 : 0.62) / Math.tan(halfH), 0.36 / Math.tan(halfV), 0.6);
+  const distance = Math.max((tall ? 0.3 : classFraming ? 0.74 : 0.62) / Math.tan(halfH), 0.36 / Math.tan(halfV), 0.6);
+  controls.target.x = classFraming && !tall ? -0.07 : 0;
   camera.position.copy(controls.target).addScaledVector(tall ? VIEW_DIR_TALL : VIEW_DIR, distance);
   controls.update();
 }
@@ -2442,10 +2455,109 @@ for (const m of movers) if (m instanceof Plug) m.sync();
 autoset();
 changed();
 
+// ---------- class session ----------
+// An instructor and students each run this bench; class/bench-link.js keeps each
+// headset showing the right one. The whole bench travels as benchState(), the
+// same setup Undo keeps plus the instruments' settings, and people's hands as
+// poses in the lab's frame. While viewing another's bench it is read-only.
+let locked = false;
+let pointerBead = null; // desktop: the point under the mouse, in the lab frame
+function setLocked(on) {
+  locked = on;
+  if (!on) return;
+  closeMenu();
+  cancelWire();
+  for (const holder of holders) { if (holder.grab) release(holder); holder.press = null; }
+  if (drag?.kind === "mover") drag.mover.drop(drag.mover.tip());
+  drag = null;
+  press = null;
+  controls.enabled = true;
+}
+const r4 = (v) => Math.round(v * 1e4) / 1e4;
+function benchState() {
+  return {
+    v: 1,
+    snap: snapshot(),
+    gen: { ...state.gen },
+    level: state.supply.level,
+    started: state.started,
+    charged: state.charged,
+    active: run.active,
+    knobs: { ch1: ch1Knob.index, ch2: ch2Knob.index, ch3: ch3Knob.index, time: timeKnob.index, speed: speedKnob.index, pos1: posKnobs.ch1.index, pos2: posKnobs.ch2.index, pos3: posKnobs.ch3.index },
+    view: structuredClone(view),
+  };
+}
+function applyBench(b) {
+  if (!b?.snap) return;
+  state.gen = { ...b.gen };
+  ampKnob.setValue(b.gen.amp);
+  freqKnob.setValue(b.gen.freq);
+  state.supply.level = b.level;
+  const k = b.knobs;
+  for (const [knob, i] of [[ch1Knob, k.ch1], [ch2Knob, k.ch2], [ch3Knob, k.ch3], [timeKnob, k.time], [speedKnob, k.speed], [posKnobs.ch1, k.pos1], [posKnobs.ch2, k.pos2], [posKnobs.ch3, k.pos3]]) knob.setIndex(i, true);
+  Object.assign(view, structuredClone(b.view));
+  for (const id of ["ch1", "ch2", "ch3"]) channelKeys[id].setLit(view.on[id]);
+  cursorKey.setLit(view.cursor !== "off");
+  syncCursorKnob();
+  applySnapshot(b.snap);
+  state.started = b.started;
+  state.charged = b.charged;
+  run.active = b.active;
+  if (run.active && !run.sweep) { run.last = readings(); startSweep(); }
+  changed();
+}
+const poseV = new THREE.Vector3(), poseQ = new THREE.Quaternion();
+function labPose(object) {
+  object.getWorldPosition(poseV);
+  object.getWorldQuaternion(poseQ);
+  return { p: lab.worldToLocal(poseV.clone()).toArray().map(r4), q: poseQ.toArray().map(r4) };
+}
+function pointerOnBench(ray) {
+  const h = hit(ray);
+  if (h) return lab.worldToLocal(h.point.clone()).toArray().map(r4);
+  const q = boardPoint(ray);
+  return q && Math.abs(q.x) < TRAINER_W / 2 && q.z > FACE_Z0 && q.z < FACE_Z1 ? toLab(q).toArray().map(r4) : null;
+}
+function benchPose() {
+  const xr = renderer.xr.isPresenting;
+  const head = labPose(xr ? renderer.xr.getCamera() : camera);
+  const hands = xr
+    ? holders.map((h) => (h.source ? { ...labPose(h.grip), bead: beadOf(h).toArray().map(r4), grab: Boolean(h.grab) } : null))
+    : [pointerBead ? { p: null, q: null, bead: pointerBead, grab: Boolean(drag) } : null, null];
+  return { head, hands };
+}
+// the class panel stands left of the console, turned toward the student
+const classStand = new THREE.Group();
+classStand.position.set(-0.43, TOP + 0.045, HINGE_Z + 0.05);
+classStand.rotation.set(-1.0, 0.32, 0, "YXZ");
+lab.add(classStand);
+const dropKey = (k) => {
+  const i = keys.indexOf(k);
+  if (i >= 0) keys.splice(i, 1);
+  unpick(k.pickable);
+  unpick(k.face);
+  glowTargets.delete(k);
+  k.group.removeFromParent();
+};
+const classPanel = new ClassPanel({ parent: classStand, addKey, dropKey, Display, text, MONO, rounded, mat });
+const ghosts = new Ghosts(lab);
+const classLink = linkBench({
+  lab: "lab8",
+  ui: classUi,
+  panel: classPanel,
+  ghosts,
+  bench: { state: benchState, apply: applyBench, pose: benchPose, setLocked, steps: () => stepList, warning: () => (model.short ? "short" : null), framing: (on) => { if (on !== classFraming) { classFraming = on; fitStage(); } } },
+});
+onChange(() => classLink.changed());
+const viewerAt = new THREE.Vector3();
+
 let lastFrame = 0;
 renderer.setAnimationLoop((time) => {
-  tickRun(Math.min((time - lastFrame) / 1000, 0.1));
+  const dt = Math.min((time - lastFrame) / 1000, 0.1);
+  tickRun(dt);
   lastFrame = time;
+  (renderer.xr.isPresenting ? renderer.xr.getCamera() : camera).getWorldPosition(viewerAt);
+  classLink.tick(dt, time, lab.worldToLocal(viewerAt));
   if (!renderer.xr.isPresenting) controls.update();
   else {
     if (fitPending && --fitPending === 0) fitHeight();
@@ -2460,6 +2572,7 @@ renderer.setAnimationLoop((time) => {
 // exposed for automated checks only
 window.__lab8 = {
   get state() { return state; }, get model() { return model; }, get steps() { return stepList; }, get wireStart() { return wireStart; }, get menuWire() { return menuWire; },
+  classLink, classPanel, ghosts, benchState, applyBench, get locked() { return locked; },
   run, plugs, wires, knobs, keys, rangeKeys, camera, contactPoint, toLab, toBoard, nearestContact, contactClicked, openMenu, applyMenu, menuItems, palette, paletteItems, lab, board, s1Switch,
   kindKnob, sourceKnob, speedKnob, timeKnob, powerKey, startKey, solutionKey, controls, holders, vr: { grab, release, select, selectEnd, updateHands, updatePalette, fitHeight },
 };
