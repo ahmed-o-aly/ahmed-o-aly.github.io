@@ -26,6 +26,12 @@ export function localTransport() {
       timer = setInterval(() => { if (mine) bc.postMessage({ type: "presence", id: me, payload: mine }); prune(); }, 1000);
       setTimeout(() => hooks.onStatus("joined"), 0);
     },
+    openSub(room, { onBroadcast, onStatus }) {
+      const sub = new BroadcastChannel(room);
+      sub.onmessage = ({ data }) => onBroadcast(data.event, data.payload);
+      setTimeout(() => onStatus("joined"), 0);
+      return { send(event, payload) { sub.postMessage({ event, payload }); }, close() { sub.close(); } };
+    },
     track(payload) {
       mine = payload;
       seen.set(me, { payload, at: Date.now() });
@@ -33,6 +39,6 @@ export function localTransport() {
       publish();
     },
     send(event, payload) { bc?.postMessage({ type: "broadcast", event, payload }); },
-    close() { clearInterval(timer); bc?.postMessage({ type: "leave", id: me }); bc?.close(); bc = null; },
+    close() { clearInterval(timer); bc?.postMessage({ type: "leave", id: me }); bc?.close(); bc = null; seen.clear(); mine = null; },
   };
 }

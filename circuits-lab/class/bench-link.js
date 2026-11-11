@@ -2,10 +2,11 @@
 // (benchState / applyBench), where its user's head and hands are (pose), and a
 // lock; this keeps it showing the right bench:
 //  - your own bench is kept aside while you view someone else's, and comes back
-//  - an owner sends their bench while anyone views it, at most every 120 ms
-//  - hands are sent ten times a second while someone would see them
+//  - an owner sends their bench while anyone views it, paced by how many view it
+//  - hands are sent while someone would see them, paced the same way (rules.js
+//    keeps the class under the relay's message limit)
 //  - on WORK, a student's own bench returns, or becomes a copy of the instructor's
-import { ghostsFor, poseMoved, progressOf, releaseAction } from "./rules.js";
+import { PROGRESS_GAP, ghostsFor, poseMoved, progressOf, releaseAction } from "./rules.js";
 import { ClassSession } from "./session.js";
 import { memberId } from "./join-ui.js";
 
@@ -16,7 +17,7 @@ export function linkBench({ lab, ui, panel, ghosts, bench }) {
   let lastFromInstructor = null;
   let lastRelease = 0;
   let lastMode = "solo";
-  let sendTimer = null, progressTimer = null;
+  let sendTimer = null, progressTimer = null, lastBenchAt = -Infinity, lastProgressAt = -Infinity;
   let lastPose = null, lastPoseAt = 0, poseClock = 0;
   let watchedBy = new Set();
   const benchOwnerFeeds = new Map(); // id → last bench JSON applied
@@ -47,7 +48,7 @@ export function linkBench({ lab, ui, panel, ghosts, bench }) {
       bench.setLocked(true);
       const known = benchOwnerFeeds.get(next);
       if (known) apply(JSON.parse(known));
-      session.askBench(next);
+      // its owner is asked for it once this member is on that bench's channel
     }
   }
 
@@ -64,7 +65,7 @@ export function linkBench({ lab, ui, panel, ghosts, bench }) {
     ghosts.setShown(session.members, ghostsFor(me(), session.members));
     // someone new is viewing my bench: send it now
     const now = new Set(session.members.filter((m) => m.id !== me().id && m.viewing === me().id).map((m) => m.id));
-    if (viewing === me().id && [...now].some((id) => !watchedBy.has(id))) session.sendBench(bench.state());
+    if (viewing === me().id && [...now].some((id) => !watchedBy.has(id))) sendNow();
     watchedBy = now;
     redraw();
   }
@@ -82,7 +83,7 @@ export function linkBench({ lab, ui, panel, ghosts, bench }) {
     lastMode = "solo";
     lastRelease = Infinity; // a class already at work does not overwrite a newcomer's bench
     session.on("status", (status) => {
-      ui.setStatus({ joined: "Connected.", connecting: "Connecting…", error: "Can't reach the class relay. Check the network; it will keep trying.", closed: "Disconnected." }[status] ?? status);
+      ui.setStatus({ joined: "Connected.", connecting: "Connecting…", error: "Lost the class relay; reconnecting…", closed: "Disconnected; reconnecting…" }[status] ?? status);
       redraw();
     });
     session.on("members", () => {
@@ -94,6 +95,10 @@ export function linkBench({ lab, ui, panel, ghosts, bench }) {
       benchOwnerFeeds.set(from, json);
       if (session.members.find((m) => m.id === from)?.role === "instructor") lastFromInstructor = b;
       if (from === viewing && from !== me().id) apply(b);
+    });
+    session.on("bench-channel", (id) => {
+      if (id === me().id) { if (session.members.some((m) => m.id !== id && m.viewing === id)) sendNow(); }
+      else session.askBench(id);
     });
     session.on("want", ({ from, owner }) => { if (owner === me().id && viewing === me().id) session.sendBench(bench.state(), from); });
     session.on("pose", ({ from, pose }) => ghosts.pose(from, pose, performance.now()));
@@ -116,14 +121,23 @@ export function linkBench({ lab, ui, panel, ghosts, bench }) {
     if (!quiet) redraw(); else panel.render({ session: null });
   }
 
+  // progress rides on the member's `state` broadcast: at most once a second
   function publishProgress() {
     if (!session) return;
     clearTimeout(progressTimer);
+    const wait = Math.max(400, lastProgressAt + PROGRESS_GAP * 1000 - performance.now());
     progressTimer = setTimeout(() => {
       if (!session || viewing !== me().id) return;
       const p = progressOf(bench.steps(), bench.warning());
-      if (JSON.stringify(p) !== JSON.stringify(me().progress)) session.update({ progress: p });
-    }, 400);
+      if (JSON.stringify(p) === JSON.stringify(me().progress)) return;
+      lastProgressAt = performance.now();
+      session.update({ progress: p });
+    }, wait);
+  }
+  function sendNow() {
+    clearTimeout(sendTimer);
+    sendTimer = null;
+    if (session?.sendBench(bench.state())) lastBenchAt = performance.now();
   }
 
   // the bench changed: send it to whoever is viewing it
@@ -135,8 +149,8 @@ export function linkBench({ lab, ui, panel, ghosts, bench }) {
       snapBack = setTimeout(() => { const known = session && benchOwnerFeeds.get(viewing); if (known && viewing !== me().id) apply(JSON.parse(known)); }, 50);
       return;
     }
-    clearTimeout(sendTimer);
-    sendTimer = setTimeout(() => session?.sendBench(bench.state()), 120);
+    // the first change goes at once, then at most one per gap, the latest last
+    if (!sendTimer) sendTimer = setTimeout(sendNow, Math.max(0, lastBenchAt + session.benchGap * 1000 - performance.now()));
     publishProgress();
   }
 
@@ -144,10 +158,10 @@ export function linkBench({ lab, ui, panel, ghosts, bench }) {
     ghosts.update(dt, viewer, now);
     if (!session) return;
     poseClock += dt;
-    if (poseClock < 0.1) return;
+    if (poseClock < session.poseGap) return;
     poseClock = 0;
     const pose = bench.pose();
-    if (!poseMoved(pose, lastPose) && now - lastPoseAt < 1000) return;
+    if (!poseMoved(pose, lastPose) && now - lastPoseAt < 3000) return;
     if (session.sendPose(pose)) { lastPose = pose; lastPoseAt = now; }
   }
 

@@ -1,12 +1,15 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { benchWatched, classOf, ghostsFor, makeCode, normaliseCode, poseMoved, progressOf, releaseAction, shouldSendPose, studentsOf, viewFor } from "../class/rules.js";
+import { audienceOf, benchInterval, benchWatched, channelLoad, classOf, ghostsFor, makeCode, normaliseCode, poseInterval, poseMoved, progressOf, releaseAction, shouldSendPose, studentsOf, viewFor } from "../class/rules.js";
 import { ClassSession, roomName } from "../class/session.js";
 
-// a relay in memory: presence is shared, broadcasts reach everyone else in the room
+// a relay in memory: presence is shared on the class channel; a bench channel's
+// broadcasts reach the others on it. It counts what the real relay would bill:
+// each message once when sent and once per member it reaches.
 function hub() {
   const rooms = new Map();
-  return () => {
+  const tally = { sent: 0, delivered: 0, tracks: 0, byRoom: new Map() };
+  const make = () => {
     let room = null, id = null, hooks = null;
     const peers = () => rooms.get(room);
     const publish = () => { for (const p of peers().values()) p.hooks.onPresence([...peers().values()].filter((q) => q.payload).map((q) => q.payload)); };
@@ -17,20 +20,36 @@ function hub() {
         peers().set(id, { hooks, payload: null });
         hooks.onStatus("joined");
       },
-      track(payload) { peers().get(id).payload = payload; publish(); },
+      openSub(name, h) {
+        const key = Symbol(id);
+        if (!rooms.has(name)) rooms.set(name, new Map());
+        rooms.get(name).set(key, { hooks: h });
+        h.onStatus("joined");
+        return {
+          send(event, payload) {
+            tally.sent += 1;
+            for (const [k, p] of rooms.get(name)) if (k !== key) { tally.delivered += 1; tally.byRoom.set(name, (tally.byRoom.get(name) ?? 0) + 1); p.hooks.onBroadcast(event, structuredClone(payload)); }
+          },
+          close() { rooms.get(name)?.delete(key); },
+        };
+      },
+      track(payload) { tally.tracks += 1; peers().get(id).payload = payload; publish(); },
       send(event, payload) { for (const [pid, p] of peers()) if (pid !== id) p.hooks.onBroadcast(event, structuredClone(payload)); },
-      close() { peers().delete(id); publish(); },
+      close() { if (room && peers()?.has(id)) { peers().delete(id); publish(); } },
+      drop() { hooks.onStatus("closed"); }, // the relay cutting this member off
     };
   };
+  make.tally = tally;
+  return make;
 }
 const flushTimers = () => new Promise((r) => setTimeout(r, 400)); // a presence change can take two 150 ms hops
 function classroom(n = 3) {
   const make = hub();
   let t = 0;
-  const join = (id, role) => new ClassSession({ lab: "lab8", code: "K7QD", me: { id, name: id.toUpperCase(), role }, transport: make(), now: () => (t += 1) }).connect();
+  const join = (id, role) => new ClassSession({ lab: "lab8", code: "K7QD", me: { id, name: id.toUpperCase(), role }, transport: make(), now: () => (t += 1), retry: [20] }).connect();
   const teacher = join("teacher", "instructor");
   const students = Array.from({ length: n }, (_, i) => join(`s${i + 1}`, "student"));
-  return { teacher, students };
+  return { teacher, students, tally: make.tally };
 }
 
 test("codes are four unambiguous characters, typed in any case", () => {
@@ -158,4 +177,84 @@ test("a class session: demo, release, a visit and the traffic each needs", async
   assert.deepEqual(b.view, { viewing: "s2", locked: false, mode: "solo" });
   a.leave();
   b.leave();
+});
+
+test("a full class stays well inside the relay's 100 messages a second", () => {
+  // demo: the instructor and every student share the instructor's bench channel
+  for (const students of [8, 12, 20]) {
+    const audience = students + 1;
+    assert.ok(channelLoad(audience) <= 62, `${students} students: ${channelLoad(audience)} a second`);
+  }
+  // a visit: two people on a student's bench, both sending hands and benches
+  assert.ok(channelLoad(2, 2) <= 62);
+  // hands slow down as the audience grows, but never below about once a second
+  assert.ok(poseInterval(2) < poseInterval(9));
+  assert.ok(poseInterval(50) <= 1);
+  assert.ok(benchInterval(9) >= 0.25);
+  assert.equal(audienceOf("t", [{ id: "t", viewing: "t" }, { id: "a", viewing: "t" }, { id: "b", viewing: "b" }]), 2);
+});
+
+test("bench traffic reaches only those viewing that bench", async () => {
+  const { teacher, students, tally } = classroom(3);
+  await flushTimers();
+  teacher.setMode("work");
+  await flushTimers();
+  teacher.watch("s1");
+  await flushTimers();
+  const [a, b, c] = students;
+  const heard = { b: 0, c: 0, teacher: 0 };
+  b.on("pose", () => (heard.b += 1));
+  c.on("pose", () => (heard.c += 1));
+  teacher.on("pose", () => (heard.teacher += 1));
+  const before = tally.delivered;
+  for (let i = 0; i < 10; i += 1) a.sendPose({ head: null, hands: [] });
+  assert.equal(heard.teacher, 10);
+  assert.equal(heard.b + heard.c, 0);
+  assert.equal(tally.delivered - before, 10); // one listener, not the whole class
+  assert.ok(!b.sendPose({ head: null, hands: [] })); // nobody on b's bench to see it
+  for (const s of [teacher, a, b, c]) s.leave();
+});
+
+test("a member the relay drops comes back and announces itself again", async () => {
+  const make = hub();
+  const transport = make();
+  let connects = 0;
+  const connect = transport.connect.bind(transport);
+  transport.connect = (...args) => { connects += 1; connect(...args); };
+  const other = new ClassSession({ lab: "lab8", code: "K7QD", me: { id: "s1", name: "S1", role: "student" }, transport: make() }).connect();
+  const teacher = new ClassSession({ lab: "lab8", code: "K7QD", me: { id: "t", name: "T", role: "instructor" }, transport, retry: [20] }).connect();
+  await flushTimers();
+  assert.equal(connects, 1);
+  assert.equal(other.cls.instructor, "t");
+  transport.drop();
+  assert.equal(teacher.status, "closed");
+  await flushTimers();
+  assert.equal(connects, 2);
+  assert.equal(teacher.status, "joined");
+  assert.equal(other.cls.instructor, "t"); // back in the class, still its instructor
+  assert.equal(teacher.cls.mode, "demo");
+  teacher.leave();
+  other.leave();
+});
+
+test("presence goes out once per join, however busy the class (the relay closes a member sending more)", async () => {
+  const { teacher, students, tally } = classroom(3);
+  await flushTimers();
+  const joins = tally.tracks;
+  assert.equal(joins, 4);
+  // a busy minute: modes, visits, copies, progress
+  for (let i = 0; i < 5; i += 1) {
+    teacher.setMode("work");
+    teacher.watch("s1");
+    teacher.setCopy(i % 2 === 0);
+    teacher.watch(null);
+    teacher.setMode("demo");
+    teacher.update({ progress: { done: i, total: 9, warn: null } });
+  }
+  await flushTimers();
+  assert.equal(tally.tracks, joins);
+  // and everyone still knows the class's state
+  assert.equal(students[0].cls.mode, "demo");
+  assert.equal(students[0].members.find((m) => m.id === "teacher").progress.done, 4);
+  for (const s of [teacher, ...students]) s.leave();
 });

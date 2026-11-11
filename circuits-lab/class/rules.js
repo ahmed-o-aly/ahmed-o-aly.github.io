@@ -11,6 +11,11 @@
 //
 // A bench is sent only while someone else is viewing it, and hands only while
 // they would be drawn for someone, so a quiet class sends almost nothing.
+//
+// The relay counts every message once when sent and once per member it reaches,
+// and the free plan disconnects a sender beyond 100 a second across the project.
+// So each bench has its own channel, joined only by those viewing it, and hands
+// and benches are paced by how many share that channel (see the budget below).
 
 const ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"; // no I, L, O, 0 or 1 to misread
 export const CODE_LENGTH = 4;
@@ -101,4 +106,30 @@ export function poseMoved(a, b) {
     if (p && (far(p.p, q.p, 0.003) || turned(p.q, q.q) || far(p.bead, q.bead, 0.003) || p.grab !== q.grab)) return true;
   }
   return false;
+}
+
+// ---- the message budget ----
+// Hands are the steady traffic; a bench goes only on a change. Keeping hands to
+// about 40 messages a second (sent plus delivered), and benches to about 20,
+// leaves room under the free plan's 100 for presence and a second sender.
+export const HANDS_BUDGET = 40;
+export const BENCH_BUDGET = 20;
+export const PROGRESS_GAP = 1; // seconds between progress updates, which ride on `state`
+const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+
+/** How many members share a bench's channel: everyone viewing it, its owner included. */
+export function audienceOf(benchId, members) {
+  return Math.max(1, members.filter((m) => m.viewing === benchId).length);
+}
+/** Seconds between hand updates on a channel of `audience` members. */
+export function poseInterval(audience) {
+  return clamp(audience / HANDS_BUDGET, 0.15, 1);
+}
+/** Seconds between bench updates on a channel of `audience` members. */
+export function benchInterval(audience) {
+  return clamp(audience / BENCH_BUDGET, 0.25, 2);
+}
+/** Messages a second a channel costs at full pace: each message is sent once and delivered to the rest. */
+export function channelLoad(audience, senders = 1) {
+  return senders * (audience / poseInterval(audience) + audience / benchInterval(audience));
 }

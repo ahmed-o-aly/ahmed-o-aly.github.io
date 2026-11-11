@@ -65,7 +65,7 @@ class Ghost {
     // hands stop drawing if their sender goes quiet
     this.group.visible = Boolean(t) && now - this.at < 5000;
     if (!this.group.visible) return;
-    const k = this.fresh ? 1 : 1 - Math.exp(-dt * 14);
+    const k = this.fresh ? 1 : 1 - Math.exp(-dt * 10); // hands arrive a few times a second; glide between
     this.fresh = false;
     const v3 = (a) => new THREE.Vector3().fromArray(a);
     if (t.head) {
